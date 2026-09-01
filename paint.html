@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">그림판</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; outline: none; }
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #161628; border-bottom: 1px solid #2a2a40; flex-wrap: wrap; flex-shrink: 0; }
+.tool-group { display: flex; gap: 3px; background: #1e1e35; border-radius: 8px; padding: 3px; }
+.tool-btn { width: 32px; height: 32px; border: none; border-radius: 6px; background: transparent; color: #aaa; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.tool-btn:hover { background: #2a2a45; color: #fff; }
+.tool-btn.active { background: #7c5cfc; color: #fff; }
+.color-palette { display: flex; gap: 3px; align-items: center; }
+.color-swatch { width: 22px; height: 22px; border-radius: 5px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { border-color: #fff; transform: scale(1.15); }
+.color-custom { width: 22px; height: 22px; border: none; border-radius: 5px; cursor: pointer; background: transparent; padding: 0; }
+.color-custom::-webkit-color-swatch-wrapper { padding: 0; }
+.color-custom::-webkit-color-swatch { border: 1px solid #444; border-radius: 5px; }
+.slider-group { display: flex; align-items: center; gap: 6px; }
+.slider-group label { font-size: 11px; color: #888; white-space: nowrap; }
+.slider-group input[type="range"] { width: 70px; accent-color: #7c5cfc; height: 4px; }
+.slider-group .val { font-size: 11px; color: #aaa; min-width: 24px; text-align: center; }
+.action-btn { border: none; border-radius: 6px; background: #2a2a40; color: #aaa; cursor: pointer; font-size: 11px; padding: 6px 10px; transition: all 0.15s; white-space: nowrap; }
+.action-btn:hover { background: #3a3a55; color: #fff; }
+.action-btn.danger { color: #ff6b6b; }
+.action-btn.danger:hover { background: #3a1a1a; }
+.canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #0a0a15; overflow: hidden; position: relative; }
+canvas { background: #fff; cursor: crosshair; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+.indicator { position: fixed; bottom: 12px; left: 12px; display: flex; gap: 12px; align-items: center; font-size: 11px; color: #666; background: #161628; padding: 6px 12px; border-radius: 8px; }
+.indicator .ind-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #444; }
+</style>
+</head>
+<body tabindex="0">
+
+<div class="toolbar">
+  <div class="tool-group" id="tools"></div>
+  <div class="color-palette" id="palette"></div>
+  <input type="color" class="color-custom" id="customColor" value="#ffffff">
+  <div class="slider-group">
+    <label id="lblSize">크기</label>
+    <input type="range" id="sizeSlider" min="1" max="50" value="3">
+    <span class="val" id="sizeVal">3</span>
+  </div>
+  <div class="slider-group">
+    <label id="lblOpacity">투명도</label>
+    <input type="range" id="opacitySlider" min="5" max="100" value="100">
+    <span class="val" id="opacityVal">100%</span>
+  </div>
+  <button class="action-btn" id="undoBtn" onclick="undo()">↩ 취소</button>
+  <button class="action-btn" id="redoBtn" onclick="redo()">↪ 복원</button>
+  <button class="action-btn danger" id="clearBtn" onclick="clearCanvas()">🗑 지우기</button>
+  <button class="action-btn" id="saveBtn" onclick="downloadPNG()">💾 저장</button>
+</div>
+
+<div class="canvas-area">
+  <canvas id="canvas"></canvas>
+</div>
+
+<div class="indicator">
+  <div class="ind-color" id="indColor"></div>
+  <span id="indTool"></span>
+  <span id="indSize">3px</span>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '그림판', customColor: '사용자 색상', size: '크기', opacity: '투명도',
+        undo: '↩ 취소', undoTitle: '실행 취소 (Ctrl+Z)', redo: '↪ 복원', redoTitle: '다시 실행 (Ctrl+Y)',
+        clear: '🗑 지우기', save: '💾 저장', confirmClear: '캔버스를 지우시겠습니까?',
+        pencil: '연필', brush: '브러시', eraser: '지우개', line: '직선', rect: '사각형', circle: '원', fill: '채우기' },
+  en: { title: 'Paint', customColor: 'Custom Color', size: 'Size', opacity: 'Opacity',
+        undo: '↩ Undo', undoTitle: 'Undo (Ctrl+Z)', redo: '↪ Redo', redoTitle: 'Redo (Ctrl+Y)',
+        clear: '🗑 Clear', save: '💾 Save', confirmClear: 'Clear the canvas?',
+        pencil: 'Pencil', brush: 'Brush', eraser: 'Eraser', line: 'Line', rect: 'Rectangle', circle: 'Circle', fill: 'Fill' }
+}[LANG];
+document.getElementById('pageTitle').textContent = T.title;
+document.getElementById('customColor').title = T.customColor;
+document.getElementById('lblSize').textContent = T.size;
+document.getElementById('lblOpacity').textContent = T.opacity;
+document.getElementById('undoBtn').textContent = T.undo;
+document.getElementById('undoBtn').title = T.undoTitle;
+document.getElementById('redoBtn').textContent = T.redo;
+document.getElementById('redoBtn').title = T.redoTitle;
+document.getElementById('clearBtn').textContent = T.clear;
+document.getElementById('saveBtn').textContent = T.save;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const COLORS = ['#000000','#ffffff','#ff0000','#ff6b00','#ffd700','#00cc00','#0088ff','#7c5cfc','#ff69b4','#8b4513','#808080','#00cccc'];
+
+const TOOLS = [
+  { id: 'pencil', icon: '✏️', label: T.pencil },
+  { id: 'brush', icon: '🖌️', label: T.brush },
+  { id: 'eraser', icon: '🧹', label: T.eraser },
+  { id: 'line', icon: '📏', label: T.line },
+  { id: 'rect', icon: '⬜', label: T.rect },
+  { id: 'circle', icon: '⭕', label: T.circle },
+  { id: 'fill', icon: '🪣', label: T.fill },
+];
+
+let tool = 'pencil';
+let color = '#000000';
+let size = 3;
+let opacity = 1;
+let drawing = false;
+let lastX = 0, lastY = 0;
+let startX = 0, startY = 0;
+let undoStack = [];
+let redoStack = [];
+const MAX_UNDO = 20;
+let shapePreview = null;
+
+function initCanvas() {
+  const area = document.querySelector('.canvas-area');
+  const w = Math.min(area.clientWidth - 40, 800);
+  const h = Math.min(area.clientHeight - 40, 600);
+  canvas.width = w;
+  canvas.height = h;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  saveState();
+}
+
+function saveState() {
+  undoStack.push(canvas.toDataURL());
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack = [];
+}
+
+function undo() {
+  if (undoStack.length <= 1) return;
+  redoStack.push(undoStack.pop());
+  const img = new Image();
+  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+  img.src = undoStack[undoStack.length - 1];
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  const data = redoStack.pop();
+  undoStack.push(data);
+  const img = new Image();
+  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+  img.src = data;
+}
+
+function clearCanvas() {
+  if (!confirm(T.confirmClear)) return;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  saveState();
+}
+
+function downloadPNG() {
+  const a = document.createElement('a');
+  a.download = 'drawing.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: clientX - r.left, y: clientY - r.top };
+}
+
+function floodFill(sx, sy, fillColor) {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  const w = canvas.width;
+  const targetIdx = (Math.round(sy) * w + Math.round(sx)) * 4;
+  const targetR = data[targetIdx], targetG = data[targetIdx+1], targetB = data[targetIdx+2], targetA = data[targetIdx+3];
+  const tmp = document.createElement('canvas');
+  tmp.width = 1; tmp.height = 1;
+  const tmpCtx = tmp.getContext('2d');
+  tmpCtx.fillStyle = fillColor;
+  tmpCtx.fillRect(0, 0, 1, 1);
+  const fc = tmpCtx.getImageData(0, 0, 1, 1).data;
+  if (targetR === fc[0] && targetG === fc[1] && targetB === fc[2] && targetA === fc[3]) return;
+  const stack = [[Math.round(sx), Math.round(sy)]];
+  const visited = new Set();
+  while (stack.length > 0) {
+    const [x, y] = stack.pop();
+    const idx = (y * w + x) * 4;
+    if (x < 0 || x >= w || y < 0 || y >= canvas.height) continue;
+    if (visited.has(idx)) continue;
+    if (Math.abs(data[idx] - targetR) > 20 || Math.abs(data[idx+1] - targetG) > 20 || Math.abs(data[idx+2] - targetB) > 20 || Math.abs(data[idx+3] - targetA) > 20) continue;
+    visited.add(idx);
+    data[idx] = fc[0]; data[idx+1] = fc[1]; data[idx+2] = fc[2]; data[idx+3] = fc[3];
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+function onStart(e) {
+  e.preventDefault();
+  const pos = getPos(e);
+  drawing = true;
+  lastX = pos.x; lastY = pos.y;
+  startX = pos.x; startY = pos.y;
+  if (tool === 'fill') {
+    floodFill(pos.x, pos.y, color);
+    saveState();
+    drawing = false;
+    return;
+  }
+  if (tool === 'line' || tool === 'rect' || tool === 'circle') {
+    shapePreview = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  }
+  if (tool === 'pencil' || tool === 'brush' || tool === 'eraser') {
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+}
+
+function onMove(e) {
+  if (!drawing) return;
+  e.preventDefault();
+  const pos = getPos(e);
+  ctx.globalAlpha = opacity;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (tool === 'pencil') {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else if (tool === 'brush') {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size * 2;
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else if (tool === 'eraser') {
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = size * 3;
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else if (tool === 'line' || tool === 'rect' || tool === 'circle') {
+    ctx.putImageData(shapePreview, 0, 0);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = size;
+    ctx.beginPath();
+    if (tool === 'line') {
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(pos.x, pos.y);
+    } else if (tool === 'rect') {
+      ctx.rect(startX, startY, pos.x - startX, pos.y - startY);
+    } else if (tool === 'circle') {
+      const rx = Math.abs(pos.x - startX) / 2;
+      const ry = Math.abs(pos.y - startY) / 2;
+      const cx = startX + (pos.x - startX) / 2;
+      const cy = startY + (pos.y - startY) / 2;
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  lastX = pos.x; lastY = pos.y;
+}
+
+function onEnd(e) {
+  if (!drawing) return;
+  drawing = false;
+  ctx.beginPath();
+  shapePreview = null;
+  saveState();
+}
+
+canvas.addEventListener('mousedown', onStart);
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mouseup', onEnd);
+canvas.addEventListener('mouseleave', onEnd);
+canvas.addEventListener('touchstart', onStart, { passive: false });
+canvas.addEventListener('touchmove', onMove, { passive: false });
+canvas.addEventListener('touchend', onEnd);
+
+function renderTools() {
+  const $tools = document.getElementById('tools');
+  $tools.innerHTML = TOOLS.map(t =>
+    `<button class="tool-btn ${tool === t.id ? 'active' : ''}" onclick="selectTool('${t.id}')" title="${t.label}">${t.icon}</button>`
+  ).join('');
+}
+
+function selectTool(id) {
+  tool = id;
+  renderTools();
+  updateIndicator();
+  canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'eraser' ? 'grab' : 'crosshair';
+}
+
+function renderPalette() {
+  const $palette = document.getElementById('palette');
+  $palette.innerHTML = COLORS.map(c =>
+    `<div class="color-swatch ${color === c ? 'active' : ''}" style="background:${c}" onclick="selectColor('${c}')"></div>`
+  ).join('');
+}
+
+function selectColor(c) {
+  color = c;
+  renderPalette();
+  document.getElementById('customColor').value = c;
+  updateIndicator();
+}
+
+document.getElementById('customColor').addEventListener('input', e => {
+  color = e.target.value;
+  renderPalette();
+  updateIndicator();
+});
+
+document.getElementById('sizeSlider').addEventListener('input', e => {
+  size = parseInt(e.target.value);
+  document.getElementById('sizeVal').textContent = size;
+  updateIndicator();
+});
+
+document.getElementById('opacitySlider').addEventListener('input', e => {
+  opacity = parseInt(e.target.value) / 100;
+  document.getElementById('opacityVal').textContent = e.target.value + '%';
+});
+
+function updateIndicator() {
+  document.getElementById('indColor').style.background = tool === 'eraser' ? '#fff' : color;
+  document.getElementById('indTool').textContent = TOOLS.find(t => t.id === tool)?.label || '';
+  document.getElementById('indSize').textContent = size + 'px';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+  if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+});
+
+renderTools();
+renderPalette();
+updateIndicator();
+window.addEventListener('load', initCanvas);
+window.addEventListener('resize', () => {
+  const data = canvas.toDataURL();
+  initCanvas();
+  const img = new Image();
+  img.onload = () => { ctx.drawImage(img, 0, 0); };
+  img.src = data;
+});
+document.body.focus();
+</script>
+</body>
+</html>

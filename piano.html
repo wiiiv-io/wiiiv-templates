@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>피아노 건반</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px;gap:12px;user-select:none;outline:none}
+h1{font-size:18px;color:#c4b5fd}
+.controls{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+.ctrl{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+select,button{background:#16162a;color:#ccc;border:1px solid #333;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;outline:none;transition:all .15s}
+select:focus,button:hover{border-color:#7c5cfc}
+button.active{background:#7c5cfc;color:#fff;border-color:#7c5cfc}
+button.rec{background:#ef4444;color:#fff;border-color:#ef4444}
+input[type=range]{accent-color:#7c5cfc;width:80px}
+.piano{position:relative;display:flex;margin-top:8px;border-radius:0 0 8px 8px;overflow:visible}
+.white-key{width:44px;height:180px;background:linear-gradient(to bottom,#f0f0f0,#fff);border:1px solid #999;border-radius:0 0 5px 5px;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:8px;transition:background .08s;position:relative;z-index:1}
+.white-key:active,.white-key.pressed{background:linear-gradient(to bottom,#ddd,#e8e8e8)}
+.white-key .note{font-size:11px;color:#999;font-weight:600}
+.white-key .shortcut{font-size:9px;color:#bbb;margin-top:2px;background:#e8e8e8;padding:1px 4px;border-radius:3px}
+.black-key{width:28px;height:110px;background:linear-gradient(to bottom,#222,#111);border:1px solid #000;border-radius:0 0 4px 4px;cursor:pointer;position:absolute;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:6px;transition:background .08s;box-shadow:0 2px 4px rgba(0,0,0,0.5)}
+.black-key:active,.black-key.pressed{background:linear-gradient(to bottom,#444,#333)}
+.black-key .note{font-size:9px;color:#888}
+.black-key .shortcut{font-size:8px;color:#666;margin-top:2px;background:#333;padding:1px 3px;border-radius:2px}
+.ripple{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-radius:50%;background:rgba(124,92,252,0.4);pointer-events:none;animation:rippleAnim .5s ease-out forwards}
+@keyframes rippleAnim{to{width:60px;height:60px;opacity:0}}
+</style>
+</head>
+<body tabindex="0">
+<h1>피아노 건반</h1>
+<div class="controls">
+  <div class="ctrl">
+    <label>음색:</label>
+    <select id="waveform">
+      <option value="sine">사인파</option>
+      <option value="triangle">삼각파</option>
+      <option value="square">사각파</option>
+      <option value="sawtooth">톱니파</option>
+    </select>
+  </div>
+  <div class="ctrl">
+    <label>음량:</label>
+    <input type="range" id="volume" min="0" max="100" value="60">
+  </div>
+  <div class="ctrl">
+    <button id="sustainBtn" onclick="toggleSustain()">서스테인: 꺼짐</button>
+  </div>
+  <div class="ctrl">
+    <button id="recBtn" onclick="toggleRecord()">● 녹음</button>
+    <button id="playbackBtn" onclick="playRecording()" disabled>▶ 재생</button>
+  </div>
+</div>
+<div class="piano" id="piano"></div>
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '피아노 건반',
+    waveform: '음색:', sine: '사인파', triangle: '삼각파', square: '사각파', sawtooth: '톱니파',
+    volume: '음량:', sustainOn: '서스테인: 켜짐', sustainOff: '서스테인: 꺼짐',
+    record: '● 녹음', stopRec: '■ 중지', play: '▶ 재생'
+  },
+  en: {
+    title: 'Piano Keyboard',
+    waveform: 'Waveform:', sine: 'Sine', triangle: 'Triangle', square: 'Square', sawtooth: 'Sawtooth',
+    volume: 'Volume:', sustainOn: 'Sustain: On', sustainOff: 'Sustain: Off',
+    record: '● Record', stopRec: '■ Stop', play: '▶ Play'
+  }
+}[LANG];
+
+document.querySelector('h1').textContent=T.title;
+document.title=T.title;
+
+const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+const waveformSel=document.getElementById('waveform'),volumeSlider=document.getElementById('volume'),
+  sustainBtn=document.getElementById('sustainBtn'),recBtn=document.getElementById('recBtn'),playbackBtn=document.getElementById('playbackBtn'),
+  pianoEl=document.getElementById('piano');
+let sustain=false,recording=false,recorded=[],recStart=0,activeOscs={};
+
+// i18n DOM
+document.querySelectorAll('.ctrl label')[0].textContent=T.waveform;
+waveformSel.options[0].textContent=T.sine;
+waveformSel.options[1].textContent=T.triangle;
+waveformSel.options[2].textContent=T.square;
+waveformSel.options[3].textContent=T.sawtooth;
+document.querySelectorAll('.ctrl label')[1].textContent=T.volume;
+sustainBtn.textContent=T.sustainOff;
+recBtn.textContent=T.record;
+playbackBtn.textContent=T.play;
+
+const NOTES=[
+  {note:'C3',freq:130.81,type:'white',key:'a'},
+  {note:'C#3',freq:138.59,type:'black',key:'w'},
+  {note:'D3',freq:146.83,type:'white',key:'s'},
+  {note:'D#3',freq:155.56,type:'black',key:'e'},
+  {note:'E3',freq:164.81,type:'white',key:'d'},
+  {note:'F3',freq:174.61,type:'white',key:'f'},
+  {note:'F#3',freq:185.00,type:'black',key:'t'},
+  {note:'G3',freq:196.00,type:'white',key:'g'},
+  {note:'G#3',freq:207.65,type:'black',key:'y'},
+  {note:'A3',freq:220.00,type:'white',key:'h'},
+  {note:'A#3',freq:233.08,type:'black',key:'u'},
+  {note:'B3',freq:246.94,type:'white',key:'j'},
+  {note:'C4',freq:261.63,type:'white',key:'k'},
+  {note:'C#4',freq:277.18,type:'black',key:'o'},
+  {note:'D4',freq:293.66,type:'white',key:'l'},
+  {note:'D#4',freq:311.13,type:'black',key:'p'},
+  {note:'E4',freq:329.63,type:'white',key:';'},
+  {note:'F4',freq:349.23,type:'white',key:"'"},
+  {note:'F#4',freq:369.99,type:'black',key:'['},
+  {note:'G4',freq:392.00,type:'white',key:'\\'},
+  {note:'G#4',freq:415.30,type:'black',key:']'},
+  {note:'A4',freq:440.00,type:'white',key:'z'},
+  {note:'A#4',freq:466.16,type:'black',key:'x'},
+  {note:'B4',freq:493.88,type:'white',key:'c'},
+];
+
+function buildPiano(){
+  pianoEl.innerHTML='';
+  let whiteIdx=0;
+  const whites=NOTES.filter(n=>n.type==='white');
+  const blacks=NOTES.filter(n=>n.type==='black');
+  const whiteW=44;
+  pianoEl.style.width=(whites.length*whiteW)+'px';
+  pianoEl.style.height='180px';
+
+  whites.forEach((n,i)=>{
+    const el=document.createElement('div');el.className='white-key';el.dataset.note=n.note;
+    el.innerHTML=`<span class="note">${n.note}</span><span class="shortcut">${n.key.toUpperCase()}</span>`;
+    el.addEventListener('mousedown',()=>playNote(n));
+    el.addEventListener('mouseup',()=>{if(!sustain)stopNote(n.note)});
+    el.addEventListener('mouseleave',()=>{if(!sustain)stopNote(n.note)});
+    pianoEl.appendChild(el)});
+
+  const blackPositions=[];
+  let wIdx=0;
+  for(const n of NOTES){
+    if(n.type==='white'){wIdx++;continue}
+    blackPositions.push({note:n,left:wIdx*whiteW-14})}
+
+  blackPositions.forEach(bp=>{
+    const el=document.createElement('div');el.className='black-key';el.dataset.note=bp.note.note;
+    el.style.left=bp.left+'px';
+    el.innerHTML=`<span class="note">${bp.note.note}</span><span class="shortcut">${bp.note.key.toUpperCase()}</span>`;
+    el.addEventListener('mousedown',()=>playNote(bp.note));
+    el.addEventListener('mouseup',()=>{if(!sustain)stopNote(bp.note.note)});
+    el.addEventListener('mouseleave',()=>{if(!sustain)stopNote(bp.note.note)});
+    pianoEl.appendChild(el)})}
+
+function playNote(n){
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  if(activeOscs[n.note])return;
+  const vol=volumeSlider.value/100;
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.type=waveformSel.value;osc.frequency.setValueAtTime(n.freq,audioCtx.currentTime);
+  gain.gain.setValueAtTime(vol*0.4,audioCtx.currentTime);
+  osc.connect(gain);gain.connect(audioCtx.destination);osc.start();
+  activeOscs[n.note]={osc,gain};
+  const el=pianoEl.querySelector(`[data-note="${n.note}"]`);
+  if(el){el.classList.add('pressed');addRipple(el)}
+  if(recording)recorded.push({note:n.note,freq:n.freq,time:Date.now()-recStart,type:'on'})}
+
+function stopNote(noteName){
+  const entry=activeOscs[noteName];if(!entry)return;
+  entry.gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+(sustain?1.5:0.3));
+  const o=entry.osc;setTimeout(()=>o.stop(),sustain?1500:300);
+  delete activeOscs[noteName];
+  const el=pianoEl.querySelector(`[data-note="${noteName}"]`);
+  if(el)el.classList.remove('pressed');
+  if(recording)recorded.push({note:noteName,time:Date.now()-recStart,type:'off'})}
+
+function addRipple(el){
+  const r=document.createElement('div');r.className='ripple';el.appendChild(r);
+  setTimeout(()=>r.remove(),500)}
+
+function toggleSustain(){sustain=!sustain;sustainBtn.textContent=sustain?T.sustainOn:T.sustainOff;sustainBtn.classList.toggle('active',sustain)}
+
+function toggleRecord(){
+  if(!recording){recording=true;recorded=[];recStart=Date.now();recBtn.textContent=T.stopRec;recBtn.classList.add('rec');playbackBtn.disabled=true}
+  else{recording=false;recBtn.textContent=T.record;recBtn.classList.remove('rec');playbackBtn.disabled=recorded.length===0}}
+
+async function playRecording(){
+  if(recorded.length===0)return;
+  playbackBtn.disabled=true;
+  const start=Date.now();
+  for(const ev of recorded){
+    const delay=ev.time-(Date.now()-start);
+    if(delay>0)await new Promise(r=>setTimeout(r,delay));
+    if(ev.type==='on'){const n=NOTES.find(x=>x.note===ev.note);if(n)playNote(n)}
+    else stopNote(ev.note)}
+  playbackBtn.disabled=false}
+
+const keyMap={};NOTES.forEach(n=>{keyMap[n.key]=n});
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;const n=keyMap[e.key.toLowerCase()];if(n)playNote(n)});
+document.addEventListener('keyup',e=>{
+  const n=keyMap[e.key.toLowerCase()];if(n&&!sustain)stopNote(n.note)});
+
+buildPiano();
+document.body.focus();
+</script>
+</body>
+</html>

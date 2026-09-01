@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>뱀 게임</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh; overflow: hidden; user-select: none; outline: none;
+}
+.game-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; max-width: 402px; gap: 12px;
+}
+.stat {
+  background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.25);
+  border-radius: 8px; padding: 6px 14px; text-align: center; flex: 1;
+}
+.stat .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.stat .val { font-size: 20px; font-weight: 700; color: #7c5cfc; }
+canvas {
+  border: 2px solid #7c5cfc; border-radius: 4px; background: #000;
+  display: block;
+}
+.bottom-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; max-width: 402px; gap: 8px;
+}
+.btn {
+  padding: 8px 20px; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-play { background: #7c5cfc; color: #fff; }
+.btn-play:hover { background: #6a4ce0; }
+.btn-stop { background: #ff4757; color: #fff; }
+.btn-stop:hover { background: #e0333f; }
+.keys {
+  font-size: 10px; color: #666; display: flex; gap: 12px;
+}
+.keys span { color: #888; }
+.overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  background: rgba(13,13,26,0.92); border-radius: 4px; z-index: 10;
+}
+.overlay h2 { font-size: 24px; color: #7c5cfc; }
+.overlay .sub { font-size: 14px; color: #ccc; }
+.overlay button {
+  padding: 10px 28px; border: none; border-radius: 8px;
+  background: #7c5cfc; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.overlay button:hover { background: #6a4ce0; }
+.canvas-wrap { position: relative; }
+</style>
+</head>
+<body tabindex="0">
+<div class="game-wrap">
+  <div class="top-bar">
+    <div class="stat"><div class="label" id="lScore">점수</div><div class="val" id="score">0</div></div>
+    <div class="stat"><div class="label" id="lBest">최고</div><div class="val" id="best">0</div></div>
+    <div class="stat"><div class="label" id="lLength">길이</div><div class="val" id="length">3</div></div>
+    <div class="stat"><div class="label" id="lSpeed">속도</div><div class="val" id="speed">1</div></div>
+  </div>
+  <div class="canvas-wrap">
+    <canvas id="board" width="400" height="400"></canvas>
+    <div class="overlay" id="startOverlay">
+      <h2 id="titleText">뱀 게임</h2>
+      <div class="sub" id="titleSub">화살표 키로 방향을 조종하세요</div>
+      <button id="startBtn" onclick="startGame()">▶ 시작</button>
+    </div>
+    <div class="overlay" id="gameOverOverlay" style="display:none">
+      <h2 id="gameOverText">게임 오버</h2>
+      <div class="sub" id="finalScore">점수: 0</div>
+      <button id="restartBtn" onclick="startGame()">다시 시작</button>
+    </div>
+    <div class="overlay" id="pauseOverlay" style="display:none">
+      <h2 id="pauseText">일시정지</h2>
+      <button id="resumeBtn" onclick="resumeGame()">▶ 계속</button>
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ 시작</button>
+    <div class="keys">
+      <div><span>←→↑↓</span> <span id="kMove">이동</span></div>
+      <div><span>P</span> <span id="kPause">일시정지</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    score: '점수', best: '최고', length: '길이', speed: '속도',
+    title: '뱀 게임', subtitle: '화살표 키로 방향을 조종하세요',
+    start: '▶ 시작', gameOver: '게임 오버', restart: '다시 시작',
+    pause: '일시정지', resume: '▶ 계속', stop: '⏸ 정지',
+    finalScore: (s, l) => '점수: ' + s + ' | 길이: ' + l,
+    move: '이동',
+  },
+  en: {
+    score: 'SCORE', best: 'BEST', length: 'LENGTH', speed: 'SPEED',
+    title: 'Snake', subtitle: 'Use arrow keys to steer',
+    start: '▶ Start', gameOver: 'GAME OVER', restart: 'Restart',
+    pause: 'PAUSED', resume: '▶ Resume', stop: '⏸ Stop',
+    finalScore: (s, l) => 'Score: ' + s + ' | Length: ' + l,
+    move: 'Move',
+  }
+}[LANG] || {
+  score: 'SCORE', best: 'BEST', length: 'LENGTH', speed: 'SPEED',
+  title: 'Snake', subtitle: 'Use arrow keys to steer',
+  start: '▶ Start', gameOver: 'GAME OVER', restart: 'Restart',
+  pause: 'PAUSED', resume: '▶ Resume', stop: '⏸ Stop',
+  finalScore: (s, l) => 'Score: ' + s + ' | Length: ' + l,
+  move: 'Move',
+};
+
+(function applyLabels() {
+  document.getElementById('lScore').textContent = T.score;
+  document.getElementById('lBest').textContent = T.best;
+  document.getElementById('lLength').textContent = T.length;
+  document.getElementById('lSpeed').textContent = T.speed;
+  document.getElementById('titleText').textContent = T.title;
+  document.getElementById('titleSub').textContent = T.subtitle;
+  document.getElementById('startBtn').textContent = T.start;
+  document.getElementById('gameOverText').textContent = T.gameOver;
+  document.getElementById('restartBtn').textContent = T.restart;
+  document.getElementById('pauseText').textContent = T.pause;
+  document.getElementById('resumeBtn').textContent = T.resume;
+  document.getElementById('playBtn').textContent = T.start;
+  document.getElementById('kMove').textContent = T.move;
+  document.getElementById('kPause').textContent = T.pause;
+})();
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const GRID = 20;
+const COLS = canvas.width / GRID;
+const ROWS = canvas.height / GRID;
+
+let snake, dir, nextDir, food, score, bestScore, speed, gameRunning, gamePaused, gameOver;
+let loopTimer = null;
+
+try { bestScore = parseInt(localStorage.getItem('snake_best') || '0'); } catch(e) { bestScore = 0; }
+document.getElementById('best').textContent = bestScore;
+
+function init() {
+  snake = [];
+  for (let i = 2; i >= 0; i--) snake.push({x: 5 + i, y: Math.floor(ROWS / 2)});
+  dir = {x: 1, y: 0};
+  nextDir = {x: 1, y: 0};
+  score = 0; speed = 1;
+  gameOver = false; gamePaused = false;
+  spawnFood();
+  updateUI();
+}
+
+function spawnFood() {
+  let pos;
+  do {
+    pos = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
+  } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+  food = pos;
+}
+
+function step() {
+  dir = nextDir;
+  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+  // wall collision
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
+    endGame(); return;
+  }
+  // self collision
+  if (snake.some(s => s.x === head.x && s.y === head.y)) {
+    endGame(); return;
+  }
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y) {
+    score += 10;
+    speed = Math.floor(snake.length / 5) + 1;
+    spawnFood();
+  } else {
+    snake.pop();
+  }
+  updateUI();
+  draw();
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= COLS; x++) {
+    ctx.beginPath(); ctx.moveTo(x * GRID, 0); ctx.lineTo(x * GRID, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= ROWS; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * GRID); ctx.lineTo(canvas.width, y * GRID); ctx.stroke();
+  }
+
+  // food
+  ctx.fillStyle = '#ff4757';
+  ctx.beginPath();
+  ctx.arc(food.x * GRID + GRID/2, food.y * GRID + GRID/2, GRID/2 - 2, 0, Math.PI * 2);
+  ctx.fill();
+  // food shine
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath();
+  ctx.arc(food.x * GRID + GRID/2 - 2, food.y * GRID + GRID/2 - 3, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // snake
+  snake.forEach((seg, i) => {
+    const ratio = 1 - (i / snake.length) * 0.5;
+    const r = Math.floor(124 * ratio);
+    const g = Math.floor(92 * ratio);
+    const b = Math.floor(252 * ratio);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(seg.x * GRID + 1, seg.y * GRID + 1, GRID - 2, GRID - 2);
+    if (i === 0) {
+      // eyes
+      ctx.fillStyle = '#fff';
+      const ex1 = seg.x * GRID + GRID * 0.3;
+      const ex2 = seg.x * GRID + GRID * 0.7;
+      const ey = seg.y * GRID + GRID * 0.35;
+      ctx.beginPath(); ctx.arc(ex1, ey, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2, ey, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(ex1 + dir.x, ey + dir.y, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2 + dir.x, ey + dir.y, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+function updateUI() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('length').textContent = snake.length;
+  document.getElementById('speed').textContent = speed;
+}
+
+function getInterval() {
+  return Math.max(60, 150 - (speed - 1) * 12);
+}
+
+function gameLoop() {
+  if (!gameRunning || gamePaused || gameOver) return;
+  step();
+  loopTimer = setTimeout(gameLoop, getInterval());
+}
+
+function startGame() {
+  init();
+  gameRunning = true;
+  document.getElementById('startOverlay').style.display = 'none';
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('pauseOverlay').style.display = 'none';
+  const btn = document.getElementById('playBtn');
+  btn.textContent = T.stop; btn.className = 'btn btn-stop';
+  draw();
+  if (loopTimer) clearTimeout(loopTimer);
+  loopTimer = setTimeout(gameLoop, getInterval());
+  document.body.focus();
+}
+
+function endGame() {
+  gameOver = true; gameRunning = false;
+  if (loopTimer) clearTimeout(loopTimer);
+  if (score > bestScore) {
+    bestScore = score;
+    try { localStorage.setItem('snake_best', bestScore); } catch(e) {}
+    document.getElementById('best').textContent = bestScore;
+  }
+  document.getElementById('finalScore').textContent = T.finalScore(score, snake.length);
+  document.getElementById('gameOverOverlay').style.display = 'flex';
+  const btn = document.getElementById('playBtn');
+  btn.textContent = T.start; btn.className = 'btn btn-play';
+}
+
+function togglePlay() {
+  if (!gameRunning && !gameOver) { startGame(); }
+  else if (gameRunning && !gamePaused) {
+    gamePaused = true;
+    if (loopTimer) clearTimeout(loopTimer);
+    document.getElementById('pauseOverlay').style.display = 'flex';
+    const btn = document.getElementById('playBtn');
+    btn.textContent = T.resume; btn.className = 'btn btn-play';
+  } else if (gamePaused) { resumeGame(); }
+  else if (gameOver) { startGame(); }
+}
+
+function resumeGame() {
+  gamePaused = false;
+  document.getElementById('pauseOverlay').style.display = 'none';
+  const btn = document.getElementById('playBtn');
+  btn.textContent = T.stop; btn.className = 'btn btn-stop';
+  loopTimer = setTimeout(gameLoop, getInterval());
+  document.body.focus();
+}
+
+document.addEventListener('keydown', e => {
+  if (!gameRunning || gameOver) return;
+  if (e.key === 'p' || e.key === 'P') { togglePlay(); return; }
+  if (gamePaused) return;
+  switch (e.key) {
+    case 'ArrowUp': if (dir.y !== 1) nextDir = {x: 0, y: -1}; break;
+    case 'ArrowDown': if (dir.y !== -1) nextDir = {x: 0, y: 1}; break;
+    case 'ArrowLeft': if (dir.x !== 1) nextDir = {x: -1, y: 0}; break;
+    case 'ArrowRight': if (dir.x !== -1) nextDir = {x: 1, y: 0}; break;
+  }
+});
+
+init();
+draw();
+document.body.focus();
+</script>
+</body>
+</html>

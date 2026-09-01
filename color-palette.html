@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>색상 팔레트 생성기</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px;min-height:100vh}
+h1{font-size:18px;margin-bottom:12px;color:#c4b5fd}
+.main{display:flex;gap:20px;width:100%;max-width:800px;flex-wrap:wrap;justify-content:center}
+.picker-area{display:flex;flex-direction:column;gap:12px;align-items:center}
+canvas#wheel{cursor:crosshair;border-radius:50%;box-shadow:0 0 20px rgba(124,92,252,0.3)}
+.sliders{display:flex;flex-direction:column;gap:8px;width:220px}
+.slider-row{display:flex;align-items:center;gap:8px}
+.slider-row label{width:14px;font-size:13px;font-weight:700;color:#a5a5c0}
+.slider-row input[type=range]{flex:1;accent-color:#7c5cfc;height:6px}
+.slider-row .val{width:40px;text-align:right;font-size:12px;color:#8888aa;font-variant-numeric:tabular-nums}
+.preview-box{width:220px;height:50px;border-radius:8px;border:2px solid #333;margin-bottom:4px}
+.color-values{display:flex;flex-direction:column;gap:4px;width:220px}
+.cv-row{display:flex;justify-content:space-between;align-items:center;background:#16162a;padding:4px 10px;border-radius:6px;cursor:pointer;transition:background .15s;font-size:12px}
+.cv-row:hover{background:#1e1e3a}
+.cv-row .lbl{color:#7c5cfc;font-weight:600;width:32px}
+.cv-row .v{color:#ccc;font-family:monospace}
+.cv-row .copy-hint{color:#555;font-size:10px}
+.copied-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#7c5cfc;color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.copied-toast.show{opacity:1}
+.right-panel{display:flex;flex-direction:column;gap:12px;flex:1;min-width:260px;max-width:400px}
+.harmony-section{background:#12122a;border-radius:10px;padding:12px;border:1px solid #222}
+.harmony-section h3{font-size:13px;color:#a5a5c0;margin-bottom:8px}
+.harmony-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.harmony-tab{padding:4px 10px;border-radius:14px;border:1px solid #333;background:transparent;color:#888;cursor:pointer;font-size:11px;transition:all .15s}
+.harmony-tab.active{background:#7c5cfc;color:#fff;border-color:#7c5cfc}
+.palette-strip{display:flex;gap:4px;height:48px;border-radius:8px;overflow:hidden}
+.swatch{flex:1;cursor:pointer;position:relative;transition:transform .15s}
+.swatch:hover{transform:scaleY(1.08);z-index:1}
+.swatch .hex{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(255,255,255,0.8);text-shadow:0 1px 3px rgba(0,0,0,0.8);white-space:nowrap}
+.export-btns{display:flex;gap:6px;margin-top:6px}
+.export-btn{padding:4px 12px;border-radius:6px;border:1px solid #333;background:#1a1a30;color:#aaa;cursor:pointer;font-size:11px;transition:all .15s}
+.export-btn:hover{background:#7c5cfc;color:#fff;border-color:#7c5cfc}
+.saved-section{background:#12122a;border-radius:10px;padding:12px;border:1px solid #222}
+.saved-section h3{font-size:13px;color:#a5a5c0;margin-bottom:8px}
+.saved-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto}
+.saved-item{display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px;border-radius:6px;transition:background .15s}
+.saved-item:hover{background:#1e1e3a}
+.saved-colors{display:flex;gap:2px;flex:1}
+.saved-color{width:20px;height:16px;border-radius:3px}
+.saved-del{color:#555;font-size:14px;padding:0 4px;cursor:pointer}
+.saved-del:hover{color:#f66}
+.save-btn{margin-top:6px;padding:5px 14px;border-radius:6px;border:1px solid #7c5cfc;background:transparent;color:#7c5cfc;cursor:pointer;font-size:12px;transition:all .15s;width:100%}
+.save-btn:hover{background:#7c5cfc;color:#fff}
+.empty-msg{color:#555;font-size:12px;text-align:center;padding:8px}
+</style>
+</head>
+<body>
+<h1>색상 팔레트 생성기</h1>
+<div class="copied-toast" id="toast">복사됨!</div>
+<div class="main">
+  <div class="picker-area">
+    <canvas id="wheel" width="180" height="180"></canvas>
+    <div class="preview-box" id="preview"></div>
+    <div class="sliders">
+      <div class="slider-row"><label>H</label><input type="range" id="hSlider" min="0" max="360" value="270"><span class="val" id="hVal">270</span></div>
+      <div class="slider-row"><label>S</label><input type="range" id="sSlider" min="0" max="100" value="70"><span class="val" id="sVal">70%</span></div>
+      <div class="slider-row"><label>L</label><input type="range" id="lSlider" min="0" max="100" value="55"><span class="val" id="lVal">55%</span></div>
+    </div>
+    <div class="color-values">
+      <div class="cv-row" onclick="copyVal('hex')"><span class="lbl">HEX</span><span class="v" id="hexV">#7c5cfc</span><span class="copy-hint">클릭 복사</span></div>
+      <div class="cv-row" onclick="copyVal('rgb')"><span class="lbl">RGB</span><span class="v" id="rgbV">124, 92, 252</span><span class="copy-hint">클릭 복사</span></div>
+      <div class="cv-row" onclick="copyVal('hsl')"><span class="lbl">HSL</span><span class="v" id="hslV">270, 70%, 55%</span><span class="copy-hint">클릭 복사</span></div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div class="harmony-section">
+      <h3>색상 조화</h3>
+      <div class="harmony-tabs">
+        <button class="harmony-tab active" onclick="setHarmony('complementary')">보색</button>
+        <button class="harmony-tab" onclick="setHarmony('analogous')">유사색</button>
+        <button class="harmony-tab" onclick="setHarmony('triadic')">삼원색</button>
+        <button class="harmony-tab" onclick="setHarmony('split')">분할보색</button>
+        <button class="harmony-tab" onclick="setHarmony('mono')">단색</button>
+      </div>
+      <div class="palette-strip" id="paletteStrip"></div>
+      <div class="export-btns">
+        <button class="export-btn" onclick="exportCSS()">CSS 변수</button>
+        <button class="export-btn" onclick="exportJSON()">JSON</button>
+      </div>
+    </div>
+    <div class="saved-section">
+      <h3>저장된 팔레트</h3>
+      <div class="saved-list" id="savedList"></div>
+      <button class="save-btn" onclick="savePalette()">현재 팔레트 저장</button>
+    </div>
+  </div>
+</div>
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '색상 팔레트 생성기',
+    copied: '복사됨!',
+    clickCopy: '클릭 복사',
+    harmony: '색상 조화',
+    complementary: '보색', analogous: '유사색', triadic: '삼원색', split: '분할보색', mono: '단색',
+    cssVars: 'CSS 변수', json: 'JSON',
+    savedPalettes: '저장된 팔레트', saveCurrent: '현재 팔레트 저장',
+    emptyMsg: '저장된 팔레트가 없습니다',
+    cssCopied: 'CSS 변수 복사됨!', jsonCopied: 'JSON 복사됨!',
+    copiedFmt: txt => `${txt} 복사됨!`,
+  },
+  en: {
+    title: 'Color Palette Generator',
+    copied: 'Copied!',
+    clickCopy: 'Click to copy',
+    harmony: 'Color Harmony',
+    complementary: 'Complementary', analogous: 'Analogous', triadic: 'Triadic', split: 'Split-Comp.', mono: 'Monochrome',
+    cssVars: 'CSS Vars', json: 'JSON',
+    savedPalettes: 'Saved Palettes', saveCurrent: 'Save Current Palette',
+    emptyMsg: 'No saved palettes',
+    cssCopied: 'CSS vars copied!', jsonCopied: 'JSON copied!',
+    copiedFmt: txt => `${txt} copied!`,
+  },
+}[LANG];
+const harmonyNames = { complementary: T.complementary, analogous: T.analogous, triadic: T.triadic, split: T.split, mono: T.mono };
+(function initLang() {
+  document.title = T.title;
+  document.querySelector('h1').textContent = T.title;
+  document.getElementById('toast').textContent = T.copied;
+  document.querySelectorAll('.copy-hint').forEach(el => el.textContent = T.clickCopy);
+  document.querySelector('.harmony-section h3').textContent = T.harmony;
+  const tabs = document.querySelectorAll('.harmony-tab');
+  tabs[0].textContent = T.complementary;
+  tabs[1].textContent = T.analogous;
+  tabs[2].textContent = T.triadic;
+  tabs[3].textContent = T.split;
+  tabs[4].textContent = T.mono;
+  const exportBtns = document.querySelectorAll('.export-btn');
+  exportBtns[0].textContent = T.cssVars;
+  exportBtns[1].textContent = T.json;
+  document.querySelector('.saved-section h3').textContent = T.savedPalettes;
+  document.querySelector('.save-btn').textContent = T.saveCurrent;
+})();
+const wheel=document.getElementById('wheel'),ctx=wheel.getContext('2d'),
+  hSlider=document.getElementById('hSlider'),sSlider=document.getElementById('sSlider'),lSlider=document.getElementById('lSlider'),
+  hVal=document.getElementById('hVal'),sVal=document.getElementById('sVal'),lVal=document.getElementById('lVal'),
+  preview=document.getElementById('preview'),hexV=document.getElementById('hexV'),rgbV=document.getElementById('rgbV'),hslV=document.getElementById('hslV'),
+  toast=document.getElementById('toast'),paletteStrip=document.getElementById('paletteStrip'),savedList=document.getElementById('savedList');
+let H=270,S=70,L=55,harmony='complementary',currentPalette=[],saved=(function(){try{return JSON.parse(localStorage.getItem('wiiiv-palettes')||'[]')}catch(e){return[]}})();
+
+function drawWheel(){const r=90,cx=90,cy=90;for(let a=0;a<360;a++){const rad=a*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,rad,rad+Math.PI/180+0.01);ctx.closePath();const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,`hsl(${a},10%,${L}%)`);g.addColorStop(1,`hsl(${a},100%,${L}%)`);ctx.fillStyle=g;ctx.fill()}
+const x=cx+Math.cos(H*Math.PI/180)*(r*S/100),y=cy+Math.sin(H*Math.PI/180)*(r*S/100);
+ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=`hsl(${H},${S}%,${L}%)`;ctx.fill()}
+
+function hslToRgb(h,s,l){s/=100;l/=100;const a=s*Math.min(l,1-l),f=n=>{const k=(n+h/30)%12;return l-a*Math.max(Math.min(k-3,9-k,1),-1)};return[Math.round(f(0)*255),Math.round(f(8)*255),Math.round(f(4)*255)]}
+function rgbToHex(r,g,b){return'#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}
+
+function update(){
+  hVal.textContent=H;sVal.textContent=S+'%';lVal.textContent=L+'%';
+  hSlider.value=H;sSlider.value=S;lSlider.value=L;
+  const[r,g,b]=hslToRgb(H,S,L),hex=rgbToHex(r,g,b);
+  preview.style.background=hex;hexV.textContent=hex;rgbV.textContent=`${r}, ${g}, ${b}`;hslV.textContent=`${H}, ${S}%, ${L}%`;
+  drawWheel();generatePalette()}
+
+function generatePalette(){
+  let colors=[];
+  const base={h:H,s:S,l:L};
+  switch(harmony){
+    case'complementary':colors=[base,{h:(H+180)%360,s:S,l:L},{h:(H+180)%360,s:Math.max(S-20,10),l:Math.min(L+15,90)},{h:H,s:Math.max(S-20,10),l:Math.min(L+20,90)},{h:H,s:Math.min(S+10,100),l:Math.max(L-20,10)}];break;
+    case'analogous':colors=[{h:(H-30+360)%360,s:S,l:L},{h:(H-15+360)%360,s:S,l:L},base,{h:(H+15)%360,s:S,l:L},{h:(H+30)%360,s:S,l:L}];break;
+    case'triadic':colors=[base,{h:(H+120)%360,s:S,l:L},{h:(H+240)%360,s:S,l:L},{h:(H+120)%360,s:Math.max(S-15,10),l:Math.min(L+10,90)},{h:(H+240)%360,s:Math.max(S-15,10),l:Math.min(L+10,90)}];break;
+    case'split':colors=[base,{h:(H+150)%360,s:S,l:L},{h:(H+210)%360,s:S,l:L},{h:(H+150)%360,s:Math.max(S-20,10),l:Math.min(L+15,90)},{h:(H+210)%360,s:Math.max(S-20,10),l:Math.min(L+15,90)}];break;
+    case'mono':colors=[{h:H,s:S,l:Math.max(L-30,5)},{h:H,s:S,l:Math.max(L-15,10)},base,{h:H,s:S,l:Math.min(L+15,90)},{h:H,s:S,l:Math.min(L+30,95)}];break}
+  currentPalette=colors.map(c=>{const[r,g,b]=hslToRgb(c.h,c.s,c.l);return{hex:rgbToHex(r,g,b),h:c.h,s:c.s,l:c.l}});
+  paletteStrip.innerHTML=currentPalette.map(c=>`<div class="swatch" style="background:${c.hex}" onclick="copyText('${c.hex}')"><span class="hex">${c.hex}</span></div>`).join('')}
+
+function setHarmony(h){harmony=h;document.querySelectorAll('.harmony-tab').forEach(t=>t.classList.toggle('active',t.textContent===harmonyNames[h]));generatePalette()}
+
+function copyText(txt){navigator.clipboard.writeText(txt).catch(()=>{});showToast(T.copiedFmt(txt))}
+function copyVal(type){const v={hex:hexV.textContent,rgb:rgbV.textContent,hsl:hslV.textContent}[type];copyText(v)}
+function showToast(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1200)}
+
+function exportCSS(){const css=currentPalette.map((c,i)=>`  --color-${i+1}: ${c.hex};`).join('\n');copyText(`:root {\n${css}\n}`);showToast(T.cssCopied)}
+function exportJSON(){copyText(JSON.stringify(currentPalette.map(c=>c.hex),null,2));showToast(T.jsonCopied)}
+
+function savePalette(){if(saved.length>=10)saved.shift();saved.push(currentPalette.map(c=>c.hex));try{localStorage.setItem('wiiiv-palettes',JSON.stringify(saved))}catch(e){};renderSaved()}
+function renderSaved(){savedList.innerHTML=saved.length?saved.map((p,i)=>`<div class="saved-item" onclick="loadPalette(${i})"><div class="saved-colors">${p.map(c=>`<div class="saved-color" style="background:${c}"></div>`).join('')}</div><span class="saved-del" onclick="event.stopPropagation();deletePalette(${i})">×</span></div>`).join(''):`<div class="empty-msg">${T.emptyMsg}</div>`}
+function deletePalette(i){saved.splice(i,1);try{localStorage.setItem('wiiiv-palettes',JSON.stringify(saved))}catch(e){};renderSaved()}
+function loadPalette(i){const p=saved[i];if(!p||!p[2])return;const hex=p[2],r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const max=Math.max(r,g,b)/255,min=Math.min(r,g,b)/255,d=max-min;L=Math.round((max+min)/2*100);S=d===0?0:Math.round(d/(1-Math.abs(2*L/100-1))*100);
+  if(d===0)H=0;else if(max===r/255)H=Math.round(((g/255-b/255)/d)%6*60);else if(max===g/255)H=Math.round(((b/255-r/255)/d+2)*60);else H=Math.round(((r/255-g/255)/d+4)*60);
+  if(H<0)H+=360;update()}
+
+wheel.addEventListener('click',e=>{const rect=wheel.getBoundingClientRect(),x=e.clientX-rect.left-90,y=e.clientY-rect.top-90,dist=Math.sqrt(x*x+y*y);if(dist>90)return;
+  H=Math.round(Math.atan2(y,x)*180/Math.PI);if(H<0)H+=360;S=Math.round(Math.min(dist/90,1)*100);update()});
+hSlider.addEventListener('input',()=>{H=+hSlider.value;update()});
+sSlider.addEventListener('input',()=>{S=+sSlider.value;update()});
+lSlider.addEventListener('input',()=>{L=+lSlider.value;update()});
+update();renderSaved();
+</script>
+</body>
+</html>

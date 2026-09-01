@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>드럼 머신</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a; color: #fff; font-family: -apple-system, 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+  padding: 12px; user-select: none;
+}
+h1 { font-size: 18px; margin-bottom: 8px; color: #c4b5fd; letter-spacing: 1px; }
+
+.controls {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 10px;
+}
+.controls button {
+  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 6px 14px;
+  border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.15s;
+}
+.controls button:hover { background: #2a2a4a; border-color: #7c5cfc; }
+.controls button.active { background: #7c5cfc; border-color: #7c5cfc; }
+
+.ctrl-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; }
+.ctrl-group input[type="range"] {
+  width: 80px; accent-color: #7c5cfc; height: 4px; cursor: pointer;
+}
+.ctrl-group .val { color: #c4b5fd; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+
+.presets { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px; }
+.presets button {
+  background: #161625; border: 1px solid #2a2a40; color: #999; padding: 4px 10px;
+  border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.15s;
+}
+.presets button:hover { color: #fff; border-color: #7c5cfc; }
+
+.sequencer {
+  display: grid; grid-template-columns: 70px repeat(16, 1fr);
+  gap: 3px; width: 100%; max-width: 800px;
+}
+.channel-label {
+  display: flex; align-items: center; gap: 4px; font-size: 11px; color: #aaa;
+  padding-right: 4px; justify-content: flex-end; height: 36px;
+}
+.channel-label input[type="range"] { width: 36px; accent-color: #7c5cfc; height: 3px; }
+
+.cell {
+  height: 36px; border-radius: 4px; cursor: pointer; transition: all 0.12s;
+  border: 1px solid #222; position: relative;
+}
+.cell.off { background: #161625; }
+.cell.off:hover { background: #1e1e35; }
+.cell.on { background: #7c5cfc; box-shadow: 0 0 8px rgba(124,92,252,0.4); border-color: #9d85ff; }
+.cell.beat4 { border-left: 2px solid #333; }
+.cell.playing { box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+.cell.playing.on { box-shadow: 0 0 16px rgba(124,92,252,0.8); }
+
+.playhead-row {
+  grid-column: 2 / -1; display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px;
+  margin-top: 2px;
+}
+.playhead-indicator {
+  height: 3px; border-radius: 2px; background: #222; transition: background 0.08s;
+}
+.playhead-indicator.active { background: #7c5cfc; box-shadow: 0 0 6px rgba(124,92,252,0.6); }
+
+.info { font-size: 11px; color: #666; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>🥁 드럼 머신</h1>
+
+<div class="controls">
+  <button id="playBtn" onclick="togglePlay()">▶</button>
+  <div class="ctrl-group">
+    <span>BPM</span>
+    <input type="range" id="bpmSlider" min="60" max="200" value="120" oninput="setBpm(this.value)">
+    <span class="val" id="bpmVal">120</span>
+  </div>
+  <div class="ctrl-group">
+    <span id="swingLabel"></span>
+    <input type="range" id="swingSlider" min="0" max="80" value="0" oninput="setSwing(this.value)">
+    <span class="val" id="swingVal">0%</span>
+  </div>
+  <button id="clearBtn" onclick="clearAll()"></button>
+</div>
+
+<div class="presets">
+  <button id="preRock" onclick="loadPreset('rock')"></button>
+  <button id="preDisco" onclick="loadPreset('disco')"></button>
+  <button id="preHiphop" onclick="loadPreset('hiphop')"></button>
+  <button id="preReggae" onclick="loadPreset('reggae')"></button>
+</div>
+
+<div class="sequencer" id="sequencer"></div>
+
+<div class="info" id="infoText"></div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '🥁 드럼 머신',
+    play: '▶ 재생', stop: '⏸ 정지', swing: '스윙', clear: '지우기',
+    kick: '킥', snare: '스네어', hihat: '하이햇', clap: '클랩',
+    rock: '기본 록', disco: '디스코', hiphop: '힙합', reggae: '레게',
+    info: '클릭으로 패턴 편집 · 프리셋으로 빠른 시작'
+  },
+  en: {
+    title: '🥁 Drum Machine',
+    play: '▶ Play', stop: '⏸ Stop', swing: 'Swing', clear: 'Clear',
+    kick: 'Kick', snare: 'Snare', hihat: 'Hi-hat', clap: 'Clap',
+    rock: 'Basic Rock', disco: 'Disco', hiphop: 'Hip Hop', reggae: 'Reggae',
+    info: 'Click to edit patterns · Use presets for quick start'
+  }
+}[LANG];
+
+document.querySelector('h1').textContent=T.title;
+document.title=T.title.replace('🥁 ','');
+
+const CHANNELS = [
+  { name: T.kick, color: '#ff6b6b' },
+  { name: T.snare, color: '#ffd93d' },
+  { name: T.hihat, color: '#6bcb77' },
+  { name: T.clap, color: '#4d96ff' }
+];
+const STEPS = 16;
+
+// i18n DOM
+document.getElementById('playBtn').textContent=T.play;
+document.getElementById('swingLabel').textContent=T.swing;
+document.getElementById('clearBtn').textContent=T.clear;
+document.getElementById('preRock').textContent=T.rock;
+document.getElementById('preDisco').textContent=T.disco;
+document.getElementById('preHiphop').textContent=T.hiphop;
+document.getElementById('preReggae').textContent=T.reggae;
+document.getElementById('infoText').textContent=T.info;
+
+let grid = Array.from({ length: 4 }, () => new Array(STEPS).fill(false));
+let volumes = [0.8, 0.7, 0.5, 0.6];
+let bpm = 120;
+let swing = 0;
+let playing = false;
+let currentStep = -1;
+let nextStepTime = 0;
+let timerID = null;
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playKick(time, vol) {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(150, time);
+  osc.frequency.exponentialRampToValueAtTime(30, time + 0.15);
+  gain.gain.setValueAtTime(vol, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(time); osc.stop(time + 0.3);
+}
+
+function playSnare(time, vol) {
+  const ctx = getAudioCtx();
+  const bufSize = ctx.sampleRate * 0.15;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 3);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(vol * 0.8, time);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+  noise.connect(noiseGain); noiseGain.connect(ctx.destination);
+  noise.start(time);
+
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(180, time);
+  osc.frequency.exponentialRampToValueAtTime(80, time + 0.08);
+  oscGain.gain.setValueAtTime(vol * 0.5, time);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  osc.connect(oscGain); oscGain.connect(ctx.destination);
+  osc.start(time); osc.stop(time + 0.08);
+}
+
+function playHihat(time, vol) {
+  const ctx = getAudioCtx();
+  const bufSize = ctx.sampleRate * 0.06;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 6);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.value = 7000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol * 0.6, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start(time);
+}
+
+function playClap(time, vol) {
+  const ctx = getAudioCtx();
+  for (let j = 0; j < 3; j++) {
+    const t = time + j * 0.01;
+    const bufSize = ctx.sampleRate * 0.04;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 4);
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2000;
+    filter.Q.value = 1.5;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(vol * 0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    noise.start(t);
+  }
+}
+
+const playFns = [playKick, playSnare, playHihat, playClap];
+
+function scheduler() {
+  const ctx = getAudioCtx();
+  while (nextStepTime < ctx.currentTime + 0.1) {
+    currentStep = (currentStep + 1) % STEPS;
+    for (let ch = 0; ch < 4; ch++) {
+      if (grid[ch][currentStep]) {
+        playFns[ch](nextStepTime, volumes[ch]);
+      }
+    }
+    updatePlayhead(currentStep);
+    const beatLen = 60.0 / bpm / 4;
+    const swingOffset = (currentStep % 2 === 1) ? beatLen * (swing / 100) * 0.5 : 0;
+    nextStepTime += beatLen + swingOffset;
+  }
+  timerID = setTimeout(scheduler, 25);
+}
+
+function togglePlay() {
+  if (playing) {
+    playing = false;
+    clearTimeout(timerID);
+    currentStep = -1;
+    updatePlayhead(-1);
+    document.getElementById('playBtn').textContent = T.play;
+    document.getElementById('playBtn').classList.remove('active');
+  } else {
+    playing = true;
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    currentStep = -1;
+    nextStepTime = ctx.currentTime;
+    scheduler();
+    document.getElementById('playBtn').textContent = T.stop;
+    document.getElementById('playBtn').classList.add('active');
+  }
+}
+
+function setBpm(v) { bpm = parseInt(v); document.getElementById('bpmVal').textContent = v; }
+function setSwing(v) { swing = parseInt(v); document.getElementById('swingVal').textContent = v + '%'; }
+
+function clearAll() {
+  grid = Array.from({ length: 4 }, () => new Array(STEPS).fill(false));
+  renderGrid();
+}
+
+const PRESETS = {
+  rock: [[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+  disco: [[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,1]],
+  hiphop: [[1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0]],
+  reggae: [[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],[0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0]]
+};
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  for (let ch = 0; ch < 4; ch++) {
+    for (let s = 0; s < STEPS; s++) grid[ch][s] = !!p[ch][s];
+  }
+  renderGrid();
+}
+
+function renderGrid() {
+  const seq = document.getElementById('sequencer');
+  seq.innerHTML = '';
+
+  for (let ch = 0; ch < 4; ch++) {
+    const label = document.createElement('div');
+    label.className = 'channel-label';
+    label.innerHTML = `<input type="range" min="0" max="100" value="${volumes[ch]*100}" oninput="setVol(${ch},this.value)"><span>${CHANNELS[ch].name}</span>`;
+    seq.appendChild(label);
+
+    for (let s = 0; s < STEPS; s++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell ' + (grid[ch][s] ? 'on' : 'off') + (s % 4 === 0 ? ' beat4' : '');
+      cell.dataset.ch = ch;
+      cell.dataset.step = s;
+      cell.id = `cell-${ch}-${s}`;
+      cell.addEventListener('click', () => toggleCell(ch, s));
+      seq.appendChild(cell);
+    }
+  }
+
+  const spacer = document.createElement('div');
+  seq.appendChild(spacer);
+  const phRow = document.createElement('div');
+  phRow.className = 'playhead-row';
+  for (let s = 0; s < STEPS; s++) {
+    const ind = document.createElement('div');
+    ind.className = 'playhead-indicator';
+    ind.id = `ph-${s}`;
+    phRow.appendChild(ind);
+  }
+  seq.appendChild(phRow);
+}
+
+function toggleCell(ch, step) {
+  grid[ch][step] = !grid[ch][step];
+  const cell = document.getElementById(`cell-${ch}-${step}`);
+  cell.className = 'cell ' + (grid[ch][step] ? 'on' : 'off') + (step % 4 === 0 ? ' beat4' : '');
+}
+
+function setVol(ch, v) { volumes[ch] = parseInt(v) / 100; }
+
+function updatePlayhead(step) {
+  for (let s = 0; s < STEPS; s++) {
+    const ph = document.getElementById(`ph-${s}`);
+    if (ph) ph.className = 'playhead-indicator' + (s === step ? ' active' : '');
+    for (let ch = 0; ch < 4; ch++) {
+      const cell = document.getElementById(`cell-${ch}-${s}`);
+      if (cell) {
+        const isOn = grid[ch][s];
+        cell.className = 'cell ' + (isOn ? 'on' : 'off') + (s % 4 === 0 ? ' beat4' : '') + (s === step ? ' playing' : '');
+      }
+    }
+  }
+}
+
+renderGrid();
+loadPreset('rock');
+</script>
+</body>
+</html>

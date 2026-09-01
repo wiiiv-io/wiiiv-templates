@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "baseUrl": "https://wiiiv-io.github.io/wiiiv-templates",
+  "templates": [
+    { "id": "tetris", "label": { "ko": "테트리스", "en": "Tetris" }, "category": "game" },
+    { "id": "snake", "label": { "ko": "뱀 게임", "en": "Snake Game" }, "category": "game" },
+    { "id": "2048", "label": { "ko": "2048", "en": "2048" }, "category": "game" },
+    { "id": "minesweeper", "label": { "ko": "지뢰찾기", "en": "Minesweeper" }, "category": "game" },
+    { "id": "breakout", "label": { "ko": "벽돌깨기", "en": "Breakout" }, "category": "game" },
+    { "id": "flappy-bird", "label": { "ko": "플래피 버드", "en": "Flappy Bird" }, "category": "game" },
+    { "id": "gomoku", "label": { "ko": "오목", "en": "Gomoku" }, "category": "game" },
+    { "id": "galaga", "label": { "ko": "갤러그", "en": "Galaga" }, "category": "game" },
+    { "id": "memory", "label": { "ko": "메모리 카드 게임", "en": "Memory Card Game" }, "category": "game" },
+    { "id": "calculator", "label": { "ko": "계산기", "en": "Calculator" }, "category": "tool" },
+    { "id": "pomodoro", "label": { "ko": "포모도로 타이머", "en": "Pomodoro Timer" }, "category": "tool" },
+    { "id": "paint", "label": { "ko": "그림판", "en": "Paint" }, "category": "tool" },
+    { "id": "typing-test", "label": { "ko": "타이핑 테스트", "en": "Typing Test" }, "category": "tool" },
+    { "id": "analog-clock", "label": { "ko": "아날로그 시계", "en": "Analog Clock" }, "category": "tool" },
+    { "id": "color-palette", "label": { "ko": "색상 팔레트", "en": "Color Palette" }, "category": "tool" },
+    { "id": "piano", "label": { "ko": "피아노", "en": "Piano" }, "category": "music" },
+    { "id": "drum-machine", "label": { "ko": "드럼 머신", "en": "Drum Machine" }, "category": "music" },
+    { "id": "mandelbrot", "label": { "ko": "만델브로 프랙탈", "en": "Mandelbrot Fractal" }, "category": "visualization" },
+    { "id": "sorting-viz", "label": { "ko": "정렬 시각화", "en": "Sorting Visualization" }, "category": "visualization" },
+    { "id": "physics", "label": { "ko": "물리 시뮬레이션", "en": "Physics Simulation" }, "category": "visualization" },
+    { "id": "conway", "label": { "ko": "생명 게임", "en": "Conway's Game of Life" }, "category": "visualization" }
+  ]
+}

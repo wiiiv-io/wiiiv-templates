@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title id="pageTitle">생명 게임</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a; color: #fff; font-family: -apple-system, 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;
+}
+.toolbar {
+  display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: #12121f;
+  border-bottom: 1px solid #222; flex-wrap: wrap; flex-shrink: 0;
+}
+.toolbar button {
+  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 4px 12px;
+  border-radius: 5px; cursor: pointer; font-size: 12px; transition: all 0.15s;
+}
+.toolbar button:hover { border-color: #7c5cfc; background: #2a2a4a; }
+.toolbar button.active { background: #7c5cfc; border-color: #7c5cfc; }
+.group { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #aaa; }
+.group input[type="range"] { width: 80px; accent-color: #7c5cfc; height: 3px; cursor: pointer; }
+.group .val { color: #c4b5fd; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.group select {
+  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 3px 6px;
+  border-radius: 4px; font-size: 11px; cursor: pointer;
+}
+.stats {
+  font-size: 11px; color: #666; margin-left: auto; font-variant-numeric: tabular-nums;
+  display: flex; gap: 10px;
+}
+.stats span { color: #c4b5fd; }
+canvas { flex: 1; display: block; cursor: crosshair; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button id="playBtn" onclick="togglePlay()">▶ 시작</button>
+  <button id="btnStep" onclick="step()">⏭ 한 단계</button>
+  <div class="group">
+    <span id="lblSpeed">속도</span>
+    <input type="range" id="speedSlider" min="1" max="60" value="10" oninput="setSpeed(this.value)">
+    <span class="val" id="speedVal">10</span>
+  </div>
+  <div class="group">
+    <select id="presetSel" onchange="loadPreset(this.value)">
+      <option value="" id="optPreset">프리셋 선택</option>
+      <option value="glider" id="optGlider">글라이더</option>
+      <option value="gun" id="optGun">글라이더 건</option>
+      <option value="pulsar" id="optPulsar">펄서</option>
+      <option value="lwss" id="optLwss">우주선</option>
+      <option value="random" id="optRandom">무작위</option>
+    </select>
+  </div>
+  <button id="btnClear" onclick="clearGrid()">지우기</button>
+  <div class="stats" id="statsText"></div>
+</div>
+<canvas id="canvas"></canvas>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '생명 게임', play: '▶ 시작', pause: '⏸ 정지', step: '⏭ 한 단계', speed: '속도', preset: '프리셋 선택', glider: '글라이더', gun: '글라이더 건', pulsar: '펄서', lwss: '우주선', random: '무작위', clear: '지우기', stats: (g, p) => `세대: ${g} · 생존: ${p}` },
+  en: { title: "Conway's Game of Life", play: '▶ Play', pause: '⏸ Stop', step: '⏭ Step', speed: 'Speed', preset: 'Select Preset', glider: 'Glider', gun: 'Glider Gun', pulsar: 'Pulsar', lwss: 'Spaceship', random: 'Random', clear: 'Clear', stats: (g, p) => `Gen: ${g} · Pop: ${p}` }
+}[LANG] || {
+  title: "Conway's Game of Life", play: '▶ Play', pause: '⏸ Stop', step: '⏭ Step', speed: 'Speed', preset: 'Select Preset', glider: 'Glider', gun: 'Glider Gun', pulsar: 'Pulsar', lwss: 'Spaceship', random: 'Random', clear: 'Clear', stats: (g, p) => `Gen: ${g} · Pop: ${p}`
+};
+document.getElementById('pageTitle').textContent = T.title;
+document.getElementById('playBtn').textContent = T.play;
+document.getElementById('btnStep').textContent = T.step;
+document.getElementById('lblSpeed').textContent = T.speed;
+document.getElementById('optPreset').textContent = T.preset;
+document.getElementById('optGlider').textContent = T.glider;
+document.getElementById('optGun').textContent = T.gun;
+document.getElementById('optPulsar').textContent = T.pulsar;
+document.getElementById('optLwss').textContent = T.lwss;
+document.getElementById('optRandom').textContent = T.random;
+document.getElementById('btnClear').textContent = T.clear;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, cols, rows, cellSize;
+let grid, nextGrid;
+let playing = false;
+let generation = 0;
+let speed = 10;
+let lastUpdate = 0;
+let painting = false;
+let paintValue = true;
+
+const CELL_TARGET = 20;
+
+function initGrid() {
+  const wrap = canvas.parentElement || document.body;
+  W = wrap.clientWidth || window.innerWidth;
+  H = (wrap.clientHeight || window.innerHeight) - 40;
+  canvas.width = W;
+  canvas.height = H;
+
+  cellSize = Math.max(8, Math.min(30, Math.floor(Math.min(W, H) / 30)));
+  cols = Math.floor(W / cellSize);
+  rows = Math.floor(H / cellSize);
+
+  grid = Array.from({ length: rows }, () => new Uint8Array(cols));
+  nextGrid = Array.from({ length: rows }, () => new Uint8Array(cols));
+  generation = 0;
+  updateStats();
+}
+
+function clearGrid() {
+  for (let r = 0; r < rows; r++) grid[r].fill(0);
+  generation = 0;
+  updateStats();
+  draw();
+}
+
+function step() {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      let neighbors = 0;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = (r + dr + rows) % rows;
+          const nc = (c + dc + cols) % cols;
+          neighbors += grid[nr][nc];
+        }
+      }
+      if (grid[r][c]) {
+        nextGrid[r][c] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
+      } else {
+        nextGrid[r][c] = (neighbors === 3) ? 1 : 0;
+      }
+    }
+  }
+  const tmp = grid;
+  grid = nextGrid;
+  nextGrid = tmp;
+  generation++;
+  updateStats();
+  draw();
+}
+
+function updateStats() {
+  let pop = 0;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) pop += grid[r][c];
+  document.getElementById('statsText').textContent = T.stats(generation, pop);
+}
+
+function draw() {
+  ctx.fillStyle = '#0d0d1a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 0.5;
+  for (let c = 0; c <= cols; c++) {
+    ctx.beginPath(); ctx.moveTo(c * cellSize, 0); ctx.lineTo(c * cellSize, rows * cellSize); ctx.stroke();
+  }
+  for (let r = 0; r <= rows; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * cellSize); ctx.lineTo(cols * cellSize, r * cellSize); ctx.stroke();
+  }
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (grid[r][c]) {
+        const x = c * cellSize;
+        const y = r * cellSize;
+        ctx.fillStyle = '#7c5cfc';
+        ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+        ctx.fillStyle = 'rgba(124,92,252,0.15)';
+        ctx.fillRect(x - 1, y - 1, cellSize + 2, cellSize + 2);
+      }
+    }
+  }
+}
+
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('playBtn');
+  if (playing) {
+    btn.textContent = T.pause;
+    btn.classList.add('active');
+    lastUpdate = performance.now();
+    requestAnimationFrame(loop);
+  } else {
+    btn.textContent = T.play;
+    btn.classList.remove('active');
+  }
+}
+
+function setSpeed(v) {
+  speed = parseInt(v);
+  document.getElementById('speedVal').textContent = v;
+}
+
+function loop(now) {
+  if (!playing) return;
+  const interval = 1000 / speed;
+  if (now - lastUpdate >= interval) {
+    step();
+    lastUpdate = now;
+  }
+  requestAnimationFrame(loop);
+}
+
+function getCellAt(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  return { r: Math.floor(y / cellSize), c: Math.floor(x / cellSize) };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const { r, c } = getCellAt(e);
+  if (r >= 0 && r < rows && c >= 0 && c < cols) {
+    paintValue = !grid[r][c];
+    grid[r][c] = paintValue ? 1 : 0;
+    painting = true;
+    updateStats();
+    draw();
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!painting) return;
+  const { r, c } = getCellAt(e);
+  if (r >= 0 && r < rows && c >= 0 && c < cols) {
+    grid[r][c] = paintValue ? 1 : 0;
+    updateStats();
+    draw();
+  }
+});
+
+window.addEventListener('mouseup', () => { painting = false; });
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const { r, c } = getCellAt(t);
+  if (r >= 0 && r < rows && c >= 0 && c < cols) {
+    paintValue = !grid[r][c];
+    grid[r][c] = paintValue ? 1 : 0;
+    painting = true;
+    updateStats(); draw();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (!painting) return;
+  const t = e.touches[0];
+  const { r, c } = getCellAt(t);
+  if (r >= 0 && r < rows && c >= 0 && c < cols) {
+    grid[r][c] = paintValue ? 1 : 0;
+    updateStats(); draw();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => { painting = false; });
+
+function placePattern(pattern) {
+  const pr = pattern.length;
+  const pc = pattern[0].length;
+  const startR = Math.floor(rows / 2 - pr / 2);
+  const startC = Math.floor(cols / 2 - pc / 2);
+  for (let r = 0; r < pr; r++) {
+    for (let c = 0; c < pc; c++) {
+      const gr = startR + r;
+      const gc = startC + c;
+      if (gr >= 0 && gr < rows && gc >= 0 && gc < cols) {
+        grid[gr][gc] = pattern[r][c];
+      }
+    }
+  }
+}
+
+const PRESETS = {
+  glider: [
+    [0,1,0],
+    [0,0,1],
+    [1,1,1]
+  ],
+  gun: [
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+    [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
+    [1,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,1,0,0,0,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  ],
+  pulsar: [
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [1,0,0,0,0,1,0,1,0,0,0,0,1],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,1,1,1,0,0,0,1,1,1,0,0]
+  ],
+  lwss: [
+    [0,1,0,0,1],
+    [1,0,0,0,0],
+    [1,0,0,0,1],
+    [1,1,1,1,0]
+  ]
+};
+
+function loadPreset(name) {
+  if (!name) return;
+  clearGrid();
+  if (name === 'random') {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        grid[r][c] = Math.random() < 0.3 ? 1 : 0;
+      }
+    }
+  } else if (PRESETS[name]) {
+    placePattern(PRESETS[name]);
+  }
+  generation = 0;
+  updateStats();
+  draw();
+  document.getElementById('presetSel').value = '';
+}
+
+window.addEventListener('resize', () => {
+  const oldGrid = grid;
+  const oldRows = rows;
+  const oldCols = cols;
+  initGrid();
+  for (let r = 0; r < Math.min(oldRows, rows); r++) {
+    for (let c = 0; c < Math.min(oldCols, cols); c++) {
+      grid[r][c] = oldGrid[r][c];
+    }
+  }
+  draw();
+});
+
+initGrid();
+draw();
+</script>
+</body>
+</html>

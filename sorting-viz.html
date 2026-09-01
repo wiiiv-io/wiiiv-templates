@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>정렬 알고리즘 시각화</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px;min-height:100vh}
+h1{font-size:16px;margin-bottom:8px;color:#c4b5fd}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px;align-items:center}
+.ctrl-group{display:flex;align-items:center;gap:4px}
+.ctrl-group label{font-size:11px;color:#888}
+select,button{background:#16162a;color:#ccc;border:1px solid #333;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;outline:none;transition:all .15s}
+select:focus,button:hover{border-color:#7c5cfc}
+button.primary{background:#7c5cfc;color:#fff;border-color:#7c5cfc}
+button.primary:hover{background:#6a4ce0}
+button.active{background:#7c5cfc;color:#fff;border-color:#7c5cfc}
+input[type=range]{accent-color:#7c5cfc;width:80px}
+.stats{display:flex;gap:16px;margin-bottom:8px;font-size:12px}
+.stat{color:#888}.stat span{color:#c4b5fd;font-weight:600;font-variant-numeric:tabular-nums}
+.viz{flex:1;width:100%;max-width:800px;display:flex;align-items:flex-end;gap:1px;min-height:200px;background:#0a0a18;border-radius:8px;padding:4px;border:1px solid #1a1a30}
+.bar{transition:height 0.05s;border-radius:2px 2px 0 0;min-width:1px}
+.desc{margin-top:8px;font-size:12px;color:#666;text-align:center;max-width:600px;line-height:1.5}
+.legend{display:flex;gap:12px;margin-top:6px;font-size:11px}
+.legend-item{display:flex;align-items:center;gap:4px}
+.legend-dot{width:10px;height:10px;border-radius:2px}
+</style>
+</head>
+<body>
+<h1>정렬 알고리즘 시각화</h1>
+<div class="controls">
+  <div class="ctrl-group">
+    <label>알고리즘:</label>
+    <select id="algo">
+      <option value="bubble">버블 정렬</option>
+      <option value="selection">선택 정렬</option>
+      <option value="insertion">삽입 정렬</option>
+      <option value="quick" selected>퀵 정렬</option>
+      <option value="merge">병합 정렬</option>
+      <option value="heap">힙 정렬</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <label>크기:</label>
+    <input type="range" id="sizeSlider" min="10" max="200" value="60">
+    <span id="sizeVal" style="font-size:11px;color:#888;width:24px">60</span>
+  </div>
+  <div class="ctrl-group">
+    <label>속도:</label>
+    <input type="range" id="speedSlider" min="1" max="100" value="50">
+  </div>
+  <button class="primary" id="playBtn" onclick="togglePlay()">▶</button>
+  <button id="resetBtn" onclick="resetArray()"></button>
+</div>
+<div class="stats">
+  <div class="stat">비교: <span id="compCount">0</span></div>
+  <div class="stat">교환: <span id="swapCount">0</span></div>
+  <div class="stat">단계: <span id="stepCount">0</span></div>
+</div>
+<div class="viz" id="viz"></div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#7c5cfc"></div>기본</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>비교 중</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>교환</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>정렬 완료</div>
+</div>
+<div class="desc" id="desc"></div>
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '정렬 알고리즘 시각화',
+    algoLabel: '알고리즘:',
+    bubble: '버블 정렬', selection: '선택 정렬', insertion: '삽입 정렬',
+    quick: '퀵 정렬', merge: '병합 정렬', heap: '힙 정렬',
+    sizeLabel: '크기:', speedLabel: '속도:',
+    start: '시작', resume: '재개', pause: '일시정지', shuffle: '셔플',
+    comparisons: '비교:', swapsLabel: '교환:', stepsLabel: '단계:',
+    legendDefault: '기본', legendComparing: '비교 중', legendSwap: '교환', legendSorted: '정렬 완료',
+    descBubble: '인접한 두 원소를 비교해 정렬합니다. 단순하지만 O(n²)으로 느립니다.',
+    descSelection: '가장 작은 원소를 찾아 앞으로 이동시킵니다. O(n²).',
+    descInsertion: '각 원소를 올바른 위치에 삽입합니다. 거의 정렬된 배열에 효율적. O(n²).',
+    descQuick: '피벗을 기준으로 분할-정복합니다. 평균 O(n log n)으로 빠릅니다.',
+    descMerge: '배열을 반으로 나눠 정렬 후 합칩니다. 안정적 O(n log n).',
+    descHeap: '최대 힙을 구성 후 하나씩 추출합니다. O(n log n).'
+  },
+  en: {
+    title: 'Sorting Algorithm Visualization',
+    algoLabel: 'Algorithm:',
+    bubble: 'Bubble Sort', selection: 'Selection Sort', insertion: 'Insertion Sort',
+    quick: 'Quick Sort', merge: 'Merge Sort', heap: 'Heap Sort',
+    sizeLabel: 'Size:', speedLabel: 'Speed:',
+    start: 'Start', resume: 'Resume', pause: 'Pause', shuffle: 'Shuffle',
+    comparisons: 'Comparisons:', swapsLabel: 'Swaps:', stepsLabel: 'Steps:',
+    legendDefault: 'Default', legendComparing: 'Comparing', legendSwap: 'Swap', legendSorted: 'Sorted',
+    descBubble: 'Compares adjacent elements and swaps them. Simple but O(n²) slow.',
+    descSelection: 'Finds the minimum element and moves it to the front. O(n²).',
+    descInsertion: 'Inserts each element into its correct position. Efficient for nearly sorted arrays. O(n²).',
+    descQuick: 'Divides and conquers around a pivot. Average O(n log n), fast.',
+    descMerge: 'Splits the array in half, sorts, then merges. Stable O(n log n).',
+    descHeap: 'Builds a max heap, then extracts one by one. O(n log n).'
+  }
+}[LANG];
+const descs={bubble:T.descBubble,selection:T.descSelection,insertion:T.descInsertion,quick:T.descQuick,merge:T.descMerge,heap:T.descHeap};
+
+const viz=document.getElementById('viz'),algoSel=document.getElementById('algo'),sizeSlider=document.getElementById('sizeSlider'),
+  speedSlider=document.getElementById('speedSlider'),sizeVal=document.getElementById('sizeVal'),playBtn=document.getElementById('playBtn'),
+  compEl=document.getElementById('compCount'),swapEl=document.getElementById('swapCount'),stepEl=document.getElementById('stepCount'),descEl=document.getElementById('desc');
+let arr=[],bars=[],running=false,paused=false,comps=0,swaps=0,steps=0,sorted=new Set(),comparing=[],swapping=[];
+
+// Apply i18n to DOM
+document.querySelector('h1').textContent=T.title;
+document.querySelector('title').textContent=T.title;
+document.querySelectorAll('.ctrl-group label')[0].textContent=T.algoLabel;
+document.querySelectorAll('.ctrl-group label')[1].textContent=T.sizeLabel;
+document.querySelectorAll('.ctrl-group label')[2].textContent=T.speedLabel;
+algoSel.options[0].textContent=T.bubble;
+algoSel.options[1].textContent=T.selection;
+algoSel.options[2].textContent=T.insertion;
+algoSel.options[3].textContent=T.quick;
+algoSel.options[4].textContent=T.merge;
+algoSel.options[5].textContent=T.heap;
+playBtn.textContent='▶ '+T.start;
+document.getElementById('resetBtn').textContent=T.shuffle;
+document.querySelectorAll('.stat')[0].firstChild.textContent=T.comparisons+' ';
+document.querySelectorAll('.stat')[1].firstChild.textContent=T.swapsLabel+' ';
+document.querySelectorAll('.stat')[2].firstChild.textContent=T.stepsLabel+' ';
+document.querySelectorAll('.legend-item')[0].lastChild.textContent=T.legendDefault;
+document.querySelectorAll('.legend-item')[1].lastChild.textContent=T.legendComparing;
+document.querySelectorAll('.legend-item')[2].lastChild.textContent=T.legendSwap;
+document.querySelectorAll('.legend-item')[3].lastChild.textContent=T.legendSorted;
+
+function resetArray(){
+  running=false;paused=false;playBtn.textContent='▶ '+T.start;
+  const n=+sizeSlider.value;arr=[];sorted=new Set();comparing=[];swapping=[];
+  for(let i=1;i<=n;i++)arr.push(i);
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+  comps=0;swaps=0;steps=0;updateStats();renderBars();
+  descEl.textContent=descs[algoSel.value]}
+
+function renderBars(){
+  const n=arr.length,maxVal=Math.max(...arr),w=viz.clientWidth;
+  viz.innerHTML='';bars=[];
+  const barW=Math.max(1,(w-n)/n);
+  for(let i=0;i<n;i++){
+    const bar=document.createElement('div');bar.className='bar';
+    const h=Math.max(2,(arr[i]/maxVal)*92)+'%';bar.style.height=h;bar.style.flex='1';
+    bar.style.background=sorted.has(i)?'#22c55e':comparing.includes(i)?'#fbbf24':swapping.includes(i)?'#ef4444':'#7c5cfc';
+    viz.appendChild(bar);bars.push(bar)}}
+
+function updateBars(){
+  const maxVal=Math.max(...arr);
+  for(let i=0;i<arr.length;i++){
+    const h=Math.max(2,(arr[i]/maxVal)*92)+'%';bars[i].style.height=h;
+    bars[i].style.background=sorted.has(i)?'#22c55e':comparing.includes(i)?'#fbbf24':swapping.includes(i)?'#ef4444':'#7c5cfc'}}
+
+function updateStats(){compEl.textContent=comps;swapEl.textContent=swaps;stepEl.textContent=steps}
+function getDelay(){return Math.max(1,101-speedSlider.value)}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+async function waitIfPaused(){while(paused&&running)await sleep(50)}
+
+async function togglePlay(){
+  if(running&&!paused){paused=true;playBtn.textContent='▶ '+T.resume;return}
+  if(running&&paused){paused=false;playBtn.textContent='⏸ '+T.pause;return}
+  running=true;paused=false;playBtn.textContent='⏸ '+T.pause;
+  sorted=new Set();comparing=[];swapping=[];
+  const algo=algoSel.value;comps=0;swaps=0;steps=0;updateStats();
+  switch(algo){
+    case'bubble':await bubbleSort();break;case'selection':await selectionSort();break;
+    case'insertion':await insertionSort();break;case'quick':await quickSort(0,arr.length-1);break;
+    case'merge':await mergeSort(0,arr.length-1);break;case'heap':await heapSort();break}
+  if(running){for(let i=0;i<arr.length;i++){sorted.add(i);updateBars();await sleep(Math.max(1,getDelay()/3))}}
+  running=false;paused=false;playBtn.textContent='▶ '+T.start}
+
+async function bubbleSort(){
+  const n=arr.length;
+  for(let i=0;i<n-1&&running;i++){
+    for(let j=0;j<n-i-1&&running;j++){
+      await waitIfPaused();comparing=[j,j+1];comps++;steps++;updateBars();updateStats();await sleep(getDelay());
+      if(arr[j]>arr[j+1]){swapping=[j,j+1];[arr[j],arr[j+1]]=[arr[j+1],arr[j]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[]}
+      comparing=[]}
+    sorted.add(n-1-i)}
+  sorted.add(0)}
+
+async function selectionSort(){
+  const n=arr.length;
+  for(let i=0;i<n-1&&running;i++){
+    let min=i;
+    for(let j=i+1;j<n&&running;j++){
+      await waitIfPaused();comparing=[min,j];comps++;steps++;updateBars();updateStats();await sleep(getDelay());
+      if(arr[j]<arr[min])min=j;comparing=[]}
+    if(min!==i){swapping=[i,min];[arr[i],arr[min]]=[arr[min],arr[i]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[]}
+    sorted.add(i)}
+  sorted.add(arr.length-1)}
+
+async function insertionSort(){
+  for(let i=1;i<arr.length&&running;i++){
+    let j=i;
+    while(j>0&&running){
+      await waitIfPaused();comparing=[j-1,j];comps++;steps++;updateBars();updateStats();await sleep(getDelay());
+      if(arr[j-1]>arr[j]){swapping=[j-1,j];[arr[j-1],arr[j]]=[arr[j],arr[j-1]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[];j--}
+      else{comparing=[];break}}
+    comparing=[]}}
+
+async function quickSort(lo,hi){
+  if(lo>=hi||!running)return;
+  const pivot=arr[hi];let i=lo;
+  for(let j=lo;j<hi&&running;j++){
+    await waitIfPaused();comparing=[j,hi];comps++;steps++;updateBars();updateStats();await sleep(getDelay());
+    if(arr[j]<pivot){swapping=[i,j];[arr[i],arr[j]]=[arr[j],arr[i]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[];i++}
+    comparing=[]}
+  swapping=[i,hi];[arr[i],arr[hi]]=[arr[hi],arr[i]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[];
+  sorted.add(i);
+  await quickSort(lo,i-1);await quickSort(i+1,hi)}
+
+async function mergeSort(lo,hi){
+  if(lo>=hi||!running)return;
+  const mid=Math.floor((lo+hi)/2);
+  await mergeSort(lo,mid);await mergeSort(mid+1,hi);
+  const tmp=[];let i=lo,j=mid+1;
+  while(i<=mid&&j<=hi&&running){
+    await waitIfPaused();comparing=[i,j];comps++;steps++;updateBars();updateStats();await sleep(getDelay());
+    if(arr[i]<=arr[j])tmp.push(arr[i++]);else{tmp.push(arr[j++]);swaps++}comparing=[]}
+  while(i<=mid)tmp.push(arr[i++]);while(j<=hi)tmp.push(arr[j++]);
+  for(let k=0;k<tmp.length&&running;k++){arr[lo+k]=tmp[k];swapping=[lo+k];updateBars();updateStats();await sleep(getDelay()/2);swapping=[]}}
+
+async function heapSort(){
+  const n=arr.length;
+  async function heapify(size,root){
+    let largest=root,l=2*root+1,r=2*root+2;
+    if(l<size){comparing=[l,largest];comps++;steps++;updateBars();updateStats();await sleep(getDelay());comparing=[];if(arr[l]>arr[largest])largest=l}
+    if(r<size){comparing=[r,largest];comps++;steps++;updateBars();updateStats();await sleep(getDelay());comparing=[];if(arr[r]>arr[largest])largest=r}
+    if(largest!==root){await waitIfPaused();swapping=[root,largest];[arr[root],arr[largest]]=[arr[largest],arr[root]];swaps++;updateBars();updateStats();await sleep(getDelay());swapping=[];await heapify(size,largest)}}
+  for(let i=Math.floor(n/2)-1;i>=0&&running;i--)await heapify(n,i);
+  for(let i=n-1;i>0&&running;i--){swapping=[0,i];[arr[0],arr[i]]=[arr[i],arr[0]];swaps++;sorted.add(i);updateBars();updateStats();await sleep(getDelay());swapping=[];await heapify(i,0)}
+  sorted.add(0)}
+
+sizeSlider.addEventListener('input',()=>{sizeVal.textContent=sizeSlider.value;if(!running)resetArray()});
+algoSel.addEventListener('change',()=>{descEl.textContent=descs[algoSel.value];if(!running)resetArray()});
+resetArray();
+</script>
+</body>
+</html>

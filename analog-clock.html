@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>아날로그 시계</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0d1a;color:#fff;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px}
+canvas{filter:drop-shadow(0 0 30px rgba(124,92,252,0.25))}
+.digital{font-size:32px;font-weight:300;letter-spacing:4px;font-variant-numeric:tabular-nums;color:#e0d8ff}
+.date{font-size:14px;color:#7c5cfc;letter-spacing:2px}
+.tz-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.tz-row label{font-size:12px;color:#666}
+select{background:#16162a;color:#aaa;border:1px solid #333;border-radius:6px;padding:4px 8px;font-size:12px;outline:none;cursor:pointer}
+select:focus{border-color:#7c5cfc}
+</style>
+</head>
+<body>
+<canvas id="clock" width="300" height="300"></canvas>
+<div class="digital" id="digital">00:00:00</div>
+<div class="date" id="dateDisp">월요일, 1월 1일</div>
+<div class="tz-row">
+  <label>시간대:</label>
+  <select id="tz">
+    <option value="local">로컬 시간</option>
+    <option value="Asia/Seoul">서울 (KST)</option>
+    <option value="Asia/Tokyo">도쿄 (JST)</option>
+    <option value="America/New_York">뉴욕 (EST)</option>
+    <option value="America/Los_Angeles">로스앤젤레스 (PST)</option>
+    <option value="Europe/London">런던 (GMT)</option>
+    <option value="Europe/Paris">파리 (CET)</option>
+    <option value="Australia/Sydney">시드니 (AEST)</option>
+  </select>
+</div>
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '아날로그 시계',
+    timezone: '시간대:',
+    local: '로컬 시간',
+    seoul: '서울 (KST)', tokyo: '도쿄 (JST)',
+    newYork: '뉴욕 (EST)', losAngeles: '로스앤젤레스 (PST)',
+    london: '런던 (GMT)', paris: '파리 (CET)', sydney: '시드니 (AEST)',
+    days: ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'],
+    months: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+    dateFmt: (day, month, date) => `${day}, ${month} ${date}일`,
+  },
+  en: {
+    title: 'Analog Clock',
+    timezone: 'Timezone:',
+    local: 'Local Time',
+    seoul: 'Seoul (KST)', tokyo: 'Tokyo (JST)',
+    newYork: 'New York (EST)', losAngeles: 'Los Angeles (PST)',
+    london: 'London (GMT)', paris: 'Paris (CET)', sydney: 'Sydney (AEST)',
+    days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    months: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+    dateFmt: (day, month, date) => `${day}, ${month} ${date}`,
+  },
+}[LANG];
+(function initLang() {
+  document.title = T.title;
+  document.querySelector('.tz-row label').textContent = T.timezone;
+  const opts = document.querySelectorAll('#tz option');
+  opts[0].textContent = T.local;
+  opts[1].textContent = T.seoul;
+  opts[2].textContent = T.tokyo;
+  opts[3].textContent = T.newYork;
+  opts[4].textContent = T.losAngeles;
+  opts[5].textContent = T.london;
+  opts[6].textContent = T.paris;
+  opts[7].textContent = T.sydney;
+})();
+const canvas=document.getElementById('clock'),ctx=canvas.getContext('2d'),
+  digitalEl=document.getElementById('digital'),dateEl=document.getElementById('dateDisp'),tzSel=document.getElementById('tz');
+const CX=150,CY=150,R=130;
+const days=T.days;
+const months=T.months;
+
+function getTime(){
+  const tz=tzSel.value;
+  if(tz==='local')return new Date();
+  const s=new Date().toLocaleString('en-US',{timeZone:tz});return new Date(s)}
+
+function drawFace(){
+  ctx.save();
+  const g=ctx.createRadialGradient(CX,CY,R*0.85,CX,CY,R);
+  g.addColorStop(0,'#12122a');g.addColorStop(1,'#1a1a35');
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='#7c5cfc';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,CY,R+4,0,Math.PI*2);ctx.strokeStyle='rgba(124,92,252,0.15)';ctx.lineWidth=8;ctx.stroke();
+  for(let i=0;i<60;i++){
+    const a=(i*6-90)*Math.PI/180,isHour=i%5===0;
+    const inner=isHour?R-18:R-8,outer=R-3;
+    ctx.beginPath();
+    ctx.moveTo(CX+Math.cos(a)*inner,CY+Math.sin(a)*inner);
+    ctx.lineTo(CX+Math.cos(a)*outer,CY+Math.sin(a)*outer);
+    ctx.strokeStyle=isHour?'#c4b5fd':'#333';ctx.lineWidth=isHour?2.5:1;ctx.stroke()}
+  for(let i=1;i<=12;i++){
+    const a=(i*30-90)*Math.PI/180;
+    ctx.fillStyle='#e0d8ff';ctx.font='bold 16px "Segoe UI",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(i.toString(),CX+Math.cos(a)*(R-32),CY+Math.sin(a)*(R-32))}
+  ctx.restore()}
+
+function drawHand(angle,length,width,color,shadow){
+  ctx.save();ctx.translate(CX,CY);ctx.rotate(angle);
+  if(shadow){ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=6;ctx.shadowOffsetX=2;ctx.shadowOffsetY=2}
+  ctx.beginPath();ctx.moveTo(-width/2,8);ctx.lineTo(-width/3,-length);ctx.lineTo(0,-length-4);ctx.lineTo(width/3,-length);ctx.lineTo(width/2,8);ctx.closePath();
+  ctx.fillStyle=color;ctx.fill();ctx.restore()}
+
+function drawSecondHand(angle){
+  ctx.save();ctx.translate(CX,CY);ctx.rotate(angle);
+  ctx.beginPath();ctx.moveTo(-1,15);ctx.lineTo(-0.5,-(R-20));ctx.lineTo(0.5,-(R-20));ctx.lineTo(1,15);ctx.closePath();
+  ctx.fillStyle='#7c5cfc';ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fillStyle='#7c5cfc';ctx.fill();
+  ctx.beginPath();ctx.arc(0,0,2,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+  ctx.restore()}
+
+function draw(){
+  ctx.clearRect(0,0,300,300);
+  drawFace();
+  const now=getTime();
+  const h=now.getHours()%12,m=now.getMinutes(),s=now.getSeconds(),ms=now.getMilliseconds();
+  const smoothS=s+ms/1000;
+  const hAngle=(h+m/60)*30*Math.PI/180;
+  const mAngle=(m+smoothS/60)*6*Math.PI/180;
+  const sAngle=smoothS*6*Math.PI/180;
+  drawHand(hAngle,R*0.5,7,'#e0d8ff',true);
+  drawHand(mAngle,R*0.72,4.5,'#c4b5fd',true);
+  drawSecondHand(sAngle);
+  const hh=String(now.getHours()).padStart(2,'0'),mm=String(m).padStart(2,'0'),ss=String(s).padStart(2,'0');
+  digitalEl.textContent=`${hh}:${mm}:${ss}`;
+  dateEl.textContent=T.dateFmt(days[now.getDay()], months[now.getMonth()], now.getDate());
+  requestAnimationFrame(draw)}
+
+draw();
+</script>
+</body>
+</html>

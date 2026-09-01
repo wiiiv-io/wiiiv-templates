@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">포모도로 타이머</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+.container { width: 100%; max-width: 360px; text-align: center; }
+.phase-label { font-size: 18px; font-weight: 600; margin-bottom: 20px; letter-spacing: 1px; transition: color 0.5s; }
+.phase-work { color: #ff6b6b; }
+.phase-break { color: #51cf66; }
+.timer-ring { position: relative; width: 220px; height: 220px; margin: 0 auto 24px; }
+.timer-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.timer-ring .bg { fill: none; stroke: #1e1e35; stroke-width: 6; }
+.timer-ring .progress { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke 0.5s; }
+.timer-ring .progress-work { stroke: #ff6b6b; }
+.timer-ring .progress-break { stroke: #51cf66; }
+.timer-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; font-weight: 200; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+.controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+.btn { border: none; border-radius: 12px; font-size: 15px; padding: 12px 28px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-weight: 500; }
+.btn:active { transform: scale(0.95); }
+.btn-start { background: #7c5cfc; color: #fff; }
+.btn-start:hover { background: #6a4ce0; }
+.btn-pause { background: #ff922b; color: #fff; }
+.btn-pause:hover { background: #e67700; }
+.btn-reset { background: #2a2a40; color: #aaa; }
+.btn-reset:hover { background: #3a3a55; color: #fff; }
+.btn-skip { background: #2a2a40; color: #aaa; font-size: 13px; padding: 10px 20px; }
+.btn-skip:hover { background: #3a3a55; color: #fff; }
+.sessions { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.sessions span { font-size: 20px; opacity: 0.3; transition: opacity 0.3s; }
+.sessions span.done { opacity: 1; }
+.stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+.stat { text-align: center; }
+.stat-val { font-size: 22px; font-weight: 600; color: #7c5cfc; }
+.stat-label { font-size: 11px; color: #666; margin-top: 2px; }
+.settings { background: #161628; border-radius: 12px; padding: 16px; margin-top: 8px; }
+.settings-title { font-size: 13px; color: #888; margin-bottom: 12px; cursor: pointer; user-select: none; }
+.settings-title:hover { color: #aaa; }
+.settings-body { display: none; }
+.settings-body.open { display: block; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.setting-row label { font-size: 13px; color: #aaa; }
+.setting-row input[type="number"] { width: 60px; background: #1e1e35; border: 1px solid #333; color: #fff; border-radius: 6px; padding: 6px 8px; text-align: center; font-size: 14px; }
+.setting-row input[type="number"]:focus { outline: none; border-color: #7c5cfc; }
+.setting-row input[type="checkbox"] { accent-color: #7c5cfc; width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="phase-label phase-work" id="phaseLabel"></div>
+
+  <div class="timer-ring">
+    <svg viewBox="0 0 100 100">
+      <circle class="bg" cx="50" cy="50" r="45" />
+      <circle class="progress progress-work" id="progressRing" cx="50" cy="50" r="45"
+        stroke-dasharray="282.74" stroke-dashoffset="0" />
+    </svg>
+    <div class="timer-display" id="timerDisplay">25:00</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-start" id="startBtn" onclick="toggleTimer()"></button>
+    <button class="btn btn-reset" id="resetBtn" onclick="resetTimer()"></button>
+    <button class="btn btn-skip" id="skipBtn" onclick="skipPhase()"></button>
+  </div>
+
+  <div class="sessions" id="sessions"></div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val" id="totalSessions">0</div>
+      <div class="stat-label" id="lblSessions">완료 세션</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="totalFocus">0</div>
+      <div class="stat-label" id="lblFocus">총 집중 시간</div>
+    </div>
+  </div>
+
+  <div class="settings">
+    <div class="settings-title" id="settingsTitle" onclick="toggleSettings()">⚙ 설정</div>
+    <div class="settings-body" id="settingsBody">
+      <div class="setting-row">
+        <label id="lblWork">작업 시간 (분)</label>
+        <input type="number" id="workMin" value="25" min="1" max="90" onchange="updateSettings()">
+      </div>
+      <div class="setting-row">
+        <label id="lblShort">짧은 휴식 (분)</label>
+        <input type="number" id="shortMin" value="5" min="1" max="30" onchange="updateSettings()">
+      </div>
+      <div class="setting-row">
+        <label id="lblLong">긴 휴식 (분)</label>
+        <input type="number" id="longMin" value="15" min="1" max="60" onchange="updateSettings()">
+      </div>
+      <div class="setting-row">
+        <label id="lblAuto">자동 시작</label>
+        <input type="checkbox" id="autoStart">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '포모도로 타이머', ready: '작업 준비', working: '작업 중', shortBreak: '짧은 휴식', longBreak: '긴 휴식',
+        start: '시작', pause: '일시정지', resume: '재개', reset: '초기화', skip: '건너뛰기 ▶',
+        sessions: '완료 세션', focusTime: '총 집중 시간', min: m => m + '분',
+        settings: '⚙ 설정', workMin: '작업 시간 (분)', shortMin: '짧은 휴식 (분)', longMin: '긴 휴식 (분)', autoStart: '자동 시작' },
+  en: { title: 'Pomodoro Timer', ready: 'Ready', working: 'Working', shortBreak: 'Short Break', longBreak: 'Long Break',
+        start: 'Start', pause: 'Pause', resume: 'Resume', reset: 'Reset', skip: 'Skip ▶',
+        sessions: 'Sessions', focusTime: 'Focus Time', min: m => m + 'min',
+        settings: '⚙ Settings', workMin: 'Work (min)', shortMin: 'Short Break (min)', longMin: 'Long Break (min)', autoStart: 'Auto Start' }
+}[LANG];
+document.getElementById('pageTitle').textContent = T.title;
+document.getElementById('phaseLabel').textContent = T.ready;
+document.getElementById('startBtn').textContent = T.start;
+document.getElementById('resetBtn').textContent = T.reset;
+document.getElementById('skipBtn').textContent = T.skip;
+document.getElementById('lblSessions').textContent = T.sessions;
+document.getElementById('lblFocus').textContent = T.focusTime;
+document.getElementById('settingsTitle').textContent = T.settings;
+document.getElementById('lblWork').textContent = T.workMin;
+document.getElementById('lblShort').textContent = T.shortMin;
+document.getElementById('lblLong').textContent = T.longMin;
+document.getElementById('lblAuto').textContent = T.autoStart;
+
+const CIRCUM = 2 * Math.PI * 45;
+const $ring = document.getElementById('progressRing');
+const $display = document.getElementById('timerDisplay');
+const $phaseLabel = document.getElementById('phaseLabel');
+const $startBtn = document.getElementById('startBtn');
+const $sessions = document.getElementById('sessions');
+const $totalSessions = document.getElementById('totalSessions');
+const $totalFocus = document.getElementById('totalFocus');
+
+let workDuration = 25 * 60;
+let shortBreak = 5 * 60;
+let longBreak = 15 * 60;
+let timeLeft = workDuration;
+let totalTime = workDuration;
+let running = false;
+let timer = null;
+let phase = 'work';
+let sessionCount = 0;
+let totalFocusSec = 0;
+let sessionsInCycle = 0;
+
+let audioCtx = null;
+
+function playBeep() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = 800;
+  gain.gain.value = 0.3;
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+  osc.stop(audioCtx.currentTime + 0.8);
+  setTimeout(() => {
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.frequency.value = 1000;
+    gain2.gain.value = 0.3;
+    osc2.start();
+    gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+    osc2.stop(audioCtx.currentTime + 0.6);
+  }, 300);
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function updateRing() {
+  const progress = 1 - (timeLeft / totalTime);
+  $ring.setAttribute('stroke-dashoffset', String(CIRCUM * (1 - progress)));
+}
+
+function updateDisplay() {
+  $display.textContent = formatTime(timeLeft);
+  updateRing();
+}
+
+function setPhaseUI() {
+  const isWork = phase === 'work';
+  $phaseLabel.textContent = isWork ? T.working : (sessionsInCycle >= 4 ? T.longBreak : T.shortBreak);
+  $phaseLabel.className = 'phase-label ' + (isWork ? 'phase-work' : 'phase-break');
+  $ring.className.baseVal = 'progress ' + (isWork ? 'progress-work' : 'progress-break');
+}
+
+function tick() {
+  if (timeLeft <= 0) {
+    running = false;
+    clearInterval(timer);
+    timer = null;
+    playBeep();
+    if (phase === 'work') {
+      sessionCount++;
+      sessionsInCycle++;
+      totalFocusSec += totalTime;
+      updateStats();
+    }
+    nextPhase();
+    return;
+  }
+  timeLeft--;
+  updateDisplay();
+}
+
+function toggleTimer() {
+  if (running) {
+    running = false;
+    clearInterval(timer);
+    timer = null;
+    $startBtn.textContent = T.resume;
+    $startBtn.className = 'btn btn-start';
+  } else {
+    running = true;
+    timer = setInterval(tick, 1000);
+    $startBtn.textContent = T.pause;
+    $startBtn.className = 'btn btn-pause';
+    setPhaseUI();
+  }
+}
+
+function resetTimer() {
+  running = false;
+  clearInterval(timer);
+  timer = null;
+  phase = 'work';
+  sessionsInCycle = 0;
+  timeLeft = workDuration;
+  totalTime = workDuration;
+  $startBtn.textContent = T.start;
+  $startBtn.className = 'btn btn-start';
+  $phaseLabel.textContent = T.ready;
+  $phaseLabel.className = 'phase-label phase-work';
+  $ring.className.baseVal = 'progress progress-work';
+  updateDisplay();
+}
+
+function nextPhase() {
+  if (phase === 'work') {
+    phase = 'break';
+    if (sessionsInCycle >= 4) {
+      timeLeft = longBreak;
+      totalTime = longBreak;
+      sessionsInCycle = 0;
+    } else {
+      timeLeft = shortBreak;
+      totalTime = shortBreak;
+    }
+  } else {
+    phase = 'work';
+    timeLeft = workDuration;
+    totalTime = workDuration;
+  }
+  setPhaseUI();
+  updateDisplay();
+  renderSessions();
+  const autoStart = document.getElementById('autoStart').checked;
+  if (autoStart) {
+    toggleTimer();
+  } else {
+    $startBtn.textContent = T.start;
+    $startBtn.className = 'btn btn-start';
+  }
+}
+
+function skipPhase() {
+  if (phase === 'work' && running) {
+    totalFocusSec += (totalTime - timeLeft);
+  }
+  running = false;
+  clearInterval(timer);
+  timer = null;
+  if (phase === 'work') { sessionCount++; sessionsInCycle++; }
+  nextPhase();
+  updateStats();
+}
+
+function updateStats() {
+  $totalSessions.textContent = sessionCount;
+  const mins = Math.round(totalFocusSec / 60);
+  $totalFocus.textContent = T.min(mins);
+  renderSessions();
+}
+
+function renderSessions() {
+  let html = '';
+  for (let i = 0; i < Math.max(4, sessionCount); i++) {
+    html += `<span class="${i < sessionCount ? 'done' : ''}">🍅</span>`;
+  }
+  $sessions.innerHTML = html;
+}
+
+function updateSettings() {
+  workDuration = parseInt(document.getElementById('workMin').value) * 60 || 25 * 60;
+  shortBreak = parseInt(document.getElementById('shortMin').value) * 60 || 5 * 60;
+  longBreak = parseInt(document.getElementById('longMin').value) * 60 || 15 * 60;
+  if (!running && phase === 'work') {
+    timeLeft = workDuration;
+    totalTime = workDuration;
+    updateDisplay();
+  }
+}
+
+function toggleSettings() {
+  document.getElementById('settingsBody').classList.toggle('open');
+}
+
+renderSessions();
+updateDisplay();
+</script>
+</body>
+</html>

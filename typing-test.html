@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>타이핑 속도 테스트</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.container { width: 100%; max-width: 700px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.title { font-size: 22px; font-weight: 600; }
+.time-options { display: flex; gap: 4px; }
+.time-btn { border: none; border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; transition: all 0.2s; background: #2a2a40; color: #aaa; font-family: inherit; }
+.time-btn:hover { background: #3a3a55; color: #fff; }
+.time-btn.active { background: #7c5cfc; color: #fff; }
+.stats-bar { display: flex; gap: 20px; margin-bottom: 16px; }
+.stat { text-align: center; flex: 1; background: #161628; border-radius: 10px; padding: 12px 8px; }
+.stat-val { font-size: 28px; font-weight: 600; color: #7c5cfc; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 11px; color: #666; margin-top: 2px; }
+.progress-bar { height: 4px; background: #1e1e35; border-radius: 2px; margin-bottom: 20px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #7c5cfc, #a78bfa); border-radius: 2px; transition: width 0.3s; width: 100%; }
+.text-display { background: #161628; border-radius: 12px; padding: 20px; margin-bottom: 16px; font-size: 18px; line-height: 1.8; min-height: 120px; position: relative; user-select: none; }
+.char { transition: color 0.1s; }
+.char-correct { color: #51cf66; }
+.char-incorrect { color: #ff6b6b; background: rgba(255, 107, 107, 0.15); border-radius: 2px; }
+.char-current { border-bottom: 2px solid #7c5cfc; }
+.char-pending { color: #555; }
+.input-area { position: relative; }
+.input-area textarea { width: 100%; background: #1e1e35; border: 2px solid #2a2a40; color: #fff; border-radius: 10px; padding: 14px 16px; font-size: 16px; font-family: inherit; resize: none; height: 56px; outline: none; transition: border-color 0.2s; }
+.input-area textarea:focus { border-color: #7c5cfc; }
+.input-area textarea:disabled { opacity: 0.5; cursor: not-allowed; }
+.start-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(30, 30, 53, 0.9); border-radius: 10px; cursor: pointer; font-size: 15px; color: #aaa; transition: all 0.2s; }
+.start-overlay:hover { color: #fff; background: rgba(30, 30, 53, 0.95); }
+.results { background: #161628; border-radius: 12px; padding: 24px; text-align: center; display: none; }
+.results h2 { font-size: 22px; margin-bottom: 16px; }
+.result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.result-item { background: #1e1e35; border-radius: 8px; padding: 14px; }
+.result-item .r-val { font-size: 28px; font-weight: 600; color: #7c5cfc; }
+.result-item .r-label { font-size: 12px; color: #888; margin-top: 4px; }
+.rank { font-size: 32px; margin-bottom: 8px; }
+.rank-label { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.btn-restart { border: none; border-radius: 10px; background: #7c5cfc; color: #fff; padding: 12px 32px; font-size: 15px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.btn-restart:hover { background: #6a4ce0; }
+.highscore { margin-top: 12px; font-size: 12px; color: #888; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">⌨️ 타이핑 테스트</div>
+    <div class="time-options">
+      <button class="time-btn" data-dur="30" onclick="setDuration(30)">30초</button>
+      <button class="time-btn active" data-dur="60" onclick="setDuration(60)">60초</button>
+      <button class="time-btn" data-dur="120" onclick="setDuration(120)">2분</button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-val" id="wpmLive">0</div><div class="stat-label">WPM</div></div>
+    <div class="stat"><div class="stat-val" id="accLive">100%</div><div class="stat-label">정확도</div></div>
+    <div class="stat"><div class="stat-val" id="timeLive">60</div><div class="stat-label">남은 시간</div></div>
+  </div>
+
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="text-display" id="textDisplay"></div>
+
+  <div class="input-area" id="inputArea">
+    <textarea id="typeInput" disabled placeholder="타이핑을 시작하세요..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <div class="start-overlay" id="startOverlay" onclick="startTest()">클릭하여 시작</div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="rank" id="rankEmoji"></div>
+    <div class="rank-label" id="rankLabel"></div>
+    <div class="result-grid">
+      <div class="result-item"><div class="r-val" id="rWpm">0</div><div class="r-label">WPM (분당 글자)</div></div>
+      <div class="result-item"><div class="r-val" id="rAcc">0%</div><div class="r-label">정확도</div></div>
+      <div class="result-item"><div class="r-val" id="rCorrect">0</div><div class="r-label">맞은 글자</div></div>
+      <div class="result-item"><div class="r-val" id="rWrong">0</div><div class="r-label">틀린 글자</div></div>
+    </div>
+    <button class="btn-restart" onclick="resetTest()">다시 하기</button>
+    <div class="highscore" id="highscore"></div>
+  </div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '⌨️ 타이핑 테스트',
+    sec30: '30초', sec60: '60초', min2: '2분',
+    wpm: 'WPM', accuracy: '정확도', timeLeft: '남은 시간',
+    placeholder: '타이핑을 시작하세요...',
+    clickToStart: '클릭하여 시작',
+    wpmLabel: 'WPM (분당 글자)', accuracyLabel: '정확도',
+    correctLabel: '맞은 글자', wrongLabel: '틀린 글자',
+    restart: '다시 하기',
+    newRecord: '🎉 새로운 최고 기록!',
+    bestRecord: wpm => '최고 기록: ' + wpm + ' WPM',
+    rankExpert: '초고수', rankVeryFast: '매우 빠름', rankFast: '빠름', rankNormal: '보통', rankSlow: '느림',
+    texts: [
+      '빠르게 변화하는 세상 속에서 우리는 끊임없이 새로운 것을 배워야 합니다. 기술의 발전은 우리의 일상을 크게 바꾸어 놓았고, 앞으로도 더 많은 변화가 예상됩니다. 중요한 것은 변화를 두려워하지 않고, 적극적으로 받아들이는 자세입니다.',
+      '가을이 오면 산과 들은 오색 단풍으로 물들어 아름다운 풍경을 선사합니다. 선선한 바람이 불어오면 사람들은 자연 속으로 나들이를 떠나고, 풍성한 수확의 기쁨을 누립니다. 높고 푸른 하늘 아래 떨어지는 낙엽은 계절의 변화를 알려줍니다.',
+      '좋은 습관은 하루아침에 만들어지지 않습니다. 매일 조금씩 꾸준히 노력하는 것이 큰 변화를 이끌어 냅니다. 아침에 일찍 일어나고, 규칙적으로 운동하며, 건강한 식사를 하는 것은 모두 작은 실천에서 시작됩니다.',
+      '인공지능 기술은 이제 우리 생활 곳곳에 스며들어 있습니다. 음성 인식, 자율 주행, 번역 서비스 등 다양한 분야에서 활용되고 있으며, 앞으로 그 범위는 더욱 넓어질 것입니다. 기술과 인간의 조화로운 공존이 중요한 시대입니다.',
+      '독서는 마음의 양식이라고 합니다. 책 한 권을 읽으면 새로운 세계가 열리고, 다양한 관점에서 세상을 바라볼 수 있게 됩니다. 바쁜 일상 속에서도 잠깐의 독서 시간은 우리에게 깊은 휴식과 영감을 선물합니다.',
+      '한국의 사계절은 각각 뚜렷한 특징을 지니고 있습니다. 봄에는 벚꽃이 피고, 여름에는 무더위와 장마가 찾아옵니다. 가을에는 단풍이 물들고, 겨울에는 하얀 눈이 온 세상을 덮습니다. 이러한 자연의 변화가 우리의 삶을 풍요롭게 합니다.',
+    ],
+  },
+  en: {
+    title: '⌨️ Typing Test',
+    sec30: '30s', sec60: '60s', min2: '2m',
+    wpm: 'WPM', accuracy: 'Accuracy', timeLeft: 'Time Left',
+    placeholder: 'Start typing...',
+    clickToStart: 'Click to start',
+    wpmLabel: 'WPM (Words Per Min)', accuracyLabel: 'Accuracy',
+    correctLabel: 'Correct', wrongLabel: 'Wrong',
+    restart: 'Try Again',
+    newRecord: '🎉 New High Score!',
+    bestRecord: wpm => 'Best: ' + wpm + ' WPM',
+    rankExpert: 'Expert', rankVeryFast: 'Very Fast', rankFast: 'Fast', rankNormal: 'Average', rankSlow: 'Slow',
+    texts: [
+      'The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet and is commonly used for typing practice. Speed and accuracy are both important when developing your typing skills.',
+      'Technology has transformed the way we live and work. From smartphones to artificial intelligence, digital tools are now part of our daily routine. Adapting to these changes requires continuous learning and an open mind.',
+      'Reading is a gateway to knowledge and imagination. Every book offers a new perspective on the world. Even in our busy lives, taking time to read can bring deep relaxation and inspiration that enriches our experiences.',
+      'Good habits are not built overnight. Small, consistent efforts each day lead to significant changes over time. Waking up early, exercising regularly, and eating healthy meals all start with simple daily practices.',
+      'The seasons bring their own unique beauty to the landscape. Spring brings blossoming flowers, summer the warmth of long days, autumn the colors of falling leaves, and winter the quiet of freshly fallen snow.',
+      'Artificial intelligence is becoming an integral part of modern society. Voice recognition, autonomous driving, and translation services are just a few examples of how AI is being applied across various fields today.',
+    ],
+  },
+}[LANG];
+const TEXTS = T.texts;
+(function initLang() {
+  document.title = T.title;
+  document.querySelector('.title').textContent = T.title;
+  const btns = document.querySelectorAll('.time-btn');
+  btns[0].textContent = T.sec30; btns[1].textContent = T.sec60; btns[2].textContent = T.min2;
+  document.querySelectorAll('.stat-label')[0].textContent = T.wpm;
+  document.querySelectorAll('.stat-label')[1].textContent = T.accuracy;
+  document.querySelectorAll('.stat-label')[2].textContent = T.timeLeft;
+  document.getElementById('typeInput').placeholder = T.placeholder;
+  document.getElementById('startOverlay').textContent = T.clickToStart;
+  document.querySelectorAll('.r-label')[0].textContent = T.wpmLabel;
+  document.querySelectorAll('.r-label')[1].textContent = T.accuracyLabel;
+  document.querySelectorAll('.r-label')[2].textContent = T.correctLabel;
+  document.querySelectorAll('.r-label')[3].textContent = T.wrongLabel;
+  document.querySelector('.btn-restart').textContent = T.restart;
+})();
+
+let duration = 60;
+let timeLeft = 60;
+let running = false;
+let timer = null;
+let currentText = '';
+let typed = '';
+let correctCount = 0;
+let incorrectCount = 0;
+let startTime = 0;
+
+const $textDisplay = document.getElementById('textDisplay');
+const $typeInput = document.getElementById('typeInput');
+const $startOverlay = document.getElementById('startOverlay');
+const $results = document.getElementById('results');
+const $inputArea = document.getElementById('inputArea');
+
+function setDuration(d) {
+  if (running) return;
+  duration = d;
+  timeLeft = d;
+  document.querySelectorAll('.time-btn').forEach(b => {
+    const bd = b.dataset.dur;
+    b.classList.toggle('active', parseInt(bd) === d);
+  });
+  document.getElementById('timeLive').textContent = d;
+  document.getElementById('progressFill').style.width = '100%';
+}
+
+function pickText() {
+  return TEXTS[Math.floor(Math.random() * TEXTS.length)];
+}
+
+function renderText() {
+  let html = '';
+  for (let i = 0; i < currentText.length; i++) {
+    let cls = 'char char-pending';
+    if (i < typed.length) {
+      cls = typed[i] === currentText[i] ? 'char char-correct' : 'char char-incorrect';
+    } else if (i === typed.length) {
+      cls = 'char char-current char-pending';
+    }
+    const ch = currentText[i] === ' ' ? '&nbsp;' : currentText[i].replace(/</g, '&lt;');
+    html += `<span class="${cls}">${ch}</span>`;
+  }
+  $textDisplay.innerHTML = html;
+}
+
+function updateLiveStats() {
+  const elapsed = (Date.now() - startTime) / 1000 / 60;
+  const wpm = elapsed > 0 ? Math.round(correctCount / Math.max(elapsed, 0.01)) : 0;
+  const total = correctCount + incorrectCount;
+  const acc = total > 0 ? Math.round((correctCount / total) * 100) : 100;
+  document.getElementById('wpmLive').textContent = wpm;
+  document.getElementById('accLive').textContent = acc + '%';
+  document.getElementById('timeLive').textContent = timeLeft;
+  document.getElementById('progressFill').style.width = (timeLeft / duration * 100) + '%';
+}
+
+function startTest() {
+  currentText = pickText();
+  typed = '';
+  correctCount = 0;
+  incorrectCount = 0;
+  timeLeft = duration;
+  running = true;
+  startTime = Date.now();
+  $typeInput.disabled = false;
+  $typeInput.value = '';
+  $typeInput.focus();
+  $startOverlay.style.display = 'none';
+  $results.style.display = 'none';
+  $inputArea.style.display = 'block';
+  renderText();
+  updateLiveStats();
+  timer = setInterval(() => {
+    timeLeft--;
+    updateLiveStats();
+    if (timeLeft <= 0) endTest();
+  }, 1000);
+}
+
+function endTest() {
+  running = false;
+  clearInterval(timer);
+  timer = null;
+  $typeInput.disabled = true;
+
+  const elapsed = duration / 60;
+  const wpm = Math.round(correctCount / Math.max(elapsed, 0.01));
+  const total = correctCount + incorrectCount;
+  const acc = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+
+  let rankEmoji, rankLabel;
+  if (wpm >= 300) { rankEmoji = '🏆'; rankLabel = T.rankExpert; }
+  else if (wpm >= 200) { rankEmoji = '🔥'; rankLabel = T.rankVeryFast; }
+  else if (wpm >= 100) { rankEmoji = '⚡'; rankLabel = T.rankFast; }
+  else if (wpm >= 50) { rankEmoji = '👍'; rankLabel = T.rankNormal; }
+  else { rankEmoji = '🐢'; rankLabel = T.rankSlow; }
+
+  document.getElementById('rankEmoji').textContent = rankEmoji;
+  document.getElementById('rankLabel').textContent = rankLabel;
+  document.getElementById('rWpm').textContent = wpm;
+  document.getElementById('rAcc').textContent = acc + '%';
+  document.getElementById('rCorrect').textContent = correctCount;
+  document.getElementById('rWrong').textContent = incorrectCount;
+
+  const key = 'wiiiv_typing_hs_' + duration;
+  let prev; try { prev = parseInt(localStorage.getItem(key) || '0'); } catch(e) { prev = 0; }
+  if (wpm > prev) {
+    try { localStorage.setItem(key, wpm); } catch(e) {}
+    document.getElementById('highscore').textContent = T.newRecord;
+  } else {
+    document.getElementById('highscore').textContent = T.bestRecord(prev);
+  }
+
+  $inputArea.style.display = 'none';
+  $results.style.display = 'block';
+}
+
+function resetTest() {
+  $results.style.display = 'none';
+  $inputArea.style.display = 'block';
+  $startOverlay.style.display = 'flex';
+  $typeInput.disabled = true;
+  $typeInput.value = '';
+  typed = '';
+  correctCount = 0;
+  incorrectCount = 0;
+  timeLeft = duration;
+  currentText = pickText();
+  renderText();
+  updateLiveStats();
+  document.getElementById('progressFill').style.width = '100%';
+}
+
+$typeInput.addEventListener('input', e => {
+  if (!running) return;
+  const val = e.target.value;
+  const newChar = val.length > typed.length;
+  typed = val;
+
+  correctCount = 0;
+  incorrectCount = 0;
+  for (let i = 0; i < typed.length; i++) {
+    if (i < currentText.length) {
+      if (typed[i] === currentText[i]) correctCount++;
+      else incorrectCount++;
+    }
+  }
+
+  renderText();
+  updateLiveStats();
+
+  if (typed.length >= currentText.length) {
+    currentText = currentText + ' ' + pickText();
+    renderText();
+  }
+});
+
+currentText = pickText();
+renderText();
+updateLiveStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>오목</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; user-select: none; }
+#controls { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+#modeBtn { background: #333; border: 1px solid #555; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+#modeBtn:hover { background: #444; }
+#resetBtn { background: #7c5cfc; border: none; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.2s; }
+#resetBtn:hover { background: #6a4ce0; }
+#status { font-size: 15px; margin-bottom: 8px; min-height: 24px; }
+.turn-black { color: #ccc; }
+.turn-white { color: #fff; }
+.win-msg { color: #ffd700; font-weight: 700; }
+canvas { border-radius: 8px; display: block; cursor: pointer; }
+#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,0.6); border-radius: 8px; }
+#overlay.active { display: flex; }
+#overlay h2 { font-size: 24px; color: #ffd700; }
+#overlay button { background: #7c5cfc; border: none; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+#overlay button:hover { background: #6a4ce0; }
+.wrapper { position: relative; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <button id="modeBtn">모드: AI 대전</button>
+  <button id="resetBtn">새 게임</button>
+</div>
+<div id="status" class="turn-black">⚫ 흑 차례</div>
+<div class="wrapper">
+  <canvas id="c"></canvas>
+  <div id="overlay">
+    <h2 id="winText"></h2>
+    <button onclick="resetGame()">다시 시작</button>
+  </div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '오목', modeAI: '모드: AI 대전', mode2P: '모드: 2인 대전', newGame: '새 게임',
+        turnBlack: '⚫ 흑 차례', turnWhite: '⚪ 백 차례', winBlack: '⚫ 흑 승리!', winWhite: '⚪ 백 승리!', restart: '다시 시작' },
+  en: { title: 'Gomoku', modeAI: 'Mode: vs AI', mode2P: 'Mode: 2 Players', newGame: 'New Game',
+        turnBlack: '⚫ Black\'s Turn', turnWhite: '⚪ White\'s Turn', winBlack: '⚫ Black Wins!', winWhite: '⚪ White Wins!', restart: 'Restart' }
+}[LANG] || {
+  title: 'Gomoku', modeAI: 'Mode: vs AI', mode2P: 'Mode: 2 Players', newGame: 'New Game',
+  turnBlack: '⚫ Black\'s Turn', turnWhite: '⚪ White\'s Turn', winBlack: '⚫ Black Wins!', winWhite: '⚪ White Wins!', restart: 'Restart'
+};
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const modeBtn = document.getElementById('modeBtn');
+const statusEl = document.getElementById('status');
+const overlayEl = document.getElementById('overlay');
+const winTextEl = document.getElementById('winText');
+
+// Apply i18n to static DOM
+document.title = T.title;
+modeBtn.textContent = T.modeAI;
+document.getElementById('resetBtn').textContent = T.newGame;
+document.querySelector('#overlay button').textContent = T.restart;
+
+const SIZE = 15;
+let board, currentPlayer, gameOver, winner, lastMove, winCells;
+let vsAI = true;
+let cellSize, boardPx, pad;
+
+function resize() {
+  const maxS = Math.min(window.innerWidth - 40, window.innerHeight - 120, 500);
+  boardPx = Math.floor(maxS);
+  cellSize = boardPx / (SIZE + 1);
+  pad = cellSize;
+  canvas.width = boardPx;
+  canvas.height = boardPx;
+}
+
+function resetGame() {
+  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  currentPlayer = 1;
+  gameOver = false;
+  winner = 0;
+  lastMove = null;
+  winCells = [];
+  overlayEl.className = '';
+  updateStatus();
+  draw();
+}
+
+function updateStatus() {
+  if (gameOver) {
+    statusEl.className = 'win-msg';
+    statusEl.textContent = winner === 1 ? T.winBlack : T.winWhite;
+  } else {
+    statusEl.className = currentPlayer === 1 ? 'turn-black' : 'turn-white';
+    statusEl.textContent = currentPlayer === 1 ? T.turnBlack : T.turnWhite;
+  }
+}
+
+function checkWin(r, c, player) {
+  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let cells = [[r, c]];
+    for (let d = -1; d <= 1; d += 2) {
+      for (let i = 1; i < 5; i++) {
+        const nr = r + dr * i * d, nc = c + dc * i * d;
+        if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE || board[nr][nc] !== player) break;
+        cells.push([nr, nc]);
+      }
+    }
+    if (cells.length >= 5) return cells;
+  }
+  return null;
+}
+
+function placeStone(r, c) {
+  if (gameOver || board[r][c] !== 0) return false;
+  board[r][c] = currentPlayer;
+  lastMove = [r, c];
+  const win = checkWin(r, c, currentPlayer);
+  if (win) {
+    gameOver = true;
+    winner = currentPlayer;
+    winCells = win;
+    updateStatus();
+    draw();
+    setTimeout(() => {
+      winTextEl.textContent = winner === 1 ? T.winBlack : T.winWhite;
+      overlayEl.className = 'active';
+    }, 300);
+    return true;
+  }
+  currentPlayer = currentPlayer === 1 ? 2 : 1;
+  updateStatus();
+  draw();
+  return true;
+}
+
+function aiMove() {
+  if (gameOver || currentPlayer !== 2) return;
+  const move = findBestMove();
+  if (move) {
+    setTimeout(() => placeStone(move[0], move[1]), 200);
+  }
+}
+
+function findBestMove() {
+  let bestScore = -Infinity, bestMove = null;
+  const candidates = getCandidates();
+  for (const [r, c] of candidates) {
+    const s = evaluateMove(r, c);
+    if (s > bestScore) { bestScore = s; bestMove = [r, c]; }
+  }
+  return bestMove || [Math.floor(SIZE / 2), Math.floor(SIZE / 2)];
+}
+
+function getCandidates() {
+  const set = new Set();
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] === 0) continue;
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          const nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === 0) {
+            set.add(nr * SIZE + nc);
+          }
+        }
+      }
+    }
+  }
+  if (set.size === 0) return [[Math.floor(SIZE/2), Math.floor(SIZE/2)]];
+  return [...set].map(v => [Math.floor(v / SIZE), v % SIZE]);
+}
+
+function evaluateMove(r, c) {
+  let score = 0;
+  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (const player of [2, 1]) {
+    const mult = player === 2 ? 1 : 0.9;
+    for (const [dr, dc] of dirs) {
+      board[r][c] = player;
+      let count = 1, open = 0;
+      for (let d = -1; d <= 1; d += 2) {
+        let blocked = false;
+        for (let i = 1; i < 5; i++) {
+          const nr = r + dr * i * d, nc = c + dc * i * d;
+          if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) { blocked = true; break; }
+          if (board[nr][nc] === player) count++;
+          else { if (board[nr][nc] === 0) open++; blocked = true; break; }
+        }
+        if (!blocked) open++;
+      }
+      board[r][c] = 0;
+      if (count >= 5) score += 100000 * mult;
+      else if (count === 4 && open >= 2) score += 50000 * mult;
+      else if (count === 4 && open === 1) score += 5000 * mult;
+      else if (count === 3 && open >= 2) score += 3000 * mult;
+      else if (count === 3 && open === 1) score += 500 * mult;
+      else if (count === 2 && open >= 2) score += 200 * mult;
+      else if (count === 2 && open === 1) score += 50 * mult;
+    }
+  }
+  const center = Math.floor(SIZE / 2);
+  score += Math.max(0, 7 - Math.abs(r - center) - Math.abs(c - center)) * 3;
+  return score;
+}
+
+function drawBoard() {
+  const grad = ctx.createLinearGradient(0, 0, boardPx, boardPx);
+  grad.addColorStop(0, '#c8a96e');
+  grad.addColorStop(0.5, '#d4b87a');
+  grad.addColorStop(1, '#ba9a5e');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, boardPx, boardPx, 8);
+  ctx.fill();
+
+  ctx.strokeStyle = '#6b5530';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < SIZE; i++) {
+    const pos = pad + i * ((boardPx - 2 * pad) / (SIZE - 1));
+    ctx.beginPath(); ctx.moveTo(pad, pos); ctx.lineTo(boardPx - pad, pos); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pos, pad); ctx.lineTo(pos, boardPx - pad); ctx.stroke();
+  }
+
+  const dots = [3, 7, 11];
+  ctx.fillStyle = '#6b5530';
+  for (const r of dots) {
+    for (const c of dots) {
+      const x = pad + c * ((boardPx - 2 * pad) / (SIZE - 1));
+      const y = pad + r * ((boardPx - 2 * pad) / (SIZE - 1));
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawStone(r, c, player, highlight) {
+  const spacing = (boardPx - 2 * pad) / (SIZE - 1);
+  const x = pad + c * spacing;
+  const y = pad + r * spacing;
+  const radius = spacing * 0.42;
+
+  ctx.save();
+  if (highlight) {
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 15;
+  } else {
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+  }
+
+  if (player === 1) {
+    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+    grad.addColorStop(0, '#555');
+    grad.addColorStop(1, '#111');
+    ctx.fillStyle = grad;
+  } else {
+    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+    grad.addColorStop(0, '#fff');
+    grad.addColorStop(1, '#ccc');
+    ctx.fillStyle = grad;
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  if (lastMove && lastMove[0] === r && lastMove[1] === c) {
+    ctx.fillStyle = player === 1 ? '#ff4466' : '#ff4466';
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, boardPx, boardPx);
+  drawBoard();
+  const isWin = winCells.length > 0;
+  const winSet = new Set(winCells.map(([r,c]) => r * SIZE + c));
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c] !== 0) {
+        drawStone(r, c, board[r][c], isWin && winSet.has(r * SIZE + c));
+      }
+    }
+  }
+}
+
+function getCell(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const spacing = (boardPx - 2 * pad) / (SIZE - 1);
+  const c = Math.round((mx - pad) / spacing);
+  const r = Math.round((my - pad) / spacing);
+  if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return null;
+  return [r, c];
+}
+
+canvas.addEventListener('click', e => {
+  const cell = getCell(e);
+  if (!cell) return;
+  if (vsAI && currentPlayer === 2) return;
+  if (placeStone(cell[0], cell[1]) && vsAI && !gameOver) {
+    aiMove();
+  }
+});
+
+modeBtn.addEventListener('click', () => {
+  vsAI = !vsAI;
+  modeBtn.textContent = vsAI ? T.modeAI : T.mode2P;
+  resetGame();
+});
+
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+window.addEventListener('resize', () => { resize(); draw(); });
+
+resize();
+resetGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">공학 계산기</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 12px; outline: none; }
+.calc { width: 100%; max-width: 380px; background: #161628; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); overflow: hidden; }
+.display { padding: 20px 20px 16px; min-height: 110px; display: flex; flex-direction: column; justify-content: flex-end; }
+.display .expr { font-size: 14px; color: #888; text-align: right; min-height: 20px; overflow-x: auto; white-space: nowrap; margin-bottom: 4px; }
+.display .current { font-size: 36px; font-weight: 300; text-align: right; overflow-x: auto; white-space: nowrap; letter-spacing: 0.5px; }
+.mode-toggle { display: flex; padding: 0 12px 8px; gap: 4px; }
+.mode-toggle button { flex: 1; padding: 6px; border: none; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s; background: transparent; color: #888; }
+.mode-toggle button.active { background: #7c5cfc; color: #fff; }
+.buttons { display: grid; gap: 6px; padding: 8px 12px 12px; }
+.buttons.basic { grid-template-columns: repeat(4, 1fr); }
+.buttons.scientific { grid-template-columns: repeat(5, 1fr); }
+.btn { border: none; border-radius: 10px; font-size: 16px; padding: 14px 8px; cursor: pointer; transition: all 0.15s; font-family: inherit; user-select: none; -webkit-user-select: none; }
+.btn:active { transform: scale(0.93); }
+.btn-num { background: #2a2a40; color: #fff; }
+.btn-num:hover { background: #353550; }
+.btn-op { background: #3a3a55; color: #c4b5fd; }
+.btn-op:hover { background: #454560; }
+.btn-fn { background: #1e1e35; color: #a0a0c0; font-size: 13px; }
+.btn-fn:hover { background: #2a2a45; }
+.btn-eq { background: #7c5cfc; color: #fff; font-size: 20px; }
+.btn-eq:hover { background: #6a4ce0; }
+.btn-clear { background: #3a1a1a; color: #ff6b6b; }
+.btn-clear:hover { background: #4a2a2a; }
+.btn-zero { grid-column: span 2; }
+.history { max-height: 120px; overflow-y: auto; padding: 0 12px 12px; }
+.history::-webkit-scrollbar { width: 4px; }
+.history::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+.history-item { display: flex; justify-content: space-between; font-size: 12px; color: #666; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+.history-item:hover { background: #1e1e35; color: #aaa; }
+.history-item .h-expr { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+.history-item .h-result { color: #7c5cfc; font-weight: 500; white-space: nowrap; }
+.history-label { font-size: 11px; color: #555; padding: 4px 8px 6px; }
+</style>
+</head>
+<body tabindex="0">
+<div class="calc">
+  <div class="display">
+    <div class="expr" id="expr"></div>
+    <div class="current" id="current">0</div>
+  </div>
+  <div class="mode-toggle">
+    <button class="active" id="modeBasic" onclick="setMode('basic')">기본</button>
+    <button id="modeSci" onclick="setMode('sci')">공학</button>
+  </div>
+  <div class="buttons basic" id="buttons"></div>
+  <div id="historyPanel">
+    <div class="history-label" id="historyLabel" style="display:none"></div>
+    <div class="history" id="history"></div>
+  </div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = { ko: { title: '공학 계산기', basic: '기본', sci: '공학', history: '최근 계산', error: '오류' }, en: { title: 'Calculator', basic: 'Basic', sci: 'Scientific', history: 'Recent', error: 'Error' } }[LANG];
+document.getElementById('pageTitle').textContent = T.title;
+document.getElementById('modeBasic').textContent = T.basic;
+document.getElementById('modeSci').textContent = T.sci;
+document.getElementById('historyLabel').textContent = T.history;
+
+const $current = document.getElementById('current');
+const $expr = document.getElementById('expr');
+const $buttons = document.getElementById('buttons');
+const $history = document.getElementById('history');
+const $historyLabel = document.getElementById('historyLabel');
+
+let current = '0';
+let expression = '';
+let lastResult = null;
+let newInput = false;
+let mode = 'basic';
+let history = [];
+const MAX_HISTORY = 20;
+
+const basicLayout = [
+  { label: 'AC', cls: 'btn-clear', action: 'ac' },
+  { label: '±', cls: 'btn-op', action: 'negate' },
+  { label: '%', cls: 'btn-op', action: 'percent' },
+  { label: '÷', cls: 'btn-op', action: 'op', val: '÷' },
+  { label: '7', cls: 'btn-num', action: 'num', val: '7' },
+  { label: '8', cls: 'btn-num', action: 'num', val: '8' },
+  { label: '9', cls: 'btn-num', action: 'num', val: '9' },
+  { label: '×', cls: 'btn-op', action: 'op', val: '×' },
+  { label: '4', cls: 'btn-num', action: 'num', val: '4' },
+  { label: '5', cls: 'btn-num', action: 'num', val: '5' },
+  { label: '6', cls: 'btn-num', action: 'num', val: '6' },
+  { label: '−', cls: 'btn-op', action: 'op', val: '−' },
+  { label: '1', cls: 'btn-num', action: 'num', val: '1' },
+  { label: '2', cls: 'btn-num', action: 'num', val: '2' },
+  { label: '3', cls: 'btn-num', action: 'num', val: '3' },
+  { label: '+', cls: 'btn-op', action: 'op', val: '+' },
+  { label: '0', cls: 'btn-num btn-zero', action: 'num', val: '0' },
+  { label: '.', cls: 'btn-num', action: 'dot' },
+  { label: '=', cls: 'btn-eq', action: 'eq' },
+];
+
+const sciLayout = [
+  { label: '(', cls: 'btn-fn', action: 'paren', val: '(' },
+  { label: ')', cls: 'btn-fn', action: 'paren', val: ')' },
+  { label: 'AC', cls: 'btn-clear', action: 'ac' },
+  { label: '⌫', cls: 'btn-op', action: 'back' },
+  { label: '÷', cls: 'btn-op', action: 'op', val: '÷' },
+  { label: 'sin', cls: 'btn-fn', action: 'func', val: 'sin' },
+  { label: 'cos', cls: 'btn-fn', action: 'func', val: 'cos' },
+  { label: '7', cls: 'btn-num', action: 'num', val: '7' },
+  { label: '8', cls: 'btn-num', action: 'num', val: '8' },
+  { label: '9', cls: 'btn-num', action: 'num', val: '9' },
+  { label: 'tan', cls: 'btn-fn', action: 'func', val: 'tan' },
+  { label: 'log', cls: 'btn-fn', action: 'func', val: 'log' },
+  { label: '4', cls: 'btn-num', action: 'num', val: '4' },
+  { label: '5', cls: 'btn-num', action: 'num', val: '5' },
+  { label: '6', cls: 'btn-num', action: 'num', val: '6' },
+  { label: 'ln', cls: 'btn-fn', action: 'func', val: 'ln' },
+  { label: '√', cls: 'btn-fn', action: 'func', val: '√' },
+  { label: '1', cls: 'btn-num', action: 'num', val: '1' },
+  { label: '2', cls: 'btn-num', action: 'num', val: '2' },
+  { label: '3', cls: 'btn-num', action: 'num', val: '3' },
+  { label: 'x²', cls: 'btn-fn', action: 'func', val: 'x²' },
+  { label: 'xʸ', cls: 'btn-fn', action: 'op', val: '^' },
+  { label: '0', cls: 'btn-num', action: 'num', val: '0' },
+  { label: '.', cls: 'btn-num', action: 'dot' },
+  { label: '=', cls: 'btn-eq', action: 'eq' },
+  { label: 'π', cls: 'btn-fn', action: 'const', val: 'π' },
+  { label: 'e', cls: 'btn-fn', action: 'const', val: 'e' },
+  { label: 'n!', cls: 'btn-fn', action: 'func', val: 'n!' },
+  { label: '±', cls: 'btn-op', action: 'negate' },
+  { label: '%', cls: 'btn-op', action: 'percent' },
+];
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-toggle button').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && m === 'basic') || (i === 1 && m === 'sci'));
+  });
+  renderButtons();
+}
+
+function renderButtons() {
+  const layout = mode === 'basic' ? basicLayout : sciLayout;
+  $buttons.className = mode === 'basic' ? 'buttons basic' : 'buttons scientific';
+  $buttons.innerHTML = '';
+  layout.forEach(b => {
+    const el = document.createElement('button');
+    el.className = 'btn ' + b.cls;
+    if (b.label === '0' && mode === 'basic') el.classList.add('btn-zero');
+    el.textContent = b.label;
+    el.onclick = () => handleAction(b);
+    $buttons.appendChild(el);
+  });
+}
+
+function formatNum(n) {
+  if (typeof n !== 'number' || !isFinite(n)) return String(n);
+  const rounded = parseFloat(n.toPrecision(12));
+  if (Math.abs(rounded) >= 1e15 || (Math.abs(rounded) < 1e-10 && rounded !== 0)) {
+    return rounded.toExponential(6);
+  }
+  return String(rounded);
+}
+
+function factorial(n) {
+  if (n < 0) return NaN;
+  if (n === 0 || n === 1) return 1;
+  if (n > 170) return Infinity;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+function evalExpression(expr) {
+  let e = expr
+    .replace(/×/g, '*')
+    .replace(/÷/g, '/')
+    .replace(/−/g, '-')
+    .replace(/π/g, '(' + Math.PI + ')')
+    .replace(/e(?!x)/g, '(' + Math.E + ')');
+  e = e.replace(/sin\(([^)]+)\)/g, (_, v) => Math.sin(parseFloat(v) * Math.PI / 180));
+  e = e.replace(/cos\(([^)]+)\)/g, (_, v) => Math.cos(parseFloat(v) * Math.PI / 180));
+  e = e.replace(/tan\(([^)]+)\)/g, (_, v) => Math.tan(parseFloat(v) * Math.PI / 180));
+  e = e.replace(/log\(([^)]+)\)/g, (_, v) => Math.log10(parseFloat(v)));
+  e = e.replace(/ln\(([^)]+)\)/g, (_, v) => Math.log(parseFloat(v)));
+  e = e.replace(/√\(([^)]+)\)/g, (_, v) => Math.sqrt(parseFloat(v)));
+  e = e.replace(/(\d+\.?\d*)²/g, (_, v) => Math.pow(parseFloat(v), 2));
+  e = e.replace(/(\d+\.?\d*)!/g, (_, v) => factorial(Math.round(parseFloat(v))));
+  e = e.replace(/\^/g, '**');
+  try { return Function('"use strict"; return (' + e + ')')(); } catch { return NaN; }
+}
+
+function updateDisplay() {
+  $current.textContent = current;
+  $expr.textContent = expression;
+}
+
+function addToHistory(expr, result) {
+  history.unshift({ expr, result });
+  if (history.length > MAX_HISTORY) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  if (history.length === 0) { $historyLabel.style.display = 'none'; $history.innerHTML = ''; return; }
+  $historyLabel.style.display = 'block';
+  $history.innerHTML = history.map((h, i) =>
+    `<div class="history-item" onclick="recallHistory(${i})"><span class="h-expr">${h.expr}</span><span class="h-result">${h.result}</span></div>`
+  ).join('');
+}
+
+function recallHistory(i) {
+  current = history[i].result;
+  expression = '';
+  newInput = true;
+  updateDisplay();
+}
+
+function handleAction(b) {
+  switch (b.action) {
+    case 'num':
+      if (newInput || current === '0') { current = b.val; newInput = false; }
+      else if (current.length < 15) { current += b.val; }
+      break;
+    case 'dot':
+      if (newInput) { current = '0.'; newInput = false; }
+      else if (!current.includes('.')) { current += '.'; }
+      break;
+    case 'op':
+      if (lastResult !== null && newInput) { expression = formatNum(lastResult) + ' ' + b.val + ' '; }
+      else { expression += current + ' ' + b.val + ' '; }
+      newInput = true;
+      lastResult = null;
+      break;
+    case 'eq': {
+      const full = expression + current;
+      const result = evalExpression(full);
+      if (!isNaN(result) && isFinite(result)) {
+        addToHistory(full, formatNum(result));
+        expression = full + ' =';
+        current = formatNum(result);
+        lastResult = result;
+      } else {
+        expression = full + ' =';
+        current = T.error;
+        lastResult = null;
+      }
+      newInput = true;
+      break;
+    }
+    case 'ac':
+      current = '0'; expression = ''; lastResult = null; newInput = false;
+      break;
+    case 'back':
+      if (!newInput && current.length > 1) { current = current.slice(0, -1); }
+      else { current = '0'; newInput = false; }
+      break;
+    case 'negate':
+      if (current !== '0') {
+        current = current.startsWith('-') ? current.slice(1) : '-' + current;
+      }
+      break;
+    case 'percent':
+      current = formatNum(parseFloat(current) / 100);
+      break;
+    case 'func':
+      if (b.val === 'x²') {
+        const v = parseFloat(current);
+        current = formatNum(v * v);
+        newInput = true;
+      } else if (b.val === 'n!') {
+        const v = Math.round(parseFloat(current));
+        current = formatNum(factorial(v));
+        newInput = true;
+      } else if (b.val === '√') {
+        const v = parseFloat(current);
+        current = formatNum(Math.sqrt(v));
+        newInput = true;
+      } else {
+        expression += b.val + '(' + current + ')';
+        const full = expression;
+        const result = evalExpression(full);
+        if (!isNaN(result) && isFinite(result)) {
+          current = formatNum(result);
+        } else { current = T.error; }
+        expression = '';
+        newInput = true;
+      }
+      break;
+    case 'const':
+      current = b.val === 'π' ? formatNum(Math.PI) : formatNum(Math.E);
+      newInput = true;
+      break;
+    case 'paren':
+      if (newInput && b.val === '(') { expression += b.val; current = '0'; newInput = false; }
+      else if (b.val === '(') { expression += current + '×' + b.val; current = '0'; }
+      else { expression += current + b.val; current = '0'; newInput = true; }
+      break;
+  }
+  updateDisplay();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key >= '0' && e.key <= '9') handleAction({ action: 'num', val: e.key });
+  else if (e.key === '.') handleAction({ action: 'dot' });
+  else if (e.key === '+') handleAction({ action: 'op', val: '+' });
+  else if (e.key === '-') handleAction({ action: 'op', val: '−' });
+  else if (e.key === '*') handleAction({ action: 'op', val: '×' });
+  else if (e.key === '/') { e.preventDefault(); handleAction({ action: 'op', val: '÷' }); }
+  else if (e.key === 'Enter' || e.key === '=') handleAction({ action: 'eq' });
+  else if (e.key === 'Escape') handleAction({ action: 'ac' });
+  else if (e.key === 'Backspace') handleAction({ action: 'back' });
+  else if (e.key === '%') handleAction({ action: 'percent' });
+});
+
+renderButtons();
+updateDisplay();
+document.body.focus();
+</script>
+</body>
+</html>

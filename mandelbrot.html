@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>만델브로 프랙탈</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a; color: #fff; font-family: -apple-system, 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;
+}
+.toolbar {
+  display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: #12121f;
+  border-bottom: 1px solid #222; flex-wrap: wrap; flex-shrink: 0;
+}
+.toolbar button {
+  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 3px 10px;
+  border-radius: 5px; cursor: pointer; font-size: 11px; transition: all 0.15s;
+}
+.toolbar button:hover { border-color: #7c5cfc; background: #2a2a4a; }
+.toolbar button.active { background: #7c5cfc; border-color: #7c5cfc; }
+.group { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #aaa; }
+.group input[type="range"] { width: 80px; accent-color: #7c5cfc; height: 3px; cursor: pointer; }
+.group .val { color: #c4b5fd; min-width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+.palettes { display: flex; gap: 3px; }
+.info {
+  font-size: 10px; color: #555; margin-left: auto; font-variant-numeric: tabular-nums;
+  display: flex; gap: 8px;
+}
+.info span { white-space: nowrap; }
+.progress-bar {
+  position: absolute; top: 0; left: 0; height: 2px; background: #7c5cfc;
+  transition: width 0.1s; z-index: 10;
+}
+.canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+.coords {
+  position: absolute; bottom: 6px; left: 8px; font-size: 10px; color: rgba(255,255,255,0.4);
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.selection-rect {
+  position: absolute; border: 1.5px dashed rgba(124,92,252,0.9);
+  background: rgba(124,92,252,0.08); pointer-events: none; display: none;
+}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button id="resetBtn" onclick="resetView()"></button>
+  <div class="group">
+    <span id="iterLabel"></span>
+    <input type="range" id="iterSlider" min="50" max="1000" value="200" step="10" oninput="setIter(this.value)">
+    <span class="val" id="iterVal">200</span>
+  </div>
+  <div class="palettes">
+    <button class="active" id="pal0" onclick="setPalette(0,this)"></button>
+    <button id="pal1" onclick="setPalette(1,this)"></button>
+    <button id="pal2" onclick="setPalette(2,this)"></button>
+    <button id="pal3" onclick="setPalette(3,this)"></button>
+    <button id="pal4" onclick="setPalette(4,this)"></button>
+  </div>
+  <div class="info">
+    <span><span id="zoomLabel"></span> <span id="zoomInfo">1x</span></span>
+    <span><span id="centerLabel"></span> <span id="centerInfo">-0.5, 0</span></span>
+  </div>
+</div>
+<div class="canvas-wrap">
+  <div class="progress-bar" id="progressBar"></div>
+  <canvas id="canvas"></canvas>
+  <div class="selection-rect" id="selRect"></div>
+  <div class="coords" id="coords"></div>
+</div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '만델브로 프랙탈',
+    reset: '초기화', iterations: '반복',
+    rainbow: '무지개', fire: '불꽃', ice: '얼음', bw: '흑백', neon: '네온',
+    zoom: '줌:', center: '중심:'
+  },
+  en: {
+    title: 'Mandelbrot Fractal',
+    reset: 'Reset', iterations: 'Iterations',
+    rainbow: 'Rainbow', fire: 'Fire', ice: 'Ice', bw: 'B&W', neon: 'Neon',
+    zoom: 'Zoom:', center: 'Center:'
+  }
+}[LANG];
+
+document.title=T.title;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+// i18n DOM
+document.getElementById('resetBtn').textContent=T.reset;
+document.getElementById('iterLabel').textContent=T.iterations;
+document.getElementById('pal0').textContent=T.rainbow;
+document.getElementById('pal1').textContent=T.fire;
+document.getElementById('pal2').textContent=T.ice;
+document.getElementById('pal3').textContent=T.bw;
+document.getElementById('pal4').textContent=T.neon;
+document.getElementById('zoomLabel').textContent=T.zoom;
+document.getElementById('centerLabel').textContent=T.center;
+
+let centerX = -0.5, centerY = 0, scale = 1.5;
+let maxIter = 200;
+let currentPalette = 0;
+let rendering = false;
+let renderCancel = false;
+
+const PALETTES = [
+  (t) => { const h = t * 360; return hslToRgb(h, 90, 50 + t * 20); },
+  (t) => {
+    if (t < 0.33) return lerpColor([0,0,0], [180,0,0], t/0.33);
+    if (t < 0.66) return lerpColor([180,0,0], [255,200,0], (t-0.33)/0.33);
+    return lerpColor([255,200,0], [255,255,220], (t-0.66)/0.34);
+  },
+  (t) => {
+    if (t < 0.5) return lerpColor([0,0,40], [100,180,255], t/0.5);
+    return lerpColor([100,180,255], [240,250,255], (t-0.5)/0.5);
+  },
+  (t) => { const v = Math.floor(t * 255); return [v, v, v]; },
+  (t) => {
+    const h = (t * 300 + 180) % 360;
+    return hslToRgb(h, 100, 30 + t * 40);
+  }
+];
+
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = l - c / 2;
+  let r, g, b;
+  if (h < 60) { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+function lerpColor(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t)
+  ];
+}
+
+function resize() {
+  const wrap = canvas.parentElement;
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+  render();
+}
+window.addEventListener('resize', resize);
+
+function setIter(v) {
+  maxIter = parseInt(v);
+  document.getElementById('iterVal').textContent = v;
+  render();
+}
+
+function setPalette(idx, btn) {
+  currentPalette = idx;
+  document.querySelectorAll('.palettes button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function resetView() {
+  centerX = -0.5; centerY = 0; scale = 1.5;
+  render();
+}
+
+function updateInfo() {
+  const zoom = (1.5 / scale).toFixed(1);
+  document.getElementById('zoomInfo').textContent = zoom + 'x';
+  document.getElementById('centerInfo').textContent = centerX.toFixed(6) + ', ' + centerY.toFixed(6);
+}
+
+function render() {
+  renderCancel = true;
+  setTimeout(() => doRender(), 10);
+}
+
+function doRender() {
+  renderCancel = false;
+  rendering = true;
+  updateInfo();
+
+  const imgData = ctx.createImageData(W, H);
+  const data = imgData.data;
+  const aspect = W / H;
+  const palette = PALETTES[currentPalette];
+  const progressBar = document.getElementById('progressBar');
+
+  let y = 0;
+  const CHUNK = 8;
+
+  function renderChunk() {
+    if (renderCancel) { rendering = false; return; }
+    const endY = Math.min(y + CHUNK, H);
+
+    for (let py = y; py < endY; py++) {
+      for (let px = 0; px < W; px++) {
+        const x0 = centerX + (px - W / 2) / (W / 2) * scale * aspect;
+        const y0 = centerY + (py - H / 2) / (H / 2) * scale;
+
+        let zx = 0, zy = 0, iter = 0;
+        while (zx * zx + zy * zy < 4 && iter < maxIter) {
+          const tmp = zx * zx - zy * zy + x0;
+          zy = 2 * zx * zy + y0;
+          zx = tmp;
+          iter++;
+        }
+
+        const idx = (py * W + px) * 4;
+        if (iter === maxIter) {
+          data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0;
+        } else {
+          const smooth = iter + 1 - Math.log2(Math.log2(zx * zx + zy * zy));
+          const t = (smooth % 50) / 50;
+          const [r, g, b] = palette(t);
+          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b;
+        }
+        data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0, 0, y, W, endY);
+    progressBar.style.width = ((endY / H) * 100) + '%';
+    y = endY;
+
+    if (y < H) {
+      requestAnimationFrame(renderChunk);
+    } else {
+      progressBar.style.width = '0';
+      rendering = false;
+    }
+  }
+
+  renderChunk();
+}
+
+function zoomAt(px, py, factor) {
+  const aspect = W / H;
+  const mx = centerX + (px - W / 2) / (W / 2) * scale * aspect;
+  const my = centerY + (py - H / 2) / (H / 2) * scale;
+
+  centerX = mx + (centerX - mx) / factor;
+  centerY = my + (centerY - my) / factor;
+  scale /= factor;
+  render();
+}
+
+let dragStart = null;
+const selRect = document.getElementById('selRect');
+const DRAG_THRESHOLD = 6;
+
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  dragStart = { x: e.offsetX, y: e.offsetY };
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const aspect = W / H;
+  const mx = centerX + (e.offsetX - W / 2) / (W / 2) * scale * aspect;
+  const my = centerY + (e.offsetY - H / 2) / (H / 2) * scale;
+  document.getElementById('coords').textContent = `${mx.toFixed(10)}, ${my.toFixed(10)}i`;
+
+  if (!dragStart) return;
+  const dx = e.offsetX - dragStart.x;
+  const dy = e.offsetY - dragStart.y;
+  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const l = Math.min(dragStart.x, e.offsetX);
+  const t = Math.min(dragStart.y, e.offsetY);
+  const w = Math.abs(dx);
+  const h = Math.abs(dy);
+  selRect.style.display = 'block';
+  selRect.style.left = (rect.left - canvas.parentElement.getBoundingClientRect().left + l) + 'px';
+  selRect.style.top = t + 'px';
+  selRect.style.width = w + 'px';
+  selRect.style.height = h + 'px';
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (!dragStart) return;
+  const dx = e.offsetX - dragStart.x;
+  const dy = e.offsetY - dragStart.y;
+  selRect.style.display = 'none';
+
+  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
+    if (e.shiftKey) zoomAt(e.offsetX, e.offsetY, 0.5);
+    else zoomAt(e.offsetX, e.offsetY, 2);
+  } else {
+    const aspect = W / H;
+    const x1 = centerX + (Math.min(dragStart.x, e.offsetX) - W / 2) / (W / 2) * scale * aspect;
+    const x2 = centerX + (Math.max(dragStart.x, e.offsetX) - W / 2) / (W / 2) * scale * aspect;
+    const y1 = centerY + (Math.min(dragStart.y, e.offsetY) - H / 2) / (H / 2) * scale;
+    const y2 = centerY + (Math.max(dragStart.y, e.offsetY) - H / 2) / (H / 2) * scale;
+    centerX = (x1 + x2) / 2;
+    centerY = (y1 + y2) / 2;
+    const selW = x2 - x1;
+    const selH = y2 - y1;
+    scale = Math.max(selW / 2 / aspect, selH / 2);
+    render();
+  }
+  dragStart = null;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  dragStart = null;
+  selRect.style.display = 'none';
+});
+
+canvas.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  zoomAt(e.offsetX, e.offsetY, 0.5);
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.3 : 0.77;
+  zoomAt(e.offsetX, e.offsetY, factor);
+}, { passive: false });
+
+function touchOffset(e) {
+  const r = canvas.getBoundingClientRect();
+  const t = e.touches[0] || e.changedTouches[0];
+  return { x: t.clientX - r.left, y: t.clientY - r.top };
+}
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  e.preventDefault();
+  const p = touchOffset(e);
+  dragStart = { x: p.x, y: p.y };
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  if (!dragStart || e.touches.length !== 1) return;
+  e.preventDefault();
+  const p = touchOffset(e);
+  const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+  const l = Math.min(dragStart.x, p.x), t = Math.min(dragStart.y, p.y);
+  selRect.style.display = 'block';
+  selRect.style.left = l + 'px'; selRect.style.top = t + 'px';
+  selRect.style.width = Math.abs(dx) + 'px'; selRect.style.height = Math.abs(dy) + 'px';
+}, { passive: false });
+canvas.addEventListener('touchend', (e) => {
+  if (!dragStart) return;
+  const p = touchOffset(e);
+  const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+  selRect.style.display = 'none';
+  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
+    zoomAt(p.x, p.y, 2);
+  } else {
+    const aspect = W / H;
+    const x1 = centerX + (Math.min(dragStart.x, p.x) - W / 2) / (W / 2) * scale * aspect;
+    const x2 = centerX + (Math.max(dragStart.x, p.x) - W / 2) / (W / 2) * scale * aspect;
+    const y1 = centerY + (Math.min(dragStart.y, p.y) - H / 2) / (H / 2) * scale;
+    const y2 = centerY + (Math.max(dragStart.y, p.y) - H / 2) / (H / 2) * scale;
+    centerX = (x1 + x2) / 2;
+    centerY = (y1 + y2) / 2;
+    scale = Math.max((x2 - x1) / 2 / aspect, (y2 - y1) / 2);
+    render();
+  }
+  dragStart = null;
+});
+
+resize();
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title id="pageTitle">물리 시뮬레이션</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a; color: #fff; font-family: -apple-system, 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;
+}
+.toolbar {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: #12121f;
+  border-bottom: 1px solid #222; flex-wrap: wrap; flex-shrink: 0;
+}
+.toolbar .group { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #aaa; }
+.toolbar input[type="range"] { width: 70px; accent-color: #7c5cfc; height: 3px; cursor: pointer; }
+.toolbar .val { color: #c4b5fd; min-width: 24px; text-align: center; font-variant-numeric: tabular-nums; font-size: 11px; }
+.toolbar button {
+  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 4px 10px;
+  border-radius: 5px; cursor: pointer; font-size: 11px; transition: all 0.15s;
+}
+.toolbar button:hover { border-color: #7c5cfc; background: #2a2a4a; }
+.toolbar label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #aaa; cursor: pointer; }
+.toolbar input[type="checkbox"] { accent-color: #7c5cfc; }
+.info { font-size: 11px; color: #666; margin-left: auto; font-variant-numeric: tabular-nums; }
+
+canvas { flex: 1; display: block; cursor: crosshair; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <div class="group">
+    <span id="lblGravity">중력</span>
+    <input type="range" id="gravSlider" min="0" max="200" value="100" oninput="setGrav(this.value)">
+    <span class="val" id="gravVal">1.0</span>
+  </div>
+  <div class="group">
+    <span id="lblBounce">탄성</span>
+    <input type="range" id="bounceSlider" min="0" max="100" value="80" oninput="setBounce(this.value)">
+    <span class="val" id="bounceVal">0.8</span>
+  </div>
+  <div class="group">
+    <span id="lblFriction">마찰</span>
+    <input type="range" id="fricSlider" min="0" max="100" value="2" oninput="setFric(this.value)">
+    <span class="val" id="fricVal">0.02</span>
+  </div>
+  <label><input type="checkbox" id="trailCheck" checked> <span id="lblTrail">궤적</span></label>
+  <button id="btnClear" onclick="clearBalls()">지우기</button>
+  <span class="info" id="infoText"></span>
+</div>
+<canvas id="canvas"></canvas>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '물리 시뮬레이션', gravity: '중력', bounce: '탄성', friction: '마찰', trail: '궤적', clear: '지우기', info: (n) => `공: ${n}개 · 클릭/드래그로 생성` },
+  en: { title: 'Physics Simulation', gravity: 'Gravity', bounce: 'Bounce', friction: 'Friction', trail: 'Trail', clear: 'Clear', info: (n) => `Balls: ${n} · Click/drag to create` }
+}[LANG] || {
+  title: 'Physics Simulation', gravity: 'Gravity', bounce: 'Bounce', friction: 'Friction', trail: 'Trail', clear: 'Clear', info: (n) => `Balls: ${n} · Click/drag to create`
+};
+document.getElementById('pageTitle').textContent = T.title;
+document.getElementById('lblGravity').textContent = T.gravity;
+document.getElementById('lblBounce').textContent = T.bounce;
+document.getElementById('lblFriction').textContent = T.friction;
+document.getElementById('lblTrail').textContent = T.trail;
+document.getElementById('btnClear').textContent = T.clear;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+let gravity = 1.0;
+let restitution = 0.8;
+let friction = 0.02;
+let showTrails = true;
+let balls = [];
+let dragging = false;
+let dragStart = null;
+let dragEnd = null;
+
+const COLORS = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#7c5cfc','#ff9ff3','#54a0ff','#f368e0','#ff6348','#2ed573'];
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  W = rect.width; H = rect.height;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function setGrav(v) { gravity = v / 100; document.getElementById('gravVal').textContent = gravity.toFixed(1); }
+function setBounce(v) { restitution = v / 100; document.getElementById('bounceVal').textContent = restitution.toFixed(2); }
+function setFric(v) { friction = v / 100; document.getElementById('fricVal').textContent = friction.toFixed(2); }
+function updateBallInfo() { document.getElementById('infoText').textContent = T.info(balls.length); }
+function clearBalls() { balls = []; updateBallInfo(); }
+
+document.getElementById('trailCheck').addEventListener('change', function() { showTrails = this.checked; });
+
+function spawnBall(x, y, vx, vy) {
+  const r = 10 + Math.random() * 30;
+  balls.push({
+    x, y, vx: vx || 0, vy: vy || 0,
+    r, mass: r * r,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)]
+  });
+  updateBallInfo();
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  dragEnd = { ...dragStart };
+  dragging = true;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const rect = canvas.getBoundingClientRect();
+  dragEnd = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  dragging = false;
+  const rect = canvas.getBoundingClientRect();
+  const ex = e.clientX - rect.left;
+  const ey = e.clientY - rect.top;
+  const vx = (dragStart.x - ex) * 0.15;
+  const vy = (dragStart.y - ey) * 0.15;
+  spawnBall(dragStart.x, dragStart.y, vx, vy);
+  dragStart = null; dragEnd = null;
+});
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  dragStart = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  dragEnd = { ...dragStart };
+  dragging = true;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (!dragging) return;
+  const t = e.touches[0];
+  const rect = canvas.getBoundingClientRect();
+  dragEnd = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+  if (!dragging) return;
+  dragging = false;
+  const vx = (dragStart.x - dragEnd.x) * 0.15;
+  const vy = (dragStart.y - dragEnd.y) * 0.15;
+  spawnBall(dragStart.x, dragStart.y, vx, vy);
+  dragStart = null; dragEnd = null;
+});
+
+function resolveCollision(a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const minDist = a.r + b.r;
+  if (dist >= minDist || dist === 0) return;
+
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const overlap = minDist - dist;
+  const totalMass = a.mass + b.mass;
+  a.x -= nx * overlap * (b.mass / totalMass);
+  a.y -= ny * overlap * (b.mass / totalMass);
+  b.x += nx * overlap * (a.mass / totalMass);
+  b.y += ny * overlap * (a.mass / totalMass);
+
+  const dvx = a.vx - b.vx;
+  const dvy = a.vy - b.vy;
+  const dvDotN = dvx * nx + dvy * ny;
+  if (dvDotN <= 0) return;
+
+  const impulse = (2 * dvDotN * restitution) / totalMass;
+  a.vx -= impulse * b.mass * nx;
+  a.vy -= impulse * b.mass * ny;
+  b.vx += impulse * a.mass * nx;
+  b.vy += impulse * a.mass * ny;
+}
+
+function update() {
+  const dt = 1;
+  const g = gravity * 0.5;
+
+  for (const b of balls) {
+    b.vy += g * dt;
+    b.vx *= (1 - friction);
+    b.vy *= (1 - friction * 0.5);
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * restitution; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * restitution; }
+    if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * restitution; }
+    if (b.y + b.r > H) { b.y = H - b.r; b.vy = -Math.abs(b.vy) * restitution; }
+  }
+
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      resolveCollision(balls[i], balls[j]);
+    }
+  }
+}
+
+function draw() {
+  if (showTrails) {
+    ctx.fillStyle = 'rgba(13,13,26,0.15)';
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  for (const b of balls) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+
+    const grad = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.1, b.x, b.y, b.r);
+    grad.addColorStop(0, 'rgba(255,255,255,0.25)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  if (dragging && dragStart && dragEnd) {
+    ctx.beginPath();
+    ctx.moveTo(dragStart.x, dragStart.y);
+    ctx.lineTo(dragEnd.x, dragEnd.y);
+    ctx.strokeStyle = 'rgba(124,92,252,0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const ax = dragStart.x - dragEnd.x;
+    const ay = dragStart.y - dragEnd.y;
+    const len = Math.sqrt(ax * ax + ay * ay);
+    if (len > 5) {
+      const nx = ax / len;
+      const ny = ay / len;
+      ctx.beginPath();
+      ctx.moveTo(dragStart.x + nx * 20, dragStart.y + ny * 20);
+      ctx.lineTo(dragStart.x + nx * 20 - ny * 6, dragStart.y + ny * 20 + nx * 6);
+      ctx.lineTo(dragStart.x + nx * 20 + ny * 6, dragStart.y + ny * 20 - nx * 6);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(124,92,252,0.6)';
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(dragStart.x, dragStart.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#7c5cfc';
+    ctx.fill();
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+updateBallInfo();
+loop();
+</script>
+</body>
+</html>
