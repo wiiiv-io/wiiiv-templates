@@ -11,6 +11,7 @@
     { "id": "gomoku", "label": { "ko": "오목", "en": "Gomoku" }, "keywords": ["오목", "gomoku", "five in a row"], "category": "game" },
     { "id": "galaga", "label": { "ko": "갤러그", "en": "Galaga" }, "keywords": ["갤러그", "갤러가", "galaga"], "category": "game" },
     { "id": "memory", "label": { "ko": "메모리 카드 게임", "en": "Memory Card Game" }, "keywords": ["메모리 카드", "메모리카드", "짝맞추기", "짝 맞추기", "memory card", "memory game"], "category": "game" },
+    { "id": "pacman", "label": { "ko": "팩맨", "en": "PAC-MAN" }, "keywords": ["팩맨", "패크맨", "pacman", "pac-man", "pac man"], "category": "game" },
     { "id": "calculator", "label": { "ko": "계산기", "en": "Calculator" }, "keywords": ["계산기", "calculator"], "category": "tool" },
     { "id": "pomodoro", "label": { "ko": "포모도로 타이머", "en": "Pomodoro Timer" }, "keywords": ["포모도로", "뽀모도로", "pomodoro"], "category": "tool" },
     { "id": "paint", "label": { "ko": "그림판", "en": "Paint" }, "keywords": ["그림판", "paint", "drawing"], "category": "tool" },
