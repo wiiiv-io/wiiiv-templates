@@ -10,7 +10,7 @@ body{background:#000;color:#fff;font-family:'Courier New',monospace;display:flex
 #hud{display:flex;justify-content:space-between;width:100%;padding:0 8px;font-size:13px;letter-spacing:1px;font-weight:bold}
 #hud span{display:inline-block;min-width:140px}
 #hud .right{text-align:right}
-canvas{display:block;image-rendering:pixelated}
+canvas{display:block;image-rendering:crisp-edges}
 #lives{height:24px;display:flex;gap:8px;align-items:center;padding:0 8px}
 #startScreen{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;background:#000}
 #startScreen h1{font-size:42px;color:#ffff00;margin-bottom:12px;text-shadow:3px 3px 0 #cc8800}
@@ -210,7 +210,7 @@ function isInTunnel(col){return col<=5||col>=22;}
 /* ───────── ENTITIES ───────── */
 function createPac(){
   return{
-    col:PAC_START.col,row:PAC_START.row,dir:2,nextDir:2,
+    col:PAC_START.col,row:PAC_START.row,dir:1,nextDir:1,
     x:PAC_START.col*TS+TS/2,y:PAC_START.row*TS+TS/2,
     subCol:0,subRow:0,
     mouth:0,mouthDir:1,moving:false
@@ -358,20 +358,15 @@ function movePac(){
   const dotOnTile=dots[pac.row]&&dots[pac.row][pac.col]>0;
   let spd=baseSpd*(dotOnTile?lp.pacDotSpd:lp.pacSpd);
 
-  // Check if next direction is valid
-  const nd=pac.nextDir;
-  const ncol=((pac.col+DX[nd])%COLS+COLS)%COLS;
-  const nrow=pac.row+DY[nd];
-
-  // At tile center, try to turn
-  const cx=pac.col*TS+TS/2, cy=pac.row*TS+TS/2;
-  const atCenter=Math.abs(pac.x-cx)<spd+1&&Math.abs(pac.y-cy)<spd+1;
+  const cx=pac.col*TS+TS/2,cy=pac.row*TS+TS/2;
+  const atCenter=Math.abs(pac.x-cx)<0.5&&Math.abs(pac.y-cy)<0.5;
 
   if(atCenter){
     pac.x=cx;pac.y=cy;
-    if(canMove(ncol,nrow,false)){
-      pac.dir=nd;
-    }
+    const nd=pac.nextDir;
+    const nc=((pac.col+DX[nd])%COLS+COLS)%COLS;
+    const nr=pac.row+DY[nd];
+    if(canMove(nc,nr,false))pac.dir=nd;
     const fc=((pac.col+DX[pac.dir])%COLS+COLS)%COLS;
     const fr=pac.row+DY[pac.dir];
     if(!canMove(fc,fr,false)){pac.moving=false;return;}
@@ -381,24 +376,29 @@ function movePac(){
   pac.x+=DX[pac.dir]*spd;
   pac.y+=DY[pac.dir]*spd;
 
-  // Tunnel wrap
-  if(pac.x<-TS/2)pac.x=COLS*TS+TS/2;
-  if(pac.x>COLS*TS+TS/2)pac.x=-TS/2;
+  // Arrival: detect reaching the next tile center
+  const ntc=pac.col+DX[pac.dir],ntr=pac.row+DY[pac.dir];
+  if(ntc<0){
+    if(pac.x<0){pac.col=COLS-1;pac.x=pac.col*TS+TS/2;pac.y=pac.row*TS+TS/2;}
+  }else if(ntc>=COLS){
+    if(pac.x>=COLS*TS){pac.col=0;pac.x=pac.col*TS+TS/2;pac.y=pac.row*TS+TS/2;}
+  }else{
+    const ncx=ntc*TS+TS/2,ncy=ntr*TS+TS/2;
+    let arrived=false;
+    const d=pac.dir;
+    if(d===3&&pac.x>=ncx)arrived=true;
+    else if(d===1&&pac.x<=ncx)arrived=true;
+    else if(d===2&&pac.y>=ncy)arrived=true;
+    else if(d===0&&pac.y<=ncy)arrived=true;
+    if(arrived){pac.col=ntc;pac.row=ntr;pac.x=ncx;pac.y=ncy;}
+  }
 
-  // Update grid position
-  pac.col=Math.round((pac.x-TS/2)/TS);
-  pac.col=((pac.col%COLS)+COLS)%COLS;
-  pac.row=Math.round((pac.y-TS/2)/TS);
-  pac.row=Math.max(0,Math.min(ROWS-1,pac.row));
-
-  // Mouth animation
   pac.mouth+=.12*pac.mouthDir;
   if(pac.mouth>.45||pac.mouth<.02){pac.mouthDir*=-1;pac.mouth=Math.max(.02,Math.min(.45,pac.mouth));}
 }
 
 /* ───────── GHOST MOVEMENT ───────── */
 function moveGhost(g){
-  // Bouncing in house
   if(g.inHouse&&!g.exitingHouse){
     g.y+=g.bounceDir*.6;
     const homeY=g.row*TS+TS/2;
@@ -413,40 +413,31 @@ function moveGhost(g){
   else if(g.scared)spd=baseSpd*lp.ghostFright;
   else if(isInTunnel(g.col))spd=baseSpd*lp.ghostTunnel;
   else spd=baseSpd*lp.ghostSpd;
-
   if(g.exitingHouse)spd=baseSpd*.5;
 
   const cx=g.col*TS+TS/2,cy=g.row*TS+TS/2;
-  const atCenter=Math.abs(g.x-cx)<spd+1&&Math.abs(g.y-cy)<spd+1;
+  const atCenter=Math.abs(g.x-cx)<0.5&&Math.abs(g.y-cy)<0.5;
 
   if(atCenter){
     g.x=cx;g.y=cy;
-
-    // Exiting house logic
     if(g.exitingHouse){
       if(g.col===GHOST_HOUSE_EXIT.col&&g.row===GHOST_HOUSE_EXIT.row){
-        g.exitingHouse=false;g.inHouse=false;g.dir=2;
+        g.exitingHouse=false;g.inHouse=false;g.dir=0;
         return;
       }
-      // Move to column 14 first, then up
       if(g.col<GHOST_HOUSE_EXIT.col)g.dir=3;
       else if(g.col>GHOST_HOUSE_EXIT.col)g.dir=1;
-      else g.dir=0; // go up
+      else g.dir=0;
     }
-    // Eaten ghost returning to house
     else if(g.eaten&&g.col===GHOST_HOUSE_EXIT.col&&g.row===GHOST_HOUSE_EXIT.row){
-      g.dir=2; // go down into house
+      g.dir=2;
     }
     else if(g.eaten&&g.col===GHOST_HOUSE_CENTER.col&&g.row===GHOST_HOUSE_CENTER.row){
       g.eaten=false;g.inHouse=false;g.exitingHouse=true;g.scared=false;
       return;
     }
     else{
-      // Reverse direction if flagged (mode switch)
-      if(g.reverseFlag){
-        g.dir=(g.dir+2)%4;
-        g.reverseFlag=false;
-      }
+      if(g.reverseFlag){g.dir=(g.dir+2)%4;g.reverseFlag=false;}
       const target=ghostTarget(g);
       g.dir=bestDir(g,target);
     }
@@ -455,14 +446,22 @@ function moveGhost(g){
   g.x+=DX[g.dir]*spd;
   g.y+=DY[g.dir]*spd;
 
-  // Tunnel wrap
-  if(g.x<-TS/2)g.x=COLS*TS+TS/2;
-  if(g.x>COLS*TS+TS/2)g.x=-TS/2;
-
-  g.col=Math.round((g.x-TS/2)/TS);
-  g.col=((g.col%COLS)+COLS)%COLS;
-  g.row=Math.round((g.y-TS/2)/TS);
-  g.row=Math.max(0,Math.min(ROWS-1,g.row));
+  // Arrival detection
+  const ntc=g.col+DX[g.dir],ntr=g.row+DY[g.dir];
+  if(ntc<0){
+    if(g.x<0){g.col=COLS-1;g.x=g.col*TS+TS/2;g.y=g.row*TS+TS/2;}
+  }else if(ntc>=COLS){
+    if(g.x>=COLS*TS){g.col=0;g.x=g.col*TS+TS/2;g.y=g.row*TS+TS/2;}
+  }else{
+    const ncx=ntc*TS+TS/2,ncy=ntr*TS+TS/2;
+    let arrived=false;
+    const d=g.dir;
+    if(d===3&&g.x>=ncx)arrived=true;
+    else if(d===1&&g.x<=ncx)arrived=true;
+    else if(d===2&&g.y>=ncy)arrived=true;
+    else if(d===0&&g.y<=ncy)arrived=true;
+    if(arrived){g.col=ntc;g.row=ntr;g.x=ncx;g.y=ncy;}
+  }
 }
 
 /* ───────── GHOST RELEASE ───────── */
@@ -655,7 +654,7 @@ function drawGhost(g){
   // Body color
   let bodyColor;
   if(g.scared){
-    const flashing=frightTimer<120&&Math.floor(frameCount/8)%2===1;
+    const flashing=frightTimer<120&&Math.floor(frameCount/15)%2===1;
     bodyColor=flashing?'#fff':'#2121de';
   }else{
     bodyColor=GHOST_COLORS[g.idx];
@@ -671,7 +670,7 @@ function drawGhost(g){
   const waves=4;
   const waveW=r*2/waves;
   const waveH=r*.3;
-  const waveOff=(Math.floor(frameCount/8)%2)*waveH*.6;
+  const waveOff=(Math.floor(frameCount/12)%2)*waveH*.6;
   for(let i=waves-1;i>=0;i--){
     const wx=cx+r-i*waveW;
     const wy=cy+r*.7;
@@ -686,7 +685,7 @@ function drawGhost(g){
 
   if(g.scared){
     // Frightened face
-    const flashing=frightTimer<120&&Math.floor(frameCount/8)%2===1;
+    const flashing=frightTimer<120&&Math.floor(frameCount/15)%2===1;
     const faceColor=flashing?'#f00':'#ffb8ae';
     // Eyes: small dots
     X.fillStyle=faceColor;
