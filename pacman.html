@@ -48,7 +48,7 @@ canvas{display:block;image-rendering:crisp-edges}
 'use strict';
 const LANG = 'ko';
 const CV=document.getElementById('c'),X=CV.getContext('2d');
-const COLS=28,ROWS=31,TS=18;
+const COLS=28,ROWS=31,TS=22;
 CV.width=COLS*TS;CV.height=ROWS*TS;
 
 /* ───────── MAP ───────── */
@@ -354,7 +354,7 @@ function bestDir(g,target){
 /* ───────── PAC-MAN MOVEMENT ───────── */
 function movePac(){
   const lp=levelParams(level);
-  const baseSpd=TS/8;
+  const baseSpd=TS/10;
   const dotOnTile=dots[pac.row]&&dots[pac.row][pac.col]>0;
   let spd=baseSpd*(dotOnTile?lp.pacDotSpd:lp.pacSpd);
 
@@ -407,7 +407,7 @@ function moveGhost(g){
   }
 
   const lp=levelParams(level);
-  const baseSpd=TS/8;
+  const baseSpd=TS/10;
   let spd;
   if(g.eaten)spd=baseSpd*1.6;
   else if(g.scared)spd=baseSpd*lp.ghostFright;
@@ -579,44 +579,52 @@ function eatDots(){
 }
 
 /* ───────── DRAWING ───────── */
-function drawWalls(){
-  X.strokeStyle='#2121de';X.lineWidth=2.5;
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      if(!map[r][c].wall)continue;
-      const x=c*TS,y=r*TS;
-      const up=r>0&&!map[r-1][c].wall;
-      const dn=r<ROWS-1&&!map[r+1][c].wall;
-      const le=c>0&&!map[r][c-1].wall;
-      const ri=c<COLS-1&&!map[r][c+1].wall;
-      if(up){X.beginPath();X.moveTo(x,y);X.lineTo(x+TS,y);X.stroke();}
-      if(dn){X.beginPath();X.moveTo(x,y+TS);X.lineTo(x+TS,y+TS);X.stroke();}
-      if(le||c===0){X.beginPath();X.moveTo(x,y);X.lineTo(x,y+TS);X.stroke();}
-      if(ri||c===COLS-1){X.beginPath();X.moveTo(x+TS,y);X.lineTo(x+TS,y+TS);X.stroke();}
-      if(r===0){X.beginPath();X.moveTo(x,y);X.lineTo(x+TS,y);X.stroke();}
-      if(r===ROWS-1){X.beginPath();X.moveTo(x,y+TS);X.lineTo(x+TS,y+TS);X.stroke();}
-    }
+function drawWalls(fillClr,lineClr){
+  const wf=fillClr||'#0c0c4a';
+  const wl=lineClr||'#2121de';
+  // Fill wall tiles
+  X.fillStyle=wf;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(map[r][c].wall)X.fillRect(c*TS,r*TS,TS,TS);
   }
+  // Draw outline on corridor-facing edges (single path for smooth joins)
+  X.strokeStyle=wl;X.lineWidth=2;
+  X.beginPath();
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(!map[r][c].wall)continue;
+    const x=c*TS,y=r*TS;
+    const u=r>0&&map[r-1][c].wall;
+    const d=r<ROWS-1&&map[r+1][c].wall;
+    const l=c>0&&map[r][c-1].wall;
+    const ri=c<COLS-1&&map[r][c+1].wall;
+    if(!u){X.moveTo(x,y);X.lineTo(x+TS,y);}
+    if(!d){X.moveTo(x,y+TS);X.lineTo(x+TS,y+TS);}
+    if(!l){X.moveTo(x,y);X.lineTo(x,y+TS);}
+    if(!ri){X.moveTo(x+TS,y);X.lineTo(x+TS,y+TS);}
+  }
+  X.stroke();
   // Ghost house door
   X.strokeStyle='#ffb8ae';X.lineWidth=3;
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      if(!map[r][c].door)continue;
-      X.beginPath();X.moveTo(c*TS,r*TS+TS/2);X.lineTo(c*TS+TS,r*TS+TS/2);X.stroke();
-    }
+  X.beginPath();
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    if(map[r][c].door){X.moveTo(c*TS,r*TS+TS/2);X.lineTo(c*TS+TS,r*TS+TS/2);}
   }
+  X.stroke();
 }
 
 function drawDots(){
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
+      const dx=c*TS+TS/2,dy=r*TS+TS/2;
       if(dots[r][c]===1){
         X.fillStyle='#ffb8ae';
-        X.beginPath();X.arc(c*TS+TS/2,r*TS+TS/2,TS*.12,0,Math.PI*2);X.fill();
+        X.beginPath();X.arc(dx,dy,TS*.1,0,Math.PI*2);X.fill();
       }else if(dots[r][c]===2){
         if(Math.floor(frameCount/15)%2===0){
           X.fillStyle='#ffb8ae';
-          X.beginPath();X.arc(c*TS+TS/2,r*TS+TS/2,TS*.32,0,Math.PI*2);X.fill();
+          X.beginPath();X.arc(dx,dy,TS*.28,0,Math.PI*2);X.fill();
+          X.fillStyle='rgba(255,184,174,.25)';
+          X.beginPath();X.arc(dx,dy,TS*.42,0,Math.PI*2);X.fill();
         }
       }
     }
@@ -631,13 +639,12 @@ function drawPacSprite(ctx,cx,cy,radius,mouthOpen,dir){
   ctx.arc(cx,cy,radius,a+mouthOpen*Math.PI,a+(2-mouthOpen)*Math.PI);
   ctx.lineTo(cx,cy);
   ctx.fill();
-  // Eye
-  const eyeDist=radius*.35;
-  const eyeAngle=a+Math.PI*.35;
+  const eyeDist=radius*.4;
+  const eyeAngle=a+Math.PI*.32;
   const ex=cx+Math.cos(eyeAngle)*eyeDist;
   const ey=cy+Math.sin(eyeAngle)*eyeDist;
-  ctx.fillStyle='#000';
-  ctx.beginPath();ctx.arc(ex,ey,radius*.15,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.arc(ex,ey,radius*.13,0,Math.PI*2);ctx.fill();
 }
 
 function drawPac(){
@@ -663,23 +670,20 @@ function drawGhost(g){
   // Draw body: dome top + wavy skirt
   X.fillStyle=bodyColor;
   X.beginPath();
-  X.arc(cx,cy-r*.15,r,Math.PI,0); // dome
-  // Right side down
-  X.lineTo(cx+r,cy+r*.7);
-  // Wavy bottom with 4 waves
-  const waves=4;
+  X.arc(cx,cy-r*.2,r,Math.PI,0);
+  X.lineTo(cx+r,cy+r*.65);
+  const waves=3;
   const waveW=r*2/waves;
-  const waveH=r*.3;
-  const waveOff=(Math.floor(frameCount/12)%2)*waveH*.6;
+  const waveH=r*.35;
+  const phase=(Math.floor(frameCount/12)%2);
   for(let i=waves-1;i>=0;i--){
     const wx=cx+r-i*waveW;
-    const wy=cy+r*.7;
-    X.lineTo(wx-waveW*.25,wy+(i%2===0?waveH-waveOff:waveOff));
-    X.lineTo(wx-waveW*.5,wy);
-    X.lineTo(wx-waveW*.75,wy+(i%2===0?waveOff:waveH-waveOff));
-    X.lineTo(wx-waveW,wy);
+    const wy=cy+r*.65;
+    const up=(i+phase)%2===0;
+    X.quadraticCurveTo(wx-waveW*.25,wy+(up?waveH:0),wx-waveW*.5,wy+(up?waveH*.5:0));
+    X.quadraticCurveTo(wx-waveW*.75,wy+(up?0:waveH),wx-waveW,wy);
   }
-  X.lineTo(cx-r,cy-r*.15);
+  X.lineTo(cx-r,cy-r*.2);
   X.closePath();
   X.fill();
 
@@ -708,20 +712,18 @@ function drawGhost(g){
 }
 
 function drawGhostEyes(cx,cy,r,dir){
-  const eyeOffX=r*.32;
-  const eyeY=cy-r*.2;
-  const eyeW=r*.32,eyeH=r*.38;
+  const eyeOffX=r*.35;
+  const eyeY=cy-r*.25;
+  const eyeW=r*.3,eyeH=r*.4;
 
-  // White of eyes
   X.fillStyle='#fff';
   X.beginPath();X.ellipse(cx-eyeOffX,eyeY,eyeW,eyeH,0,0,Math.PI*2);X.fill();
   X.beginPath();X.ellipse(cx+eyeOffX,eyeY,eyeW,eyeH,0,0,Math.PI*2);X.fill();
 
-  // Pupils - follow direction
-  const pdx=[0,-1,0,1][dir]*eyeW*.45;
-  const pdy=[-1,0,1,0][dir]*eyeH*.4;
-  const pupilR=eyeW*.55;
-  X.fillStyle='#2121de';
+  const pdx=[0,-1,0,1][dir]*eyeW*.5;
+  const pdy=[-1,0,1,0][dir]*eyeH*.45;
+  const pupilR=eyeW*.5;
+  X.fillStyle='#00f';
   X.beginPath();X.arc(cx-eyeOffX+pdx,eyeY+pdy,pupilR,0,Math.PI*2);X.fill();
   X.beginPath();X.arc(cx+eyeOffX+pdx,eyeY+pdy,pupilR,0,Math.PI*2);X.fill();
 }
@@ -749,8 +751,8 @@ function render(){
 
   if(levelClearAnim){
     const flash=Math.floor(levelClearTimer/15)%2===0;
-    if(flash){X.strokeStyle='#fff';X.lineWidth=2.5;drawWalls();}
-    else{drawWalls();}
+    if(flash)drawWalls('#1a1a3a','#ffffff');
+    else drawWalls();
     drawPac();
     return;
   }
@@ -873,19 +875,18 @@ function drawStartGhost(ctx,cx,cy,r,color){
   ctx.beginPath();
   ctx.arc(cx,cy-2,r,Math.PI,0);
   ctx.lineTo(cx+r,cy+r-2);
+  const w=r*2/3;
   for(let i=2;i>=0;i--){
-    const lx=cx-r+i*(r*2/3);
-    ctx.lineTo(lx+r/3,cy+r-2+(i%2===0?3:-3));
-    ctx.lineTo(lx,cy+r-2);
+    const lx=cx-r+i*w;
+    ctx.quadraticCurveTo(lx+w*.5,cy+r-2+((i+1)%2===0?4:-4),lx,cy+r-2);
   }
   ctx.closePath();ctx.fill();
-  // Eyes
   ctx.fillStyle='#fff';
-  ctx.beginPath();ctx.ellipse(cx-3,cy-3,3,3.5,0,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(cx+3,cy-3,3,3.5,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#2121de';
-  ctx.beginPath();ctx.arc(cx-2,cy-3,1.8,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(cx+4,cy-3,1.8,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx-3,cy-3,3,4,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cx+3,cy-3,3,4,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#00f';
+  ctx.beginPath();ctx.arc(cx-2,cy-2,1.8,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx+4,cy-2,1.8,0,Math.PI*2);ctx.fill();
 }
 
 function hideStartScreen(){
