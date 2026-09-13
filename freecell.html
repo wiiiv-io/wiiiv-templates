@@ -33,7 +33,7 @@ body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; di
 .card .corner .s { font-size: calc(var(--ch) * 0.16); margin-left: 2px; }
 .card .center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.46); padding-top: calc(var(--ch) * 0.12); }
 .card.selected { box-shadow: 0 0 0 3px #7c5cfc, 0 6px 14px rgba(0,0,0,0.5); transform: translateY(-4px); z-index: 50; }
-.card.dragging { transition: none; cursor: grabbing; z-index: 100; pointer-events: none; }
+.card.dragging { transition: none; cursor: grabbing; z-index: 100; pointer-events: none; animation: none; }
 .card.hint { animation: pulse 0.9s ease-in-out 2; }
 .card.shake { animation: shake 0.35s ease-in-out 1; }
 @keyframes shake { 0%,100% { translate: 0 0; } 25% { translate: -6px 0; } 50% { translate: 6px 0; } 75% { translate: -4px 0; } }
@@ -207,6 +207,7 @@ function cardEl(card) {
     el.className = 'card' + (isRed(card.suit) ? ' red' : '');
     el.dataset.id = card.id;
     el.innerHTML = `<div class="corner">${RANK_CHAR[card.rank]}<span class="s">${SUIT_CHAR[card.suit]}</span></div><div class="center">${SUIT_CHAR[card.suit]}</div>`;
+    el.addEventListener('animationend', () => el.classList.remove('shake', 'hint'));
     cardEls.set(card.id, el);
   }
   return el;
@@ -234,7 +235,7 @@ function render() {
   tabEl.style.height = (ch + Math.max(0, maxLen - 1) * step) + 'px';
   movesEl.textContent = moves;
   document.getElementById('undoBtn').disabled = history.length === 0;
-  document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.card.selected, .card.shake, .card.hint').forEach(e => e.classList.remove('selected', 'shake', 'hint'));
   if (selected) selectionCards().forEach((c, k) => { const el = cardEl(c); el.classList.add('selected'); el.style.zIndex = 500 + k; });
 }
 
