@@ -227,7 +227,7 @@ function render() {
   movesEl.textContent = moves;
   document.getElementById('undoBtn').disabled = history.length === 0;
   document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
-  if (selected) selectionCards().forEach(c => cardEl(c).classList.add('selected'));
+  if (selected) selectionCards().forEach((c, k) => { const el = cardEl(c); el.classList.add('selected'); el.style.zIndex = 500 + k; });
 }
 
 // ---- Rules ----
@@ -409,7 +409,7 @@ boardEl.addEventListener('pointermove', e => {
   const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
   if (!drag.moved && Math.hypot(dx, dy) < 5) return;
   drag.moved = true;
-  drag.els.forEach((el, k) => { el.classList.add('dragging'); el.style.transform = `translate(${dx}px, ${dy}px)`; });
+  drag.els.forEach((el, k) => { el.classList.add('dragging'); el.style.zIndex = 1000 + k; el.style.transform = `translate(${dx}px, ${dy}px)`; });
   document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
   const to = targetFromPoint(e.clientX, e.clientY);
   if (to) { const t = to.type === 'col' ? tabEl.children[to.index] : topEl.querySelector(`.slot[data-type="${to.type}"][data-index="${to.index}"]`); if (t) t.classList.add('target'); }
@@ -418,7 +418,7 @@ function endDrag(e) {
   if (!drag) return;
   const d = drag; drag = null;
   document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
-  d.els.forEach(el => { el.classList.remove('dragging'); el.style.transform = ''; });
+  d.els.forEach((el, k) => { el.classList.remove('dragging'); el.style.transform = ''; el.style.zIndex = 500 + k; });
   if (!d.moved) return;                       // plain click: keep selection
   const to = targetFromPoint(e.clientX, e.clientY);
   if (to && tryMove(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
