@@ -35,6 +35,8 @@ body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; di
 .card.selected { box-shadow: 0 0 0 3px #7c5cfc, 0 6px 14px rgba(0,0,0,0.5); transform: translateY(-4px); z-index: 50; }
 .card.dragging { transition: none; cursor: grabbing; z-index: 100; pointer-events: none; }
 .card.hint { animation: pulse 0.9s ease-in-out 2; }
+.card.shake { animation: shake 0.35s ease-in-out 1; }
+@keyframes shake { 0%,100% { translate: 0 0; } 25% { translate: -6px 0; } 50% { translate: 6px 0; } 75% { translate: -4px 0; } }
 @keyframes pulse { 0%,100% { box-shadow: 0 2px 4px rgba(0,0,0,0.35); } 50% { box-shadow: 0 0 0 4px #ffd700; } }
 #overlay { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,0.72); z-index: 200; text-align: center; padding: 20px; }
 #overlay.active { display: flex; }
@@ -78,18 +80,24 @@ const T = {
         game: '게임', moves: '이동', time: '시간', congrats: '🎉 축하합니다!', playAgain: '다시 하기',
         result: (n, m, min, sec) => `게임 #${n} · ${m}회 이동 · ${min}분 ${sec}초`,
         noHint: '가능한 이동이 없습니다', tooMany: (k) => `한 번에 최대 ${k}장까지만 옮길 수 있습니다`,
-        nothingAuto: '자동으로 올릴 카드가 없습니다' },
+        nothingAuto: '자동으로 올릴 카드가 없습니다',
+        badStack: (a, b) => `${a}은(는) ${b} 위에 놓을 수 없습니다 (색이 다르고 한 단계 낮아야 함)`,
+        cellFull: '프리셀에는 한 장만 놓을 수 있습니다', notFound: (a) => `${a}은(는) 아직 파운데이션에 올릴 수 없습니다` },
   en: { title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
         game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
         result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
         noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
-        nothingAuto: 'Nothing to send to foundations' }
+        nothingAuto: 'Nothing to send to foundations',
+        badStack: (a, b) => `${a} cannot go on ${b} (needs opposite color, one rank lower)`,
+        cellFull: 'Only one card fits in a free cell', notFound: (a) => `${a} cannot go to the foundation yet` }
 }[LANG] || {
   title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
   game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
   result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
   noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
-  nothingAuto: 'Nothing to send to foundations'
+  nothingAuto: 'Nothing to send to foundations',
+  badStack: (a, b) => `${a} cannot go on ${b} (needs opposite color, one rank lower)`,
+  cellFull: 'Only one card fits in a free cell', notFound: (a) => `${a} cannot go to the foundation yet`
 };
 
 // Apply i18n to static DOM
@@ -110,7 +118,7 @@ const SUITS = ['S', 'H', 'D', 'C'];               // spades, hearts, diamonds, c
 const SUIT_CHAR = { S: '♠', H: '♥', D: '♦', C: '♣' };
 const RANK_CHAR = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 const isRed = s => s === 'H' || s === 'D';
-const CARD_OVERLAP = 0.26;   // fraction of card height visible per stacked card
+const CARD_OVERLAP = 0.30;   // fraction of card height visible per stacked card
 const MAX_SEED = 32000;
 
 // ---- State ----
@@ -270,6 +278,31 @@ function tryMove(from, to, count) {
   if (dest.length && !canStack(first, dest[dest.length - 1])) return false;
   apply({ from, to, cards: moving }); return true;
 }
+const name = c => RANK_CHAR[c.rank] + SUIT_CHAR[c.suit];
+// Forgiving move: if the grabbed run can't go there but a longer run starting just above it can
+// (user grabbed the 8 while meaning the 9 in a tight stack), move that instead. On failure, explain.
+function tryMoveSmart(from, to, count) {
+  if (tryMove(from, to, count)) return true;
+  if (from.type === 'col' && to.type === 'col') {
+    const src = cols[from.index];
+    for (let extra = 1; src.length - count - extra >= 1; extra++) {
+      const run = src.slice(src.length - count - extra);
+      if (!isRun(run)) break;
+      if (tryMove(from, to, count + extra)) return true;
+    }
+  }
+  rejectFeedback(from, to, count);
+  return false;
+}
+function rejectFeedback(from, to, count) {
+  const moving = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
+  if (!moving.length || !moving[0]) return;
+  moving.forEach(c => { const el = cardEl(c); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); });
+  const first = moving[0];
+  if (to.type === 'col') { const d = cols[to.index]; if (d.length && !canStack(first, d[d.length - 1])) toast(T.badStack(name(first), name(d[d.length - 1]))); }
+  else if (to.type === 'cell') { if (moving.length > 1 || cells[to.index]) toast(T.cellFull); }
+  else if (to.type === 'found') toast(T.notFound(name(first)));
+}
 function apply(mv, record = true) {
   const n = mv.cards.length;
   if (mv.from.type === 'cell') cells[mv.from.index] = null;
@@ -387,7 +420,7 @@ boardEl.addEventListener('pointerdown', e => {
   const cardNode = e.target.closest('.card');
   if (!cardNode) {
     // clicking an empty slot with a selection = move there
-    if (selected) { const to = targetFromPoint(e.clientX, e.clientY); if (to && tryMove(selected.from, to, selected.count)) afterMove(); else { selected = null; render(); } }
+    if (selected) { const to = targetFromPoint(e.clientX, e.clientY); if (to && tryMoveSmart(selected.from, to, selected.count)) afterMove(); else { selected = null; render(); } }
     return;
   }
   const loc = locate(cardNode.dataset.id);
@@ -405,7 +438,7 @@ boardEl.addEventListener('pointerdown', e => {
   // If a selection exists and we click a different card, try moving onto its pile
   if (selected && !(selected.from.type === from.type && selected.from.index === from.index)) {
     const to = { type: from.type, index: from.index };
-    if (tryMove(selected.from, to, selected.count)) { afterMove(); return; }
+    if (tryMoveSmart(selected.from, to, selected.count)) { afterMove(); return; }
   }
   selected = { from, count };
   render();
@@ -433,7 +466,7 @@ function endDrag(e) {
   const to = d.moved ? targetFromPoint(e.clientX, e.clientY) : null;
   d.els.forEach((el, k) => { el.classList.remove('dragging'); el.style.transform = ''; el.style.zIndex = 500 + k; });
   if (!d.moved) return;                       // plain click: keep selection
-  if (to && tryMove(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
+  if (to && tryMoveSmart(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
 }
 boardEl.addEventListener('pointerup', endDrag);
 boardEl.addEventListener('pointercancel', endDrag);
@@ -450,7 +483,7 @@ document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase()
 window.addEventListener('resize', render);
 
 let toastId = null;
-function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastId); toastId = setTimeout(() => toastEl.classList.remove('show'), 1600); }
+function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastId); toastId = setTimeout(() => toastEl.classList.remove('show'), 2600); }
 
 startGame();
 </script>
