@@ -235,7 +235,7 @@ function render() {
   tabEl.style.height = (ch + Math.max(0, maxLen - 1) * step) + 'px';
   movesEl.textContent = moves;
   document.getElementById('undoBtn').disabled = history.length === 0;
-  document.querySelectorAll('.card.selected, .card.shake, .card.hint').forEach(e => e.classList.remove('selected', 'shake', 'hint'));
+  document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
   if (selected) selectionCards().forEach((c, k) => { const el = cardEl(c); el.classList.add('selected'); el.style.zIndex = 500 + k; });
 }
 
