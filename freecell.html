@@ -351,12 +351,22 @@ function locate(cardId) {
   for (let i = 0; i < 8; i++) { const k = cols[i].findIndex(c => c.id === cardId); if (k >= 0) return { type: 'col', index: i, pos: k }; }
   return null;
 }
+function slotToTarget(slot) {
+  return { type: slot.dataset.type, index: slot.dataset.type === 'col' || slot.dataset.type === 'cell' ? +slot.dataset.index : slot.dataset.index };
+}
 function targetFromPoint(x, y) {
   const el = document.elementFromPoint(x, y);
-  if (!el) return null;
-  const slot = el.closest('.slot, .col');
-  if (!slot) return null;
-  return { type: slot.dataset.type, index: slot.dataset.type === 'col' || slot.dataset.type === 'cell' ? +slot.dataset.index : slot.dataset.index };
+  const slot = el && el.closest('.slot, .col');
+  if (slot) return slotToTarget(slot);
+  // Fallback: pointer is between/below the piles (e.g. dropping a run "under" a short column).
+  // Pick the top-row slot or tableau column whose horizontal span contains x.
+  const topRect = topEl.getBoundingClientRect(), tabRect = tabEl.getBoundingClientRect();
+  const row = y < (topRect.bottom + tabRect.top) / 2 ? topEl : tabEl;
+  for (const child of row.children) {
+    const r = child.getBoundingClientRect();
+    if (x >= r.left && x <= r.right && y >= topRect.top - 20) return slotToTarget(child);
+  }
+  return null;
 }
 function smartDestination(from, count) {
   // double-click / tap on selected: foundation first, then best column, then free cell
@@ -418,9 +428,11 @@ function endDrag(e) {
   if (!drag) return;
   const d = drag; drag = null;
   document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
+  // Hit-test BEFORE restoring the cards: while .dragging they are pointer-events:none, and the
+  // transform transition would otherwise leave them under the pointer and hit their own column.
+  const to = d.moved ? targetFromPoint(e.clientX, e.clientY) : null;
   d.els.forEach((el, k) => { el.classList.remove('dragging'); el.style.transform = ''; el.style.zIndex = 500 + k; });
   if (!d.moved) return;                       // plain click: keep selection
-  const to = targetFromPoint(e.clientX, e.clientY);
   if (to && tryMove(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
 }
 boardEl.addEventListener('pointerup', endDrag);
