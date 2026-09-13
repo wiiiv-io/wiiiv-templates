@@ -12,7 +12,7 @@
     { "id": "galaga", "label": { "ko": "갤러그", "en": "Galaga" }, "keywords": ["갤러그", "갤러가", "galaga"], "category": "game" },
     { "id": "memory", "label": { "ko": "메모리 카드 게임", "en": "Memory Card Game" }, "keywords": ["메모리 카드", "메모리카드", "짝맞추기", "짝 맞추기", "memory card", "memory game"], "category": "game" },
     { "id": "pacman", "label": { "ko": "팩맨", "en": "PAC-MAN" }, "keywords": ["팩맨", "패크맨", "pacman", "pac-man", "pac man"], "category": "game" },
-    { "id": "freecell", "label": { "ko": "프리셀", "en": "FreeCell" }, "keywords": ["프리셀", "프리 셀", "프리쉘", "프리 쉘", "후리셀", "freecell", "free cell", "free-cell"], "category": "game" },
+    { "id": "freecell", "label": { "ko": "프리셀", "en": "FreeCell" }, "keywords": ["프리셀", "프리 셀", "프리쉘", "프리 쉘", "프레셀", "프레 셀", "프레쉘", "프리셸", "후리셀", "후리쉘", "freecell", "free cell", "free-cell", "freecel", "프리셀 게임", "freecell solitaire"], "category": "game" },
     { "id": "calculator", "label": { "ko": "계산기", "en": "Calculator" }, "keywords": ["계산기", "calculator"], "category": "tool" },
     { "id": "pomodoro", "label": { "ko": "포모도로 타이머", "en": "Pomodoro Timer" }, "keywords": ["포모도로", "뽀모도로", "pomodoro"], "category": "tool" },
     { "id": "paint", "label": { "ko": "그림판", "en": "Paint" }, "keywords": ["그림판", "paint", "drawing"], "category": "tool" },
