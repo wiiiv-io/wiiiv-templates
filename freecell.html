@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프리셀</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
+#controls { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; flex-wrap: wrap; justify-content: center; }
+.btn { background: #333; border: 1px solid #555; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.btn:hover { background: #444; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn.primary { background: #7c5cfc; border-color: #7c5cfc; }
+.btn.primary:hover { background: #6a4ce0; }
+#seedInput { width: 84px; background: #1a1a2e; border: 1px solid #555; color: #fff; padding: 6px 8px; border-radius: 6px; font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+#ui { display: flex; gap: 20px; margin-bottom: 8px; font-size: 14px; }
+.stat { display: flex; gap: 6px; align-items: center; }
+.label { color: #888; }
+.value { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+#board { position: relative; flex: 1; width: 100%; max-width: 900px; padding: 0 8px 8px; overflow-y: auto; overflow-x: hidden; }
+#top { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--gap); margin-bottom: calc(var(--gap) * 2); }
+#tableau { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--gap); }
+.slot { position: relative; height: var(--ch); border-radius: 8px; border: 2px dashed rgba(255,255,255,0.18); background: rgba(255,255,255,0.03); }
+.slot.foundation::after { content: attr(data-suit); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.4); color: rgba(255,255,255,0.15); }
+.slot.freecell::after { content: '✦'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.28); color: rgba(124,92,252,0.35); }
+.col { position: relative; min-height: var(--ch); }
+.slot.target, .col.target { border-color: #7c5cfc; box-shadow: 0 0 10px rgba(124,92,252,0.45); }
+.card { position: absolute; left: 0; top: 0; width: 100%; height: var(--ch); border-radius: 8px; background: #f4f1ea; color: #111; border: 1px solid #b9b3a6; box-shadow: 0 2px 4px rgba(0,0,0,0.35); cursor: grab; transition: transform 0.18s, box-shadow 0.18s; overflow: hidden; }
+.card.red { color: #c8202e; }
+.card .corner { position: absolute; left: 6px; top: 3px; font-size: calc(var(--ch) * 0.19); font-weight: 700; line-height: 1.1; white-space: nowrap; }
+.card .corner .s { font-size: calc(var(--ch) * 0.16); margin-left: 2px; }
+.card .center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.46); padding-top: calc(var(--ch) * 0.12); }
+.card.selected { box-shadow: 0 0 0 3px #7c5cfc, 0 6px 14px rgba(0,0,0,0.5); transform: translateY(-4px); z-index: 50; }
+.card.dragging { transition: none; cursor: grabbing; z-index: 100; pointer-events: none; }
+.card.hint { animation: pulse 0.9s ease-in-out 2; }
+@keyframes pulse { 0%,100% { box-shadow: 0 2px 4px rgba(0,0,0,0.35); } 50% { box-shadow: 0 0 0 4px #ffd700; } }
+#overlay { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,0.72); z-index: 200; text-align: center; padding: 20px; }
+#overlay.active { display: flex; }
+#overlay h2 { font-size: 28px; color: #ffd700; }
+#overlay p { font-size: 16px; color: #ccc; }
+#overlay button { background: #7c5cfc; border: none; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+#overlay button:hover { background: #6a4ce0; }
+#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1e1e3e; border: 1px solid #3a3a5a; color: #ddd; padding: 8px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 150; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <button class="btn primary" id="newBtn">새 게임</button>
+  <input id="seedInput" type="number" min="1" max="999999" placeholder="#">
+  <button class="btn" id="seedBtn">번호로 시작</button>
+  <button class="btn" id="undoBtn">되돌리기</button>
+  <button class="btn" id="hintBtn">힌트</button>
+  <button class="btn" id="autoBtn">자동 완성</button>
+</div>
+<div id="ui">
+  <div class="stat"><span class="label" id="lGame">게임</span><span class="value" id="gameNo">-</span></div>
+  <div class="stat"><span class="label" id="lMoves">이동</span><span class="value" id="moves">0</span></div>
+  <div class="stat"><span class="label" id="lTime">시간</span><span class="value" id="timer">0:00</span></div>
+</div>
+<div id="board">
+  <div id="top"></div>
+  <div id="tableau"></div>
+</div>
+<div id="overlay">
+  <h2 id="ovTitle">🎉 축하합니다!</h2>
+  <p id="resultText"></p>
+  <button id="againBtn">다시 하기</button>
+</div>
+<div id="toast"></div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: { title: '프리셀', newGame: '새 게임', seedStart: '번호로 시작', undo: '되돌리기', hint: '힌트', auto: '자동 완성',
+        game: '게임', moves: '이동', time: '시간', congrats: '🎉 축하합니다!', playAgain: '다시 하기',
+        result: (n, m, min, sec) => `게임 #${n} · ${m}회 이동 · ${min}분 ${sec}초`,
+        noHint: '가능한 이동이 없습니다', tooMany: (k) => `한 번에 최대 ${k}장까지만 옮길 수 있습니다`,
+        nothingAuto: '자동으로 올릴 카드가 없습니다' },
+  en: { title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
+        game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
+        result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
+        noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
+        nothingAuto: 'Nothing to send to foundations' }
+}[LANG] || {
+  title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
+  game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
+  result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
+  noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
+  nothingAuto: 'Nothing to send to foundations'
+};
+
+// Apply i18n to static DOM
+document.title = T.title;
+document.getElementById('newBtn').textContent = T.newGame;
+document.getElementById('seedBtn').textContent = T.seedStart;
+document.getElementById('undoBtn').textContent = T.undo;
+document.getElementById('hintBtn').textContent = T.hint;
+document.getElementById('autoBtn').textContent = T.auto;
+document.getElementById('lGame').textContent = T.game;
+document.getElementById('lMoves').textContent = T.moves;
+document.getElementById('lTime').textContent = T.time;
+document.getElementById('ovTitle').textContent = T.congrats;
+document.getElementById('againBtn').textContent = T.playAgain;
+
+// ---- Constants ----
+const SUITS = ['S', 'H', 'D', 'C'];               // spades, hearts, diamonds, clubs
+const SUIT_CHAR = { S: '♠', H: '♥', D: '♦', C: '♣' };
+const RANK_CHAR = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const isRed = s => s === 'H' || s === 'D';
+const CARD_OVERLAP = 0.26;   // fraction of card height visible per stacked card
+const MAX_SEED = 32000;
+
+// ---- State ----
+// card = { id, suit, rank }
+let cells = [null, null, null, null];        // free cells
+let found = { S: 0, H: 0, D: 0, C: 0 };      // foundation top rank per suit
+let cols = [];                               // 8 arrays of cards
+let history = [];
+let moves = 0, seed = 0, startTime = null, timerId = null, won = false;
+let selected = null;                         // { from: {type,index}, count }
+let cardEls = new Map();
+
+const topEl = document.getElementById('top');
+const tabEl = document.getElementById('tableau');
+const boardEl = document.getElementById('board');
+const movesEl = document.getElementById('moves');
+const timerEl = document.getElementById('timer');
+const gameNoEl = document.getElementById('gameNo');
+const overlay = document.getElementById('overlay');
+const toastEl = document.getElementById('toast');
+
+// ---- Deal (Microsoft FreeCell compatible numbering) ----
+function msRandom(s) {
+  let state = s;
+  return () => { state = (state * 214013 + 2531011) & 0x7fffffff; return (state >> 16) & 0x7fff; };
+}
+function deal(gameSeed) {
+  const rnd = msRandom(gameSeed);
+  // MS deck order: rank-major, suit order C D H S
+  const deck = [];
+  for (let r = 1; r <= 13; r++) for (const s of ['C', 'D', 'H', 'S']) deck.push({ id: s + r, suit: s, rank: r });
+  cols = Array.from({ length: 8 }, () => []);
+  let left = 52, i = 0;
+  while (left > 0) {
+    const j = rnd() % left;
+    cols[i % 8].push(deck[j]);
+    deck[j] = deck[left - 1];
+    left--; i++;
+  }
+}
+
+// ---- Game control ----
+function startGame(gameSeed) {
+  seed = gameSeed || (1 + Math.floor(Math.random() * MAX_SEED));
+  deal(seed);
+  cells = [null, null, null, null];
+  found = { S: 0, H: 0, D: 0, C: 0 };
+  history = []; moves = 0; won = false; selected = null;
+  startTime = null; if (timerId) clearInterval(timerId); timerId = null;
+  timerEl.textContent = '0:00';
+  gameNoEl.textContent = '#' + seed;
+  document.getElementById('seedInput').value = seed;
+  overlay.classList.remove('active');
+  buildBoard();
+  render();
+}
+function tick() {
+  if (!startTime) return;
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  timerEl.textContent = `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+}
+function ensureTimer() { if (!startTime) { startTime = Date.now(); timerId = setInterval(tick, 500); } }
+
+// ---- Layout ----
+function layout() {
+  const w = boardEl.clientWidth - 16;
+  const gap = Math.max(4, Math.floor(w * 0.012));
+  const cw = Math.floor((w - gap * 7) / 8);
+  const ch = Math.floor(cw * 1.42);
+  boardEl.style.setProperty('--gap', gap + 'px');
+  boardEl.style.setProperty('--ch', ch + 'px');
+  return { cw, ch, gap };
+}
+function buildBoard() {
+  topEl.innerHTML = '';
+  for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.className = 'slot freecell'; d.dataset.type = 'cell'; d.dataset.index = i; topEl.appendChild(d); }
+  for (const s of SUITS) { const d = document.createElement('div'); d.className = 'slot foundation'; d.dataset.type = 'found'; d.dataset.index = s; d.dataset.suit = SUIT_CHAR[s]; topEl.appendChild(d); }
+  tabEl.innerHTML = '';
+  for (let i = 0; i < 8; i++) { const d = document.createElement('div'); d.className = 'col'; d.dataset.type = 'col'; d.dataset.index = i; tabEl.appendChild(d); }
+  cardEls.clear();
+}
+function cardEl(card) {
+  let el = cardEls.get(card.id);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'card' + (isRed(card.suit) ? ' red' : '');
+    el.dataset.id = card.id;
+    el.innerHTML = `<div class="corner">${RANK_CHAR[card.rank]}<span class="s">${SUIT_CHAR[card.suit]}</span></div><div class="center">${SUIT_CHAR[card.suit]}</div>`;
+    cardEls.set(card.id, el);
+  }
+  return el;
+}
+function render() {
+  const { ch } = layout();
+  const step = Math.floor(ch * CARD_OVERLAP);
+  // free cells
+  topEl.querySelectorAll('.slot.freecell').forEach((slot, i) => {
+    slot.innerHTML = '';
+    if (cells[i]) { const el = cardEl(cells[i]); el.style.top = '0'; el.style.zIndex = 1; slot.appendChild(el); }
+  });
+  // foundations
+  topEl.querySelectorAll('.slot.foundation').forEach(slot => {
+    const s = slot.dataset.index; slot.innerHTML = '';
+    if (found[s] > 0) { const el = cardEl({ id: s + found[s], suit: s, rank: found[s] }); el.style.top = '0'; el.style.zIndex = 1; slot.appendChild(el); }
+  });
+  // tableau
+  let maxLen = 0;
+  tabEl.querySelectorAll('.col').forEach((colEl, i) => {
+    colEl.innerHTML = '';
+    cols[i].forEach((c, k) => { const el = cardEl(c); el.style.top = (k * step) + 'px'; el.style.zIndex = k + 1; colEl.appendChild(el); });
+    maxLen = Math.max(maxLen, cols[i].length);
+  });
+  tabEl.style.height = (ch + Math.max(0, maxLen - 1) * step) + 'px';
+  movesEl.textContent = moves;
+  document.getElementById('undoBtn').disabled = history.length === 0;
+  document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
+  if (selected) selectionCards().forEach(c => cardEl(c).classList.add('selected'));
+}
+
+// ---- Rules ----
+function canStack(upper, lower) { return upper.rank === lower.rank - 1 && isRed(upper.suit) !== isRed(lower.suit); }
+function isRun(arr) { for (let i = 0; i < arr.length - 1; i++) if (!canStack(arr[i + 1], arr[i])) return false; return true; }
+function maxMovable(toEmptyCol) {
+  const freeCells = cells.filter(c => !c).length;
+  let emptyCols = cols.filter(c => c.length === 0).length;
+  if (toEmptyCol) emptyCols = Math.max(0, emptyCols - 1);
+  return (freeCells + 1) * Math.pow(2, emptyCols);
+}
+function selectionCards() {
+  if (!selected) return [];
+  const { from, count } = selected;
+  if (from.type === 'cell') return [cells[from.index]];
+  return cols[from.index].slice(cols[from.index].length - count);
+}
+// Try moving `count` cards from `from` to `to`; returns true on success
+function tryMove(from, to, count) {
+  if (from.type === to.type && from.index === to.index) return false;
+  const moving = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
+  if (!moving.length || moving.some(c => !c)) return false;
+  const first = moving[0];
+  if (to.type === 'found') {
+    if (moving.length !== 1) return false;
+    const s = first.suit;
+    if (to.index !== s && to.index !== undefined) { /* dropped on wrong suit slot → route to own suit */ }
+    if (found[s] !== first.rank - 1) return false;
+    apply({ from, to: { type: 'found', index: s }, cards: moving });
+    return true;
+  }
+  if (to.type === 'cell') {
+    if (moving.length !== 1 || cells[to.index]) return false;
+    apply({ from, to, cards: moving }); return true;
+  }
+  // to column
+  const dest = cols[to.index];
+  const limit = maxMovable(dest.length === 0);
+  if (moving.length > limit) { toast(T.tooMany(limit)); return false; }
+  if (dest.length && !canStack(first, dest[dest.length - 1])) return false;
+  apply({ from, to, cards: moving }); return true;
+}
+function apply(mv, record = true) {
+  const n = mv.cards.length;
+  if (mv.from.type === 'cell') cells[mv.from.index] = null;
+  else if (mv.from.type === 'found') found[mv.from.index]--;
+  else cols[mv.from.index].splice(cols[mv.from.index].length - n, n);
+  if (mv.to.type === 'cell') cells[mv.to.index] = mv.cards[0];
+  else if (mv.to.type === 'found') found[mv.to.index] = mv.cards[0].rank;
+  else cols[mv.to.index].push(...mv.cards);
+  if (record) { history.push(mv); moves++; ensureTimer(); }
+  selected = null;
+}
+function undo() {
+  const mv = history.pop(); if (!mv) return;
+  apply({ from: mv.to, to: mv.from, cards: mv.cards }, false);
+  moves++; render();
+}
+function checkWin() {
+  if (SUITS.every(s => found[s] === 13)) {
+    won = true; clearInterval(timerId);
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    document.getElementById('resultText').textContent = T.result(seed, moves, Math.floor(s / 60), s % 60);
+    overlay.classList.add('active');
+  }
+}
+// Safe auto-moves to foundation (only cards that can never be needed in tableau)
+function safeToFoundation(card) {
+  if (found[card.suit] !== card.rank - 1) return false;
+  if (card.rank <= 2) return true;
+  const opp = isRed(card.suit) ? ['S', 'C'] : ['H', 'D'];
+  return opp.every(s => found[s] >= card.rank - 1);
+}
+function autoPlay(force) {
+  let moved = false, any = true;
+  while (any) {
+    any = false;
+    for (let i = 0; i < 8; i++) {
+      const c = cols[i][cols[i].length - 1];
+      if (c && (force ? found[c.suit] === c.rank - 1 : safeToFoundation(c))) { apply({ from: { type: 'col', index: i }, to: { type: 'found', index: c.suit }, cards: [c] }); any = moved = true; }
+    }
+    for (let i = 0; i < 4; i++) {
+      const c = cells[i];
+      if (c && (force ? found[c.suit] === c.rank - 1 : safeToFoundation(c))) { apply({ from: { type: 'cell', index: i }, to: { type: 'found', index: c.suit }, cards: [c] }); any = moved = true; }
+    }
+  }
+  return moved;
+}
+function afterMove() { autoPlay(false); render(); checkWin(); }
+
+// ---- Hint ----
+function findHint() {
+  const sources = [];
+  cols.forEach((col, i) => { for (let k = col.length - 1; k >= 0; k--) { const run = col.slice(k); if (!isRun(run)) break; sources.push({ from: { type: 'col', index: i }, cards: run }); } });
+  cells.forEach((c, i) => { if (c) sources.push({ from: { type: 'cell', index: i }, cards: [c] }); });
+  // priority: foundation → non-empty column → empty column → free cell
+  for (const s of sources) if (s.cards.length === 1 && found[s.cards[0].suit] === s.cards[0].rank - 1) return { ...s, to: { type: 'found', index: s.cards[0].suit } };
+  for (const s of sources) for (let i = 0; i < 8; i++) {
+    if (s.from.type === 'col' && s.from.index === i) continue;
+    const d = cols[i]; if (!d.length) continue;
+    if (canStack(s.cards[0], d[d.length - 1]) && s.cards.length <= maxMovable(false)) {
+      if (s.from.type === 'col' && s.cards.length === cols[s.from.index].length) continue; // don't just relocate whole column
+      return { ...s, to: { type: 'col', index: i } };
+    }
+  }
+  for (const s of sources) { const i = cols.findIndex(c => c.length === 0); if (i >= 0 && !(s.from.type === 'col' && s.cards.length === cols[s.from.index].length) && s.cards.length <= maxMovable(true)) return { ...s, to: { type: 'col', index: i } }; }
+  for (const s of sources) if (s.from.type === 'col' && s.cards.length === 1) { const i = cells.findIndex(c => !c); if (i >= 0) return { ...s, to: { type: 'cell', index: i } }; }
+  return null;
+}
+function showHint() {
+  const h = findHint();
+  if (!h) { toast(T.noHint); return; }
+  h.cards.forEach(c => { const el = cardEl(c); el.classList.remove('hint'); void el.offsetWidth; el.classList.add('hint'); });
+  const target = h.to.type === 'col' ? tabEl.children[h.to.index] : topEl.querySelector(`.slot[data-type="${h.to.type === 'found' ? 'found' : 'cell'}"][data-index="${h.to.index}"]`);
+  if (target) { target.classList.add('target'); setTimeout(() => target.classList.remove('target'), 1800); }
+}
+
+// ---- Input: click-select + drag ----
+function locate(cardId) {
+  for (let i = 0; i < 4; i++) if (cells[i] && cells[i].id === cardId) return { type: 'cell', index: i, pos: 0 };
+  for (let i = 0; i < 8; i++) { const k = cols[i].findIndex(c => c.id === cardId); if (k >= 0) return { type: 'col', index: i, pos: k }; }
+  return null;
+}
+function targetFromPoint(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const slot = el.closest('.slot, .col');
+  if (!slot) return null;
+  return { type: slot.dataset.type, index: slot.dataset.type === 'col' || slot.dataset.type === 'cell' ? +slot.dataset.index : slot.dataset.index };
+}
+function smartDestination(from, count) {
+  // double-click / tap on selected: foundation first, then best column, then free cell
+  const cards = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
+  const first = cards[0];
+  if (cards.length === 1 && found[first.suit] === first.rank - 1) return { type: 'found', index: first.suit };
+  for (let i = 0; i < 8; i++) { if (from.type === 'col' && from.index === i) continue; const d = cols[i]; if (d.length && canStack(first, d[d.length - 1]) && cards.length <= maxMovable(false)) return { type: 'col', index: i }; }
+  if (cards.length === 1 && from.type === 'col') { const i = cells.findIndex(c => !c); if (i >= 0) return { type: 'cell', index: i }; }
+  const e = cols.findIndex(c => c.length === 0); if (e >= 0 && cards.length <= maxMovable(true) && !(from.type === 'col' && cards.length === cols[from.index].length)) return { type: 'col', index: e };
+  return null;
+}
+
+let drag = null;   // { from, count, els, startX, startY, moved, offsets }
+let lastTap = { id: null, t: 0 };
+
+boardEl.addEventListener('pointerdown', e => {
+  if (won) return;
+  const cardNode = e.target.closest('.card');
+  if (!cardNode) {
+    // clicking an empty slot with a selection = move there
+    if (selected) { const to = targetFromPoint(e.clientX, e.clientY); if (to && tryMove(selected.from, to, selected.count)) afterMove(); else { selected = null; render(); } }
+    return;
+  }
+  const loc = locate(cardNode.dataset.id);
+  if (!loc) return;   // foundation cards are not movable
+  let count = 1, from = { type: loc.type, index: loc.index };
+  if (loc.type === 'col') { const run = cols[loc.index].slice(loc.pos); if (!isRun(run)) return; count = run.length; }
+  const now = Date.now();
+  if (lastTap.id === cardNode.dataset.id && now - lastTap.t < 350) {
+    lastTap = { id: null, t: 0 };
+    const to = smartDestination(from, count);
+    if (to && tryMove(from, to, count)) afterMove(); else { selected = null; render(); }
+    return;
+  }
+  lastTap = { id: cardNode.dataset.id, t: now };
+  // If a selection exists and we click a different card, try moving onto its pile
+  if (selected && !(selected.from.type === from.type && selected.from.index === from.index)) {
+    const to = { type: from.type, index: from.index };
+    if (tryMove(selected.from, to, selected.count)) { afterMove(); return; }
+  }
+  selected = { from, count };
+  render();
+  const els = selectionCards().map(cardEl);
+  const rects = els.map(el => el.getBoundingClientRect());
+  drag = { from, count, els, startX: e.clientX, startY: e.clientY, moved: false, rects };
+  boardEl.setPointerCapture(e.pointerId);
+});
+boardEl.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+  if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+  drag.moved = true;
+  drag.els.forEach((el, k) => { el.classList.add('dragging'); el.style.transform = `translate(${dx}px, ${dy}px)`; });
+  document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
+  const to = targetFromPoint(e.clientX, e.clientY);
+  if (to) { const t = to.type === 'col' ? tabEl.children[to.index] : topEl.querySelector(`.slot[data-type="${to.type}"][data-index="${to.index}"]`); if (t) t.classList.add('target'); }
+});
+function endDrag(e) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
+  d.els.forEach(el => { el.classList.remove('dragging'); el.style.transform = ''; });
+  if (!d.moved) return;                       // plain click: keep selection
+  const to = targetFromPoint(e.clientX, e.clientY);
+  if (to && tryMove(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
+}
+boardEl.addEventListener('pointerup', endDrag);
+boardEl.addEventListener('pointercancel', endDrag);
+
+// ---- Buttons ----
+document.getElementById('newBtn').onclick = () => startGame();
+document.getElementById('seedBtn').onclick = () => { const v = parseInt(document.getElementById('seedInput').value, 10); startGame(v > 0 ? v : undefined); };
+document.getElementById('seedInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('seedBtn').click(); });
+document.getElementById('undoBtn').onclick = undo;
+document.getElementById('hintBtn').onclick = showHint;
+document.getElementById('autoBtn').onclick = () => { if (autoPlay(true)) { render(); checkWin(); } else toast(T.nothingAuto); };
+document.getElementById('againBtn').onclick = () => startGame();
+document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } if (e.key === 'Escape') { selected = null; render(); } });
+window.addEventListener('resize', render);
+
+let toastId = null;
+function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastId); toastId = setTimeout(() => toastEl.classList.remove('show'), 1600); }
+
+startGame();
+</script>
+</body>
+</html>

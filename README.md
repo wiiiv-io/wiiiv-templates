@@ -28,6 +28,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | gomoku | game |
 | galaga | game |
 | memory | game |
+| freecell | game |
 | calculator | tool |
 | pomodoro | tool |
 | paint | tool |
