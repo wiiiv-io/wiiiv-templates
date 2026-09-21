@@ -29,6 +29,7 @@
     { "id": "unit-converter", "label": { "ko": "단위 변환기", "en": "Unit Converter" }, "keywords": ["단위 변환", "단위변환", "단위 변환기", "단위변환기", "unit converter", "unit conversion", "환산"], "category": "tool" },
     { "id": "stopwatch", "label": { "ko": "스톱워치", "en": "Stopwatch" }, "keywords": ["스톱워치", "스탑워치", "초시계", "stopwatch", "타이머", "timer", "카운트다운"], "category": "tool" },
     { "id": "password-gen", "label": { "ko": "비밀번호 생성기", "en": "Password Generator" }, "keywords": ["비밀번호 생성", "비밀번호생성", "비밀번호 생성기", "비번 생성", "비번생성", "패스워드", "password generator", "password"], "category": "tool" },
-    { "id": "world-clock", "label": { "ko": "세계 시계", "en": "World Clock" }, "keywords": ["세계 시계", "세계시계", "world clock", "시차", "타임존", "timezone"], "category": "tool" }
+    { "id": "world-clock", "label": { "ko": "세계 시계", "en": "World Clock" }, "keywords": ["세계 시계", "세계시계", "world clock", "시차", "타임존", "timezone"], "category": "tool" },
+    { "id": "dday", "label": { "ko": "D-Day 카운터", "en": "D-Day Counter" }, "keywords": ["디데이", "d-day", "dday", "D-Day", "디데이 카운터", "날짜 계산", "날짜계산", "남은 날", "남은날"], "category": "tool" }
   ]
 }
