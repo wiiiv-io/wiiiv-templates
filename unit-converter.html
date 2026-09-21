@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">단위 변환기</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 16px; }
+.container { width: 100%; max-width: 400px; }
+h1 { font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 20px; color: #e0e0e0; }
+
+.categories { display: flex; gap: 6px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+.categories::-webkit-scrollbar { height: 0; }
+.cat-btn { flex-shrink: 0; border: none; background: #1e1e35; color: #888; border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.cat-btn:hover { background: #2a2a45; color: #bbb; }
+.cat-btn.active { background: #7c5cfc; color: #fff; }
+
+.converter-card { background: #161628; border-radius: 16px; padding: 20px; }
+
+.unit-group { margin-bottom: 16px; }
+.unit-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.unit-row { display: flex; gap: 10px; align-items: stretch; }
+.unit-input { flex: 1; background: #1e1e35; border: 1px solid #2a2a45; color: #fff; border-radius: 10px; padding: 14px 16px; font-size: 22px; font-family: inherit; font-variant-numeric: tabular-nums; outline: none; min-width: 0; }
+.unit-input:focus { border-color: #7c5cfc; }
+.unit-input::placeholder { color: #444; }
+.unit-select { width: 110px; flex-shrink: 0; background: #1e1e35; border: 1px solid #2a2a45; color: #ccc; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-family: inherit; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.unit-select:focus { border-color: #7c5cfc; }
+
+.swap-row { display: flex; justify-content: center; margin: 4px 0; }
+.swap-btn { background: #2a2a45; border: none; color: #7c5cfc; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.swap-btn:hover { background: #3a3a55; transform: rotate(180deg); }
+
+.formula { margin-top: 16px; padding: 12px; background: #1e1e35; border-radius: 10px; font-size: 12px; color: #888; text-align: center; font-variant-numeric: tabular-nums; }
+.formula span { color: #7c5cfc; }
+
+.quick-refs { margin-top: 16px; }
+.quick-refs-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.ref-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a30; font-size: 13px; }
+.ref-row:last-child { border-bottom: none; }
+.ref-from { color: #aaa; }
+.ref-to { color: #7c5cfc; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>단위 변환기</h1>
+
+  <div class="categories" id="categories"></div>
+
+  <div class="converter-card">
+    <div class="unit-group">
+      <div class="unit-label">변환 전</div>
+      <div class="unit-row">
+        <input class="unit-input" id="fromValue" type="number" placeholder="0" step="any" inputmode="decimal">
+        <select class="unit-select" id="fromUnit"></select>
+      </div>
+    </div>
+
+    <div class="swap-row">
+      <button class="swap-btn" id="swapBtn" title="단위 교환">⇅</button>
+    </div>
+
+    <div class="unit-group">
+      <div class="unit-label">변환 후</div>
+      <div class="unit-row">
+        <input class="unit-input" id="toValue" type="text" readonly placeholder="0" tabindex="-1" style="color: #7c5cfc; cursor: default;">
+        <select class="unit-select" id="toUnit"></select>
+      </div>
+    </div>
+
+    <div class="formula" id="formula"></div>
+  </div>
+
+  <div class="quick-refs" id="quickRefs"></div>
+</div>
+
+<script>
+const LANG = 'ko';
+const DATA = {
+  length: {
+    label: '길이',
+    units: {
+      km: { label: 'km', factor: 1000 },
+      m: { label: 'm', factor: 1 },
+      cm: { label: 'cm', factor: 0.01 },
+      mm: { label: 'mm', factor: 0.001 },
+      mi: { label: 'mile', factor: 1609.344 },
+      yd: { label: 'yard', factor: 0.9144 },
+      ft: { label: 'feet', factor: 0.3048 },
+      in: { label: 'inch', factor: 0.0254 },
+      li: { label: '리(里)', factor: 392.727 },
+    },
+    defaults: ['km', 'mi'],
+    refs: [['1 km', '0.6214 mi'], ['1 mi', '1.6093 km'], ['1 m', '3.2808 ft'], ['1 ft', '30.48 cm']],
+  },
+  weight: {
+    label: '무게',
+    units: {
+      kg: { label: 'kg', factor: 1 },
+      g: { label: 'g', factor: 0.001 },
+      mg: { label: 'mg', factor: 0.000001 },
+      t: { label: '톤', factor: 1000 },
+      lb: { label: 'pound', factor: 0.453592 },
+      oz: { label: 'ounce', factor: 0.0283495 },
+      gn: { label: '근', factor: 0.6 },
+    },
+    defaults: ['kg', 'lb'],
+    refs: [['1 kg', '2.2046 lb'], ['1 lb', '453.59 g'], ['1 oz', '28.35 g'], ['1 근', '600 g']],
+  },
+  temperature: {
+    label: '온도',
+    units: {
+      c: { label: '°C' },
+      f: { label: '°F' },
+      k: { label: 'K' },
+    },
+    defaults: ['c', 'f'],
+    refs: [['0°C', '32°F'], ['100°C', '212°F'], ['37°C', '98.6°F'], ['-40°C', '-40°F']],
+  },
+  data: {
+    label: '데이터',
+    units: {
+      TB: { label: 'TB', factor: 1099511627776 },
+      GB: { label: 'GB', factor: 1073741824 },
+      MB: { label: 'MB', factor: 1048576 },
+      KB: { label: 'KB', factor: 1024 },
+      B: { label: 'Byte', factor: 1 },
+      bit: { label: 'bit', factor: 0.125 },
+    },
+    defaults: ['GB', 'MB'],
+    refs: [['1 TB', '1,024 GB'], ['1 GB', '1,024 MB'], ['1 MB', '1,024 KB'], ['1 KB', '1,024 Byte']],
+  },
+  area: {
+    label: '넓이',
+    units: {
+      km2: { label: 'km²', factor: 1000000 },
+      m2: { label: 'm²', factor: 1 },
+      ha: { label: '헥타르', factor: 10000 },
+      ac: { label: 'acre', factor: 4046.856 },
+      py: { label: '평', factor: 3.3058 },
+      ft2: { label: 'ft²', factor: 0.092903 },
+    },
+    defaults: ['m2', 'py'],
+    refs: [['1 평', '3.3058 m²'], ['1 ha', '10,000 m²'], ['1 acre', '4,047 m²'], ['1 km²', '100 ha']],
+  },
+  speed: {
+    label: '속도',
+    units: {
+      kmh: { label: 'km/h', factor: 1 },
+      ms: { label: 'm/s', factor: 3.6 },
+      mph: { label: 'mph', factor: 1.60934 },
+      kn: { label: 'knot', factor: 1.852 },
+      mach: { label: 'Mach', factor: 1225.044 },
+    },
+    defaults: ['kmh', 'mph'],
+    refs: [['100 km/h', '62.14 mph'], ['1 Mach', '1,225 km/h'], ['1 knot', '1.852 km/h'], ['340 m/s', '1 Mach']],
+  },
+  time: {
+    label: '시간',
+    units: {
+      yr: { label: '년', factor: 31536000 },
+      mo: { label: '개월', factor: 2592000 },
+      wk: { label: '주', factor: 604800 },
+      d: { label: '일', factor: 86400 },
+      h: { label: '시간', factor: 3600 },
+      min: { label: '분', factor: 60 },
+      s: { label: '초', factor: 1 },
+    },
+    defaults: ['h', 'min'],
+    refs: [['1 일', '24 시간'], ['1 주', '168 시간'], ['1 년', '8,760 시간'], ['1 년', '525,600 분']],
+  },
+};
+
+let currentCat = 'length';
+
+function convertTemp(val, from, to) {
+  let c;
+  if (from === 'c') c = val;
+  else if (from === 'f') c = (val - 32) * 5 / 9;
+  else c = val - 273.15;
+  if (to === 'c') return c;
+  if (to === 'f') return c * 9 / 5 + 32;
+  return c + 273.15;
+}
+
+function convert(val, from, to, cat) {
+  if (cat === 'temperature') return convertTemp(val, from, to);
+  const units = DATA[cat].units;
+  const baseVal = val * units[from].factor;
+  return baseVal / units[to].factor;
+}
+
+function formatNum(n) {
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  if (abs >= 1e12 || (abs > 0 && abs < 1e-6)) return n.toExponential(4);
+  if (abs < 0.001) return n.toPrecision(4);
+  if (Number.isInteger(n) && abs < 1e15) return n.toLocaleString();
+  const digits = abs >= 100 ? 2 : 4;
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits });
+}
+
+function init() {
+  const catsEl = document.getElementById('categories');
+  catsEl.innerHTML = '';
+  Object.entries(DATA).forEach(([key, val]) => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (key === currentCat ? ' active' : '');
+    btn.textContent = val.label;
+    btn.onclick = () => { currentCat = key; init(); };
+    catsEl.appendChild(btn);
+  });
+
+  const cat = DATA[currentCat];
+  const fromSelect = document.getElementById('fromUnit');
+  const toSelect = document.getElementById('toUnit');
+  const fromInput = document.getElementById('fromValue');
+
+  fromSelect.innerHTML = '';
+  toSelect.innerHTML = '';
+  Object.entries(cat.units).forEach(([key, u]) => {
+    fromSelect.add(new Option(u.label, key));
+    toSelect.add(new Option(u.label, key));
+  });
+  fromSelect.value = cat.defaults[0];
+  toSelect.value = cat.defaults[1];
+  fromInput.value = '1';
+
+  doConvert();
+  renderRefs();
+}
+
+function doConvert() {
+  const fromInput = document.getElementById('fromValue');
+  const toInput = document.getElementById('toValue');
+  const fromUnit = document.getElementById('fromUnit').value;
+  const toUnit = document.getElementById('toUnit').value;
+  const val = parseFloat(fromInput.value);
+
+  if (isNaN(val) || fromInput.value === '') {
+    toInput.value = '';
+    document.getElementById('formula').innerHTML = '';
+    return;
+  }
+
+  const result = convert(val, fromUnit, toUnit, currentCat);
+  toInput.value = formatNum(result);
+
+  const cat = DATA[currentCat];
+  const oneResult = convert(1, fromUnit, toUnit, currentCat);
+  document.getElementById('formula').innerHTML =
+    `1 <span>${cat.units[fromUnit].label}</span> = ${formatNum(oneResult)} <span>${cat.units[toUnit].label}</span>`;
+}
+
+function renderRefs() {
+  const container = document.getElementById('quickRefs');
+  const refs = DATA[currentCat].refs;
+  if (!refs || refs.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = `<div class="quick-refs-title">참고</div>` +
+    refs.map(([from, to]) => `<div class="ref-row"><span class="ref-from">${from}</span><span class="ref-to">${to}</span></div>`).join('');
+}
+
+document.getElementById('fromValue').addEventListener('input', doConvert);
+document.getElementById('fromUnit').addEventListener('change', doConvert);
+document.getElementById('toUnit').addEventListener('change', doConvert);
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const fromSelect = document.getElementById('fromUnit');
+  const toSelect = document.getElementById('toUnit');
+  const tmp = fromSelect.value;
+  fromSelect.value = toSelect.value;
+  toSelect.value = tmp;
+  doConvert();
+});
+
+init();
+</script>
+</body>
+</html>

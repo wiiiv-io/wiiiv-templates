@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">세계 시계</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 16px; }
+.container { width: 100%; max-width: 440px; }
+h1 { font-size: 20px; font-weight: 600; text-align: center; margin-bottom: 20px; color: #e0e0e0; }
+
+.local-card { background: #161628; border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center; }
+.local-city { font-size: 14px; color: #7c5cfc; font-weight: 500; margin-bottom: 4px; }
+.local-time { font-size: 48px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+.local-date { font-size: 14px; color: #888; margin-top: 4px; }
+.local-ampm { font-size: 18px; color: #555; font-weight: 400; margin-left: 4px; }
+
+.add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.add-select { flex: 1; background: #1e1e35; border: 1px solid #2a2a45; color: #ccc; border-radius: 10px; padding: 12px; font-size: 14px; font-family: inherit; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.add-select:focus { border-color: #7c5cfc; }
+.add-btn { background: #7c5cfc; border: none; color: #fff; border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; flex-shrink: 0; }
+.add-btn:hover { background: #6a4ce0; }
+.add-btn:active { transform: scale(0.95); }
+
+.clock-list { display: flex; flex-direction: column; gap: 8px; }
+
+.clock-card { background: #161628; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; position: relative; animation: cardIn 0.3s ease; }
+@keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.clock-info { flex: 1; min-width: 0; }
+.clock-city { font-size: 15px; font-weight: 500; color: #e0e0e0; }
+.clock-diff { font-size: 12px; color: #888; margin-top: 2px; }
+.clock-diff .ahead { color: #51cf66; }
+.clock-diff .behind { color: #ff6b6b; }
+.clock-diff .same { color: #7c5cfc; }
+.clock-right { text-align: right; flex-shrink: 0; }
+.clock-time { font-size: 28px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.clock-date { font-size: 11px; color: #666; margin-top: 2px; }
+.clock-ampm { font-size: 12px; color: #555; }
+
+.clock-bar { height: 3px; border-radius: 1.5px; background: #1e1e35; margin-top: 10px; overflow: hidden; }
+.clock-bar-fill { height: 100%; border-radius: 1.5px; transition: width 1s linear; }
+.bar-day { background: linear-gradient(90deg, #2a2a45, #7c5cfc, #2a2a45); }
+.bar-night { background: linear-gradient(90deg, #1a1a30, #333355, #1a1a30); }
+
+.clock-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #444; cursor: pointer; font-size: 14px; padding: 4px; line-height: 1; }
+.clock-remove:hover { color: #ff6b6b; }
+
+.empty-msg { text-align: center; padding: 40px; color: #444; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>세계 시계</h1>
+
+  <div class="local-card" id="localCard"></div>
+
+  <div class="add-row">
+    <select class="add-select" id="addSelect"></select>
+    <button class="add-btn" id="addBtn">추가</button>
+  </div>
+
+  <div class="clock-list" id="clockList"></div>
+</div>
+
+<script>
+const LANG = 'ko';
+const CITIES = [
+  { id: 'seoul', name: '서울', tz: 'Asia/Seoul', flag: '🇰🇷' },
+  { id: 'tokyo', name: '도쿄', tz: 'Asia/Tokyo', flag: '🇯🇵' },
+  { id: 'shanghai', name: '상하이', tz: 'Asia/Shanghai', flag: '🇨🇳' },
+  { id: 'taipei', name: '타이베이', tz: 'Asia/Taipei', flag: '🇹🇼' },
+  { id: 'singapore', name: '싱가포르', tz: 'Asia/Singapore', flag: '🇸🇬' },
+  { id: 'bangkok', name: '방콕', tz: 'Asia/Bangkok', flag: '🇹🇭' },
+  { id: 'delhi', name: '뉴델리', tz: 'Asia/Kolkata', flag: '🇮🇳' },
+  { id: 'dubai', name: '두바이', tz: 'Asia/Dubai', flag: '🇦🇪' },
+  { id: 'istanbul', name: '이스탄불', tz: 'Europe/Istanbul', flag: '🇹🇷' },
+  { id: 'moscow', name: '모스크바', tz: 'Europe/Moscow', flag: '🇷🇺' },
+  { id: 'berlin', name: '베를린', tz: 'Europe/Berlin', flag: '🇩🇪' },
+  { id: 'paris', name: '파리', tz: 'Europe/Paris', flag: '🇫🇷' },
+  { id: 'london', name: '런던', tz: 'Europe/London', flag: '🇬🇧' },
+  { id: 'ny', name: '뉴욕', tz: 'America/New_York', flag: '🇺🇸' },
+  { id: 'chicago', name: '시카고', tz: 'America/Chicago', flag: '🇺🇸' },
+  { id: 'denver', name: '덴버', tz: 'America/Denver', flag: '🇺🇸' },
+  { id: 'la', name: 'LA', tz: 'America/Los_Angeles', flag: '🇺🇸' },
+  { id: 'vancouver', name: '밴쿠버', tz: 'America/Vancouver', flag: '🇨🇦' },
+  { id: 'hawaii', name: '하와이', tz: 'Pacific/Honolulu', flag: '🇺🇸' },
+  { id: 'sydney', name: '시드니', tz: 'Australia/Sydney', flag: '🇦🇺' },
+  { id: 'auckland', name: '오클랜드', tz: 'Pacific/Auckland', flag: '🇳🇿' },
+  { id: 'saopaulo', name: '상파울루', tz: 'America/Sao_Paulo', flag: '🇧🇷' },
+];
+
+let selected = ['tokyo', 'ny', 'london', 'la'];
+
+function getTime(tz) {
+  const now = new Date();
+  const opts = { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const dateOpts = { timeZone: tz, month: 'short', day: 'numeric', weekday: 'short' };
+  const time = now.toLocaleTimeString('en-GB', opts);
+  const date = now.toLocaleDateString('ko-KR', dateOpts);
+  const hour = parseInt(now.toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }));
+  return { time, date, hour };
+}
+
+function getDiffHours(tz) {
+  const now = new Date();
+  const localOffset = -now.getTimezoneOffset() / 60;
+  const remote = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const local = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const diff = (remote - local) / (1000 * 60 * 60);
+  return Math.round(diff * 2) / 2;
+}
+
+function renderLocal() {
+  const t = getTime('Asia/Seoul');
+  const [h, m, s] = t.time.split(':');
+  document.getElementById('localCard').innerHTML = `
+    <div class="local-city">🇰🇷 서울 (현지)</div>
+    <div class="local-time">${h}:${m}<span class="local-ampm">:${s}</span></div>
+    <div class="local-date">${t.date}</div>
+  `;
+}
+
+function renderClocks() {
+  const list = document.getElementById('clockList');
+  if (selected.length === 0) {
+    list.innerHTML = '<div class="empty-msg">도시를 추가하세요</div>';
+    return;
+  }
+  list.innerHTML = selected.map(id => {
+    const city = CITIES.find(c => c.id === id);
+    if (!city) return '';
+    const t = getTime(city.tz);
+    const diff = getDiffHours(city.tz);
+    const [h, m, s] = t.time.split(':');
+    const hour = parseInt(h);
+    const isDay = hour >= 6 && hour < 20;
+    const dayProgress = ((hour * 60 + parseInt(m)) / 1440) * 100;
+
+    let diffText;
+    if (diff === 0) diffText = '<span class="same">같은 시간</span>';
+    else if (diff > 0) diffText = `<span class="ahead">+${diff}시간</span>`;
+    else diffText = `<span class="behind">${diff}시간</span>`;
+
+    return `<div class="clock-card">
+      <button class="clock-remove" data-id="${id}" title="제거">&times;</button>
+      <div class="clock-info">
+        <div class="clock-city">${city.flag} ${city.name}</div>
+        <div class="clock-diff">${diffText}</div>
+        <div class="clock-bar"><div class="clock-bar-fill ${isDay ? 'bar-day' : 'bar-night'}" style="width:${dayProgress}%"></div></div>
+      </div>
+      <div class="clock-right">
+        <div class="clock-time">${h}:${m}<span class="clock-ampm"> :${s}</span></div>
+        <div class="clock-date">${t.date}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSelect() {
+  const sel = document.getElementById('addSelect');
+  sel.innerHTML = CITIES
+    .filter(c => !selected.includes(c.id) && c.id !== 'seoul')
+    .map(c => `<option value="${c.id}">${c.flag} ${c.name}</option>`)
+    .join('');
+}
+
+function tick() {
+  renderLocal();
+  renderClocks();
+}
+
+document.getElementById('addBtn').onclick = () => {
+  const sel = document.getElementById('addSelect');
+  const id = sel.value;
+  if (id && !selected.includes(id)) {
+    selected.push(id);
+    renderSelect();
+    renderClocks();
+  }
+};
+
+document.getElementById('clockList').onclick = (e) => {
+  const btn = e.target.closest('.clock-remove');
+  if (btn) {
+    const id = btn.dataset.id;
+    selected = selected.filter(s => s !== id);
+    renderSelect();
+    renderClocks();
+  }
+};
+
+renderSelect();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>

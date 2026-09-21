@@ -24,6 +24,10 @@
     { "id": "mandelbrot", "label": { "ko": "만델브로 프랙탈", "en": "Mandelbrot Fractal" }, "keywords": ["만델브로", "mandelbrot", "프랙탈", "fractal"], "category": "visualization" },
     { "id": "sorting-viz", "label": { "ko": "정렬 시각화", "en": "Sorting Visualization" }, "keywords": ["정렬 시각화", "정렬 알고리즘", "sorting"], "category": "visualization" },
     { "id": "physics", "label": { "ko": "물리 시뮬레이션", "en": "Physics Simulation" }, "keywords": ["물리 시뮬레이션", "물리시뮬레이션", "공 튀기기", "physics"], "category": "visualization" },
-    { "id": "conway", "label": { "ko": "생명 게임", "en": "Conway's Game of Life" }, "keywords": ["생명 게임", "생명게임", "game of life", "conway"], "category": "visualization" }
+    { "id": "conway", "label": { "ko": "생명 게임", "en": "Conway's Game of Life" }, "keywords": ["생명 게임", "생명게임", "game of life", "conway"], "category": "visualization" },
+    { "id": "unit-converter", "label": { "ko": "단위 변환기", "en": "Unit Converter" }, "keywords": ["단위 변환", "단위변환", "단위 변환기", "단위변환기", "unit converter", "unit conversion", "환산"], "category": "tool" },
+    { "id": "stopwatch", "label": { "ko": "스톱워치", "en": "Stopwatch" }, "keywords": ["스톱워치", "스탑워치", "초시계", "stopwatch", "타이머", "timer", "카운트다운"], "category": "tool" },
+    { "id": "password-gen", "label": { "ko": "비밀번호 생성기", "en": "Password Generator" }, "keywords": ["비밀번호 생성", "비밀번호생성", "비밀번호 생성기", "비번 생성", "비번생성", "패스워드", "password generator", "password"], "category": "tool" },
+    { "id": "world-clock", "label": { "ko": "세계 시계", "en": "World Clock" }, "keywords": ["세계 시계", "세계시계", "world clock", "시차", "타임존", "timezone"], "category": "tool" }
   ]
 }

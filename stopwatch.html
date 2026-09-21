@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">스톱워치</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 24px 16px; }
+.container { width: 100%; max-width: 400px; text-align: center; }
+
+.mode-tabs { display: flex; gap: 4px; justify-content: center; margin-bottom: 32px; background: #1e1e35; border-radius: 12px; padding: 3px; }
+.mode-tab { flex: 1; border: none; background: transparent; color: #888; border-radius: 10px; padding: 10px 0; font-size: 14px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-weight: 500; }
+.mode-tab.active { background: #7c5cfc; color: #fff; }
+
+.timer-display { margin-bottom: 8px; }
+.time-main { font-size: 56px; font-weight: 200; letter-spacing: 2px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.time-ms { font-size: 32px; font-weight: 200; color: #7c5cfc; font-variant-numeric: tabular-nums; }
+
+.progress-ring { width: 200px; height: 200px; margin: 0 auto 24px; position: relative; }
+.progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.progress-ring .bg { fill: none; stroke: #1e1e35; stroke-width: 4; }
+.progress-ring .fg { fill: none; stroke: #7c5cfc; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 0.1s linear; }
+.progress-ring .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+.controls { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+.btn { border: none; border-radius: 50%; width: 64px; height: 64px; font-size: 14px; cursor: pointer; transition: all 0.15s; font-family: inherit; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+.btn:active { transform: scale(0.92); }
+.btn-main { width: 72px; height: 72px; font-size: 15px; }
+.btn-start { background: #7c5cfc; color: #fff; }
+.btn-start:hover { background: #6a4ce0; }
+.btn-pause { background: #ff922b; color: #fff; }
+.btn-pause:hover { background: #e67700; }
+.btn-stop { background: #ff6b6b; color: #fff; }
+.btn-stop:hover { background: #e04545; }
+.btn-lap { background: #2a2a45; color: #ccc; }
+.btn-lap:hover { background: #3a3a55; }
+.btn-reset { background: #2a2a45; color: #888; }
+.btn-reset:hover { background: #3a3a55; color: #ccc; }
+.btn:disabled { opacity: 0.3; cursor: default; }
+.btn:disabled:hover { transform: none; }
+
+.lap-list { text-align: left; max-height: 240px; overflow-y: auto; }
+.lap-list::-webkit-scrollbar { width: 4px; }
+.lap-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+.lap-header { display: flex; padding: 8px 12px; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #1e1e35; }
+.lap-header span:first-child { flex: 0 0 50px; }
+.lap-header span:nth-child(2) { flex: 1; text-align: right; }
+.lap-header span:last-child { flex: 1; text-align: right; }
+.lap-row { display: flex; padding: 10px 12px; font-size: 14px; border-bottom: 1px solid #1a1a2e; font-variant-numeric: tabular-nums; animation: lapIn 0.3s ease; }
+.lap-row span:first-child { flex: 0 0 50px; color: #888; }
+.lap-row span:nth-child(2) { flex: 1; text-align: right; color: #ccc; }
+.lap-row span:last-child { flex: 1; text-align: right; color: #7c5cfc; }
+.lap-best span:nth-child(2) { color: #51cf66; }
+.lap-worst span:nth-child(2) { color: #ff6b6b; }
+@keyframes lapIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Countdown mode */
+.countdown-setup { display: none; margin-bottom: 24px; }
+.countdown-setup.visible { display: block; }
+.time-picker { display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 16px; }
+.time-picker input { width: 72px; background: #1e1e35; border: 1px solid #2a2a45; color: #fff; border-radius: 10px; padding: 14px 8px; font-size: 24px; text-align: center; font-family: inherit; font-variant-numeric: tabular-nums; outline: none; }
+.time-picker input:focus { border-color: #7c5cfc; }
+.time-picker .sep { font-size: 24px; color: #555; }
+.time-picker label { font-size: 10px; color: #666; text-align: center; display: block; margin-top: 4px; }
+.presets { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.preset-btn { background: #1e1e35; border: 1px solid #2a2a45; color: #aaa; border-radius: 20px; padding: 6px 16px; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.preset-btn:hover { border-color: #7c5cfc; color: #7c5cfc; }
+
+.countdown-done { display: none; animation: pulse 0.5s ease infinite alternate; }
+.countdown-done.visible { display: block; }
+@keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+.done-text { font-size: 24px; color: #ff6b6b; font-weight: 600; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="stopwatch">스톱워치</button>
+    <button class="mode-tab" data-mode="countdown">타이머</button>
+  </div>
+
+  <div class="progress-ring">
+    <svg viewBox="0 0 200 200">
+      <circle class="bg" cx="100" cy="100" r="90"/>
+      <circle class="fg" id="progressFg" cx="100" cy="100" r="90" stroke-dasharray="565.49" stroke-dashoffset="0"/>
+    </svg>
+    <div class="center">
+      <div class="timer-display">
+        <div class="time-main" id="timeMain">00:00</div>
+        <div class="time-ms" id="timeMs">.00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="countdown-done" id="countdownDone">
+    <div class="done-text">Time's up!</div>
+  </div>
+
+  <div class="countdown-setup" id="countdownSetup">
+    <div class="time-picker">
+      <div><input type="number" id="cdH" value="0" min="0" max="99"><label>시</label></div>
+      <span class="sep">:</span>
+      <div><input type="number" id="cdM" value="5" min="0" max="59"><label>분</label></div>
+      <span class="sep">:</span>
+      <div><input type="number" id="cdS" value="0" min="0" max="59"><label>초</label></div>
+    </div>
+    <div class="presets">
+      <button class="preset-btn" data-sec="60">1분</button>
+      <button class="preset-btn" data-sec="180">3분</button>
+      <button class="preset-btn" data-sec="300">5분</button>
+      <button class="preset-btn" data-sec="600">10분</button>
+      <button class="preset-btn" data-sec="1800">30분</button>
+      <button class="preset-btn" data-sec="3600">1시간</button>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="btn btn-reset" id="btnReset" disabled>초기화</button>
+    <button class="btn btn-main btn-start" id="btnMain">시작</button>
+    <button class="btn btn-lap" id="btnLap" disabled>랩</button>
+  </div>
+
+  <div class="lap-list" id="lapList"></div>
+</div>
+
+<script>
+const LANG = 'ko';
+const CIRC = 2 * Math.PI * 90;
+let mode = 'stopwatch';
+let state = 'idle';
+let elapsed = 0;
+let startTime = 0;
+let rafId = null;
+let laps = [];
+let cdTotal = 0;
+
+const $timeMain = document.getElementById('timeMain');
+const $timeMs = document.getElementById('timeMs');
+const $fg = document.getElementById('progressFg');
+const $btnMain = document.getElementById('btnMain');
+const $btnReset = document.getElementById('btnReset');
+const $btnLap = document.getElementById('btnLap');
+const $lapList = document.getElementById('lapList');
+const $cdSetup = document.getElementById('countdownSetup');
+const $cdDone = document.getElementById('countdownDone');
+
+function fmt(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const cs = Math.floor((ms % 1000) / 10);
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  const main = h > 0
+    ? `${h}:${String(mm).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${String(mm).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return { main, ms: `.${String(cs).padStart(2, '0')}` };
+}
+
+function render(ms) {
+  const t = fmt(ms);
+  $timeMain.textContent = t.main;
+  $timeMs.textContent = t.ms;
+
+  if (mode === 'stopwatch') {
+    const frac = (ms % 60000) / 60000;
+    $fg.style.strokeDashoffset = CIRC * (1 - frac);
+  } else {
+    const frac = cdTotal > 0 ? ms / (cdTotal * 1000) : 0;
+    $fg.style.strokeDashoffset = CIRC * (1 - frac);
+  }
+}
+
+function tick() {
+  const now = performance.now();
+  if (mode === 'stopwatch') {
+    elapsed = now - startTime;
+    render(elapsed);
+  } else {
+    elapsed = now - startTime;
+    const remaining = Math.max(0, cdTotal * 1000 - elapsed);
+    render(remaining);
+    if (remaining <= 0) {
+      stop();
+      $cdDone.classList.add('visible');
+      $fg.style.stroke = '#ff6b6b';
+      return;
+    }
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function start() {
+  if (mode === 'countdown') {
+    if (state === 'idle') {
+      const h = parseInt(document.getElementById('cdH').value) || 0;
+      const m = parseInt(document.getElementById('cdM').value) || 0;
+      const s = parseInt(document.getElementById('cdS').value) || 0;
+      cdTotal = h * 3600 + m * 60 + s;
+      if (cdTotal <= 0) return;
+      $cdSetup.classList.remove('visible');
+      elapsed = 0;
+    }
+    $cdDone.classList.remove('visible');
+    $fg.style.stroke = '#7c5cfc';
+  }
+  state = 'running';
+  startTime = performance.now() - elapsed;
+  rafId = requestAnimationFrame(tick);
+
+  $btnMain.textContent = '정지';
+  $btnMain.className = 'btn btn-main btn-pause';
+  $btnReset.disabled = false;
+  $btnLap.disabled = mode !== 'stopwatch';
+}
+
+function stop() {
+  state = 'paused';
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  if (mode === 'stopwatch') elapsed = performance.now() - startTime;
+  $btnMain.textContent = '재개';
+  $btnMain.className = 'btn btn-main btn-start';
+}
+
+function reset() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  state = 'idle';
+  elapsed = 0;
+  laps = [];
+  render(mode === 'countdown' ? cdTotal * 1000 : 0);
+  $btnMain.textContent = '시작';
+  $btnMain.className = 'btn btn-main btn-start';
+  $btnReset.disabled = true;
+  $btnLap.disabled = true;
+  $lapList.innerHTML = '';
+  $cdDone.classList.remove('visible');
+  $fg.style.stroke = '#7c5cfc';
+  if (mode === 'countdown') $cdSetup.classList.add('visible');
+}
+
+function addLap() {
+  const now = performance.now();
+  const total = now - startTime;
+  const prev = laps.length > 0 ? laps[laps.length - 1].total : 0;
+  const split = total - prev;
+  laps.push({ total, split });
+  renderLaps();
+}
+
+function renderLaps() {
+  if (laps.length === 0) { $lapList.innerHTML = ''; return; }
+  const splits = laps.map(l => l.split);
+  const best = Math.min(...splits);
+  const worst = Math.max(...splits);
+  const showBestWorst = laps.length >= 3;
+
+  let html = `<div class="lap-header"><span>#</span><span>구간</span><span>누적</span></div>`;
+  for (let i = laps.length - 1; i >= 0; i--) {
+    const l = laps[i];
+    let cls = 'lap-row';
+    if (showBestWorst && l.split === best) cls += ' lap-best';
+    else if (showBestWorst && l.split === worst) cls += ' lap-worst';
+    html += `<div class="${cls}"><span>${i + 1}</span><span>${fmt(l.split).main}${fmt(l.split).ms}</span><span>${fmt(l.total).main}${fmt(l.total).ms}</span></div>`;
+  }
+  $lapList.innerHTML = html;
+}
+
+$btnMain.onclick = () => {
+  if (state === 'running') stop();
+  else start();
+};
+$btnReset.onclick = reset;
+$btnLap.onclick = () => { if (state === 'running') addLap(); };
+
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelector('.mode-tab.active').classList.remove('active');
+    tab.classList.add('active');
+    mode = tab.dataset.mode;
+    reset();
+    if (mode === 'countdown') {
+      $cdSetup.classList.add('visible');
+      $btnLap.style.display = 'none';
+      render(cdTotal > 0 ? cdTotal * 1000 : 300000);
+    } else {
+      $cdSetup.classList.remove('visible');
+      $btnLap.style.display = '';
+      render(0);
+    }
+  };
+});
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.onclick = () => {
+    const sec = parseInt(btn.dataset.sec);
+    document.getElementById('cdH').value = Math.floor(sec / 3600);
+    document.getElementById('cdM').value = Math.floor((sec % 3600) / 60);
+    document.getElementById('cdS').value = sec % 60;
+    cdTotal = sec;
+    render(sec * 1000);
+  };
+});
+
+render(0);
+</script>
+</body>
+</html>
