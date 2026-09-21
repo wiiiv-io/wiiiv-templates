@@ -32,6 +32,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | calculator | tool |
 | pomodoro | tool |
 | paint | tool |
+| typing-practice | tool |
 | typing-test | tool |
 | analog-clock | tool |
 | color-palette | tool |

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>타자연습</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+button { font-family: inherit; }
+.mono { font-family: 'Cascadia Code', 'JetBrains Mono', Consolas, 'D2Coding', monospace; }
+
+/* ── Header ── */
+header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #1e1e3a; flex-wrap: wrap; }
+.brand { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+nav { display: flex; gap: 4px; background: #14142a; padding: 3px; border-radius: 8px; border: 1px solid #22224a; }
+nav button { background: transparent; border: none; color: #999; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all .15s; white-space: nowrap; }
+nav button:hover { color: #fff; }
+nav button.active { background: #7c5cfc; color: #fff; font-weight: 600; }
+.right { display: flex; gap: 8px; align-items: center; }
+.seg { display: flex; background: #14142a; border: 1px solid #22224a; border-radius: 6px; overflow: hidden; }
+.seg button { background: transparent; border: none; color: #999; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 600; }
+.seg button.active { background: #2a2a4a; color: #fff; }
+.icon-btn { background: #14142a; border: 1px solid #22224a; color: #ccc; width: 30px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.icon-btn:hover { background: #2a2a4a; }
+
+/* ── XP bar ── */
+#xp { display: flex; align-items: center; gap: 10px; padding: 6px 16px; font-size: 12px; color: #aaa; }
+#lvBadge { background: linear-gradient(135deg, #7c5cfc, #ff6b9d); color: #fff; font-weight: 700; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+#lvTitle { color: #fff; font-weight: 600; }
+#xpTrack { flex: 1; height: 6px; background: #1a1a30; border-radius: 3px; overflow: hidden; max-width: 320px; }
+#xpFill { height: 100%; width: 0; background: linear-gradient(90deg, #7c5cfc, #ff6b9d); transition: width .4s; }
+#xpNum { font-variant-numeric: tabular-nums; }
+
+/* ── Stats ── */
+#stats { display: flex; justify-content: center; gap: 22px; padding: 4px 16px 8px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; align-items: center; min-width: 64px; }
+.stat .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat .l { font-size: 10px; color: #777; letter-spacing: .08em; text-transform: uppercase; }
+.stat.combo .v { color: #ffd93d; }
+.stat.combo .v.hot { color: #ff6b3d; text-shadow: 0 0 12px rgba(255,107,61,.7); }
+.stat.acc .v { color: #4ecdc4; }
+
+/* ── Stage ── */
+main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 16px 12px; min-height: 0; overflow: auto; }
+section { display: none; width: 100%; max-width: 900px; flex-direction: column; align-items: center; gap: 12px; }
+section.active { display: flex; }
+.pills { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.pill { background: #14142a; border: 1px solid #22224a; color: #aaa; padding: 4px 11px; border-radius: 14px; cursor: pointer; font-size: 12px; transition: all .15s; }
+.pill:hover { color: #fff; border-color: #444; }
+.pill.active { background: rgba(124,92,252,.2); border-color: #7c5cfc; color: #c8b8ff; font-weight: 600; }
+.hint { font-size: 12px; color: #666; text-align: center; }
+
+/* Target text */
+#target { width: 100%; background: #14142a; border: 1px solid #22224a; border-radius: 12px; padding: 22px 26px; font-size: 26px; line-height: 1.6; letter-spacing: .02em; min-height: 90px; word-break: break-all; position: relative; transition: border-color .15s; }
+#target.code { font-size: 19px; line-height: 1.7; }
+#target.shake { animation: shake .25s; border-color: #ff4466; }
+#target .c { color: #555; border-radius: 3px; transition: color .05s; white-space: pre; }
+#target .c.ok { color: #fff; }
+#target .c.bad { color: #ff4466; background: rgba(255,68,102,.15); text-decoration: underline; }
+#target .c.cur { background: #7c5cfc; color: #fff; animation: blink 1s infinite; }
+#target .c.pend { color: #c8b8ff; border-bottom: 2px solid #c8b8ff; }
+#target .ws.bad::before { content: '·'; }
+#queue { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; font-size: 15px; color: #555; }
+#queue span:first-child { color: #888; }
+#codeBlock { width: 100%; }
+#codeBlock .ln { display: flex; gap: 12px; padding: 2px 0; }
+#codeBlock .ln .no { color: #444; width: 22px; text-align: right; flex-shrink: 0; font-size: 14px; }
+#codeBlock .ln.done .body { color: #6bd39d; }
+#codeBlock .ln.todo .body { color: #555; }
+#codeBlock .ln .ind { white-space: pre; color: #333; }
+#codeBlock .ln .ind::before { content: attr(data-dots); letter-spacing: 0; }
+#codeTag { position: absolute; top: 8px; right: 12px; font-size: 10px; color: #7c5cfc; background: rgba(124,92,252,.15); padding: 2px 7px; border-radius: 4px; letter-spacing: .06em; text-transform: uppercase; }
+#inp, #rainInp { width: 100%; background: #0d0d1a; border: 2px solid #2a2a4a; border-radius: 10px; color: #fff; font-size: 22px; padding: 12px 16px; outline: none; font-family: inherit; transition: border-color .15s; }
+#inp:focus, #rainInp:focus { border-color: #7c5cfc; box-shadow: 0 0 0 3px rgba(124,92,252,.2); }
+#inp.mono { font-size: 18px; }
+#inp::placeholder, #rainInp::placeholder { color: #444; }
+
+/* Keys drill */
+#keyTargets { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 760px; }
+.kt { width: 40px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; border-radius: 8px; background: #14142a; border: 1px solid #22224a; color: #666; transition: all .12s; }
+.kt.ok { color: #6bd39d; border-color: #2a4a3a; }
+.kt.bad { color: #ff4466; border-color: #4a2a3a; }
+.kt.cur { background: #7c5cfc; color: #fff; border-color: #7c5cfc; transform: scale(1.12); box-shadow: 0 0 16px rgba(124,92,252,.5); }
+#kbd { display: flex; flex-direction: column; gap: 5px; padding: 12px; background: #101020; border-radius: 12px; border: 1px solid #1e1e3a; }
+.krow { display: flex; gap: 5px; justify-content: center; }
+.key { height: 42px; min-width: 42px; border-radius: 6px; background: #1a1a30; border: 1px solid #2a2a4a; border-bottom-width: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #999; position: relative; transition: all .08s; --f: #444; }
+.key .lb { font-size: 13px; font-weight: 600; color: #ccc; }
+.key .sb { position: absolute; top: 3px; left: 5px; font-size: 9px; color: #666; }
+.key .ko { position: absolute; top: 3px; right: 5px; font-size: 10px; color: #b8a8ff; font-weight: 600; }
+.key::after { content: ''; position: absolute; bottom: 2px; left: 6px; right: 6px; height: 2px; border-radius: 1px; background: var(--f); opacity: .7; }
+.key.wide { min-width: 62px; } .key.wider { min-width: 80px; } .key.widest { min-width: 96px; } .key.space { min-width: 300px; }
+.key.next { background: var(--f); border-color: var(--f); color: #111; box-shadow: 0 0 14px var(--f); transform: translateY(1px); }
+.key.next .lb, .key.next .sb, .key.next .ko { color: #111; }
+.key.hit { background: #6bd39d; border-color: #6bd39d; }
+.key.miss { background: #ff4466; border-color: #ff4466; }
+#fingers { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 11px; color: #888; }
+#fingers span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; background: var(--f); vertical-align: middle; }
+
+/* Rain */
+#field { position: relative; width: 100%; height: 380px; background: linear-gradient(180deg, #0f0f24 0%, #141432 85%, #2a1a3a 100%); border: 1px solid #22224a; border-radius: 12px; overflow: hidden; }
+#field.shake { animation: shake .3s; }
+#field .drop { position: absolute; top: 0; font-size: 20px; font-weight: 600; color: #e8e8ff; text-shadow: 0 0 8px rgba(124,92,252,.6); white-space: nowrap; padding: 2px 8px; border-radius: 6px; background: rgba(124,92,252,.15); will-change: transform; }
+#field .drop.bonus { color: #ffd93d; background: rgba(255,217,61,.15); text-shadow: 0 0 10px rgba(255,217,61,.7); }
+#field .drop.pop { animation: pop .3s forwards; }
+#field .ground { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #7c5cfc, #ff6b9d); opacity: .7; }
+#field .splash { position: absolute; bottom: 4px; width: 60px; height: 20px; border-radius: 50%; background: #ff4466; opacity: .8; animation: splash .5s forwards; pointer-events: none; }
+#field .banner { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: rgba(13,13,26,.75); }
+#field .banner h3 { font-size: 22px; }
+#field .banner p { color: #aaa; font-size: 13px; text-align: center; line-height: 1.6; }
+#rainBar { display: flex; gap: 20px; align-items: center; font-size: 14px; }
+#lives { letter-spacing: 2px; }
+#rainInp { max-width: 420px; font-size: 18px; text-align: center; }
+.particle { position: absolute; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; animation: fly .6s forwards; }
+
+/* Overlay */
+#overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.75); z-index: 20; }
+#overlay.active { display: flex; }
+.card { background: #14142a; border: 1px solid #2a2a4a; border-radius: 16px; padding: 28px 34px; min-width: 340px; max-width: 440px; text-align: center; animation: rise .3s; }
+.card .emoji { font-size: 52px; line-height: 1; }
+.card h2 { font-size: 22px; margin: 8px 0 2px; }
+.card .sub { color: #999; font-size: 13px; margin-bottom: 16px; }
+.card .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.card .cell { background: #0d0d1a; border-radius: 10px; padding: 10px; }
+.card .cell .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.card .cell .l { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: .08em; }
+.card .best { font-size: 12px; color: #ffd93d; margin-bottom: 4px; }
+.card .xpg { font-size: 12px; color: #c8b8ff; margin-bottom: 16px; }
+.card .btns { display: flex; gap: 8px; justify-content: center; }
+.btn { background: #7c5cfc; border: none; color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600; }
+.btn:hover { background: #6a4ce0; }
+.btn.ghost { background: #2a2a4a; }
+.btn.ghost:hover { background: #3a3a5a; }
+.btn.sm { padding: 6px 14px; font-size: 12px; }
+
+#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2a2a4a; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all .25s; pointer-events: none; z-index: 25; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#comboPop { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); font-size: 46px; font-weight: 900; color: #ffd93d; text-shadow: 0 0 20px rgba(255,217,61,.8); pointer-events: none; opacity: 0; z-index: 26; }
+#comboPop.go { animation: comboPop .7s ease-out; }
+
+@keyframes blink { 0%, 100% { background: #7c5cfc; } 50% { background: #5a3ce0; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes pop { to { transform: scale(1.8); opacity: 0; } }
+@keyframes splash { to { transform: scaleX(2.5); opacity: 0; } }
+@keyframes rise { from { transform: translateY(16px); opacity: 0; } }
+@keyframes fly { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+@keyframes comboPop { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.5); } 30% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -90%) scale(1); } }
+@media (max-width: 760px) { #target { font-size: 20px; padding: 16px; } .key { min-width: 26px; height: 34px; } .key.space { min-width: 140px; } .key.wide, .key.wider, .key.widest { min-width: 40px; } #kbd { padding: 6px; gap: 3px; } .krow { gap: 3px; } .key .ko { display: none; } #stats { gap: 14px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">⌨️ <span id="title"></span></div>
+  <nav id="modes">
+    <button data-mode="keys"></button>
+    <button data-mode="words"></button>
+    <button data-mode="sentences"></button>
+    <button data-mode="code"></button>
+    <button data-mode="rain"></button>
+  </nav>
+  <div class="right">
+    <div class="seg" id="langSeg"><button data-cl="ko">한글</button><button data-cl="en">ABC</button></div>
+    <button class="icon-btn" id="soundBtn" title="sound">🔊</button>
+  </div>
+</header>
+<div id="xp">
+  <span id="lvBadge">Lv 1</span><span id="lvTitle"></span>
+  <div id="xpTrack"><div id="xpFill"></div></div>
+  <span id="xpNum">0 XP</span>
+</div>
+<div id="stats">
+  <div class="stat"><div class="v" id="sSpeed">0</div><div class="l" id="sSpeedL">WPM</div></div>
+  <div class="stat acc"><div class="v" id="sAcc">100%</div><div class="l" id="sAccL"></div></div>
+  <div class="stat combo"><div class="v" id="sCombo">0</div><div class="l" id="sComboL"></div></div>
+  <div class="stat"><div class="v" id="sProg">0/0</div><div class="l" id="sProgL"></div></div>
+  <div class="stat"><div class="v" id="sTime">0:00</div><div class="l" id="sTimeL"></div></div>
+</div>
+<main>
+  <section id="keysMode">
+    <div class="pills" id="keyLevels"></div>
+    <div id="keyTargets"></div>
+    <div id="kbd"></div>
+    <div id="fingers"></div>
+    <div class="hint" id="keysHint"></div>
+  </section>
+  <section id="textMode">
+    <div class="pills" id="codeCats"></div>
+    <div id="target"></div>
+    <div id="queue"></div>
+    <input id="inp" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="hint" id="textHint"></div>
+  </section>
+  <section id="rainMode">
+    <div id="rainBar"><span id="lives"></span><span id="rainScore"></span><span id="rainBest"></span></div>
+    <div id="field"><div class="ground"></div></div>
+    <input id="rainInp" class="mono" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="hint" id="rainHint"></div>
+  </section>
+</main>
+<div id="overlay"><div class="card">
+  <div class="emoji" id="rEmoji">🏆</div>
+  <h2 id="rTitle"></h2>
+  <div class="sub" id="rSub"></div>
+  <div class="grid">
+    <div class="cell"><div class="v" id="rSpeed">0</div><div class="l" id="rSpeedL"></div></div>
+    <div class="cell"><div class="v" id="rAcc">0</div><div class="l" id="rAccL"></div></div>
+    <div class="cell"><div class="v" id="rCombo">0</div><div class="l" id="rComboL"></div></div>
+    <div class="cell"><div class="v" id="rTime">0</div><div class="l" id="rTimeL"></div></div>
+  </div>
+  <div class="best" id="rBest"></div>
+  <div class="xpg" id="rXp"></div>
+  <div class="btns"><button class="btn" id="rAgain"></button><button class="btn ghost" id="rClose"></button></div>
+</div></div>
+<canvas id="confetti"></canvas>
+<div id="toast"></div>
+<div id="comboPop"></div>
+
+<script>
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '타자연습', keys: '자리연습', words: '낱말', sentences: '문장', code: '코드', rain: '산성비',
+    cpm: '타/분', wpm: 'WPM', acc: '정확도', combo: '콤보', prog: '진행', time: '시간',
+    keyLevels: ['기본자리', '윗줄', '아랫줄', '숫자', '기호', '쌍자음·Shift', '종합'],
+    keyLevelsEn: ['기본자리', '윗줄', '아랫줄', '숫자', '기호', '대문자', '종합'],
+    keysHint: '색으로 표시된 손가락으로 강조된 키를 누르세요. 한/영 전환 없이 물리 키 위치로 판정합니다.',
+    textHint: '보이는 글을 그대로 입력하세요. 자동으로 다음으로 넘어갑니다. (낱말: Space, 문장·코드: Enter로 건너뛰기)',
+    codeHint: '들여쓰기는 자동 처리됩니다. 한 줄을 다 치고 Enter를 누르세요. 기호 하나하나가 실력입니다!',
+    rainHint: '떨어지는 단어를 입력하고 Enter! 바닥에 닿으면 생명이 줄어듭니다.', rainStart: '시작하려면 Enter', rainTitle: '산성비',
+    rainOver: '게임 오버', rainScore: '점수', best: '최고 기록', newBest: '🎉 신기록!', lives: '생명',
+    fingers: ['왼 새끼', '왼 약지', '왼 중지', '왼 검지', '오른 검지', '오른 중지', '오른 약지', '오른 새끼'],
+    codeCats: { all: '전체', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: '기호 드릴' },
+    ranks: ['🐢 걸음마', '🚶 초보', '🏃 중급', '🚴 숙련', '🚀 고수', '🏆 타자의 신'],
+    titles: ['새싹 타이피스트', '견습 타이피스트', '숙련 타이피스트', '달인 타이피스트', '전설의 타이피스트', '키보드의 신'],
+    done: '완료!', again: '다시 하기', close: '닫기', maxCombo: '최대 콤보', xpGain: xp => `+${xp} XP 획득`,
+    levelUp: lv => `🎊 레벨 ${lv} 달성!`, comboMsg: n => `${n} COMBO!`, wordsHit: '맞힌 단어',
+    resultSub: { keys: '자리연습 30키', words: '낱말 20개', sentences: '문장 5개', code: '코드 스니펫', rain: '산성비' },
+  },
+  en: {
+    title: 'Typing Practice', keys: 'Keys', words: 'Words', sentences: 'Sentences', code: 'Code', rain: 'Rain',
+    cpm: 'CPM', wpm: 'WPM', acc: 'Accuracy', combo: 'Combo', prog: 'Progress', time: 'Time',
+    keyLevels: ['Home row', 'Top row', 'Bottom row', 'Numbers', 'Symbols', 'Doubles·Shift', 'Mixed'],
+    keyLevelsEn: ['Home row', 'Top row', 'Bottom row', 'Numbers', 'Symbols', 'Capitals', 'Mixed'],
+    keysHint: 'Press the highlighted key with the finger of the matching color. Judged by physical key position.',
+    textHint: 'Type exactly what you see. It advances automatically. (Words: Space, Sentences/Code: Enter to skip)',
+    codeHint: 'Indentation is handled for you. Finish a line and press Enter. Every symbol counts!',
+    rainHint: 'Type the falling word and press Enter (or Space)! Words hitting the ground cost a life.', rainStart: 'Press Enter to start', rainTitle: 'Word Rain',
+    rainOver: 'Game Over', rainScore: 'Score', best: 'Best', newBest: '🎉 New record!', lives: 'Lives',
+    fingers: ['L pinky', 'L ring', 'L middle', 'L index', 'R index', 'R middle', 'R ring', 'R pinky'],
+    codeCats: { all: 'All', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: 'Symbol drill' },
+    ranks: ['🐢 Crawling', '🚶 Beginner', '🏃 Intermediate', '🚴 Skilled', '🚀 Expert', '🏆 Typing God'],
+    titles: ['Sprout Typist', 'Apprentice Typist', 'Skilled Typist', 'Master Typist', 'Legendary Typist', 'Keyboard Deity'],
+    done: 'Done!', again: 'Again', close: 'Close', maxCombo: 'Max combo', xpGain: xp => `+${xp} XP earned`,
+    levelUp: lv => `🎊 Level ${lv} reached!`, comboMsg: n => `${n} COMBO!`, wordsHit: 'Words hit',
+    resultSub: { keys: 'Key drill · 30 keys', words: '20 words', sentences: '5 sentences', code: 'Code snippets', rain: 'Word Rain' },
+  },
+};
+const U = T[LANG] || T.en;
+document.title = U.title;
+
+/* ══════════ Content banks ══════════ */
+const WORDS = {
+  ko: '사과 바나나 컴퓨터 키보드 마우스 하늘 나무 바다 구름 학교 친구 가족 사랑 행복 시간 공부 여행 음악 영화 커피 책상 의자 창문 문제 해결 프로그램 인터넷 전화 사진 그림 운동 건강 병원 약국 시장 은행 회사 직장 월급 휴가 주말 아침 점심 저녁 별빛 달님 태양 지구 우주 과학 수학 역사 언어 문화 예술 음식 김치 된장 라면 치킨 피자 햄버거 떡볶이 비빔밥 불고기 강아지 고양이 토끼 호랑이 사자 코끼리 기린 원숭이 펭귄 돌고래 자동차 기차 비행기 자전거 버스 지하철 서울 부산 대구 인천 광주 대전 봄바람 여름 가을 겨울 무지개 번개 천둥 안개 서리 꽃잎 뿌리 열매 씨앗 숲속 산길 강물 호수 섬마을 사막 빙하 화산 지진 태풍 홍수 가뭄 연필 지우개 공책 가방 신발 모자 안경 시계 열쇠 지갑 우산 거울 침대 베개 이불 냉장고 세탁기 청소기 텔레비전 라디오 노래 춤 연극 축제 생일 선물 편지 소식 뉴스 신문 잡지 소설 시집 만화 게임 축구 야구 농구 수영 등산 낚시 요리 빵집 카페 식당 극장 공원 놀이터 도서관 박물관 미술관'.split(' '),
+  en: 'about above across action animal answer apple banana beach beautiful because before believe better between bicycle bridge bright brother business butter camera candle castle change cheese chicken children chocolate circle city climate cloud coffee color computer cookie country courage danger daughter dinner doctor dolphin dragon dream eagle earth elephant energy engine evening family famous father finger flower forest freedom friend future garden giraffe glass golden guitar happy harbor health history honey horse hospital house island jacket journey jungle keyboard kitchen knowledge ladder language laptop leader lemon letter library light lion machine magic market memory monkey morning mother mountain music nature network number ocean orange oxygen painter paper pencil penguin people picture pizza planet player pocket potato power puzzle rabbit rainbow river robot rocket school science screen silver simple sister smile spring square station stone story street summer sunset table teacher thunder ticket tiger tomato travel turtle umbrella universe valley village volcano water weather window winter wonder world writer yellow zebra quick brown jump lazy fox over'.split(' '),
+};
+const SENTENCES = {
+  ko: ['가는 말이 고와야 오는 말이 곱다.', '티끌 모아 태산.', '백문이 불여일견.', '하늘은 스스로 돕는 자를 돕는다.', '오늘 할 일을 내일로 미루지 마라.', '시작이 반이다.', '천 리 길도 한 걸음부터.', '아는 것이 힘이다.', '세 살 버릇 여든까지 간다.', '고생 끝에 낙이 온다.', '원숭이도 나무에서 떨어진다.', '낮말은 새가 듣고 밤말은 쥐가 듣는다.', '등잔 밑이 어둡다.', '빈 수레가 요란하다.', '늦었다고 생각할 때가 가장 빠른 때이다.', '오늘의 연습이 내일의 실력을 만든다.', '봄바람이 살랑살랑 불어오는 계절이 왔다.', '바다 위로 붉은 해가 천천히 떠오른다.', '매일 조금씩 꾸준히 하는 것이 중요하다.', '컴퓨터 앞에 앉아 손가락을 자판 위에 올렸다.', '책을 읽으면 세상을 보는 눈이 넓어진다.', '친구와 함께 걷는 길은 멀어도 즐겁다.', '별이 빛나는 밤하늘을 올려다보았다.', '작은 습관이 큰 변화를 만든다.', '실수는 노력하고 있다는 증거다.', '정확하게 치는 것이 먼저, 속도는 따라온다.', '리듬을 타면 손가락이 저절로 움직인다.', '창밖에는 밤새 비가 조용히 내렸다.', '도서관은 책장 넘기는 소리만 들릴 뿐 고요했다.', '지난봄에 뒷마당에 사과나무 세 그루를 심었다.'],
+  en: ['The quick brown fox jumps over the lazy dog.', 'Pack my box with five dozen liquor jugs.', 'How vexingly quick daft zebras jump!', 'Practice makes perfect, so keep typing every day.', 'The early bird catches the worm.', 'Actions speak louder than words.', 'A journey of a thousand miles begins with a single step.', 'Knowledge is power, but practice is mastery.', 'Sphinx of black quartz, judge my vow.', 'The five boxing wizards jump quickly.', 'Well begun is half done.', "Don't put off until tomorrow what you can do today.", 'Every expert was once a beginner.', 'The sun rose slowly over the quiet blue ocean.', 'She opened the window and let the cool morning air in.', 'Small habits lead to big changes over time.', 'Reading a good book is like traveling without moving.', 'Keep your eyes on the screen and your fingers on the home row.', 'Type with rhythm, not with force.', 'A calm mind makes fewer mistakes.', 'The library was silent except for the turning of pages.', 'We planted three apple trees in the backyard last spring.', 'Mistakes are proof that you are trying.', 'Rain tapped gently on the roof all night long.', 'Focus on accuracy first; speed will follow.', "It's not about how fast you type, but how well.", 'Jack quietly moved up front and seized the big ball of wax.', 'The job requires extra pluck and zeal from every young wage earner.', 'Crazy Frederick bought many very exquisite opal jewels.', 'My grandfather picks up quartz and valuable onyx jewels.'],
+};
+const CODE = [
+  { l: 'js', s: 'const sum = (a, b) => a + b;' },
+  { l: 'js', s: 'const evens = nums.filter((n) => n % 2 === 0);' },
+  { l: 'js', s: 'if (user?.role !== "admin") {\n  throw new Error("Forbidden");\n}' },
+  { l: 'js', s: 'for (let i = 0; i < arr.length; i++) {\n  total += arr[i] * 2;\n}' },
+  { l: 'js', s: 'const { id, name, ...rest } = payload;' },
+  { l: 'js', s: 'console.log(`Total: ${items.length} items`);' },
+  { l: 'js', s: 'const map = new Map([["a", 1], ["b", 2]]);' },
+  { l: 'js', s: 'try {\n  await fetch("/api/v2/health");\n} catch (e) {\n  console.error(e);\n}' },
+  { l: 'js', s: 'export default function App() {\n  return <h1>Hello, {name}!</h1>;\n}' },
+  { l: 'js', s: 'const ok = list.every((x) => x >= 0 && x <= 100);' },
+  { l: 'py', s: 'def add(a: int, b: int) -> int:\n    return a + b' },
+  { l: 'py', s: 'squares = [x ** 2 for x in range(10) if x % 2 == 0]' },
+  { l: 'py', s: 'with open("data.json", "r") as f:\n    data = json.load(f)' },
+  { l: 'py', s: 'print(f"{name!r} scored {score:.2f}%")' },
+  { l: 'py', s: 'class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y' },
+  { l: 'py', s: 'result = {k: v for k, v in pairs.items() if v is not None}' },
+  { l: 'py', s: 'if __name__ == "__main__":\n    main(sys.argv[1:])' },
+  { l: 'web', s: '.btn:hover { background: #7c5cfc; transform: scale(1.05); }' },
+  { l: 'web', s: '<a href="https://wiiiv.io" target="_blank">wiiiv</a>' },
+  { l: 'web', s: '@media (max-width: 600px) {\n  .grid { grid-template-columns: 1fr; }\n}' },
+  { l: 'web', s: '<input type="text" id="name" placeholder="Name" required>' },
+  { l: 'web', s: 'body { margin: 0; font: 14px/1.5 "Segoe UI", sans-serif; }' },
+  { l: 'sql', s: 'SELECT name, COUNT(*) AS n FROM users WHERE age >= 18 GROUP BY name;' },
+  { l: 'sql', s: "UPDATE orders SET status = 'shipped' WHERE id = 42;" },
+  { l: 'sql', s: 'INSERT INTO logs (level, msg) VALUES (\'INFO\', \'started\');' },
+  { l: 'sql', s: 'SELECT u.id, o.total FROM users u JOIN orders o ON o.user_id = u.id;' },
+  { l: 'sh', s: 'grep -rn "TODO" src/ | wc -l' },
+  { l: 'sh', s: 'git commit -m "fix: handle null input" && git push origin main' },
+  { l: 'sh', s: "curl -s http://127.0.0.1:8555/api/v2/health | jq '.data.status'" },
+  { l: 'sh', s: 'for f in *.log; do gzip "$f"; done' },
+  { l: 'sh', s: 'export PATH="$HOME/.local/bin:$PATH"' },
+  { l: 'sys', s: 'fn main() {\n    println!("{}", (1..=10).sum::<i32>());\n}' },
+  { l: 'sys', s: 'int *p = &arr[0]; *p += 1;' },
+  { l: 'sys', s: 'if err != nil {\n    return nil, fmt.Errorf("read: %w", err)\n}' },
+  { l: 'sys', s: 'let v: Vec<u8> = s.bytes().filter(|b| b.is_ascii_digit()).collect();' },
+  { l: 'sys', s: '#include <stdio.h>\nint main(void) { printf("hi\\n"); return 0; }' },
+  { l: 'sym', s: ';; :: \'\' "" `` () [] {} <>' },
+  { l: 'sym', s: '== != <= >= && || => ->' },
+  { l: 'sym', s: '++ -- += -= *= /= %= **' },
+  { l: 'sym', s: '~ ! @ # $ % ^ & * _ + | \\ ?' },
+  { l: 'sym', s: '{a: 1}; [b, c]; (d || e); "f"; \'g\'; `h`' },
+  { l: 'sym', s: 'a->b; c::d; e?.f; g!; h#i; j@k; l$m' },
+];
+
+/* ══════════ Keyboard layout ══════════ */
+const ROWS = [
+  [['Backquote','`','~',0,0],['Digit1','1','!',0,0],['Digit2','2','@',0,1],['Digit3','3','#',0,2],['Digit4','4','$',0,3],['Digit5','5','%',0,3],['Digit6','6','^',0,4],['Digit7','7','&',0,4],['Digit8','8','*',0,5],['Digit9','9','(',0,6],['Digit0','0',')',0,7],['Minus','-','_',0,7],['Equal','=','+',0,7],['Backspace','⌫','',2,7]],
+  [['Tab','Tab','',1,0],['KeyQ','q','',0,0],['KeyW','w','',0,1],['KeyE','e','',0,2],['KeyR','r','',0,3],['KeyT','t','',0,3],['KeyY','y','',0,4],['KeyU','u','',0,4],['KeyI','i','',0,5],['KeyO','o','',0,6],['KeyP','p','',0,7],['BracketLeft','[','{',0,7],['BracketRight',']','}',0,7],['Backslash','\\','|',1,7]],
+  [['CapsLock','Caps','',2,0],['KeyA','a','',0,0],['KeyS','s','',0,1],['KeyD','d','',0,2],['KeyF','f','',0,3],['KeyG','g','',0,3],['KeyH','h','',0,4],['KeyJ','j','',0,4],['KeyK','k','',0,5],['KeyL','l','',0,6],['Semicolon',';',':',0,7],['Quote','\'','"',0,7],['Enter','Enter','',3,7]],
+  [['ShiftLeft','Shift','',3,0],['KeyZ','z','',0,0],['KeyX','x','',0,1],['KeyC','c','',0,2],['KeyV','v','',0,3],['KeyB','b','',0,3],['KeyN','n','',0,4],['KeyM','m','',0,4],['Comma',',','<',0,5],['Period','.','>',0,6],['Slash','/','?',0,7],['ShiftRight','Shift','',3,7]],
+  [['Space','','',4,3]],
+];
+const FCOL = ['#ff6b9d','#ffa94d','#ffd93d','#6bff9d','#4ecdc4','#6c9bff','#b57cff','#ff7cf0'];
+const JAMO = { q:'ㅂ',w:'ㅈ',e:'ㄷ',r:'ㄱ',t:'ㅅ',y:'ㅛ',u:'ㅕ',i:'ㅑ',o:'ㅐ',p:'ㅔ',a:'ㅁ',s:'ㄴ',d:'ㅇ',f:'ㄹ',g:'ㅎ',h:'ㅗ',j:'ㅓ',k:'ㅏ',l:'ㅣ',z:'ㅋ',x:'ㅌ',c:'ㅊ',v:'ㅍ',b:'ㅠ',n:'ㅜ',m:'ㅡ' };
+const JAMO_S = { q:'ㅃ',w:'ㅉ',e:'ㄸ',r:'ㄲ',t:'ㅆ',o:'ㅒ',p:'ㅖ' };
+const KEYMAP = {}; // char -> {code, shift, finger}
+ROWS.flat().forEach(([code, lb, sb, w, f]) => {
+  if (code === 'Space') { KEYMAP[' '] = { code, shift: false, f }; return; }
+  if (lb.length !== 1) return;
+  KEYMAP[lb] = { code, shift: false, f };
+  if (sb) KEYMAP[sb] = { code, shift: true, f };
+  if (/[a-z]/.test(lb)) {
+    KEYMAP[lb.toUpperCase()] = { code, shift: true, f };
+    if (JAMO[lb]) KEYMAP[JAMO[lb]] = { code, shift: false, f };
+    if (JAMO_S[lb]) KEYMAP[JAMO_S[lb]] = { code, shift: true, f };
+  }
+});
+const KEY_POOLS = {
+  en: ['asdfghjkl;', 'qwertyuiop', 'zxcvbnm,./', '1234567890-=', '!@#$%^&*()_+{}[]:"<>?|~', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz1234567890;,./!@#$%&*()_+{}[]:"<>?'],
+  ko: ['ㅁㄴㅇㄹㅎㅗㅓㅏㅣ;', 'ㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔ', 'ㅋㅌㅊㅍㅠㅜㅡ,./', '1234567890-=', '!@#$%^&*()_+{}[]:"<>?|~', 'ㅃㅉㄸㄲㅆㅒㅖ', 'ㅁㄴㅇㄹㅎㅗㅓㅏㅣㅂㅈㄷㄱㅅㅛㅕㅑㅐㅔㅋㅌㅊㅍㅠㅜㅡㅃㅉㄸㄲㅆ1234567890;,./!@#$%&*()_+{}[]:"<>?'],
+};
+
+/* ══════════ Utilities ══════════ */
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const CV = new Set([9,10,11,14,15,16,19]), CF = new Set([3,5,6,9,10,11,12,13,14,15,18]);
+function strokesOf(str) { // Korean syllables count as jamo keystrokes
+  let n = 0;
+  for (const ch of str) {
+    const c = ch.charCodeAt(0);
+    if (c >= 0xAC00 && c <= 0xD7A3) { const o = c - 0xAC00, ju = Math.floor((o % 588) / 28), jo = o % 28; n += 1 + (CV.has(ju) ? 2 : 1) + (jo ? (CF.has(jo) ? 2 : 1) : 0); }
+    else n += 1;
+  }
+  return n;
+}
+const fmtTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1800); }
+function store(k, v) { try { localStorage.setItem('wiiiv-typing-' + k, JSON.stringify(v)); } catch (e) {} }
+function load(k, d) { try { const v = localStorage.getItem('wiiiv-typing-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+
+/* Sound */
+let soundOn = load('sound', true), actx = null;
+function beep(freq, dur = .06, type = 'square', vol = .05) {
+  if (!soundOn) return;
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + dur); o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur); } catch (e) {}
+}
+const S = { tick: () => beep(880, .04, 'square', .03), bad: () => beep(140, .12, 'sawtooth', .06), pop: () => { beep(660, .05); setTimeout(() => beep(990, .08), 40); }, win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, .15, 'triangle', .08), i * 90)), lose: () => [400, 300, 200].forEach((f, i) => setTimeout(() => beep(f, .2, 'sawtooth', .07), i * 120)) };
+$('soundBtn').textContent = soundOn ? '🔊' : '🔇';
+$('soundBtn').onclick = () => { soundOn = !soundOn; store('sound', soundOn); $('soundBtn').textContent = soundOn ? '🔊' : '🔇'; };
+
+/* Confetti */
+function confetti() {
+  const cv = $('confetti'), ctx = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight;
+  const ps = Array.from({ length: 140 }, () => ({ x: innerWidth / 2, y: innerHeight / 2, vx: (Math.random() - .5) * 22, vy: (Math.random() - 1.2) * 18, c: rnd(FCOL), r: 3 + Math.random() * 4, a: Math.random() * 6 }));
+  let t = 0; (function f() { ctx.clearRect(0, 0, cv.width, cv.height); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .5; p.vx *= .98; p.a += .2; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore(); }); if (++t < 110) requestAnimationFrame(f); else ctx.clearRect(0, 0, cv.width, cv.height); })();
+}
+
+/* XP */
+let xp = load('xp', 0);
+const lvOf = x => Math.floor(Math.sqrt(x / 120)) + 1, xpFor = lv => (lv - 1) ** 2 * 120;
+function renderXp() {
+  const lv = lvOf(xp), a = xpFor(lv), b = xpFor(lv + 1);
+  $('lvBadge').textContent = 'Lv ' + lv; $('lvTitle').textContent = U.titles[Math.min(U.titles.length - 1, Math.floor((lv - 1) / 4))];
+  $('xpFill').style.width = ((xp - a) / (b - a) * 100).toFixed(1) + '%'; $('xpNum').textContent = xp + ' XP';
+}
+function gainXp(n) { const before = lvOf(xp); xp += n; store('xp', xp); renderXp(); if (lvOf(xp) > before) { toast(U.levelUp(lvOf(xp))); confetti(); } }
+
+/* ══════════ State ══════════ */
+let mode = load('mode', 'keys'), cl = load('cl', LANG === 'ko' ? 'ko' : 'en'), keyLevel = 0, codeCat = 'all';
+let sess = null;
+function newSession() { return { start: 0, elapsed: 0, strokes: 0, chars: 0, errors: 0, combo: 0, maxCombo: 0, done: 0, total: 0, over: false }; }
+function statLabels() {
+  $('sSpeedL').textContent = cl === 'ko' ? U.cpm : U.wpm; $('sAccL').textContent = U.acc; $('sComboL').textContent = U.combo; $('sProgL').textContent = U.prog; $('sTimeL').textContent = U.time;
+}
+function bumpCombo() {
+  sess.combo++; sess.maxCombo = Math.max(sess.maxCombo, sess.combo);
+  if (sess.combo > 0 && sess.combo % 25 === 0) { const p = $('comboPop'); p.textContent = U.comboMsg(sess.combo); p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); beep(1200, .1, 'triangle', .06); }
+}
+function breakCombo() { sess.combo = 0; }
+function speedNow(extraStrokes = 0, extraChars = 0) {
+  const min = Math.max(sess.elapsed, 1) / 60000;
+  return cl === 'ko' ? Math.round((sess.strokes + extraStrokes) / min) : Math.round(((sess.chars + extraChars) / 5) / min);
+}
+function accNow(extraErr = 0, extraChars = 0) { const c = sess.chars + extraChars; return c ? Math.max(0, Math.round((1 - (sess.errors + extraErr) / c) * 100)) : 100; }
+let clock = null;
+function startClock() { if (sess.start) return; sess.start = Date.now(); clock = setInterval(() => { if (sess.over) return; sess.elapsed = Date.now() - sess.start; renderStats(); }, 250); }
+function stopClock() { clearInterval(clock); clock = null; }
+let liveExtra = () => ({ s: 0, c: 0, e: 0 });
+function renderStats() {
+  const x = liveExtra();
+  $('sSpeed').textContent = sess.start ? speedNow(x.s, x.c) : 0; $('sAcc').textContent = accNow(x.e, x.c) + '%';
+  const cb = $('sCombo'); cb.textContent = sess.combo; cb.classList.toggle('hot', sess.combo >= 25);
+  $('sProg').textContent = `${sess.done}/${sess.total}`; $('sTime').textContent = fmtTime(sess.elapsed / 1000);
+}
+function rankOf(speed) { const th = cl === 'ko' ? [100, 200, 300, 400, 500] : [20, 35, 50, 70, 90]; let r = 0; th.forEach(t => { if (speed >= t) r++; }); return r; }
+
+/* ══════════ Result overlay ══════════ */
+function showResult(extra) {
+  sess.over = true; stopClock();
+  const x = liveExtra(); const speed = speedNow(x.s, x.c), acc = accNow(x.e, x.c), rank = rankOf(speed);
+  const key = `best-${mode}-${cl}${mode === 'keys' ? '-' + keyLevel : ''}`; const prev = load(key, 0);
+  const score = extra && extra.score != null ? extra.score : speed; const isBest = score > prev; if (isBest) store(key, score);
+  const gained = (extra && extra.xp != null ? extra.xp : Math.round(sess.chars * acc / 100) + 40 + sess.maxCombo);
+  $('rEmoji').textContent = extra && extra.emoji ? extra.emoji : U.ranks[rank].split(' ')[0];
+  $('rTitle').textContent = extra && extra.title ? extra.title : U.ranks[rank].slice(2);
+  $('rSub').textContent = U.resultSub[mode];
+  $('rSpeed').textContent = extra && extra.score != null ? extra.score : speed; $('rSpeedL').textContent = extra && extra.score != null ? U.rainScore : (cl === 'ko' ? U.cpm : U.wpm);
+  $('rAcc').textContent = extra && extra.hits != null ? extra.hits : acc + '%'; $('rAccL').textContent = extra && extra.hits != null ? U.wordsHit : U.acc;
+  $('rCombo').textContent = sess.maxCombo; $('rComboL').textContent = U.maxCombo;
+  $('rTime').textContent = fmtTime(sess.elapsed / 1000); $('rTimeL').textContent = U.time;
+  $('rBest').textContent = (isBest ? U.newBest + ' ' : '') + U.best + ': ' + Math.max(prev, score);
+  $('rXp').textContent = U.xpGain(gained); $('rAgain').textContent = U.again; $('rClose').textContent = U.close;
+  $('overlay').classList.add('active'); gainXp(gained);
+  if (rank >= 3 || isBest) confetti(); (extra && extra.lose) ? S.lose() : S.win();
+}
+$('rAgain').onclick = () => { $('overlay').classList.remove('active'); startMode(); };
+$('rClose').onclick = () => { $('overlay').classList.remove('active'); };
+
+/* ══════════ Mode switching ══════════ */
+const NAV = $('modes');
+NAV.querySelectorAll('button').forEach(b => { b.textContent = U[b.dataset.mode]; b.onclick = () => { mode = b.dataset.mode; store('mode', mode); startMode(); }; });
+$('langSeg').querySelectorAll('button').forEach(b => b.onclick = () => { cl = b.dataset.cl; store('cl', cl); startMode(); });
+$('title').textContent = U.title;
+function startMode() {
+  stopClock(); stopRain(); document.onkeydown = null;
+  NAV.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  $('langSeg').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.cl === cl));
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  sess = newSession(); statLabels(); liveExtra = () => ({ s: 0, c: 0, e: 0 });
+  if (mode === 'keys') startKeys(); else if (mode === 'rain') startRainMode(); else startText();
+  renderStats();
+}
+
+/* ══════════ Keys drill ══════════ */
+let kt = [], ki = 0;
+function buildKbd() {
+  const k = $('kbd'); k.innerHTML = '';
+  ROWS.forEach(row => { const r = document.createElement('div'); r.className = 'krow'; row.forEach(([code, lb, sb, w, f]) => {
+    const el = document.createElement('div'); el.className = 'key ' + ['', 'wide', 'wider', 'widest', 'space'][w]; el.dataset.code = code; el.style.setProperty('--f', FCOL[f]);
+    el.innerHTML = `<span class="lb">${lb.length === 1 ? esc(lb.toUpperCase()) : lb}</span>` + (sb ? `<span class="sb">${esc(sb)}</span>` : '') + (cl === 'ko' && JAMO[lb] ? `<span class="ko">${JAMO[lb]}</span>` : '');
+    r.appendChild(el); }); k.appendChild(r); });
+  $('fingers').innerHTML = U.fingers.map((n, i) => `<span style="--f:${FCOL[i]}">${n}</span>`).join('');
+}
+function startKeys() {
+  $('keysMode').classList.add('active'); $('keysHint').textContent = U.keysHint; buildKbd();
+  const names = cl === 'ko' ? U.keyLevels : U.keyLevelsEn;
+  $('keyLevels').innerHTML = names.map((n, i) => `<button class="pill ${i === keyLevel ? 'active' : ''}" data-l="${i}">${i + 1}. ${n}</button>`).join('');
+  $('keyLevels').querySelectorAll('.pill').forEach(p => p.onclick = () => { keyLevel = +p.dataset.l; startMode(); });
+  const pool = [...KEY_POOLS[cl][keyLevel]]; kt = []; let last = '';
+  for (let i = 0; i < 30; i++) { let c; do c = rnd(pool); while (c === last && pool.length > 1); kt.push(c); last = c; }
+  ki = 0; sess.total = 30;
+  $('keyTargets').innerHTML = kt.map(c => `<div class="kt">${c === ' ' ? '␣' : esc(c)}</div>`).join('');
+  highlightKey();
+  document.onkeydown = e => {
+    if (mode !== 'keys' || sess.over) return;
+    if (['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'CapsLock', 'Tab', 'F5', 'F12'].includes(e.code)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    e.preventDefault(); startClock();
+    const want = KEYMAP[kt[ki]]; const ok = want && e.code === want.code && !!e.shiftKey === want.shift;
+    const keyEl = $('kbd').querySelector(`[data-code="${e.code}"]`); if (keyEl) { keyEl.classList.add(ok ? 'hit' : 'miss'); setTimeout(() => keyEl.classList.remove('hit', 'miss'), 150); }
+    const tEl = $('keyTargets').children[ki]; sess.chars++; sess.strokes += ok ? 1 : 0;
+    if (ok) { tEl.classList.add('ok'); bumpCombo(); S.tick(); ki++; sess.done = ki; }
+    else { tEl.classList.add('bad'); sess.errors++; breakCombo(); S.bad(); if (!tEl.dataset.retry) { tEl.dataset.retry = 1; } }
+    renderStats();
+    if (ki >= kt.length) { setTimeout(() => showResult({ xp: 30 + Math.round(sess.maxCombo * 1.5) }), 200); return; }
+    highlightKey();
+  };
+}
+function highlightKey() {
+  $('kbd').querySelectorAll('.next').forEach(k => k.classList.remove('next'));
+  $('keyTargets').querySelectorAll('.cur').forEach(k => k.classList.remove('cur'));
+  const t = $('keyTargets').children[ki]; if (!t) return; t.classList.add('cur'); t.scrollIntoView({ block: 'nearest' });
+  const want = KEYMAP[kt[ki]]; if (!want) return;
+  const el = $('kbd').querySelector(`[data-code="${want.code}"]`); if (el) el.classList.add('next');
+  if (want.shift) { const side = want.f <= 3 ? 'ShiftRight' : 'ShiftLeft'; $('kbd').querySelector(`[data-code="${side}"]`).classList.add('next'); }
+}
+
+/* ══════════ Text modes (words / sentences / code) ══════════ */
+const inp = $('inp');
+let items = [], ii = 0, composing = false, judged = 0, errSet = new Set(), curSnippet = -1;
+function startText() {
+  $('textMode').classList.add('active'); ii = 0; curSnippet = -1;
+  const isCode = mode === 'code';
+  $('codeCats').style.display = isCode ? '' : 'none'; $('target').classList.toggle('code', isCode); inp.classList.toggle('mono', isCode);
+  $('textHint').textContent = isCode ? U.codeHint : U.textHint;
+  if (mode === 'words') items = shuffle(WORDS[cl]).slice(0, 20).map(w => ({ t: w }));
+  else if (mode === 'sentences') items = shuffle(SENTENCES[cl]).slice(0, 5).map(s => ({ t: s }));
+  else {
+    $('codeCats').innerHTML = Object.entries(U.codeCats).map(([k, v]) => `<button class="pill ${k === codeCat ? 'active' : ''}" data-c="${k}">${v}</button>`).join('');
+    $('codeCats').querySelectorAll('.pill').forEach(p => p.onclick = () => { codeCat = p.dataset.c; startMode(); });
+    const pool = shuffle(CODE.filter(c => codeCat === 'all' || c.l === codeCat)).slice(0, codeCat === 'all' ? 4 : 3);
+    items = []; pool.forEach((sn, si) => { const lines = sn.s.split('\n'); lines.forEach((ln, li) => { const ind = ln.match(/^\s*/)[0]; items.push({ t: ln.slice(ind.length), ind, sn: si, lang: sn.l, lines, li }); }); });
+  }
+  sess.total = items.length; loadItem(); inp.value = ''; inp.focus(); setTimeout(() => inp.focus(), 50);
+  liveExtra = () => { const t = items[ii] ? items[ii].t : ''; const v = inp.value; let ok = ''; for (let i = 0; i < v.length && i < t.length && v[i] === t[i]; i++) ok += t[i]; return { s: strokesOf(ok), c: judged, e: errSet.size }; };
+}
+function loadItem() {
+  judged = 0; errSet = new Set(); composing = false; inp.value = '';
+  const it = items[ii]; if (!it) return;
+  if (mode === 'code') {
+    if (it.sn !== curSnippet) { curSnippet = it.sn; }
+    const block = it.lines.map((ln, li) => { const ind = ln.match(/^\s*/)[0], body = ln.slice(ind.length); const cls = li < it.li ? 'done' : li > it.li ? 'todo' : 'cur';
+      return `<div class="ln ${cls}"><span class="no">${li + 1}</span><span class="ind" data-dots="${'·'.repeat(ind.length)}"></span><span class="body">${li === it.li ? '' : esc(body)}</span></div>`; }).join('');
+    $('target').innerHTML = `<span id="codeTag">${it.lang}</span><div id="codeBlock" class="mono">${block}</div>`;
+    $('queue').innerHTML = '';
+  } else {
+    $('target').innerHTML = ''; $('queue').innerHTML = mode === 'words' ? items.slice(ii + 1, ii + 6).map(w => `<span>${esc(w.t)}</span>`).join('') : '';
+  }
+  renderTarget();
+}
+function renderTarget() {
+  const it = items[ii]; if (!it) return; const t = it.t, v = inp.value, settled = composing ? v.length - 1 : v.length;
+  let html = '';
+  for (let i = 0; i < t.length; i++) {
+    let cls = 'c'; if (t[i] === ' ') cls += ' ws';
+    if (i < settled) cls += v[i] === t[i] ? ' ok' : ' bad';
+    else if (i < v.length) cls += ' pend';
+    else if (i === v.length) cls += ' cur';
+    html += `<span class="${cls}">${esc(t[i])}</span>`;
+  }
+  if (v.length > t.length) html += `<span class="c bad">${esc(v.slice(t.length))}</span>`;
+  const host = mode === 'code' ? $('target').querySelector('.ln.cur .body') : $('target'); if (host) host.innerHTML = html;
+}
+function judge() {
+  const t = items[ii].t, v = inp.value, settled = composing ? v.length - 1 : v.length;
+  if (settled < judged) judged = settled;
+  for (let i = judged; i < settled; i++) {
+    if (v[i] === t[i]) { bumpCombo(); S.tick(); }
+    else { if (!errSet.has(i)) { errSet.add(i); } breakCombo(); S.bad(); $('target').classList.add('shake'); setTimeout(() => $('target').classList.remove('shake'), 250); }
+  }
+  judged = settled;
+}
+function advance(force) {
+  const t = items[ii].t, v = inp.value.replace(/\s+$/, ''); let err = 0;
+  const n = Math.max(t.length, v.length); for (let i = 0; i < n; i++) if (v[i] !== t[i]) err++;
+  sess.chars += t.length; sess.errors += err; let ok = ''; for (let i = 0; i < t.length; i++) ok += v[i] === t[i] ? t[i] : ''; sess.strokes += strokesOf(ok);
+  sess.done = ii + 1; ii++;
+  if (ii >= items.length) { renderStats(); setTimeout(() => showResult(), 150); return; }
+  loadItem(); renderStats();
+}
+inp.addEventListener('compositionstart', () => { composing = true; });
+inp.addEventListener('compositionend', () => { composing = false; setTimeout(onInput, 0); });
+inp.addEventListener('input', e => { if (e.isComposing) composing = true; onInput(); });
+function onInput() {
+  if (sess.over || !items[ii]) return; startClock();
+  if (!composing && /^\s/.test(inp.value) && !/^\s/.test(items[ii].t)) inp.value = inp.value.replace(/^\s+/, ''); // habitual space after auto-advance
+  const t = items[ii].t, v = inp.value;
+  judge(); renderTarget(); renderStats();
+  if (composing) return;
+  if (v === t) { advance(); return; }
+  if (mode === 'words' && v.endsWith(' ') && v.trim().length) { advance(true); }
+}
+inp.addEventListener('keyup', e => { if (e.key === 'Enter' && !composing && items[ii] && inp.value.trim().length) { if (inp.value.trim() === items[ii].t) advance(); else advance(true); } });
+inp.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+$('textMode').addEventListener('click', () => inp.focus());
+
+/* ══════════ Rain game ══════════ */
+const field = $('field'), rinp = $('rainInp');
+let rain = null, rafId = null, spawnT = null;
+function stopRain() { cancelAnimationFrame(rafId); clearTimeout(spawnT); rafId = spawnT = null; rain = null; field.querySelectorAll('.drop, .banner, .splash, .particle').forEach(e => e.remove()); }
+function startRainMode() {
+  $('rainMode').classList.add('active'); $('rainHint').textContent = U.rainHint; rinp.value = '';
+  renderRainBar(3, 0);
+  banner(`🌧 ${U.rainTitle}`, U.rainStart); rinp.focus(); setTimeout(() => rinp.focus(), 50);
+}
+function banner(h, p) { const b = document.createElement('div'); b.className = 'banner'; b.innerHTML = `<h3>${h}</h3><p>${p}</p>`; field.appendChild(b); }
+function renderRainBar(lives, score) { $('lives').textContent = U.lives + ' ' + '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives)); $('rainScore').textContent = U.rainScore + ' ' + score; $('rainBest').textContent = U.best + ' ' + load(`best-rain-${cl}`, 0); }
+function beginRain() {
+  stopRain(); sess = newSession(); statLabels(); renderStats(); startClock();
+  rain = { lives: 3, score: 0, hits: 0, drops: [], last: performance.now(), speed: 38, gap: 2100, n: 0 };
+  sess.total = 0; renderRainBar(3, 0);
+  const spawn = () => { if (!rain) return; const w = rnd(WORDS[cl]); const el = document.createElement('div'); el.className = 'drop' + (Math.random() < .12 ? ' bonus' : ''); el.textContent = w;
+    field.appendChild(el); const maxX = field.clientWidth - el.offsetWidth - 10; el.style.left = (10 + Math.random() * Math.max(10, maxX)) + 'px';
+    rain.drops.push({ w, el, y: -30, sp: rain.speed * (.8 + Math.random() * .5) }); rain.n++; sess.total = rain.n;
+    rain.gap = Math.max(700, 2100 - rain.score * 4); rain.speed = 38 + rain.score * .09;
+    spawnT = setTimeout(spawn, rain.gap); };
+  spawn();
+  const loop = now => { if (!rain) return; const dt = (now - rain.last) / 1000; rain.last = now; const H = field.clientHeight - 30;
+    rain.drops.forEach(d => { d.y += d.sp * dt; d.el.style.transform = `translateY(${d.y}px)`; });
+    const missed = rain.drops.filter(d => d.y > H); if (missed.length) { missed.forEach(d => { d.el.remove(); const s = document.createElement('div'); s.className = 'splash'; s.style.left = d.el.style.left; field.appendChild(s); setTimeout(() => s.remove(), 500); }); rain.drops = rain.drops.filter(d => d.y <= H); rain.lives -= missed.length; breakCombo(); S.bad(); field.classList.add('shake'); setTimeout(() => field.classList.remove('shake'), 300); renderRainBar(Math.max(0, rain.lives), rain.score); renderStats(); if (rain.lives <= 0) { endRain(); return; } }
+    rafId = requestAnimationFrame(loop); };
+  rafId = requestAnimationFrame(loop);
+}
+function submitRain() {
+  const v = rinp.value.trim(); rinp.value = ''; if (!rain || !v) return;
+  const i = rain.drops.findIndex(d => d.w === v);
+  if (i < 0) { breakCombo(); sess.errors += v.length; sess.chars += v.length; S.bad(); rinp.style.borderColor = '#ff4466'; setTimeout(() => rinp.style.borderColor = '', 200); renderStats(); return; }
+  const d = rain.drops.splice(i, 1)[0]; const bonus = d.el.classList.contains('bonus'); d.el.classList.add('pop'); setTimeout(() => d.el.remove(), 300);
+  const r = d.el.getBoundingClientRect(), fr = field.getBoundingClientRect();
+  for (let k = 0; k < 10; k++) { const p = document.createElement('div'); p.className = 'particle'; p.style.left = (r.left - fr.left + r.width / 2) + 'px'; p.style.top = (r.top - fr.top + r.height / 2) + 'px'; p.style.background = bonus ? '#ffd93d' : rnd(FCOL); p.style.setProperty('--dx', (Math.random() - .5) * 120 + 'px'); p.style.setProperty('--dy', (Math.random() - .5) * 120 + 'px'); field.appendChild(p); setTimeout(() => p.remove(), 600); }
+  bumpCombo(); S.pop(); rain.hits++; sess.done = rain.hits; sess.chars += v.length; sess.strokes += strokesOf(v);
+  rain.score += (10 * v.length + Math.min(sess.combo, 20) * 2) * (bonus ? 3 : 1); if (bonus && rain.lives < 3) { rain.lives++; toast('❤️ +1'); }
+  renderRainBar(rain.lives, rain.score); renderStats();
+}
+function endRain() {
+  const score = rain.score, hits = rain.hits; stopRain(); banner(`💀 ${U.rainOver}`, `${U.rainScore} ${score} · ${U.rainStart}`);
+  showResult({ score, hits, emoji: score >= 3000 ? '🏆' : score >= 1500 ? '🚀' : score >= 600 ? '🌧' : '☔', title: U.rainOver, xp: Math.round(score / 10) + hits * 2, lose: true });
+}
+rinp.addEventListener('keyup', e => { if (mode !== 'rain') return; if (e.key === 'Enter' && !e.isComposing && !composingR) { if (!rain) beginRain(); else submitRain(); } });
+let composingR = false; rinp.addEventListener('compositionstart', () => composingR = true); rinp.addEventListener('compositionend', () => composingR = false);
+rinp.addEventListener('keydown', e => { if (mode !== 'rain' || cl !== 'en') return; if (e.key === ' ' && rain) { e.preventDefault(); submitRain(); } });
+$('rainMode').addEventListener('click', () => rinp.focus());
+addEventListener('resize', () => { if (mode === 'rain' && rain) rain.drops.forEach(d => { const maxX = field.clientWidth - d.el.offsetWidth - 10; if (parseFloat(d.el.style.left) > maxX) d.el.style.left = Math.max(10, maxX) + 'px'; }); });
+
+/* ══════════ Boot ══════════ */
+renderXp(); startMode();
+</script>
+</body>
+</html>
