@@ -229,7 +229,7 @@ const T = {
     textHint: '보이는 글을 그대로 입력하세요. 자동으로 다음으로 넘어갑니다. (낱말: Space, 문장·코드: Enter로 건너뛰기)',
     codeHint: '들여쓰기는 자동 처리됩니다. 한 줄을 다 치고 Enter를 누르세요. 기호 하나하나가 실력입니다!',
     rainHint: '떨어지는 단어를 입력하면 바로 격추됩니다. 바닥에 닿으면 생명이 줄어듭니다.', rainStart: '시작하려면 Enter', rainTitle: '산성비',
-    rainOver: '게임 오버', rainScore: '점수', best: '최고 기록', newBest: '🎉 신기록!', lives: '생명',
+    rainOver: '게임 오버', rainLevel: n => `${n}단계`, rainScore: '점수', best: '최고 기록', newBest: '🎉 신기록!', lives: '생명',
     fingers: ['왼 새끼', '왼 약지', '왼 중지', '왼 검지', '오른 검지', '오른 중지', '오른 약지', '오른 새끼'],
     codeCats: { all: '전체', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: '기호 드릴' },
     ranks: ['🐢 걸음마', '🚶 초보', '🏃 중급', '🚴 숙련', '🚀 고수', '🏆 타자의 신'],
@@ -247,7 +247,7 @@ const T = {
     textHint: 'Type exactly what you see. It advances automatically. (Words: Space, Sentences/Code: Enter to skip)',
     codeHint: 'Indentation is handled for you. Finish a line and press Enter. Every symbol counts!',
     rainHint: 'Type a falling word — it fires the moment it matches. Words hitting the ground cost a life.', rainStart: 'Press Enter to start', rainTitle: 'Word Rain',
-    rainOver: 'Game Over', rainScore: 'Score', best: 'Best', newBest: '🎉 New record!', lives: 'Lives',
+    rainOver: 'Game Over', rainLevel: n => `Stage ${n}`, rainScore: 'Score', best: 'Best', newBest: '🎉 New record!', lives: 'Lives',
     fingers: ['L pinky', 'L ring', 'L middle', 'L index', 'R index', 'R middle', 'R ring', 'R pinky'],
     codeCats: { all: 'All', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: 'Symbol drill' },
     ranks: ['🐢 Crawling', '🚶 Beginner', '🏃 Intermediate', '🚴 Skilled', '🚀 Expert', '🏆 Typing God'],
@@ -590,15 +590,15 @@ function startRainMode() {
   banner(`🌧 ${U.rainTitle}`, U.rainStart); rinp.focus(); setTimeout(() => rinp.focus(), 50);
 }
 function banner(h, p) { const b = document.createElement('div'); b.className = 'banner'; b.innerHTML = `<h3>${h}</h3><p>${p}</p>`; field.appendChild(b); }
-function renderRainBar(lives, score) { $('lives').textContent = U.lives + ' ' + '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives)); $('rainScore').textContent = U.rainScore + ' ' + score; $('rainBest').textContent = U.best + ' ' + load(`best-rain-${cl}`, 0); }
+function renderRainBar(lives, score) { $('lives').textContent = U.lives + ' ' + '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives)); $('rainScore').textContent = U.rainScore + ' ' + score; $('rainBest').textContent = U.best + ' ' + load(`best-rain-${cl}`, 0) + (rain ? '   ' + U.rainLevel(rain.lv) : ''); }
 function beginRain() {
   stopRain(); sess = newSession(); statLabels(); renderStats(); startClock();
-  rain = { lives: 3, score: 0, hits: 0, drops: [], last: performance.now(), speed: 38, gap: 2100, n: 0 };
+  rain = { lives: 3, score: 0, hits: 0, drops: [], last: performance.now(), speed: 46, gap: 1700, n: 0, lv: 1 };
   sess.total = 0; renderRainBar(3, 0);
   const spawn = () => { if (!rain) return; const w = rnd(WORDS[cl]); const el = document.createElement('div'); el.className = 'drop' + (Math.random() < .12 ? ' bonus' : ''); el.textContent = w;
     field.appendChild(el); const maxX = field.clientWidth - el.offsetWidth - 10; el.style.left = (10 + Math.random() * Math.max(10, maxX)) + 'px';
     rain.drops.push({ w, el, y: -30, sp: rain.speed * (.8 + Math.random() * .5) }); rain.n++; sess.total = rain.n;
-    rain.gap = Math.max(700, 2100 - rain.score * 4); rain.speed = 38 + rain.score * .09;
+    applyRainLevel();
     spawnT = setTimeout(spawn, rain.gap); };
   spawn();
   const loop = now => { if (!rain) return; const dt = (now - rain.last) / 1000; rain.last = now; const H = field.clientHeight - 30;
@@ -607,7 +607,31 @@ function beginRain() {
     rafId = requestAnimationFrame(loop); };
   rafId = requestAnimationFrame(loop);
 }
-function clearRainInput() { if (composingR) { composingR = false; rinp.blur(); rinp.value = ''; rinp.focus(); } else rinp.value = ''; }
+let compData = '', residue = '', residueT = null;
+function clearRainInput() {
+  rinp.value = '';
+  // The IME still holds the syllable being composed and will commit it after we clear.
+  // Remember exactly that text and strip it once, instead of blanking whatever arrives next.
+  residue = composingR ? compData : '';
+  clearTimeout(residueT); if (residue) residueT = setTimeout(() => { residue = ''; }, 1500);
+}
+function stripResidue() {
+  if (!residue) return false;
+  const v = rinp.value;
+  if (v === '') return true;                      // commit not in yet — keep waiting
+  if (v.startsWith(residue)) { rinp.value = v.slice(residue.length); residue = ''; clearTimeout(residueT); return false; }
+  residue = ''; clearTimeout(residueT); return false;   // something else arrived; stop guarding
+}
+const RAIN_STEP = 4;                       // words per stage
+function applyRainLevel() {
+  const lv = Math.floor(rain.hits / RAIN_STEP) + 1;
+  rain.speed = 46 * Math.pow(1.20, lv - 1);              // fall speed, +20% per stage
+  rain.gap = Math.max(420, 1700 * Math.pow(0.85, lv - 1)); // spawn interval, -15% per stage
+  if (lv !== rain.lv) {
+    rain.lv = lv;
+    toast(U.rainLevel(lv)); beep(700 + lv * 40, .12, 'triangle', .07);
+  }
+}
 function submitRain(auto) {
   const v = rinp.value.trim(); if (!rain || !v) { if (!auto) rinp.value = ''; return; }
   clearRainInput();
@@ -618,6 +642,7 @@ function submitRain(auto) {
   for (let k = 0; k < 10; k++) { const p = document.createElement('div'); p.className = 'particle'; p.style.left = (r.left - fr.left + r.width / 2) + 'px'; p.style.top = (r.top - fr.top + r.height / 2) + 'px'; p.style.background = bonus ? '#ffd93d' : rnd(FCOL); p.style.setProperty('--dx', (Math.random() - .5) * 120 + 'px'); p.style.setProperty('--dy', (Math.random() - .5) * 120 + 'px'); field.appendChild(p); setTimeout(() => p.remove(), 600); }
   bumpCombo(); S.pop(); rain.hits++; sess.done = rain.hits; sess.chars += v.length; sess.strokes += strokesOf(v);
   rain.score += (10 * v.length + Math.min(sess.combo, 20) * 2) * (bonus ? 3 : 1); if (bonus && rain.lives < 3) { rain.lives++; toast('❤️ +1'); }
+  applyRainLevel();
   renderRainBar(rain.lives, rain.score); renderStats();
 }
 function endRain() {
@@ -626,10 +651,15 @@ function endRain() {
 }
 rinp.addEventListener('keyup', e => { if (mode !== 'rain') return; if (e.key === 'Enter') { if (!rain) beginRain(); else submitRain(); } });
 let composingR = false;
-rinp.addEventListener('compositionstart', () => composingR = true);
-rinp.addEventListener('compositionend', () => { composingR = false; setTimeout(autoFire, 0); });
+rinp.addEventListener('compositionstart', () => { composingR = true; });
+rinp.addEventListener('compositionupdate', e => { compData = e.data || ''; });
+rinp.addEventListener('compositionend', e => {
+  composingR = false; compData = '';
+  if (stripResidue()) return;
+  setTimeout(autoFire, 0);
+});
 function autoFire() { if (mode !== 'rain' || !rain) return; const v = rinp.value.trim(); if (v && rain.drops.some(d => d.w === v)) submitRain(true); }
-rinp.addEventListener('input', autoFire);
+rinp.addEventListener('input', () => { if (stripResidue()) return; autoFire(); });
 rinp.addEventListener('keydown', e => { if (mode !== 'rain' || cl !== 'en') return; if (e.key === ' ' && rain) { e.preventDefault(); submitRain(); } });
 $('rainMode').addEventListener('click', () => rinp.focus());
 addEventListener('resize', () => { if (mode === 'rain' && rain) rain.drops.forEach(d => { const maxX = field.clientWidth - d.el.offsetWidth - 10; if (parseFloat(d.el.style.left) > maxX) d.el.style.left = Math.max(10, maxX) + 'px'; }); });
