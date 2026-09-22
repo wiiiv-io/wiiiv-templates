@@ -555,8 +555,9 @@ function judge() {
   judged = settled;
 }
 function advance(force) {
+  const t = items[ii].t, v = inp.value.replace(/\s+$/, ''); let err = 0;   // read BEFORE killing the composition
   if (composing) { composing = false; inp.blur(); inp.value = ''; inp.focus(); }
-  const t = items[ii].t, v = inp.value.replace(/\s+$/, ''); let err = 0;
+  for (let i = judged; i < t.length && i < v.length; i++) { if (v[i] === t[i]) bumpCombo(); else breakCombo(); }  // chars settled by this advance
   const n = Math.max(t.length, v.length); for (let i = 0; i < n; i++) if (v[i] !== t[i]) err++;
   sess.chars += t.length; sess.errors += err; let ok = ''; for (let i = 0; i < t.length; i++) ok += v[i] === t[i] ? t[i] : ''; sess.strokes += strokesOf(ok);
   sess.done = ii + 1; ii++;
