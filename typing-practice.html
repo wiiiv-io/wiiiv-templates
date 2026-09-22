@@ -228,7 +228,7 @@ const T = {
     keysHint: '색으로 표시된 손가락으로 강조된 키를 누르세요. 한/영 전환 없이 물리 키 위치로 판정합니다.',
     textHint: '보이는 글을 그대로 입력하세요. 자동으로 다음으로 넘어갑니다. (낱말: Space, 문장·코드: Enter로 건너뛰기)',
     codeHint: '들여쓰기는 자동 처리됩니다. 한 줄을 다 치고 Enter를 누르세요. 기호 하나하나가 실력입니다!',
-    rainHint: '떨어지는 단어를 입력하고 Enter! 바닥에 닿으면 생명이 줄어듭니다.', rainStart: '시작하려면 Enter', rainTitle: '산성비',
+    rainHint: '떨어지는 단어를 입력하면 바로 격추됩니다. 바닥에 닿으면 생명이 줄어듭니다.', rainStart: '시작하려면 Enter', rainTitle: '산성비',
     rainOver: '게임 오버', rainScore: '점수', best: '최고 기록', newBest: '🎉 신기록!', lives: '생명',
     fingers: ['왼 새끼', '왼 약지', '왼 중지', '왼 검지', '오른 검지', '오른 중지', '오른 약지', '오른 새끼'],
     codeCats: { all: '전체', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: '기호 드릴' },
@@ -246,7 +246,7 @@ const T = {
     keysHint: 'Press the highlighted key with the finger of the matching color. Judged by physical key position.',
     textHint: 'Type exactly what you see. It advances automatically. (Words: Space, Sentences/Code: Enter to skip)',
     codeHint: 'Indentation is handled for you. Finish a line and press Enter. Every symbol counts!',
-    rainHint: 'Type the falling word and press Enter (or Space)! Words hitting the ground cost a life.', rainStart: 'Press Enter to start', rainTitle: 'Word Rain',
+    rainHint: 'Type a falling word — it fires the moment it matches. Words hitting the ground cost a life.', rainStart: 'Press Enter to start', rainTitle: 'Word Rain',
     rainOver: 'Game Over', rainScore: 'Score', best: 'Best', newBest: '🎉 New record!', lives: 'Lives',
     fingers: ['L pinky', 'L ring', 'L middle', 'L index', 'R index', 'R middle', 'R ring', 'R pinky'],
     codeCats: { all: 'All', js: 'JavaScript', py: 'Python', web: 'HTML/CSS', sql: 'SQL', sh: 'Shell', sys: 'Rust/Go/C', sym: 'Symbol drill' },
@@ -519,7 +519,7 @@ function startText() {
   liveExtra = () => { const t = items[ii] ? items[ii].t : ''; const v = inp.value; let ok = ''; for (let i = 0; i < v.length && i < t.length && v[i] === t[i]; i++) ok += t[i]; return { s: strokesOf(ok), c: judged, e: errSet.size }; };
 }
 function loadItem() {
-  judged = 0; errSet = new Set(); composing = false; inp.value = '';
+  judged = 0; errSet = new Set(); composing = false; inp.value = ''; setTimeout(() => { if (!composing && inp.value && items[ii] && !items[ii].t.startsWith(inp.value)) inp.value = ''; }, 0);
   const it = items[ii]; if (!it) return;
   if (mode === 'code') {
     if (it.sn !== curSnippet) { curSnippet = it.sn; }
@@ -538,7 +538,7 @@ function renderTarget() {
   for (let i = 0; i < t.length; i++) {
     let cls = 'c'; if (t[i] === ' ') cls += ' ws';
     if (i < settled) cls += v[i] === t[i] ? ' ok' : ' bad';
-    else if (i < v.length) cls += ' pend';
+    else if (i < v.length) cls += v[i] === t[i] ? ' ok' : ' pend';
     else if (i === v.length) cls += ' cur';
     html += `<span class="${cls}">${esc(t[i])}</span>`;
   }
@@ -555,6 +555,7 @@ function judge() {
   judged = settled;
 }
 function advance(force) {
+  if (composing) { composing = false; inp.blur(); inp.value = ''; inp.focus(); }
   const t = items[ii].t, v = inp.value.replace(/\s+$/, ''); let err = 0;
   const n = Math.max(t.length, v.length); for (let i = 0; i < n; i++) if (v[i] !== t[i]) err++;
   sess.chars += t.length; sess.errors += err; let ok = ''; for (let i = 0; i < t.length; i++) ok += v[i] === t[i] ? t[i] : ''; sess.strokes += strokesOf(ok);
@@ -570,8 +571,8 @@ function onInput() {
   if (!composing && /^\s/.test(inp.value) && !/^\s/.test(items[ii].t)) inp.value = inp.value.replace(/^\s+/, ''); // habitual space after auto-advance
   const t = items[ii].t, v = inp.value;
   judge(); renderTarget(); renderStats();
+  if (v === t) { advance(); return; }   // matches while still composing too
   if (composing) return;
-  if (v === t) { advance(); return; }
   if (mode === 'words' && v.endsWith(' ') && v.trim().length) { advance(true); }
 }
 inp.addEventListener('keyup', e => { if (e.key === 'Enter' && !composing && items[ii] && inp.value.trim().length) { if (inp.value.trim() === items[ii].t) advance(); else advance(true); } });
@@ -605,10 +606,12 @@ function beginRain() {
     rafId = requestAnimationFrame(loop); };
   rafId = requestAnimationFrame(loop);
 }
-function submitRain() {
-  const v = rinp.value.trim(); rinp.value = ''; if (!rain || !v) return;
+function clearRainInput() { if (composingR) { composingR = false; rinp.blur(); rinp.value = ''; rinp.focus(); } else rinp.value = ''; }
+function submitRain(auto) {
+  const v = rinp.value.trim(); if (!rain || !v) { if (!auto) rinp.value = ''; return; }
+  clearRainInput();
   const i = rain.drops.findIndex(d => d.w === v);
-  if (i < 0) { breakCombo(); sess.errors += v.length; sess.chars += v.length; S.bad(); rinp.style.borderColor = '#ff4466'; setTimeout(() => rinp.style.borderColor = '', 200); renderStats(); return; }
+  if (i < 0) { if (auto) return; breakCombo(); sess.errors += v.length; sess.chars += v.length; S.bad(); rinp.style.borderColor = '#ff4466'; setTimeout(() => rinp.style.borderColor = '', 200); renderStats(); return; }
   const d = rain.drops.splice(i, 1)[0]; const bonus = d.el.classList.contains('bonus'); d.el.classList.add('pop'); setTimeout(() => d.el.remove(), 300);
   const r = d.el.getBoundingClientRect(), fr = field.getBoundingClientRect();
   for (let k = 0; k < 10; k++) { const p = document.createElement('div'); p.className = 'particle'; p.style.left = (r.left - fr.left + r.width / 2) + 'px'; p.style.top = (r.top - fr.top + r.height / 2) + 'px'; p.style.background = bonus ? '#ffd93d' : rnd(FCOL); p.style.setProperty('--dx', (Math.random() - .5) * 120 + 'px'); p.style.setProperty('--dy', (Math.random() - .5) * 120 + 'px'); field.appendChild(p); setTimeout(() => p.remove(), 600); }
@@ -620,8 +623,12 @@ function endRain() {
   const score = rain.score, hits = rain.hits; stopRain(); banner(`💀 ${U.rainOver}`, `${U.rainScore} ${score} · ${U.rainStart}`);
   showResult({ score, hits, emoji: score >= 3000 ? '🏆' : score >= 1500 ? '🚀' : score >= 600 ? '🌧' : '☔', title: U.rainOver, xp: Math.round(score / 10) + hits * 2, lose: true });
 }
-rinp.addEventListener('keyup', e => { if (mode !== 'rain') return; if (e.key === 'Enter' && !e.isComposing && !composingR) { if (!rain) beginRain(); else submitRain(); } });
-let composingR = false; rinp.addEventListener('compositionstart', () => composingR = true); rinp.addEventListener('compositionend', () => composingR = false);
+rinp.addEventListener('keyup', e => { if (mode !== 'rain') return; if (e.key === 'Enter') { if (!rain) beginRain(); else submitRain(); } });
+let composingR = false;
+rinp.addEventListener('compositionstart', () => composingR = true);
+rinp.addEventListener('compositionend', () => { composingR = false; setTimeout(autoFire, 0); });
+function autoFire() { if (mode !== 'rain' || !rain) return; const v = rinp.value.trim(); if (v && rain.drops.some(d => d.w === v)) submitRain(true); }
+rinp.addEventListener('input', autoFire);
 rinp.addEventListener('keydown', e => { if (mode !== 'rain' || cl !== 'en') return; if (e.key === ' ' && rain) { e.preventDefault(); submitRain(); } });
 $('rainMode').addEventListener('click', () => rinp.focus());
 addEventListener('resize', () => { if (mode === 'rain' && rain) rain.drops.forEach(d => { const maxX = field.clientWidth - d.el.offsetWidth - 10; if (parseFloat(d.el.style.left) > maxX) d.el.style.left = Math.max(10, maxX) + 'px'; }); });
