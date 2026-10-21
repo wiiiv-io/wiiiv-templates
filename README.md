@@ -27,6 +27,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | flappy-bird | game |
 | gomoku | game |
 | galaga | game |
+| orion-raider | game |
 | memory | game |
 | freecell | game |
 | calculator | tool |
