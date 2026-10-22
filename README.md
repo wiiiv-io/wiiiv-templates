@@ -28,6 +28,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | gomoku | game |
 | galaga | game |
 | orion-raider | game |
+| chess3d | game |
 | memory | game |
 | freecell | game |
 | calculator | tool |

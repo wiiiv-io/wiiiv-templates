@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D 체스</title>
+<style>
+:root{--bg:#0d0d1a;--panel:rgba(18,16,38,.74);--line:rgba(255,255,255,.09);--fg:#ecebff;--dim:#a3a2c8;--acc:#7c5cfc;--acc2:#b9a6ff;--gold:#e8c77a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:13px/1.45 'Segoe UI','Malgun Gothic',-apple-system,sans-serif;user-select:none;-webkit-user-select:none}
+button,select{font:inherit;color:inherit}
+#gl,#ov{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ov{pointer-events:none}
+#gl.grab{cursor:grabbing}#gl.pt{cursor:pointer}
+.glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#top{position:fixed;left:14px;top:14px;display:flex;align-items:center;gap:12px;padding:9px 16px 9px 10px;max-width:calc(100% - 330px)}
+.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:23px;background:linear-gradient(135deg,#7c5cfc,#4fb3ff);box-shadow:0 0 18px rgba(124,92,252,.6);color:#fff;flex:none}
+#top b{font-size:15px;display:block;white-space:nowrap}
+#status{font-size:12.5px;color:var(--acc2);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status.chk{color:#ff7a8a;font-weight:700}
+#side{position:fixed;right:14px;top:14px;bottom:14px;width:300px;display:flex;flex-direction:column;gap:10px;padding:14px;transition:transform .3s ease}
+.pc{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid transparent;transition:all .25s}
+.pc.turn{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 0 22px rgba(124,92,252,.4)}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:21px;flex:none}
+.av.w{background:linear-gradient(#fff,#e2dac6);color:#2a2620}.av.b{background:linear-gradient(#2b2b38,#0d0d14);color:#e9e6ff;border:1px solid #4a4766}
+.pc .nm{font-weight:600;font-size:13px}.pc .cap{font-size:16px;letter-spacing:-2px;color:var(--dim);min-height:20px;line-height:20px}
+.pc .adv{font-size:11px;color:var(--gold);margin-left:6px;letter-spacing:0}
+.pc .think{margin-left:auto;font-size:11px;color:var(--acc2)}
+#moves{flex:1;overflow-y:auto;border-radius:12px;background:rgba(0,0,0,.2);padding:8px 6px;font-variant-numeric:tabular-nums;scrollbar-width:thin;min-height:70px}
+.mv{display:grid;grid-template-columns:28px 1fr 1fr;gap:2px;padding:2px 6px;border-radius:6px;font-size:13px}
+.mv:nth-child(odd){background:rgba(255,255,255,.03)}
+.mv>span:first-child{color:var(--dim)}.mv .last{color:#fff;background:rgba(124,92,252,.4);border-radius:5px;padding:0 5px;margin-left:-5px;justify-self:start}
+.empty{color:var(--dim);font-size:12px;text-align:center;padding:14px 0}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:10px;padding:7px 2px;cursor:pointer;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s}
+.btn i{font-style:normal;font-size:17px;line-height:1.2}.btn:hover{background:rgba(124,92,252,.28);border-color:var(--acc)}.btn:disabled{opacity:.35;pointer-events:none}
+.set{display:grid;grid-template-columns:auto 1fr;gap:7px 10px;align-items:center;font-size:12px;color:var(--dim)}
+.seg{display:flex;background:rgba(0,0,0,.28);border-radius:8px;padding:2px;gap:2px}
+.seg button{flex:1;border:0;background:none;border-radius:6px;padding:4px 2px;cursor:pointer;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.seg button.on{background:var(--acc);color:#fff}
+#evalbar{position:fixed;left:16px;top:50%;transform:translateY(-50%);width:12px;height:44vh;border-radius:8px;overflow:hidden;background:#14141c;border:1px solid var(--line);box-shadow:0 0 18px rgba(0,0,0,.4)}
+#evalw{position:absolute;left:0;right:0;bottom:0;height:50%;background:linear-gradient(#ffffff,#d8d2c2);transition:height .7s cubic-bezier(.3,.8,.3,1)}
+#evalbar.flip #evalw{bottom:auto;top:0}
+#evaln{position:fixed;left:2px;width:40px;text-align:center;font-size:10.5px;color:var(--dim);top:calc(50% + 22vh + 6px);font-variant-numeric:tabular-nums}
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,5,15,.28);z-index:10;padding:16px}
+.modal[hidden]{display:none}
+.card{padding:26px 28px;width:min(380px,100%);text-align:center}
+.card h1{font-size:34px;letter-spacing:.01em;background:linear-gradient(90deg,#fff,#b9a6ff 55%,#4fb3ff);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.2}
+.card .sub{color:var(--dim);margin:2px 0 20px;font-size:11px;letter-spacing:.2em}
+.card .set{text-align:left;margin:0 auto 20px;gap:11px 12px}
+.card p{color:var(--dim);margin:6px 0 18px}
+.go{border:0;background:linear-gradient(135deg,#7c5cfc,#4f8bff);color:#fff;font-weight:700;font-size:15px;padding:11px 36px;border-radius:12px;cursor:pointer;box-shadow:0 6px 24px rgba(124,92,252,.5)}
+.go.ghost{background:rgba(255,255,255,.07);box-shadow:none;border:1px solid var(--line);margin-left:6px}
+.promo{display:flex;gap:10px;justify-content:center;margin-top:14px}
+.promo button{width:64px;height:64px;font-size:42px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.07);cursor:pointer;line-height:1}
+.promo button:hover{background:var(--acc)}
+#menu{position:fixed;right:14px;top:14px;width:42px;height:42px;border-radius:12px;display:none;place-items:center;font-size:20px;cursor:pointer;z-index:6}
+#nogl{position:fixed;inset:0;display:grid;place-items:center;color:var(--dim);padding:30px;text-align:center}
+#nogl[hidden]{display:none}
+@media (max-width:860px){
+  #side{left:10px;right:10px;top:auto;bottom:10px;width:auto;height:min(60vh,460px);transform:translateY(calc(100% + 20px))}
+  #side.open{transform:none}
+  #menu{display:grid}
+  #top{max-width:calc(100% - 80px)}
+  #evalbar,#evaln{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="ov"></canvas>
+<div id="top" class="glass"><div class="logo">♞</div><div style="min-width:0"><b id="tTitle"></b><div id="status"></div></div></div>
+<div id="evalbar"><div id="evalw"></div></div><div id="evaln"></div>
+<button id="menu" class="glass">☰</button>
+<aside id="side" class="glass">
+  <div class="pc" id="pcTop"></div>
+  <div id="moves"></div>
+  <div class="pc" id="pcBot"></div>
+  <div class="btns">
+    <button class="btn" id="bNew"><i>✦</i><span></span></button>
+    <button class="btn" id="bUndo"><i>↶</i><span></span></button>
+    <button class="btn" id="bHint"><i>💡</i><span></span></button>
+    <button class="btn" id="bFlip"><i>⟲</i><span></span></button>
+  </div>
+  <div class="set">
+    <span id="lTheme"></span><div class="seg" id="segTheme"></div>
+    <span id="lSound"></span><div class="seg" id="segSound"></div>
+  </div>
+</aside>
+<div class="modal" id="mStart"><div class="card glass">
+  <h1 id="sTitle"></h1><div class="sub">WIIIV · 3D CHESS</div>
+  <div class="set">
+    <span id="lOpp"></span><div class="seg" id="segOpp"></div>
+    <span id="lLevel"></span><div class="seg" id="segLevel"></div>
+    <span id="lColor"></span><div class="seg" id="segColor"></div>
+    <span id="lTheme2"></span><div class="seg" id="segTheme2"></div>
+  </div>
+  <button class="go" id="bStart"></button>
+</div></div>
+<div class="modal" id="mPromo" hidden><div class="card glass"><b id="pTitle"></b><div class="promo" id="promoBtns"></div></div></div>
+<div class="modal" id="mOver" hidden><div class="card glass"><h1 id="oTitle"></h1><p id="oText"></p><button class="go" id="bAgain"></button><button class="go ghost" id="bReview"></button></div></div>
+<div id="nogl" hidden></div>
+<script>
+/*
+ * 3D 체스 — wiiiv App 템플릿 (2026-10-23)
+ * 외부 라이브러리 없이 WebGL2 로 직접 그린다: 회전체로 깎은 말, 그림자 맵, 판에 비친 반사, 입자 효과.
+ * 규칙: 캐슬링·앙파상·승진·체크메이트·스테일메이트·50수·3회 반복·기물 부족 무승부.
+ * 컴퓨터: 알파베타 탐색(반복 심화·정지 탐색·킬러 수), 별도 작업 스레드(Web Worker)에서 생각해 화면이 멈추지 않는다.
+ */
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '3D 체스', start: '대국 시작', opp: '상대', level: '난이도', color: '내 색', theme: '판', sound: '소리',
+    opps: { ai: '컴퓨터', pvp: '두 사람' }, levels: ['쉬움', '보통', '어려움'], colors: { w: '백', b: '흑', r: '무작위' },
+    themes: { marble: '대리석', wood: '원목', neon: '네온' }, on: '켬', off: '끔',
+    newg: '새 게임', undo: '무르기', hint: '힌트', flip: '돌리기',
+    white: '백', black: '흑', you: '나', cpu: '컴퓨터', thinking: '생각 중…',
+    turn: s => `${s} 차례`, check: '체크!', yourTurn: '당신 차례입니다', cpuTurn: '컴퓨터가 생각 중입니다…',
+    promo: '승진할 기물을 고르세요', noMoves: '아직 둔 수가 없습니다',
+    over: { mate: '체크메이트', stalemate: '스테일메이트', fifty: '무승부', repetition: '무승부', material: '무승부' },
+    overText: {
+      win: s => `${s} 승리!`, stalemate: '둘 수 있는 수가 없어 비겼습니다.', fifty: '50수 동안 잡기도 폰 이동도 없어 비겼습니다.',
+      repetition: '같은 국면이 세 번 나와 비겼습니다.', material: '어느 쪽도 체크메이트할 기물이 남지 않았습니다.',
+    },
+    youWin: '이겼습니다! 축하합니다 🎉', youLose: '컴퓨터가 이겼습니다. 다시 도전해 보세요.',
+    again: '다시 하기', review: '판 보기', files: 'abcdefgh',
+  },
+  en: {
+    title: '3D Chess', start: 'Start game', opp: 'Opponent', level: 'Level', color: 'My color', theme: 'Board', sound: 'Sound',
+    opps: { ai: 'Computer', pvp: 'Two players' }, levels: ['Easy', 'Normal', 'Hard'], colors: { w: 'White', b: 'Black', r: 'Random' },
+    themes: { marble: 'Marble', wood: 'Wood', neon: 'Neon' }, on: 'On', off: 'Off',
+    newg: 'New', undo: 'Undo', hint: 'Hint', flip: 'Flip',
+    white: 'White', black: 'Black', you: 'You', cpu: 'Computer', thinking: 'thinking…',
+    turn: s => `${s} to move`, check: 'Check!', yourTurn: 'Your move', cpuTurn: 'Computer is thinking…',
+    promo: 'Choose a piece to promote to', noMoves: 'No moves yet',
+    over: { mate: 'Checkmate', stalemate: 'Stalemate', fifty: 'Draw', repetition: 'Draw', material: 'Draw' },
+    overText: {
+      win: s => `${s} wins!`, stalemate: 'No legal moves — the game is drawn.', fifty: 'Fifty moves without a capture or pawn move.',
+      repetition: 'The same position occurred three times.', material: 'Neither side has enough material to mate.',
+    },
+    youWin: 'You won! Congratulations 🎉', youLose: 'The computer won. Try again!',
+    again: 'Play again', review: 'View board', files: 'abcdefgh',
+  },
+}[LANG];
+
+// ───────────────────────── 규칙·탐색 엔진 (작업 스레드에서도 그대로 쓴다) ─────────────────────────
+function ENGINE() {
+  const P = 1, N = 2, B = 3, R = 4, Q = 5, K = 6, W = 8, BL = 16;
+  const VAL = [0, 100, 320, 330, 500, 900, 0], PH = [0, 0, 1, 1, 2, 4, 0];
+  const ND = [33, 31, 18, 14, -33, -31, -18, -14], KD = [1, -1, 16, -16, 17, 15, -17, -15], BD = [17, 15, -17, -15], RD = [1, -1, 16, -16];
+  // 위치 점수 (a8 부터, 백 기준)
+  const PST = [null,
+    [0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10, 5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5, 5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0],
+    [-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40, -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30, -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50],
+    [-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10, -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20],
+    [0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0],
+    [-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10, -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5, -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20],
+  ];
+  const KM = [-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30, -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10, 20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20];
+  const KE = [-50,-40,-30,-20,-20,-30,-40,-50, -30,-20,-10,0,0,-10,-20,-30, -30,-10,20,30,30,20,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,30,40,40,30,-10,-30, -30,-10,20,30,30,20,-10,-30, -30,-30,0,0,0,0,-30,-30, -50,-30,-30,-30,-30,-30,-30,-50];
+  const bd = new Int8Array(128), ksq = [4, 0x74], JIT = new Int16Array(128);
+  const CM = new Uint8Array(128).fill(15); CM[0] = 13; CM[7] = 14; CM[4] = 12; CM[0x70] = 7; CM[0x77] = 11; CM[0x74] = 3;
+  let side = W, castle = 15, ep = -1, half = 0, key = 0;
+  const hist = [], keys = [];
+  let s32 = 0x2545F491;
+  const rnd = () => { s32 ^= s32 << 13; s32 ^= s32 >>> 17; s32 ^= s32 << 5; return s32 | 0; };
+  const ZP = new Int32Array(23 * 128).map(rnd), ZC = new Int32Array(16).map(rnd), ZE = new Int32Array(128).map(rnd), ZS = rnd();
+  const enc = (f, t, p, fl) => f | (t << 7) | (p << 14) | (fl << 17);
+  const sqName = s => 'abcdefgh'[s & 7] + ((s >> 4) + 1);
+  function fullKey() {
+    let k = ZC[castle] ^ (ep >= 0 ? ZE[ep] : 0) ^ (side === BL ? ZS : 0);
+    for (let s = 0; s < 128; s++) if (!(s & 0x88) && bd[s]) k ^= ZP[bd[s] * 128 + s];
+    return k;
+  }
+  function reset() {
+    bd.fill(0); const back = [R, N, B, Q, K, B, N, R];
+    for (let f = 0; f < 8; f++) { bd[f] = W | back[f]; bd[16 + f] = W | P; bd[0x60 + f] = BL | P; bd[0x70 + f] = BL | back[f]; }
+    ksq[0] = 4; ksq[1] = 0x74; side = W; castle = 15; ep = -1; half = 0; hist.length = 0; key = fullKey(); keys.length = 0; keys.push(key);
+  }
+  function attacked(sq, by) {
+    if (by === W) { if (!((sq - 15) & 0x88) && bd[sq - 15] === (W | P)) return true; if (!((sq - 17) & 0x88) && bd[sq - 17] === (W | P)) return true; }
+    else { if (!((sq + 15) & 0x88) && bd[sq + 15] === (BL | P)) return true; if (!((sq + 17) & 0x88) && bd[sq + 17] === (BL | P)) return true; }
+    for (let i = 0; i < 8; i++) { let s = sq + ND[i]; if (!(s & 0x88) && bd[s] === (by | N)) return true; s = sq + KD[i]; if (!(s & 0x88) && bd[s] === (by | K)) return true; }
+    for (let i = 0; i < 4; i++) {
+      let d = BD[i], s = sq + d;
+      while (!(s & 0x88)) { const p = bd[s]; if (p) { if (p === (by | B) || p === (by | Q)) return true; break; } s += d; }
+      d = RD[i]; s = sq + d;
+      while (!(s & 0x88)) { const p = bd[s]; if (p) { if (p === (by | R) || p === (by | Q)) return true; break; } s += d; }
+    }
+    return false;
+  }
+  function gen(out, caps) {
+    const opp = side ^ 24;
+    for (let sq = 0; sq < 128; sq++) {
+      if (sq & 0x88) { sq += 7; continue; }
+      const pc = bd[sq]; if (!pc || !(pc & side)) continue;
+      const t = pc & 7;
+      if (t === P) {
+        const dir = side === W ? 16 : -16, r = sq >> 4, last = side === W ? 6 : 1, start = side === W ? 1 : 6, to = sq + dir;
+        if (!bd[to]) {
+          if (r === last) { out.push(enc(sq, to, Q, 0)); if (!caps) { out.push(enc(sq, to, R, 0)); out.push(enc(sq, to, B, 0)); out.push(enc(sq, to, N, 0)); } }
+          else if (!caps) { out.push(enc(sq, to, 0, 0)); if (r === start && !bd[to + dir]) out.push(enc(sq, to + dir, 0, 4)); }
+        }
+        for (const d of [dir - 1, dir + 1]) {
+          const t2 = sq + d; if (t2 & 0x88) continue;
+          if (bd[t2] && (bd[t2] & opp)) {
+            if (r === last) { out.push(enc(sq, t2, Q, 0)); if (!caps) { out.push(enc(sq, t2, R, 0)); out.push(enc(sq, t2, B, 0)); out.push(enc(sq, t2, N, 0)); } }
+            else out.push(enc(sq, t2, 0, 0));
+          } else if (t2 === ep) out.push(enc(sq, t2, 0, 1));
+        }
+      } else if (t === N || t === K) {
+        const D = t === N ? ND : KD;
+        for (let i = 0; i < 8; i++) { const to = sq + D[i]; if (to & 0x88) continue; const q = bd[to]; if (!q) { if (!caps) out.push(enc(sq, to, 0, 0)); } else if (q & opp) out.push(enc(sq, to, 0, 0)); }
+        if (t === K && !caps) {
+          if (side === W && sq === 4) {
+            if ((castle & 1) && !bd[5] && !bd[6] && bd[7] === (W | R) && !attacked(4, BL) && !attacked(5, BL) && !attacked(6, BL)) out.push(enc(4, 6, 0, 2));
+            if ((castle & 2) && !bd[3] && !bd[2] && !bd[1] && bd[0] === (W | R) && !attacked(4, BL) && !attacked(3, BL) && !attacked(2, BL)) out.push(enc(4, 2, 0, 2));
+          } else if (side === BL && sq === 0x74) {
+            if ((castle & 4) && !bd[0x75] && !bd[0x76] && bd[0x77] === (BL | R) && !attacked(0x74, W) && !attacked(0x75, W) && !attacked(0x76, W)) out.push(enc(0x74, 0x76, 0, 2));
+            if ((castle & 8) && !bd[0x73] && !bd[0x72] && !bd[0x71] && bd[0x70] === (BL | R) && !attacked(0x74, W) && !attacked(0x73, W) && !attacked(0x72, W)) out.push(enc(0x74, 0x72, 0, 2));
+          }
+        }
+      } else {
+        const D = t === B ? BD : t === R ? RD : KD;
+        for (let i = 0; i < D.length; i++) {
+          const d = D[i]; let to = sq + d;
+          while (!(to & 0x88)) { const q = bd[to]; if (!q) { if (!caps) out.push(enc(sq, to, 0, 0)); } else { if (q & opp) out.push(enc(sq, to, 0, 0)); break; } to += d; }
+        }
+      }
+    }
+  }
+  function make(m) {
+    const from = m & 127, to = (m >> 7) & 127, promo = (m >> 14) & 7, flag = (m >> 17) & 7;
+    const pc = bd[from]; let cap = bd[to], capSq = to;
+    const u = { m, pc, cap: 0, capSq: to, castle, ep, half, key }; hist.push(u);
+    key ^= ZP[pc * 128 + from];
+    if (flag & 1) { capSq = to + (side === W ? -16 : 16); cap = bd[capSq]; bd[capSq] = 0; }
+    if (cap) key ^= ZP[cap * 128 + capSq];
+    u.cap = cap; u.capSq = capSq;
+    bd[from] = 0; const np = promo ? (side | promo) : pc; bd[to] = np; key ^= ZP[np * 128 + to];
+    if (flag & 2) { const rf = to > from ? from + 3 : from - 4, rt = to > from ? from + 1 : from - 1, rk = bd[rf]; bd[rt] = rk; bd[rf] = 0; key ^= ZP[rk * 128 + rf] ^ ZP[rk * 128 + rt]; }
+    if ((pc & 7) === K) ksq[side >> 4] = to;
+    key ^= ZC[castle]; castle &= CM[from] & CM[to]; key ^= ZC[castle];
+    if (ep >= 0) key ^= ZE[ep]; ep = (flag & 4) ? (from + to) >> 1 : -1; if (ep >= 0) key ^= ZE[ep];
+    half = ((pc & 7) === P || cap) ? 0 : half + 1;
+    side ^= 24; key ^= ZS; keys.push(key);
+    if (attacked(ksq[(side ^ 24) >> 4], side)) { unmake(); return false; }
+    return true;
+  }
+  function unmake() {
+    const u = hist.pop(); keys.pop(); side ^= 24;
+    const m = u.m, from = m & 127, to = (m >> 7) & 127, flag = (m >> 17) & 7;
+    bd[from] = u.pc; bd[to] = 0; if (u.cap) bd[u.capSq] = u.cap;
+    if (flag & 2) { const rf = to > from ? from + 3 : from - 4, rt = to > from ? from + 1 : from - 1; bd[rf] = bd[rt]; bd[rt] = 0; }
+    if ((u.pc & 7) === K) ksq[side >> 4] = from;
+    castle = u.castle; ep = u.ep; half = u.half; key = u.key;
+  }
+  const inCheck = () => attacked(ksq[side >> 4], side ^ 24);
+  function legal() { const out = []; gen(out, false); return out.filter(m => { if (make(m)) { unmake(); return true; } return false; }); }
+  function insufficient() {
+    const minors = [];
+    for (let s = 0; s < 128; s++) { if (s & 0x88) { s += 7; continue; } const t = bd[s] & 7; if (!t || t === K) continue; if (t === P || t === R || t === Q) return false; minors.push([t, ((s & 7) + (s >> 4)) & 1]); }
+    if (minors.length <= 1) return true;
+    return minors.every(x => x[0] === B) && minors.every(x => x[1] === minors[0][1]);
+  }
+  function status() {
+    const ms = legal(), chk = inCheck();
+    if (!ms.length) return chk ? 'mate' : 'stalemate';
+    if (half >= 100) return 'fifty';
+    let c = 0; for (const k of keys) if (k === key) c++;
+    if (c >= 3) return 'repetition';
+    if (insufficient()) return 'material';
+    return chk ? 'check' : '';
+  }
+  const PL = ['', '', 'N', 'B', 'R', 'Q', 'K'];
+  function san(m) {
+    const from = m & 127, to = (m >> 7) & 127, promo = (m >> 14) & 7, flag = (m >> 17) & 7, t = bd[from] & 7;
+    let s;
+    if (flag & 2) s = to > from ? 'O-O' : 'O-O-O';
+    else {
+      const cap = bd[to] || (flag & 1);
+      if (t === P) s = (cap ? 'abcdefgh'[from & 7] + 'x' : '') + sqName(to) + (promo ? '=' + PL[promo] : '');
+      else {
+        const amb = legal().filter(x => x !== m && ((x >> 7) & 127) === to && (bd[x & 127] & 7) === t);
+        let d = '';
+        if (amb.length) { const sf = amb.some(x => ((x & 127) & 7) === (from & 7)), sr = amb.some(x => ((x & 127) >> 4) === (from >> 4)); d = !sf ? 'abcdefgh'[from & 7] : !sr ? String((from >> 4) + 1) : sqName(from); }
+        s = PL[t] + d + (cap ? 'x' : '') + sqName(to);
+      }
+    }
+    make(m); if (inCheck()) s += legal().length ? '+' : '#'; unmake();
+    return s;
+  }
+  // ── 평가 (두는 쪽 기준 점수)
+  function evaluate() {
+    let s = 0, phase = 0, mw = 0, mb = 0, wb = 0, bb = 0;
+    for (let sq = 0; sq < 128; sq++) {
+      if (sq & 0x88) { sq += 7; continue; }
+      const pc = bd[sq]; if (!pc) continue; const t = pc & 7; if (t === K) continue;
+      const f = sq & 7, r = sq >> 4;
+      if (pc & W) { s += VAL[t] + PST[t][(7 - r) * 8 + f] + JIT[sq]; mw += VAL[t]; if (t === B) wb++; }
+      else { s -= VAL[t] + PST[t][r * 8 + f] + JIT[sq ^ 0x70]; mb += VAL[t]; if (t === B) bb++; }
+      phase += PH[t];
+    }
+    const ph = Math.min(phase, 24) / 24, wk = ksq[0], bk = ksq[1];
+    const wi = (7 - (wk >> 4)) * 8 + (wk & 7), bi = (bk >> 4) * 8 + (bk & 7);
+    s += Math.round(KM[wi] * ph + KE[wi] * (1 - ph)) - Math.round(KM[bi] * ph + KE[bi] * (1 - ph));
+    if (wb >= 2) s += 30; if (bb >= 2) s -= 30;
+    // 끝내기: 앞선 쪽은 상대 킹을 가장자리로 몰고 자기 킹을 붙인다
+    if (phase <= 8 && Math.abs(mw - mb) >= 300) {
+      const win = mw > mb ? 1 : -1, lk = win > 0 ? bk : wk, kk = win > 0 ? wk : bk;
+      const cf = Math.max(3 - (lk & 7), (lk & 7) - 4) + Math.max(3 - (lk >> 4), (lk >> 4) - 4);
+      const kd = Math.abs((lk & 7) - (kk & 7)) + Math.abs((lk >> 4) - (kk >> 4));
+      s += win * (cf * 12 + (14 - kd) * 5);
+    }
+    return side === W ? s : -s;
+  }
+  // ── 탐색
+  const MATE = 100000; let nodes = 0, stopAt = 0, stopped = false, rootBest = 0; const killers = [];
+  function mscore(m, pv, ply) {
+    if (m === pv) return 1e7;
+    const from = m & 127, to = (m >> 7) & 127, v = bd[to];
+    if (v) return 1e6 + VAL[v & 7] * 10 - VAL[bd[from] & 7] / 10;
+    if ((m >> 17) & 1) return 1e6 + 1000;
+    if ((m >> 14) & 7) return 9e5;
+    const k = killers[ply]; if (k && (k[0] === m || k[1] === m)) return 8e5;
+    return 0;
+  }
+  function order(ms, pv, ply) { const sc = ms.map(m => mscore(m, pv, ply)); return ms.map((_, i) => i).sort((a, b) => sc[b] - sc[a]).map(i => ms[i]); }
+  function repeated() { const n = keys.length - 1, k = keys[n]; for (let i = n - 2; i >= Math.max(0, n - half); i -= 2) if (keys[i] === k) return true; return false; }
+  function tick() { if ((++nodes & 1023) === 0 && Date.now() > stopAt) stopped = true; return stopped; }
+  function qs(alpha, beta, ply) {
+    if (tick()) return 0;
+    const sp = evaluate(); if (sp >= beta) return sp; if (sp > alpha) alpha = sp;
+    if (ply > 48) return sp;
+    const ms = []; gen(ms, true);
+    for (const m of order(ms, 0, ply)) { if (!make(m)) continue; const v = -qs(-beta, -alpha, ply + 1); unmake(); if (stopped) return 0; if (v >= beta) return v; if (v > alpha) alpha = v; }
+    return alpha;
+  }
+  function ab(depth, alpha, beta, ply, pv) {
+    if (ply && (half >= 100 || repeated())) return 0;
+    const chk = inCheck(); if (chk && ply < 40) depth++;
+    if (depth <= 0) return qs(alpha, beta, ply);
+    if (tick()) return 0;
+    const ms = []; gen(ms, false);
+    let best = -MATE - 1, legalN = 0;
+    for (const m of order(ms, pv, ply)) {
+      if (!make(m)) continue; legalN++;
+      const v = -ab(depth - 1, -beta, -alpha, ply + 1, 0); unmake();
+      if (stopped) return 0;
+      if (v > best) best = v;
+      if (v > alpha) { alpha = v; if (ply === 0) rootBest = m; }
+      if (alpha >= beta) { if (!bd[(m >> 7) & 127]) { const k = killers[ply] || (killers[ply] = [0, 0]); if (k[0] !== m) { k[1] = k[0]; k[0] = m; } } break; }
+    }
+    if (!legalN) return chk ? -MATE + ply : 0;
+    return best;
+  }
+  function setJitter(seed, amp) {
+    let x = seed | 1; const r = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 1000) / 1000; };
+    for (let s = 0; s < 128; s++) JIT[s] = (s & 0x88) ? 0 : Math.round((r() - 0.5) * 2 * amp);
+  }
+  const LV = [{ d: 2, t: 400, j: 45 }, { d: 7, t: 900, j: 10 }, { d: 40, t: 2400, j: 3 }];
+  function think(o) {
+    const lv = LV[o.level] || LV[1];
+    setJitter(o.seed || 7, o.jitter ?? lv.j);
+    nodes = 0; stopped = false; killers.length = 0; stopAt = Date.now() + (o.time || lv.t);
+    const root = legal(); if (!root.length) return { move: 0, score: 0, depth: 0, nodes };
+    const pov = v => side === W ? v : -v;
+    if (o.level === 0 && !o.time) {     // 쉬움: 깊이 2로 모든 수에 점수를 매기고, 괜찮은 수 몇 개 중에서 고른다
+      stopAt = Date.now() + 4000;
+      const sc = root.map(m => { make(m); const v = -ab(1, -MATE - 1, MATE + 1, 1, 0); unmake(); return [m, v]; }).sort((a, b) => b[1] - a[1]);
+      const ok = sc.filter(x => x[1] >= sc[0][1] - 110), pick = Math.random() < 0.65 ? ok[0] : ok[Math.floor(Math.random() * ok.length)];
+      return { move: pick[0], score: pov(pick[1]), depth: 2, nodes };
+    }
+    let best = root[0], bestScore = 0, done = 0;
+    if (root.length === 1) return { move: best, score: pov(evaluate()), depth: 0, nodes };
+    for (let d = 1; d <= lv.d; d++) {
+      rootBest = 0; const v = ab(d, -MATE - 1, MATE + 1, 0, best);
+      if (stopped) break;
+      if (rootBest) { best = rootBest; bestScore = v; done = d; }
+      if (Math.abs(v) > MATE - 200) break;
+      if (Date.now() > stopAt - (o.time || lv.t) * 0.55) break;     // 다음 깊이는 시간 안에 못 끝낼 것 같으면 멈춘다
+    }
+    return { move: best, score: pov(bestScore), depth: done, nodes };
+  }
+  return {
+    P, N, B, R, Q, K, W, BL, MATE, board: bd, reset, legal, make, unmake, inCheck, status, san, think, evaluate, sqName,
+    get side() { return side; }, get ep() { return ep; }, ksq,
+  };
+}
+
+// ───────────────────────── 말 모양 만들기 ─────────────────────────
+function Geo() { return { p: [], n: [], i: [] }; }
+// 회전체: [반지름, 높이] 윤곽을 y 축으로 돌린다. 같은 점을 두 번 쓰면 그 자리가 날카로운 모서리
+function lathe(g, prof, seg = 48, ox = 0, oy = 0, oz = 0) {
+  const base = g.p.length / 3, n = prof.length;
+  const nrm = prof.map((pt, i) => {
+    let a = prof[Math.max(0, i - 1)], b = prof[Math.min(n - 1, i + 1)];
+    if (i < n - 1 && prof[i + 1][0] === pt[0] && prof[i + 1][1] === pt[1]) b = pt;
+    if (i > 0 && prof[i - 1][0] === pt[0] && prof[i - 1][1] === pt[1]) a = pt;
+    const dr = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dr, dy) || 1; return [dy / l, -dr / l];
+  });
+  for (let j = 0; j <= seg; j++) {
+    const an = j / seg * Math.PI * 2, c = Math.cos(an), s = Math.sin(an);
+    for (let i = 0; i < n; i++) { const [r, y] = prof[i], [nr, ny] = nrm[i]; g.p.push(ox + r * c, oy + y, oz + r * s); g.n.push(nr * c, ny, nr * s); }
+  }
+  for (let j = 0; j < seg; j++) for (let i = 0; i < n - 1; i++) {
+    if (prof[i][0] === 0 && prof[i + 1][0] === 0) continue;
+    const a = base + j * n + i, b = a + n; g.i.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+}
+const arc = (cy, R, a0, a1, k = 12) => Array.from({ length: k + 1 }, (_, i) => { const a = (a0 + (a1 - a0) * i / k) * Math.PI / 180; return [Math.max(0, +(Math.cos(a) * R).toFixed(5)), cy + Math.sin(a) * R]; });
+const sphere = (g, x, y, z, R, seg = 20) => lathe(g, arc(0, R, -90, 90, 10), seg, x, y, z);
+function box(g, cx, cy, cz, sx, sy, sz, ang = 0) {
+  const c = Math.cos(ang), s = Math.sin(ang), rot = (x, z) => [x * c - z * s, x * s + z * c];
+  const F = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [0, 0, -1], [1, 0, 0]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]];
+  for (const [nn, u, v] of F) {
+    const b = g.p.length / 3;
+    for (const [du, dv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const lx = (nn[0] + u[0] * du + v[0] * dv) * sx / 2, ly = (nn[1] + u[1] * du + v[1] * dv) * sy / 2, lz = (nn[2] + u[2] * du + v[2] * dv) * sz / 2;
+      const [rx, rz] = rot(lx, lz), [nx, nz] = rot(nn[0], nn[2]);
+      g.p.push(cx + rx, cy + ly, cz + rz); g.n.push(nx, nn[1], nz);
+    }
+    g.i.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+}
+// 말 머리: 옆모습을 두께 있게 밀어내고 가장자리를 깎는다
+function extrude(g, poly, w, bev) {
+  let area = 0; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; area += a[0] * b[1] - b[0] * a[1]; }
+  if (area < 0) poly = poly.slice().reverse();
+  const n = poly.length;
+  const on = poly.map((p, i) => {
+    const a = poly[(i + n - 1) % n], b = poly[(i + 1) % n];
+    const e1 = [p[0] - a[0], p[1] - a[1]], e2 = [b[0] - p[0], b[1] - p[1]];
+    const n1 = [e1[1], -e1[0]], n2 = [e2[1], -e2[0]], l1 = Math.hypot(...n1) || 1, l2 = Math.hypot(...n2) || 1;
+    const x = n1[0] / l1 + n2[0] / l2, y = n1[1] / l1 + n2[1] / l2, l = Math.hypot(x, y) || 1; return [x / l, y / l];
+  });
+  const inset = poly.map((p, i) => [p[0] - on[i][0] * bev, p[1] - on[i][1] * bev]);
+  const layer = [[-w, inset, -1], [-w + bev, poly, 0], [w - bev, poly, 0], [w, inset, 1]];
+  for (let L = 0; L < 3; L++) {
+    const [xa, pa, sa] = layer[L], [xb, pb, sb] = layer[L + 1], b0 = g.p.length / 3;
+    for (let i = 0; i <= n; i++) {
+      const k = i % n;
+      for (const [x, pp, sd] of [[xa, pa, sa], [xb, pb, sb]]) {
+        const ex = L === 1 ? 0 : (L === 0 ? -0.75 : 0.75), m = L === 1 ? 1 : 0.66, l = Math.hypot(ex, m);
+        g.p.push(x, pp[k][1], pp[k][0]); g.n.push(ex / l, on[k][1] * m / l, on[k][0] * m / l); void sd;
+      }
+    }
+    for (let i = 0; i < n; i++) { const a = b0 + i * 2; g.i.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  // 양쪽 면: 귀 자르기로 삼각형 나누기
+  const tris = earcut(inset);
+  for (const sdx of [-1, 1]) {
+    const b0 = g.p.length / 3;
+    for (const p of inset) { g.p.push(sdx * w, p[1], p[0]); g.n.push(sdx, 0, 0); }
+    for (const t of tris) g.i.push(b0 + t);
+  }
+}
+function earcut(pts) {
+  const idx = pts.map((_, i) => i), out = [];
+  const cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  let guard = 0;
+  while (idx.length > 3 && guard++ < 5000) {
+    let cut = false;
+    for (let k = 0; k < idx.length; k++) {
+      const a = idx[(k + idx.length - 1) % idx.length], b = idx[k], c = idx[(k + 1) % idx.length], A = pts[a], B = pts[b], C = pts[c];
+      if (cr(A, B, C) <= 1e-9) continue;
+      let inside = false;
+      for (const o of idx) { if (o === a || o === b || o === c) continue; const p = pts[o]; if (cr(A, B, p) >= 0 && cr(B, C, p) >= 0 && cr(C, A, p) >= 0) { inside = true; break; } }
+      if (inside) continue;
+      out.push(a, b, c); idx.splice(k, 1); cut = true; break;
+    }
+    if (!cut) break;
+  }
+  if (idx.length === 3) out.push(...idx);
+  return out;
+}
+const BASE = [[0, 0], [.35, 0], [.35, 0], [.36, .03], [.35, .065], [.35, .065], [.31, .085], [.31, .085], [.32, .105], [.28, .135]];
+// 기물 키 (회전체 윤곽 위쪽 끝 높이)
+const HEIGHT = [0, .62, .82, .9, .72, 1.0, 1.16];
+function buildPieceGeos() {
+  const G = [];
+  let g = Geo(); // 폰
+  lathe(g, [...BASE, [.22, .18], [.16, .25], [.14, .31], [.2, .335], [.21, .355], [.2, .375], [.12, .395], ...arc(.51, .135, -58, 90, 14)]);
+  G[1] = g;
+  g = Geo(); // 나이트
+  lathe(g, [...BASE, [.26, .17], [.25, .2], [.25, .2], [0, .2]]);
+  extrude(g, [[-.21, .18], [.19, .18], [.19, .25], [.12, .33], [.09, .4], [.16, .46], [.27, .5], [.33, .55], [.335, .61], [.28, .645], [.17, .645], [.12, .7], [.07, .77], [.08, .84], [.03, .8], [-.02, .87], [-.06, .79], [-.15, .73], [-.21, .61], [-.245, .46], [-.245, .3]], .105, .028);
+  sphere(g, .105, .69, .13, .028, 10); sphere(g, -.105, .69, .13, .028, 10);   // 눈
+  G[2] = g;
+  g = Geo(); // 비숍
+  lathe(g, [...BASE, [.22, .18], [.15, .28], [.13, .4], [.185, .43], [.2, .45], [.185, .47], [.11, .49], [.13, .53], [.165, .6], [.16, .67], [.12, .74], [.06, .8], [0, .82]]);
+  sphere(g, 0, .86, 0, .048);
+  G[3] = g;
+  g = Geo(); // 룩
+  lathe(g, [...BASE, [.26, .2], [.22, .3], [.21, .46], [.25, .51], [.28, .54], [.28, .54], [.28, .62], [.28, .62], [.2, .62], [.2, .62], [.2, .58], [.2, .58], [0, .58]]);
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; box(g, Math.cos(a) * .24, .665, Math.sin(a) * .24, .075, .09, .13, a); }
+  G[4] = g;
+  g = Geo(); // 퀸
+  lathe(g, [...BASE, [.23, .18], [.16, .3], [.13, .52], [.14, .6], [.205, .63], [.215, .65], [.205, .67], [.14, .69], [.17, .77], [.235, .88], [.235, .88], [.19, .895], [.19, .895], [.12, .9], [.07, .93], [0, .94]]);
+  for (let k = 0; k < 9; k++) { const a = k / 9 * Math.PI * 2; sphere(g, Math.cos(a) * .22, .905, Math.sin(a) * .22, .034, 12); }
+  sphere(g, 0, .99, 0, .06);
+  G[5] = g;
+  g = Geo(); // 킹
+  lathe(g, [...BASE, [.24, .18], [.17, .3], [.14, .56], [.15, .64], [.215, .67], [.225, .69], [.215, .71], [.15, .73], [.17, .8], [.22, .91], [.22, .91], [.18, .925], [.18, .925], [.13, .94], [.08, .98], [0, .99]]);
+  box(g, 0, 1.075, 0, .065, .19, .065); box(g, 0, 1.095, 0, .19, .06, .065);
+  G[6] = g;
+  return G;
+}
+function boardGeos() {
+  const board = Geo(); box(board, 0, -.05, 0, 8, .1, 8);
+  const frame = Geo(), E = 4.75, I = 4, t = .04, d = .34, h = (t + d);
+  box(frame, 0, t - h / 2, (E + I) / 2, E * 2, h, E - I); box(frame, 0, t - h / 2, -(E + I) / 2, E * 2, h, E - I);
+  box(frame, (E + I) / 2, t - h / 2, 0, E - I, h, I * 2); box(frame, -(E + I) / 2, t - h / 2, 0, E - I, h, I * 2);
+  const ground = Geo(); box(ground, 0, -d - .005, 0, 60, .01, 60);
+  return { board, frame, ground };
+}
+
+// ───────────────────────── WebGL ─────────────────────────
+const MVS = `#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNor;
+uniform mat4 uVP, uM, uLVP; uniform float uMirror;
+out vec3 vW; out vec3 vN; out vec4 vL;
+void main(){ vec4 w = uM * vec4(aPos, 1.0); vec3 n = mat3(uM) * aNor;
+  if (uMirror > 0.5) { w.y = -w.y; n.y = -n.y; }
+  vW = w.xyz; vN = n; vL = uLVP * vec4(w.xyz, 1.0); gl_Position = uVP * w; }`;
+const MFS = `#version 300 es
+precision highp float; precision highp sampler2DShadow;
+in vec3 vW; in vec3 vN; in vec4 vL;
+uniform sampler2DShadow uShadow;
+uniform vec3 uEye, uLight, uColor, uRim, uEmis, uAcc, uSqL, uSqD, uVein, uFrame;
+uniform float uShin, uSpec, uRefl, uMode, uMirror, uTheme, uAlpha, uGlow, uTime, uSss;
+out vec4 o;
+float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
+float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }
+float shadowAt(){ vec3 p = vL.xyz / vL.w * 0.5 + 0.5; if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) return 1.0;
+  vec2 t = 1.0 / vec2(textureSize(uShadow, 0)); float s = 0.0;
+  for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) s += texture(uShadow, vec3(p.xy + vec2(i, j) * t * 1.6, p.z - 0.0015));
+  return s / 9.0; }
+vec3 env(vec3 r){ vec3 c = mix(vec3(0.03, 0.03, 0.06), vec3(0.32, 0.30, 0.44), smoothstep(-0.2, 0.9, r.y));
+  c += vec3(1.0, 0.96, 0.9) * pow(max(dot(r, normalize(vec3(-0.45, 0.8, 0.4))), 0.0), 28.0) * 1.9;
+  c += uAcc * pow(max(dot(r, normalize(vec3(0.75, 0.35, -0.55))), 0.0), 16.0) * 1.0; return c; }
+void main(){
+  if (uMirror > 0.5 && vW.y > 0.001) discard;
+  vec3 N = normalize(vN), V = normalize(uEye - vW), L = normalize(uLight);
+  vec3 base = uColor, emis = uEmis; float spec = uSpec, shin = uShin, refl = uRefl, alpha = uAlpha;
+  if (uMode > 0.5 && uMode < 1.5 && vW.y > -0.01) {        // 판의 칸
+    vec2 q = vW.xz + 4.0, c = floor(q); bool dk = mod(c.x + c.y, 2.0) > 0.5;
+    vec2 p = vW.xz * 1.4 + c * 5.17; vec3 sq = dk ? uSqD : uSqL;
+    if (uTheme < 0.5) { float w = fbm(p * 0.9), vein = abs(sin((p.x * 0.7 + p.y * 0.45) * 1.6 + w * 6.0));
+      float cloud = fbm(p * 2.2 + 3.1);
+      sq *= 0.86 + 0.24 * cloud;
+      sq = mix(mix(sq, uVein * (dk ? 1.5 : 0.85), 0.55), sq, smoothstep(0.0, 0.22, vein)); }
+    else if (uTheme < 1.5) { vec2 gp = dk ? p.yx : p; float g = fbm(vec2(gp.x * 1.2, gp.y * 9.0)); sq *= 0.8 + 0.35 * g; sq *= 0.94 + 0.06 * sin(gp.y * 55.0 + g * 12.0); }
+    else { vec2 f = fract(q); float e = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y)); emis += uAcc * exp(-e * 28.0) * 0.6 + uAcc * 0.05 * fbm(p * 3.0 + uTime * 0.1); }
+    base = sq;
+  } else if (uMode > 1.5 && uMode < 2.5) {    // 테두리
+    float g = fbm(vec2(vW.x + vW.z, vW.y * 3.0) * vec2(1.0, 14.0)); base = uFrame * (0.8 + 0.35 * g);
+    float inl = abs(max(abs(vW.x), abs(vW.z)) - 4.12);
+    if (vW.y > 0.03) emis += (uTheme > 1.5 ? uAcc * 1.2 : vec3(0.95, 0.78, 0.42) * 0.55) * smoothstep(0.02, 0.0, inl);
+  } else if (uMode > 2.5) {                   // 바닥
+    if (max(abs(vW.x), abs(vW.z)) < 4.74) discard;
+    float r = length(vW.xz); base = vec3(0.045, 0.045, 0.08) * (1.0 + 1.2 * exp(-r * 0.22)) + uAcc * 0.05 * exp(-r * 0.3); spec = 0.12; refl = 0.03;
+  }
+  float sh = shadowAt(), d = max(dot(N, L), 0.0) * sh;
+  vec3 H = normalize(L + V); float sp = pow(max(dot(N, H), 0.0), shin) * spec * sh;
+  float nv = max(dot(N, V), 0.0), fr = 0.04 + 0.96 * pow(1.0 - nv, 5.0);
+  vec3 amb = mix(vec3(0.09, 0.09, 0.14), vec3(0.25, 0.24, 0.33), N.y * 0.5 + 0.5);
+  vec3 col = base * (amb + d * vec3(1.0, 0.96, 0.9) * 1.1) + base * uSss * (1.0 - d) * 0.22
+           + sp * vec3(1.0, 0.97, 0.92) + env(reflect(-V, N)) * fr * refl + uRim * pow(1.0 - nv, 2.5) + emis;
+  col += uGlow * uAcc * (0.3 + 1.0 * pow(1.0 - nv, 2.0));
+  if (uMirror > 0.5) col *= 0.5;
+  o = vec4(col, alpha);
+}`;
+const DVS = `#version 300 es
+layout(location=0) in vec3 aPos; uniform mat4 uLVP, uM; void main(){ gl_Position = uLVP * uM * vec4(aPos, 1.0); }`;
+const DFS = `#version 300 es
+precision mediump float; void main(){}`;
+const BVS = `#version 300 es
+out vec2 vQ; void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); vQ = p; gl_Position = vec4(p * 2.0 - 1.0, 0.999, 1.0); }`;
+const BFS = `#version 300 es
+precision mediump float; in vec2 vQ; uniform vec3 uC0, uC1, uAcc; uniform vec2 uAsp; out vec4 o;
+void main(){ vec2 d = (vQ - vec2(0.5, 0.62)) * uAsp; float r = clamp(length(d) * 1.2, 0.0, 1.0);
+  vec3 c = mix(uC0, uC1, r * r); c += uAcc * 0.05 * exp(-length((vQ - vec2(0.5, 0.95)) * uAsp) * 3.0); o = vec4(c, 1.0); }`;
+const FVS = `#version 300 es
+layout(location=0) in vec2 aQ; uniform mat4 uVP; uniform vec3 uC; uniform float uS; out vec2 vQ;
+void main(){ vQ = aQ; gl_Position = uVP * vec4(uC + vec3(aQ.x * uS, 0.0, aQ.y * uS), 1.0); }`;
+const FFS = `#version 300 es
+precision mediump float; in vec2 vQ; uniform vec3 uCol; uniform float uKind, uA, uTime, uAdd; out vec4 o;
+void main(){ vec2 q = vQ * 2.0; float r = length(q), a = 0.0;
+  if (uKind < 0.5) a = smoothstep(0.3, 0.18, r) + 0.35 * smoothstep(0.75, 0.0, r);
+  else if (uKind < 1.5) a = smoothstep(0.1, 0.0, abs(r - 0.8)) * 1.3 + 0.18 * smoothstep(1.0, 0.55, r);
+  else if (uKind < 2.5) { vec2 e = 1.0 - abs(q); float m = min(e.x, e.y); a = (0.55 + 0.45 * smoothstep(0.0, 0.2, m)) * smoothstep(0.0, 0.03, m); }
+  else a = smoothstep(1.0, 0.15, r) * (0.65 + 0.35 * sin(uTime * 6.0));
+  o = vec4(uCol * a * uA, uAdd > 0.5 ? 0.0 : a * uA); }`;
+const PVS = `#version 300 es
+layout(location=0) in vec3 aP; layout(location=1) in float aS; layout(location=2) in vec4 aC;
+uniform mat4 uVP; uniform float uH; out vec4 vC;
+void main(){ vC = aC; gl_Position = uVP * vec4(aP, 1.0); gl_PointSize = clamp(aS * uH / gl_Position.w, 1.0, 120.0); }`;
+const PFS = `#version 300 es
+precision mediump float; in vec4 vC; out vec4 o;
+void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.0, r); a *= a; o = vec4(vC.rgb * vC.a * a, 0.0); }`;
+
+const $ = id => document.getElementById(id);
+const cv = $('gl'), ov = $('ov'), octx = ov.getContext('2d');
+let gl = null, VW = 0, VH = 0, DPR = 1;
+const PR = {};
+function mkProg(vs, fs) {
+  const p = gl.createProgram();
+  for (const [t, s] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); gl.attachShader(p, sh); }
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name; u[nm] = gl.getUniformLocation(p, nm); }
+  return { p, u };
+}
+function upload(g) {
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const b1 = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b1); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.p), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  const b2 = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b2); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.n), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+  const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(g.i), gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+  return { vao, count: g.i.length };
+}
+const SM = 2048;
+let MESH = [], BMESH = {}, fxVao = null, ptVao = null, ptBuf = null, shadowTex = null, shadowFb = null;
+function initGL() {
+  gl = cv.getContext('webgl2', { antialias: true, alpha: false });
+  if (!gl) throw new Error('nogl');
+  PR.m = mkProg(MVS, MFS); PR.d = mkProg(DVS, DFS); PR.b = mkProg(BVS, BFS); PR.f = mkProg(FVS, FFS); PR.p = mkProg(PVS, PFS);
+  MESH = buildPieceGeos().map(g => g ? upload(g) : null);
+  const bg = boardGeos(); BMESH = { board: upload(bg.board), frame: upload(bg.frame), ground: upload(bg.ground) };
+  fxVao = gl.createVertexArray(); gl.bindVertexArray(fxVao);
+  const fb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, fb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-.5, -.5, .5, -.5, .5, .5, -.5, -.5, .5, .5, -.5, .5]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  ptVao = gl.createVertexArray(); gl.bindVertexArray(ptVao); ptBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ptBuf);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 32, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 32, 12); gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 32, 16);
+  gl.bindVertexArray(null);
+  shadowTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, shadowTex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, SM, SM);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+  shadowFb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, shadowTex, 0);
+  gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+// ───────────────────────── 행렬 ─────────────────────────
+const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const vnorm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+function mul4(a, b) { const r = new Float32Array(16); for (let c = 0; c < 4; c++) for (let rr = 0; rr < 4; rr++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + rr] * b[c * 4 + k]; r[c * 4 + rr] = s; } return r; }
+function lookAt(eye, tgt, up) {
+  const F = vnorm(vsub(tgt, eye)), R = vnorm(vcross(F, up)), U = vcross(R, F);
+  return { M: new Float32Array([R[0], U[0], -F[0], 0, R[1], U[1], -F[1], 0, R[2], U[2], -F[2], 0, -vdot(R, eye), -vdot(U, eye), vdot(F, eye), 1]), F, R, U };
+}
+function persp(fov, asp, n, f) { const t = 1 / Math.tan(fov / 2); return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]); }
+function ortho(l, r, b, t, n, f) { return new Float32Array([2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, -2 / (f - n), 0, -(r + l) / (r - l), -(t + b) / (t - b), -(f + n) / (f - n), 1]); }
+function modelM(x, y, z, ry, s) { const c = Math.cos(ry) * s, sn = Math.sin(ry) * s; return new Float32Array([c, 0, -sn, 0, 0, s, 0, 0, sn, 0, c, 0, x, y, z, 1]); }
+const FOV = 0.68;
+const cam = { az: 0, el: 0.92, dist: 13.2, azT: 0, elT: 0.92, distT: 13.2, orbit: true };
+let BASE_DIST = 13.2;
+let SHIFT = 0;   // 오른쪽 패널만큼 판을 왼쪽으로 (화면 좌표 -1~1 기준)
+function viewOf() {
+  const ce = Math.cos(cam.el), eye = [cam.dist * ce * Math.sin(cam.az), cam.dist * Math.sin(cam.el), cam.dist * ce * Math.cos(cam.az)];
+  const la = lookAt(eye, [0, -0.35, 0], [0, 1, 0]), P = persp(FOV, VW / VH, 0.1, 100); P[8] = -SHIFT;
+  return { VP: mul4(P, la.M), eye, F: la.F, R: la.R, U: la.U };
+}
+const LDIR = vnorm([-0.45, 1, 0.32]);
+const LVP = mul4(ortho(-7.5, 7.5, -7.5, 7.5, 1, 40), lookAt(LDIR.map(v => v * 18), [0, 0, 0], [0, 1, 0]).M);
+function project(VP, p) {
+  const x = VP[0] * p[0] + VP[4] * p[1] + VP[8] * p[2] + VP[12], y = VP[1] * p[0] + VP[5] * p[1] + VP[9] * p[2] + VP[13], w = VP[3] * p[0] + VP[7] * p[1] + VP[11] * p[2] + VP[15];
+  return w > 0 ? [(x / w * 0.5 + 0.5) * VW, (1 - (y / w * 0.5 + 0.5)) * VH, w] : null;
+}
+
+// ───────────────────────── 테마 ─────────────────────────
+const THEMES = {
+  marble: { i: 0, sqL: [.88, .86, .82], sqD: [.18, .25, .25], vein: [.42, .45, .5], frame: [.16, .1, .07], alpha: .8, acc: [.49, .36, .99], bg: [[.085, .075, .16], [.012, .012, .03]],
+    w: { c: [.94, .9, .81], spec: .55, shin: 70, refl: .35, sss: .6, rim: [.04, .04, .06] }, b: { c: [.06, .06, .08], spec: 1.1, shin: 140, refl: .95, sss: 0, rim: [.2, .16, .36] } },
+  wood: { i: 1, sqL: [.86, .67, .43], sqD: [.37, .2, .11], vein: [0, 0, 0], frame: [.26, .13, .07], alpha: .9, acc: [1, .68, .32], bg: [[.1, .07, .06], [.015, .01, .01]],
+    w: { c: [.93, .79, .57], spec: .4, shin: 50, refl: .22, sss: .45, rim: [.06, .04, .02] }, b: { c: [.21, .1, .06], spec: .75, shin: 80, refl: .5, sss: 0, rim: [.26, .14, .08] } },
+  neon: { i: 2, sqL: [.11, .11, .2], sqD: [.03, .03, .07], vein: [0, 0, 0], frame: [.05, .05, .1], alpha: .6, acc: [.55, .4, 1], bg: [[.06, .04, .14], [.005, .005, .02]],
+    w: { c: [.72, .9, 1], spec: 1.5, shin: 170, refl: 1.1, sss: .25, rim: [.2, .7, 1] }, b: { c: [.2, .03, .18], spec: 1.5, shin: 170, refl: 1.0, sss: 0, rim: [1, .25, .8] } },
+};
+
+// ───────────────────────── 게임 상태 ─────────────────────────
+const E = ENGINE(); E.reset();
+const SET = { opp: 'ai', level: 1, color: 'w', theme: 'marble', sound: true };
+try { Object.assign(SET, JSON.parse(localStorage.getItem('wiiiv-chess3d') || '{}')); } catch { /* 저장 못 해도 동작 */ }
+const saveSet = () => { try { localStorage.setItem('wiiiv-chess3d', JSON.stringify(SET)); } catch { /* */ } };
+const GS = { started: false, human: 8, moves: [], over: null, sel: -1, legal: [], hover: -1, thinking: false, evalScore: 0, hint: null, seed: 1, review: false };
+let aiId = 0;
+const sqX = s => (s & 7) - 3.5, sqZ = s => 3.5 - (s >> 4);
+const GLY = { 8: ['', '♙', '♘', '♗', '♖', '♕', '♔'], 16: ['', '♟', '♞', '♝', '♜', '♛', '♚'] };
+const VAL = [0, 1, 3, 3, 5, 9, 0];
+
+// ── 3D 말
+let pieces = [], parts = [], now = 0;
+function piecesFromBoard(drop) {
+  pieces = [];
+  let k = 0;
+  for (let s = 0; s < 128; s++) {
+    if (s & 0x88) { s += 7; continue; }
+    const pc = E.board[s]; if (!pc) continue;
+    pieces.push({ t: pc & 7, c: pc & 24, sq: s, x: sqX(s), z: sqZ(s), y: 0, s: 1, anim: null, dying: null, drop: drop ? { t0: now + 0.25 + k * 0.035 + ((pc & 24) === 16 ? 0.15 : 0), h: 3 + Math.random() * 2 } : null, landed: !drop });
+    k++;
+  }
+}
+const pieceAt = s => pieces.find(p => p.sq === s && !p.dying);
+const busy = () => pieces.some(p => p.anim || (p.drop && !p.landed));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function bounce(t) { const n = 7.5625, d = 2.75; if (t < 1 / d) return n * t * t; if (t < 2 / d) return n * (t -= 1.5 / d) * t + .75; if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + .9375; return n * (t -= 2.625 / d) * t + .984375; }
+function animateMove(m, capSq, capPc) {
+  const from = m & 127, to = (m >> 7) & 127, promo = (m >> 14) & 7, flag = (m >> 17) & 7;
+  const pc = pieceAt(from); if (!pc) { piecesFromBoard(false); return; }
+  const victim = capPc ? pieces.find(p => p.sq === capSq && !p.dying && p !== pc) : null;   // 움직이는 말의 칸을 바꾸기 전에 찾는다
+  const dist = Math.hypot(sqX(to) - pc.x, sqZ(to) - pc.z);
+  const dur = 0.28 + Math.min(0.32, dist * 0.05);
+  pc.anim = { fx: pc.x, fz: pc.z, tx: sqX(to), tz: sqZ(to), t0: now, dur, arc: pc.t === 2 ? 0.75 : 0.12 + dist * 0.02, promo };
+  pc.sq = to;
+  if (victim) { victim.dying = { t0: now + dur * 0.8, done: false }; victim.sq = -1; }
+  if (flag & 2) { const rf = to > from ? from + 3 : from - 4, rt = to > from ? from + 1 : from - 1, rk = pieces.find(p => p.sq === rf && !p.dying && p !== pc); if (rk) { rk.anim = { fx: rk.x, fz: rk.z, tx: sqX(rt), tz: sqZ(rt), t0: now + 0.12, dur: 0.38, arc: 0.35 }; rk.sq = rt; } }
+}
+function burst(x, y, z, n, cols, speed = 2.5, size = 0.12, life = 1) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, s = Math.sqrt(1 - u * u), v = speed * (0.3 + Math.random());
+    const c = cols[(Math.random() * cols.length) | 0];
+    parts.push({ p: [x, y, z], v: [s * Math.cos(a) * v, Math.abs(u) * v + 1, s * Math.sin(a) * v], life: life * (0.5 + Math.random() * 0.7), max: life * 1.2, c, s: size * (0.5 + Math.random()), g: 1 });
+  }
+}
+// 떠다니는 빛 알갱이 (배경)
+const dust = Array.from({ length: 110 }, () => ({ p: [(Math.random() - .5) * 26, Math.random() * 8 - 1, (Math.random() - .5) * 26], v: [(Math.random() - .5) * .1, (Math.random() - .3) * .06, (Math.random() - .5) * .1], s: .2 + Math.random() * .55, a: .03 + Math.random() * .07, w: Math.random() < .5 }));
+
+// ── 소리
+let AC = null;
+function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { AC = null; } } if (AC && AC.state === 'suspended') AC.resume(); }
+function tone(f, d, v, type = 'sine', at = 0) {
+  if (!AC || !SET.sound) return; const t = AC.currentTime + at, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+}
+function knock(v = 0.5, hard = false) {
+  if (!AC || !SET.sound) return;
+  const t = AC.currentTime, n = Math.floor(AC.sampleRate * 0.06), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'bandpass'; f.frequency.value = hard ? 2400 : 1500; f.Q.value = 1.4; g.gain.value = v;
+  s.buffer = buf; s.connect(f).connect(g).connect(AC.destination); s.start(t);
+  tone(hard ? 260 : 190, 0.12, v * 0.5, 'sine');
+}
+
+// ── 둘 수
+function humanTurn() { return GS.started && !GS.over && !GS.review && (SET.opp === 'pvp' || E.side === GS.human); }
+function doMove(m) {
+  if (!m || !E.legal().includes(m)) return;   // 둘 수 없는 수는 무시
+  const from = m & 127, to = (m >> 7) & 127, flag = (m >> 17) & 7;
+  const capSq = (flag & 1) ? to + (E.side === 8 ? -16 : 16) : to, capPc = E.board[capSq];
+  const san = E.san(m), mover = E.side;
+  E.make(m);
+  GS.moves.push({ m, san, cap: capPc, side: mover });
+  GS.sel = -1; GS.legal = []; GS.hint = null;
+  animateMove(m, capSq, capPc);
+  const st = E.status();
+  setTimeout(() => { knock(capPc ? 0.7 : 0.5, !!capPc); if (st === 'check' || st === 'mate') { tone(880, .25, .12, 'triangle'); tone(1320, .35, .08, 'triangle', .06); } }, 300);
+  if (['mate', 'stalemate', 'fifty', 'repetition', 'material'].includes(st)) { GS.over = st; setTimeout(() => gameOver(st, mover), 900); }
+  ui();
+  if (!GS.over) { if (SET.opp === 'ai' && E.side !== GS.human) askAI(); else if (SET.opp === 'pvp') askEval(); }
+}
+// 컴퓨터는 작업 스레드에서 생각한다 (안 되면 이 화면에서)
+let worker = null;
+try {
+  const src = `const ENGINE = ${ENGINE.toString()}; const E = ENGINE();
+    onmessage = e => { const d = e.data; E.reset(); for (const m of d.moves) E.make(m); const r = E.think(d); postMessage(Object.assign(r, { id: d.id, kind: d.kind })); };`;
+  worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  worker.onmessage = e => onAI(e.data);
+  worker.onerror = () => { worker = null; };
+} catch { worker = null; }
+const AE = ENGINE();
+function think(req) {
+  if (worker) { worker.postMessage(req); return; }
+  setTimeout(() => { AE.reset(); for (const m of req.moves) AE.make(m); onAI(Object.assign(AE.think(req), { id: req.id, kind: req.kind })); }, 30);
+}
+let aiAsked = 0;
+function askAI() { GS.thinking = true; aiAsked = performance.now(); const id = ++aiId; think({ id, kind: 'move', moves: GS.moves.map(x => x.m), level: SET.level, seed: GS.seed }); ui(); }
+function askEval() { const id = ++aiId; think({ id, kind: 'eval', moves: GS.moves.map(x => x.m), level: 1, time: 350, seed: GS.seed, jitter: 0 }); }
+function askHint() { if (!humanTurn() || GS.thinking) return; const id = ++aiId; GS.thinking = true; ui(); think({ id, kind: 'hint', moves: GS.moves.map(x => x.m), level: 2, time: 900, seed: GS.seed, jitter: 0 }); }
+function onAI(r) {
+  if (r.id !== aiId) return;
+  GS.evalScore = r.score;
+  if (r.kind === 'eval') { ui(); return; }
+  if (r.kind === 'hint') { GS.thinking = false; if (r.move) GS.hint = { m: r.move, t0: now }; ui(); return; }
+  if (GS.over || !r.move) { GS.thinking = false; ui(); return; }
+  const wait = Math.max(0, 500 - (performance.now() - aiAsked));
+  const go = () => { if (r.id !== aiId) return; if (busy()) { setTimeout(go, 60); return; } GS.thinking = false; doMove(r.move); };
+  setTimeout(go, wait);
+}
+function undo() {
+  if (!GS.started || !GS.moves.length) return;
+  aiId++; GS.thinking = false; GS.over = null; GS.review = false; GS.hint = null; $('mOver').hidden = true;
+  do { E.unmake(); GS.moves.pop(); } while (SET.opp === 'ai' && GS.moves.length && E.side !== GS.human);
+  if (SET.opp === 'ai' && E.side !== GS.human) { /* 컴퓨터가 먼저 두는 첫 수까지 무른 경우 */ askAI(); }
+  GS.sel = -1; GS.legal = []; piecesFromBoard(false);
+  for (const p of pieces) burst(p.x, .3, p.z, 2, [[.6, .5, 1]], .6, .1, .6);
+  knock(.3); ui();
+}
+function newGame() {
+  aiId++; E.reset();
+  GS.human = SET.opp === 'pvp' ? 8 : SET.color === 'r' ? (Math.random() < .5 ? 8 : 16) : SET.color === 'b' ? 16 : 8;
+  Object.assign(GS, { started: true, moves: [], over: null, sel: -1, legal: [], thinking: false, evalScore: 0, hint: null, seed: (Math.random() * 1e9) | 0, review: false });
+  cam.orbit = false; cam.azT = GS.human === 16 ? Math.PI : 0; cam.elT = 0.92; cam.distT = BASE_DIST;
+  cam.az = ((cam.az % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;   // 가까운 쪽으로 돌아오게
+  if (Math.abs(cam.az - cam.azT) > Math.PI) cam.az += cam.az < cam.azT ? Math.PI * 2 : -Math.PI * 2;
+  piecesFromBoard(true);
+  $('mStart').hidden = true; $('mOver').hidden = true;
+  ui();
+  if (SET.opp === 'ai' && GS.human === 16) setTimeout(askAI, 1600);
+}
+function gameOver(st, mover) {
+  let title = T.over[st], text;
+  if (st === 'mate') {
+    const winName = mover === 8 ? T.white : T.black;
+    text = SET.opp === 'ai' ? (mover === GS.human ? T.youWin : T.youLose) : T.overText.win(winName);
+    const k = pieces.find(p => p.t === 6 && p.c === mover); if (k) for (let i = 0; i < 6; i++) setTimeout(() => burst(k.x, 1.2, k.z, 70, [[1, .85, .4], [.6, .45, 1], [.4, .8, 1], [1, .5, .8]], 4, .14, 1.8), i * 260);
+    tone(523, .5, .12, 'triangle'); tone(659, .5, .1, 'triangle', .12); tone(784, .8, .1, 'triangle', .24); tone(1047, 1, .08, 'triangle', .38);
+  } else { text = T.overText[st]; tone(440, .6, .1, 'sine'); tone(554, .6, .08, 'sine', .15); }
+  $('oTitle').textContent = title; $('oText').textContent = text; $('mOver').hidden = false;
+  ui();
+}
+
+// ───────────────────────── 고르기 (광선) ─────────────────────────
+function rayAt(mx, my) {
+  const v = viewOf(), t = Math.tan(FOV / 2), nx = (mx / VW) * 2 - 1 - SHIFT, ny = 1 - (my / VH) * 2;
+  const d = vnorm([v.F[0] + v.R[0] * nx * t * VW / VH + v.U[0] * ny * t, v.F[1] + v.R[1] * nx * t * VW / VH + v.U[1] * ny * t, v.F[2] + v.R[2] * nx * t * VW / VH + v.U[2] * ny * t]);
+  return { o: v.eye, d };
+}
+function pickSquare(mx, my) {
+  const { o, d } = rayAt(mx, my);
+  let best = null;
+  for (const p of pieces) {
+    if (p.dying) continue;
+    const h = HEIGHT[p.t], R = 0.3, ox = o[0] - p.x, oz = o[2] - p.z;
+    const A = d[0] * d[0] + d[2] * d[2], Bq = 2 * (ox * d[0] + oz * d[2]), C = ox * ox + oz * oz - R * R, disc = Bq * Bq - 4 * A * C;
+    let t = Infinity;
+    if (disc >= 0) { const t1 = (-Bq - Math.sqrt(disc)) / (2 * A), y = o[1] + d[1] * t1; if (t1 > 0 && y >= 0 && y <= h) t = t1; }
+    if (t === Infinity && d[1] < 0) { const tt = (h - o[1]) / d[1], x = o[0] + d[0] * tt - p.x, z = o[2] + d[2] * tt - p.z; if (tt > 0 && x * x + z * z <= R * R) t = tt; }
+    if (t < (best ? best.t : Infinity)) best = { t, sq: p.sq };
+  }
+  if (best) return best.sq;
+  if (d[1] >= 0) return -1;
+  const t = -o[1] / d[1], x = o[0] + d[0] * t, z = o[2] + d[2] * t;
+  if (Math.abs(x) >= 4 || Math.abs(z) >= 4) return -1;
+  const f = Math.floor(x + 4), r = Math.floor(4 - z); return r * 16 + f;
+}
+function clickSquare(sq) {
+  if (!humanTurn() || GS.thinking || busy()) return;
+  if (sq >= 0 && GS.sel >= 0) {
+    const ms = GS.legal.filter(m => ((m >> 7) & 127) === sq);
+    if (ms.length > 1) { askPromo(ms); return; }
+    if (ms.length === 1) { doMove(ms[0]); return; }
+  }
+  const pc = sq >= 0 ? E.board[sq] : 0;
+  if (pc && (pc & E.side) && sq !== GS.sel) {
+    GS.sel = sq; GS.legal = E.legal().filter(m => (m & 127) === sq);
+    tone(660, .06, .05, 'sine');
+  } else { GS.sel = -1; GS.legal = []; }
+}
+function askPromo(ms) {
+  const g = GLY[E.side], box = $('promoBtns'); box.innerHTML = '';
+  for (const t of [5, 4, 3, 2]) {
+    const b = document.createElement('button'); b.textContent = g[t];
+    b.onclick = () => { $('mPromo').hidden = true; const m = ms.find(x => ((x >> 14) & 7) === t); if (m) doMove(m); };
+    box.appendChild(b);
+  }
+  $('pTitle').textContent = T.promo; $('mPromo').hidden = false;
+}
+
+// ── 마우스·터치: 짧게 누르면 고르기, 끌면 시점 회전, 휠·두 손가락은 확대
+const ptr = new Map(); let pinch = 0;
+cv.addEventListener('pointerdown', e => { audio(); cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false }); });
+cv.addEventListener('pointermove', e => {
+  const p = ptr.get(e.pointerId);
+  if (!p) { const sq = pickSquare(e.clientX, e.clientY); GS.hover = sq; const pc = sq >= 0 ? E.board[sq] : 0; cv.classList.toggle('pt', humanTurn() && sq >= 0 && ((pc && (pc & E.side)) || GS.legal.some(m => ((m >> 7) & 127) === sq))); return; }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.moved = true;
+  if (ptr.size === 2) { const [a, b] = [...ptr.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) cam.distT = Math.min(22, Math.max(7, cam.distT * pinch / d)); pinch = d; return; }
+  if (p.moved) { cv.classList.add('grab'); cam.orbit = false; cam.azT -= dx * 0.008; cam.elT = Math.max(0.22, Math.min(1.45, cam.elT + dy * 0.006)); }
+});
+const up = e => {
+  const p = ptr.get(e.pointerId); ptr.delete(e.pointerId); pinch = 0; cv.classList.remove('grab');
+  if (p && !p.moved && ptr.size === 0) clickSquare(pickSquare(e.clientX, e.clientY));
+};
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptr.delete(e.pointerId); pinch = 0; });
+cv.addEventListener('wheel', e => { e.preventDefault(); cam.distT = Math.min(22, Math.max(7, cam.distT * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+// ───────────────────────── 그리기 ─────────────────────────
+function setMat(u, th, kind, glow, emis) {
+  const m = kind === 8 ? th.w : th.b;
+  gl.uniform3fv(u.uColor, m.c); gl.uniform1f(u.uSpec, m.spec); gl.uniform1f(u.uShin, m.shin); gl.uniform1f(u.uRefl, m.refl); gl.uniform1f(u.uSss, m.sss);
+  gl.uniform3fv(u.uRim, m.rim); gl.uniform3fv(u.uEmis, emis || [0, 0, 0]); gl.uniform1f(u.uGlow, glow || 0);
+}
+function pieceModel(p) {
+  const rot = p.t === 2 ? (p.c === 8 ? Math.PI : 0) : (p.c === 8 ? Math.PI : 0);
+  return modelM(p.x, p.y, p.z, rot, p.s);
+}
+function render() {
+  const th = THEMES[SET.theme], v = viewOf();
+  // 1) 그림자 맵
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFb); gl.viewport(0, 0, SM, SM); gl.clear(gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.useProgram(PR.d.p); gl.uniformMatrix4fv(PR.d.u.uLVP, false, LVP);
+  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2, 4);
+  for (const p of pieces) { if (p.s <= 0.01) continue; gl.uniformMatrix4fv(PR.d.u.uM, false, pieceModel(p)); const M = MESH[p.t]; gl.bindVertexArray(M.vao); gl.drawElements(gl.TRIANGLES, M.count, gl.UNSIGNED_INT, 0); }
+  gl.disable(gl.POLYGON_OFFSET_FILL);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // 2) 배경
+  gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.disable(gl.DEPTH_TEST); gl.useProgram(PR.b.p); gl.uniform3fv(PR.b.u.uC0, th.bg[0]); gl.uniform3fv(PR.b.u.uC1, th.bg[1]); gl.uniform3fv(PR.b.u.uAcc, th.acc);
+  const mx = Math.max(VW, VH); gl.uniform2f(PR.b.u.uAsp, VW / mx, VH / mx); gl.bindVertexArray(null); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+  // 3) 공통 값
+  const u = PR.m.u; gl.useProgram(PR.m.p);
+  gl.uniformMatrix4fv(u.uVP, false, v.VP); gl.uniformMatrix4fv(u.uLVP, false, LVP); gl.uniform3fv(u.uEye, v.eye); gl.uniform3fv(u.uLight, LDIR);
+  gl.uniform3fv(u.uAcc, th.acc); gl.uniform3fv(u.uSqL, th.sqL); gl.uniform3fv(u.uSqD, th.sqD); gl.uniform3fv(u.uVein, th.vein); gl.uniform3fv(u.uFrame, th.frame);
+  gl.uniform1f(u.uTheme, th.i); gl.uniform1f(u.uTime, now);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, shadowTex); gl.uniform1i(u.uShadow, 0);
+  const drawPieces = mirror => {
+    gl.uniform1f(u.uMirror, mirror ? 1 : 0); gl.uniform1f(u.uMode, 0); gl.uniform1f(u.uAlpha, 1);
+    for (const p of pieces) {
+      if (p.s <= 0.01) continue;
+      const sel = p.sq === GS.sel && !p.anim, hint = GS.hint && (GS.hint.m & 127) === p.sq && !p.anim;
+      let emis = null;
+      if (p.dying) { const k = Math.max(0, now - p.dying.t0); emis = [1.5 * k * 3, 1.1 * k * 3, .6 * k * 3]; }
+      setMat(u, th, p.c, sel ? 0.9 + 0.3 * Math.sin(now * 5) : hint ? 0.6 + 0.4 * Math.sin(now * 6) : 0, emis);
+      gl.uniformMatrix4fv(u.uM, false, pieceModel(p)); const M = MESH[p.t]; gl.bindVertexArray(M.vao); gl.drawElements(gl.TRIANGLES, M.count, gl.UNSIGNED_INT, 0);
+    }
+  };
+  // 4) 판에 비친 말 → 반투명한 판 → 테두리·바닥
+  drawPieces(true);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.uniform1f(u.uMirror, 0); gl.uniform1f(u.uMode, 1); gl.uniform1f(u.uAlpha, th.alpha); gl.uniform1f(u.uGlow, 0); gl.uniform3fv(u.uEmis, [0, 0, 0]); gl.uniform3fv(u.uRim, [0, 0, 0]);
+  gl.uniform3fv(u.uColor, [1, 1, 1]); gl.uniform1f(u.uSpec, th.i === 1 ? .35 : .8); gl.uniform1f(u.uShin, th.i === 1 ? 40 : 90); gl.uniform1f(u.uRefl, .25); gl.uniform1f(u.uSss, 0);
+  gl.uniformMatrix4fv(u.uM, false, modelM(0, 0, 0, 0, 1)); gl.bindVertexArray(BMESH.board.vao); gl.drawElements(gl.TRIANGLES, BMESH.board.count, gl.UNSIGNED_INT, 0);
+  gl.disable(gl.BLEND); gl.uniform1f(u.uAlpha, 1);
+  gl.uniform1f(u.uMode, 2); gl.uniform1f(u.uSpec, .6); gl.uniform1f(u.uShin, 60); gl.uniform1f(u.uRefl, .35); gl.bindVertexArray(BMESH.frame.vao); gl.drawElements(gl.TRIANGLES, BMESH.frame.count, gl.UNSIGNED_INT, 0);
+  gl.uniform1f(u.uMode, 3); gl.bindVertexArray(BMESH.ground.vao); gl.drawElements(gl.TRIANGLES, BMESH.ground.count, gl.UNSIGNED_INT, 0);
+  // 5) 칸 표시 (지난 수·선택·갈 수 있는 곳·체크)
+  gl.useProgram(PR.f.p); const f = PR.f.u; gl.uniformMatrix4fv(f.uVP, false, v.VP); gl.uniform1f(f.uTime, now);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.bindVertexArray(fxVao);
+  const mark = (sq, kind, col, a, add, size = 1) => { gl.uniform3f(f.uC, sqX(sq), 0.006, sqZ(sq)); gl.uniform1f(f.uS, size); gl.uniform1f(f.uKind, kind); gl.uniform3fv(f.uCol, col); gl.uniform1f(f.uA, a); gl.uniform1f(f.uAdd, add ? 1 : 0); gl.drawArrays(gl.TRIANGLES, 0, 6); };
+  const last = GS.moves[GS.moves.length - 1];
+  if (last) { mark(last.m & 127, 2, [1, .78, .35], .2, false); mark((last.m >> 7) & 127, 2, [1, .78, .35], .3, false); }
+  if (GS.sel >= 0) mark(GS.sel, 2, th.acc, .45, false);
+  if (GS.hover >= 0 && humanTurn() && GS.hover !== GS.sel) mark(GS.hover, 2, [1, 1, 1], .08, false);
+  for (const m of GS.legal) { const to = (m >> 7) & 127; if ((m >> 14) & 7 && ((m >> 14) & 7) !== 5) continue; const cap = E.board[to] || ((m >> 17) & 1); mark(to, cap ? 1 : 0, th.acc, .9 + .15 * Math.sin(now * 4), true); }
+  if (GS.hint) { const a = .5 + .4 * Math.sin(now * 5); mark(GS.hint.m & 127, 2, [.35, 1, .6], a * .6, false); mark((GS.hint.m >> 7) & 127, 2, [.35, 1, .6], a * .8, false); }
+  if (E.inCheck() && !busy()) { const k = E.ksq[E.side >> 4]; mark(k, 3, [1, .15, .2], 1.1, true, 1.8); }
+  gl.depthMask(true); gl.disable(gl.BLEND);
+  // 6) 말
+  gl.useProgram(PR.m.p); drawPieces(false);
+  // 7) 빛 알갱이
+  const arr = new Float32Array((parts.length + dust.length) * 8); let k = 0;
+  const put = (p, s, c, a) => { arr[k++] = p[0]; arr[k++] = p[1]; arr[k++] = p[2]; arr[k++] = s; arr[k++] = c[0]; arr[k++] = c[1]; arr[k++] = c[2]; arr[k++] = a; };
+  for (const d of dust) put(d.p, d.s, d.w ? [1, 1, 1] : th.acc, d.a);
+  for (const p of parts) put(p.p, p.s, p.c, Math.min(1, p.life / p.max * 1.6));
+  gl.useProgram(PR.p.p); gl.uniformMatrix4fv(PR.p.u.uVP, false, v.VP); gl.uniform1f(PR.p.u.uH, cv.height);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  gl.bindVertexArray(ptVao); gl.bindBuffer(gl.ARRAY_BUFFER, ptBuf); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW); gl.drawArrays(gl.POINTS, 0, k / 8);
+  gl.depthMask(true); gl.disable(gl.BLEND); gl.bindVertexArray(null);
+  // 8) 테두리 글자 a~h, 1~8
+  octx.clearRect(0, 0, VW, VH);
+  const tc = SET.theme === 'neon' ? 'rgba(170,150,255,' : 'rgba(232,205,140,';
+  for (let i = 0; i < 8; i++) {
+    for (const [p, txt] of [[[i - 3.5, .05, 4.38], T.files[i]], [[i - 3.5, .05, -4.38], T.files[i]], [[-4.38, .05, 3.5 - i], String(i + 1)], [[4.38, .05, 3.5 - i], String(i + 1)]]) {
+      const q = project(v.VP, p); if (!q) continue;
+      const fs = Math.max(8, Math.min(20, 330 / q[2]));
+      octx.font = `600 ${fs}px Georgia, 'Times New Roman', serif`; octx.textAlign = 'center'; octx.textBaseline = 'middle';
+      octx.fillStyle = tc + '0.85)'; octx.fillText(txt, q[0], q[1]);
+    }
+  }
+}
+
+// ───────────────────────── 갱신 ─────────────────────────
+function update(dt) {
+  now += dt;
+  if (cam.orbit) cam.azT += dt * 0.12;
+  const k = 1 - Math.pow(0.0015, dt);
+  cam.az += (cam.azT - cam.az) * k; cam.el += (cam.elT - cam.el) * k; cam.dist += (cam.distT - cam.dist) * k;
+  for (const p of pieces) {
+    if (p.drop && !p.landed) {
+      const t = (now - p.drop.t0) / 0.65;
+      if (t < 0) { p.y = p.drop.h; p.s = 0; }
+      else if (t < 1) { p.s = Math.min(1, t * 3); p.y = p.drop.h * (1 - bounce(t)); }
+      else { p.y = 0; p.s = 1; p.landed = true; if (Math.random() < 0.25) knock(0.12); burst(p.x, .05, p.z, 6, [[1, .9, .7], THEMES[SET.theme].acc], 1, .08, .6); }
+    }
+    if (p.anim) {
+      const a = p.anim, t = Math.min(1, (now - a.t0) / a.dur);
+      if (t >= 0) {
+        const e = ease(t); p.x = a.fx + (a.tx - a.fx) * e; p.z = a.fz + (a.tz - a.fz) * e; p.y = Math.sin(Math.PI * t) * a.arc;
+        if (t >= 1) {
+          p.y = 0; p.anim = null;
+          burst(p.x, .04, p.z, 10, [[1, .9, .7], [.8, .75, 1]], .9, .07, .5);
+          if (a.promo) { p.t = a.promo; burst(p.x, .6, p.z, 90, [[1, .85, .3], [1, 1, .8], THEMES[SET.theme].acc], 3, .13, 1.4); tone(988, .3, .1, 'triangle'); tone(1319, .5, .08, 'triangle', .1); }
+        }
+      }
+    }
+    if (p.sq === GS.sel && !p.anim) p.y = 0.12 + 0.04 * Math.sin(now * 4);
+    else if (!p.anim && p.landed && !p.dying) p.y *= 0.8;
+    if (p.dying && now >= p.dying.t0) {
+      if (!p.dying.done) {
+        p.dying.done = true;
+        const th = THEMES[SET.theme], col = p.c === 8 ? th.w.c : [.55, .5, .7];
+        burst(p.x, .45, p.z, 120, [col, [1, .7, .3], [1, .95, .7], th.acc], 3.4, .13, 1.2);
+      }
+      const t = (now - p.dying.t0) / 0.45; p.s = Math.max(0, 1 - t); p.y = t * 0.6;
+    }
+  }
+  pieces = pieces.filter(p => !(p.dying && p.s <= 0));
+  for (const p of parts) { p.v[1] -= 3.2 * dt * p.g; p.p[0] += p.v[0] * dt; p.p[1] += p.v[1] * dt; p.p[2] += p.v[2] * dt; if (p.p[1] < 0.02 && p.v[1] < 0) { p.p[1] = 0.02; p.v[1] *= -0.35; p.v[0] *= 0.7; p.v[2] *= 0.7; } p.life -= dt; }
+  parts = parts.filter(p => p.life > 0);
+  if (GS.hint && Math.random() < dt * 30) { const a = GS.hint.m & 127, b = (GS.hint.m >> 7) & 127, t = Math.random(); parts.push({ p: [sqX(a) + (sqX(b) - sqX(a)) * t, .35 + Math.sin(t * Math.PI) * .5, sqZ(a) + (sqZ(b) - sqZ(a)) * t], v: [0, .2, 0], life: .6, max: .6, c: [.4, 1, .6], s: .12, g: 0 }); }
+  for (const d of dust) { for (let i = 0; i < 3; i++) d.p[i] += d.v[i] * dt; if (d.p[1] > 7) d.p[1] = -1; if (Math.abs(d.p[0]) > 13) d.v[0] *= -1; if (Math.abs(d.p[2]) > 13) d.v[2] *= -1; }
+}
+
+// ───────────────────────── 화면 글자 ─────────────────────────
+const figur = (san, side) => san.replace(/[KQRBN]/g, ch => GLY[side][{ K: 6, Q: 5, R: 4, B: 3, N: 2 }[ch]]);
+function ui() {
+  const st = GS.started ? E.status() : '', sideName = E.side === 8 ? T.white : T.black;
+  const s = $('status');
+  s.className = st === 'check' ? 'chk' : '';
+  s.textContent = !GS.started ? '' : GS.over ? T.over[GS.over] : GS.thinking && SET.opp === 'ai' && E.side !== GS.human ? T.cpuTurn : st === 'check' ? `${T.check} ${T.turn(sideName)}` : SET.opp === 'ai' ? (E.side === GS.human ? T.yourTurn : T.cpuTurn) : T.turn(sideName);
+  // 선수 카드: 위 = 상대, 아래 = 나 (두 사람이면 화면 기준)
+  const botSide = SET.opp === 'ai' ? GS.human : (Math.cos(cam.azT) >= 0 ? 8 : 16), topSide = botSide ^ 24;
+  const card = (el, sd) => {
+    const caps = GS.moves.filter(x => x.cap && x.side === sd).map(x => x.cap).sort((a, b) => VAL[b & 7] - VAL[a & 7]);
+    const mine = caps.reduce((a, c) => a + VAL[c & 7], 0), theirs = GS.moves.filter(x => x.cap && x.side !== sd).reduce((a, x) => a + VAL[x.cap & 7], 0);
+    const nm = SET.opp === 'ai' ? (sd === GS.human ? T.you : T.cpu) : (sd === 8 ? T.white : T.black);
+    el.className = 'pc' + (GS.started && !GS.over && E.side === sd ? ' turn' : '');
+    el.innerHTML = `<div class="av ${sd === 8 ? 'w' : 'b'}">${GLY[sd][6]}</div><div style="min-width:0"><div class="nm">${nm} <span style="color:var(--dim);font-weight:400;font-size:11px">${sd === 8 ? T.white : T.black}${SET.opp === 'ai' && sd !== GS.human ? ' · ' + T.levels[SET.level] : ''}</span></div>
+      <div class="cap">${caps.map(c => GLY[c & 24][c & 7]).join('')}${mine > theirs ? `<span class="adv">+${mine - theirs}</span>` : ''}</div></div>
+      ${GS.thinking && SET.opp === 'ai' && sd !== GS.human ? `<div class="think">${T.thinking}</div>` : ''}`;
+  };
+  card($('pcTop'), topSide); card($('pcBot'), botSide);
+  const mv = $('moves');
+  if (!GS.moves.length) mv.innerHTML = `<div class="empty">${T.noMoves}</div>`;
+  else {
+    let h = '';
+    for (let i = 0; i < GS.moves.length; i += 2) {
+      const a = GS.moves[i], b = GS.moves[i + 1], lastI = GS.moves.length - 1;
+      h += `<div class="mv"><span>${i / 2 + 1}.</span><span class="${i === lastI ? 'last' : ''}">${figur(a.san, 8)}</span><span class="${i + 1 === lastI ? 'last' : ''}">${b ? figur(b.san, 16) : ''}</span></div>`;
+    }
+    mv.innerHTML = h; mv.scrollTop = mv.scrollHeight;
+  }
+  $('bUndo').disabled = !GS.started || !GS.moves.length;
+  $('bHint').disabled = !humanTurn() || GS.thinking;
+  // 형세 막대 (백 기준)
+  const sc = GS.evalScore, mate = Math.abs(sc) > E.MATE - 500;
+  $('evalw').style.height = (mate ? (sc > 0 ? 100 : 0) : 50 + 50 * Math.tanh(sc / 500)) + '%';
+  $('evalbar').classList.toggle('flip', Math.cos(cam.azT) < 0);
+  $('evaln').textContent = mate ? 'M' + Math.ceil((E.MATE - Math.abs(sc)) / 2) : (sc >= 0 ? '+' : '') + (sc / 100).toFixed(1);
+}
+function seg(el, opts, cur, on) {
+  el.innerHTML = opts.map(([v, l]) => `<button data-v="${v}" class="${String(v) === String(cur) ? 'on' : ''}">${l}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => { on(b.dataset.v); });
+}
+function settingsUI() {
+  const th = Object.keys(THEMES).map(k => [k, T.themes[k]]);
+  seg($('segOpp'), Object.entries(T.opps), SET.opp, v => { SET.opp = v; saveSet(); settingsUI(); });
+  seg($('segLevel'), T.levels.map((l, i) => [i, l]), SET.level, v => { SET.level = +v; saveSet(); settingsUI(); });
+  seg($('segColor'), Object.entries(T.colors), SET.color, v => { SET.color = v; saveSet(); settingsUI(); });
+  seg($('segTheme2'), th, SET.theme, v => { SET.theme = v; saveSet(); settingsUI(); });
+  seg($('segTheme'), th, SET.theme, v => { SET.theme = v; saveSet(); settingsUI(); });
+  seg($('segSound'), [[1, T.on], [0, T.off]], SET.sound ? 1 : 0, v => { SET.sound = v === '1'; saveSet(); settingsUI(); });
+  $('segLevel').parentElement.querySelectorAll('#segLevel, #lLevel, #segColor, #lColor').forEach(el => el.style.opacity = SET.opp === 'pvp' ? .35 : 1);
+}
+
+// ───────────────────────── 시작 ─────────────────────────
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1); VW = window.innerWidth; VH = window.innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR); ov.width = cv.width; ov.height = cv.height; octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // 화면이 세로로 좁으면 조금 멀리서
+  const wide = VW > 860; SHIFT = wide ? -(314 / VW) + (30 / VW) : 0;
+  const fitDist = 14 * Math.max(1, 1.25 * (VH / Math.max(1, wide ? VW - 330 : VW)));    // 세로로 좁으면 멀리서
+  cam.distT = cam.dist = Math.min(22, fitDist); BASE_DIST = cam.distT;
+}
+function init() {
+  try { initGL(); } catch (e) { $('nogl').hidden = false; $('nogl').textContent = 'WebGL2 를 쓸 수 없어 3D 체스를 그릴 수 없습니다.'; return; }
+  $('tTitle').textContent = T.title; $('sTitle').textContent = T.title; $('bStart').textContent = T.start; $('bAgain').textContent = T.again; $('bReview').textContent = T.review;
+  $('lOpp').textContent = T.opp; $('lLevel').textContent = T.level; $('lColor').textContent = T.color; $('lTheme').textContent = T.theme; $('lTheme2').textContent = T.theme; $('lSound').textContent = T.sound;
+  [['bNew', T.newg], ['bUndo', T.undo], ['bHint', T.hint], ['bFlip', T.flip]].forEach(([id, l]) => $(id).querySelector('span').textContent = l);
+  $('bStart').onclick = () => { audio(); newGame(); };
+  $('bAgain').onclick = () => { $('mOver').hidden = true; $('mStart').hidden = false; settingsUI(); };
+  $('bReview').onclick = () => { $('mOver').hidden = true; GS.review = true; ui(); };
+  $('bNew').onclick = () => { aiId++; GS.thinking = false; $('mStart').hidden = false; settingsUI(); };
+  $('bUndo').onclick = undo; $('bHint').onclick = askHint;
+  $('bFlip').onclick = () => { cam.orbit = false; cam.azT += Math.PI; setTimeout(ui, 400); };
+  $('menu').onclick = () => $('side').classList.toggle('open');
+  window.addEventListener('resize', resize); resize();
+  settingsUI(); piecesFromBoard(false); ui();
+  let last = performance.now();
+  const loop = t => { const dt = Math.min(0.05, (t - last) / 1000); last = t; update(dt); render(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+(function boot() { if (window.innerWidth < 10 || window.innerHeight < 10) { requestAnimationFrame(boot); return; } init(); })();
+window.__c = { sync: () => { const a = []; for (let s = 0; s < 128; s++) { if (s & 0x88) { s += 7; continue; } const pc = E.board[s], q = pieces.filter(p => p.sq === s && !p.dying); if ((pc ? 1 : 0) !== q.length || (pc && (q[0].t !== (pc & 7) || q[0].c !== (pc & 24)))) a.push(E.sqName(s)); } return a; }, project, viewOf, sqX, sqZ, get VW() { return VW; }, E, GS, SET, cam, newGame, doMove, clickSquare, pickSquare, get pieces() { return pieces; }, busy, undo, ENGINE,
+  uci: s => { const f = c => (c.charCodeAt(0) - 97) + (+c[1] - 1) * 16, a = f(s.slice(0, 2)), b = f(s.slice(2, 4)); return E.legal().find(m => (m & 127) === a && ((m >> 7) & 127) === b && (!s[4] || ((m >> 14) & 7) === { q: 5, r: 4, b: 3, n: 2 }[s[4]])); } };
+</script>
+</body>
+</html>
