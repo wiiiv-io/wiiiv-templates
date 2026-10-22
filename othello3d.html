@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D 오델로</title>
+<style>
+:root{--bg:#0d0d1a;--panel:rgba(18,16,38,.74);--line:rgba(255,255,255,.09);--fg:#ecebff;--dim:#a3a2c8;--acc:#7c5cfc;--acc2:#b9a6ff;--gold:#e8c77a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font:13px/1.45 'Segoe UI','Malgun Gothic',-apple-system,sans-serif;user-select:none;-webkit-user-select:none}
+button{font:inherit;color:inherit}
+#gl,#ov{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ov{pointer-events:none}
+#gl.grab{cursor:grabbing}#gl.pt{cursor:pointer}
+.glass{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#top{position:fixed;left:14px;top:14px;display:flex;align-items:center;gap:12px;padding:9px 16px 9px 10px;max-width:calc(100% - 330px)}
+.logo{width:36px;height:36px;border-radius:50%;flex:none;background:linear-gradient(90deg,#111 50%,#f3f1ea 50%);box-shadow:0 0 0 2px #7c5cfc,0 0 18px rgba(124,92,252,.6)}
+#top b{font-size:15px;display:block;white-space:nowrap}
+#status{font-size:12.5px;color:var(--acc2);min-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#side{position:fixed;right:14px;top:14px;bottom:14px;width:300px;display:flex;flex-direction:column;gap:10px;padding:14px;transition:transform .3s ease}
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sc{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid transparent;transition:all .25s;min-width:0}
+.sc.turn{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc),0 0 22px rgba(124,92,252,.4)}
+.sc .who{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden}
+.dot{width:16px;height:16px;border-radius:50%;flex:none}.dot.b{background:radial-gradient(circle at 35% 30%,#555,#050505)}.dot.w{background:radial-gradient(circle at 35% 30%,#fff,#cfcabb)}
+.sc .n{font-size:34px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.sc .think{font-size:11px;color:var(--acc2);min-height:15px}
+.ratio{height:8px;border-radius:5px;overflow:hidden;display:flex;background:#222}
+.ratio i{display:block;height:100%;transition:width .5s}.ratio .rb{background:linear-gradient(#3a3a44,#0a0a0e)}.ratio .rw{background:linear-gradient(#fff,#d8d2c2)}
+#moves{flex:1;overflow-y:auto;border-radius:12px;background:rgba(0,0,0,.2);padding:8px;font-variant-numeric:tabular-nums;scrollbar-width:thin;min-height:60px;display:grid;grid-template-columns:repeat(6,1fr);gap:3px;align-content:start}
+.mv{font-size:12px;padding:2px 0;border-radius:5px;text-align:center;display:flex;align-items:center;justify-content:center;gap:3px}
+.mv .dot{width:9px;height:9px}.mv.last{background:rgba(124,92,252,.4);color:#fff}.mv.ps{color:var(--dim)}
+.empty{grid-column:1/-1;color:var(--dim);font-size:12px;text-align:center;padding:14px 0}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:10px;padding:7px 2px;cursor:pointer;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s}
+.btn i{font-style:normal;font-size:17px;line-height:1.2}.btn:hover{background:rgba(124,92,252,.28);border-color:var(--acc)}.btn:disabled{opacity:.35;pointer-events:none}
+.set{display:grid;grid-template-columns:auto 1fr;gap:7px 10px;align-items:center;font-size:12px;color:var(--dim)}
+.seg{display:flex;background:rgba(0,0,0,.28);border-radius:8px;padding:2px;gap:2px}
+.seg button{flex:1;border:0;background:none;border-radius:6px;padding:4px 2px;cursor:pointer;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.seg button.on{background:var(--acc);color:#fff}
+#toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-10px);padding:10px 20px;font-weight:600;opacity:0;transition:all .35s;pointer-events:none;z-index:8}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(5,5,15,.28);z-index:10;padding:16px}
+.modal[hidden]{display:none}
+.card{padding:26px 28px;width:min(380px,100%);text-align:center}
+.card h1{font-size:34px;background:linear-gradient(90deg,#fff,#b9a6ff 55%,#4fb3ff);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.2}
+.card .sub{color:var(--dim);margin:2px 0 20px;font-size:11px;letter-spacing:.2em}
+.card .set{text-align:left;margin:0 auto 20px;gap:11px 12px}
+.card p{color:var(--dim);margin:6px 0 18px}
+.final{display:flex;justify-content:center;gap:22px;margin:10px 0 4px;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
+.final span{display:flex;align-items:center;gap:8px}.final .dot{width:22px;height:22px}
+.go{border:0;background:linear-gradient(135deg,#7c5cfc,#4f8bff);color:#fff;font-weight:700;font-size:15px;padding:11px 36px;border-radius:12px;cursor:pointer;box-shadow:0 6px 24px rgba(124,92,252,.5)}
+.go.ghost{background:rgba(255,255,255,.07);box-shadow:none;border:1px solid var(--line);margin-left:6px}
+#menu{position:fixed;right:14px;top:14px;width:42px;height:42px;border-radius:12px;display:none;place-items:center;font-size:20px;cursor:pointer;z-index:6}
+#nogl{position:fixed;inset:0;display:grid;place-items:center;color:var(--dim);padding:30px;text-align:center}
+#nogl[hidden]{display:none}
+@media (max-width:860px){
+  #side{left:10px;right:10px;top:auto;bottom:10px;width:auto;height:min(60vh,460px);transform:translateY(calc(100% + 20px))}
+  #side.open{transform:none}
+  #menu{display:grid}
+  #top{max-width:calc(100% - 80px)}
+}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas><canvas id="ov"></canvas>
+<div id="top" class="glass"><div class="logo"></div><div style="min-width:0"><b id="tTitle"></b><div id="status"></div></div></div>
+<div id="toast" class="glass"></div>
+<button id="menu" class="glass">☰</button>
+<aside id="side" class="glass">
+  <div class="scores"><div class="sc" id="scB"></div><div class="sc" id="scW"></div></div>
+  <div class="ratio"><i class="rb" id="rb"></i><i class="rw" id="rw"></i></div>
+  <div id="moves"></div>
+  <div class="btns">
+    <button class="btn" id="bNew"><i>✦</i><span></span></button>
+    <button class="btn" id="bUndo"><i>↶</i><span></span></button>
+    <button class="btn" id="bHint"><i>💡</i><span></span></button>
+    <button class="btn" id="bFlip"><i>⟲</i><span></span></button>
+  </div>
+  <div class="set">
+    <span id="lTheme"></span><div class="seg" id="segTheme"></div>
+    <span id="lSound"></span><div class="seg" id="segSound"></div>
+  </div>
+</aside>
+<div class="modal" id="mStart"><div class="card glass">
+  <h1 id="sTitle"></h1><div class="sub">WIIIV · 3D OTHELLO</div>
+  <div class="set">
+    <span id="lOpp"></span><div class="seg" id="segOpp"></div>
+    <span id="lLevel"></span><div class="seg" id="segLevel"></div>
+    <span id="lColor"></span><div class="seg" id="segColor"></div>
+    <span id="lTheme2"></span><div class="seg" id="segTheme2"></div>
+  </div>
+  <button class="go" id="bStart"></button>
+</div></div>
+<div class="modal" id="mOver" hidden><div class="card glass"><h1 id="oTitle"></h1><div class="final" id="oScore"></div><p id="oText"></p><button class="go" id="bAgain"></button><button class="go ghost" id="bReview"></button></div></div>
+<div id="nogl" hidden></div>
+<script>
+/*
+ * 3D 오델로 — wiiiv App 템플릿 (2026-10-23)
+ * 3D 체스와 같은 방식으로 WebGL2 를 직접 쓴다: 그림자 맵, 판 반사, 빛 알갱이.
+ * 돌은 위 흰색·아래 검은색 한 덩어리 — 뒤집힐 때 놓은 자리에서 물결처럼 차례로 공중제비를 돈다.
+ * 컴퓨터: 위치 가중치·둘 곳 수(기동력)·귀 안정 평가 + 알파베타, 끝판은 끝까지 읽어 돌 수를 센다. 작업 스레드에서 생각한다.
+ */
+const LANG = 'ko';
+const T = {
+  ko: {
+    title: '3D 오델로', start: '대국 시작', opp: '상대', level: '난이도', color: '내 색', theme: '판', sound: '소리',
+    opps: { ai: '컴퓨터', pvp: '두 사람' }, levels: ['쉬움', '보통', '어려움'], colors: { b: '흑 (먼저)', w: '백', r: '무작위' },
+    themes: { felt: '펠트', wood: '원목', neon: '네온' }, on: '켬', off: '끔',
+    newg: '새 게임', undo: '무르기', hint: '힌트', flip: '돌리기',
+    black: '흑', white: '백', you: '나', cpu: '컴퓨터', thinking: '생각 중…',
+    yourTurn: '당신 차례입니다', cpuTurn: '컴퓨터가 생각 중입니다…', turn: s => `${s} 차례`,
+    pass: s => `${s}은 둘 곳이 없어 차례를 넘깁니다`, passMark: '넘김', noMoves: '아직 둔 수가 없습니다',
+    over: '대국 종료', win: s => `${s} 승리!`, draw: '무승부', youWin: '이겼습니다! 축하합니다 🎉', youLose: '컴퓨터가 이겼습니다. 다시 도전해 보세요.',
+    again: '다시 하기', review: '판 보기',
+  },
+  en: {
+    title: '3D Othello', start: 'Start game', opp: 'Opponent', level: 'Level', color: 'My color', theme: 'Board', sound: 'Sound',
+    opps: { ai: 'Computer', pvp: 'Two players' }, levels: ['Easy', 'Normal', 'Hard'], colors: { b: 'Black (first)', w: 'White', r: 'Random' },
+    themes: { felt: 'Felt', wood: 'Wood', neon: 'Neon' }, on: 'On', off: 'Off',
+    newg: 'New', undo: 'Undo', hint: 'Hint', flip: 'Flip',
+    black: 'Black', white: 'White', you: 'You', cpu: 'Computer', thinking: 'thinking…',
+    yourTurn: 'Your move', cpuTurn: 'Computer is thinking…', turn: s => `${s} to move`,
+    pass: s => `${s} has no move and passes`, passMark: 'pass', noMoves: 'No moves yet',
+    over: 'Game over', win: s => `${s} wins!`, draw: 'Draw', youWin: 'You won! Congratulations 🎉', youLose: 'The computer won. Try again!',
+    again: 'Play again', review: 'View board',
+  },
+}[LANG];
+
+// ───────────────────────── 규칙·탐색 엔진 (작업 스레드에서도 그대로 쓴다) ─────────────────────────
+// 칸 번호 0~63 = 줄*8 + 칸, a1 이 0 (위 왼쪽). 1 = 흑, 2 = 백
+function ENGINE() {
+  const bd = new Int8Array(64), hist = [];
+  const DR = [-1, -1, -1, 0, 0, 1, 1, 1], DC = [-1, 0, 1, -1, 1, -1, 0, 1];
+  const W0 = [100, -20, 10, 5, 5, 10, -20, 100, -20, -50, -2, -2, -2, -2, -50, -20, 10, -2, -1, -1, -1, -1, -2, 10, 5, -2, -1, -1, -1, -1, -2, 5,
+    5, -2, -1, -1, -1, -1, -2, 5, 10, -2, -1, -1, -1, -1, -2, 10, -20, -50, -2, -2, -2, -2, -50, -20, 100, -20, 10, 5, 5, 10, -20, 100];
+  const CORNER = [[0, 1, 8, 9], [7, 6, 15, 14], [56, 57, 48, 49], [63, 62, 55, 54]];
+  const ORDER = [...Array(64).keys()].sort((a, b) => W0[b] - W0[a]);
+  let side = 1;
+  function reset() { bd.fill(0); bd[27] = 2; bd[36] = 2; bd[28] = 1; bd[35] = 1; side = 1; hist.length = 0; }
+  function flips(sq, s, out) {
+    if (bd[sq]) return 0;
+    const o = 3 - s, r0 = sq >> 3, c0 = sq & 7; let n = 0;
+    for (let d = 0; d < 8; d++) {
+      let r = r0 + DR[d], c = c0 + DC[d], k = 0;
+      while (r >= 0 && r < 8 && c >= 0 && c < 8 && bd[r * 8 + c] === o) { r += DR[d]; c += DC[d]; k++; }
+      if (k && r >= 0 && r < 8 && c >= 0 && c < 8 && bd[r * 8 + c] === s) {
+        n += k;
+        if (out) { let rr = r0 + DR[d], cc = c0 + DC[d]; for (let i = 0; i < k; i++) { out.push(rr * 8 + cc); rr += DR[d]; cc += DC[d]; } }
+      }
+    }
+    return n;
+  }
+  function legal(s = side) { const m = []; for (const q of ORDER) if (!bd[q] && flips(q, s)) m.push(q); return m; }
+  function make(sq) {
+    if (sq < 0) { hist.push({ sq: -1, f: [] }); side = 3 - side; return []; }
+    const f = []; flips(sq, side, f); bd[sq] = side; for (const q of f) bd[q] = side;
+    hist.push({ sq, f }); side = 3 - side; return f;
+  }
+  function unmake() { const h = hist.pop(); side = 3 - side; if (h.sq >= 0) { bd[h.sq] = 0; for (const q of h.f) bd[q] = 3 - side; } }
+  function count() { let b = 0, w = 0; for (let i = 0; i < 64; i++) { if (bd[i] === 1) b++; else if (bd[i] === 2) w++; } return [b, w]; }
+  const over = () => !legal(1).length && !legal(2).length;
+  // 평가 (두는 쪽 기준)
+  function evaluate() {
+    const me = side, op = 3 - side; let pos = 0, empt = 0, dm = 0;
+    for (let i = 0; i < 64; i++) { const v = bd[i]; if (!v) { empt++; continue; } const w = W0[i]; if (v === me) { pos += w; dm++; } else { pos -= w; dm--; } }
+    // 귀를 이미 차지했다면 그 옆 칸은 더는 위험하지 않다
+    for (const [c, a, b, x] of CORNER) if (bd[c]) for (const q of [a, b, x]) { const v = bd[q]; if (!v) continue; const fix = -W0[q] + 4; pos += v === me ? fix : -fix; }
+    const mob = legal(me).length - legal(op).length;
+    return pos + mob * 9 + (empt < 16 ? dm * (16 - empt) : 0);
+  }
+  let nodes = 0, stopAt = 0, stopped = false;
+  function ab(depth, alpha, beta, passed, exact) {
+    if ((++nodes & 1023) === 0 && Date.now() > stopAt) stopped = true;
+    if (stopped) return 0;
+    if (depth <= 0 && !exact) return evaluate();
+    const ms = legal();
+    if (!ms.length) {
+      if (passed) { const [b, w] = count(), d = side === 1 ? b - w : w - b; return d * 1000; }   // 둘 다 못 두면 끝 — 돌 수 차이
+      make(-1); const v = -ab(depth, -beta, -alpha, true, exact); unmake(); return v;
+    }
+    let best = -1e9;
+    for (const m of ms) { make(m); const v = -ab(depth - 1, -beta, -alpha, false, exact); unmake(); if (stopped) return 0; if (v > best) best = v; if (v > alpha) alpha = v; if (alpha >= beta) break; }
+    return best;
+  }
+  const LV = [{ d: 2, t: 300, end: 0 }, { d: 6, t: 800, end: 10 }, { d: 14, t: 2200, end: 14 }];
+  function think(o) {
+    const lv = LV[o.level] || LV[1];
+    nodes = 0; stopped = false; stopAt = Date.now() + (o.time || lv.t);
+    const ms = legal(); if (!ms.length) return { move: -1, score: 0 };
+    if (ms.length === 1) return { move: ms[0], score: 0 };
+    let empt = 0; for (let i = 0; i < 64; i++) if (!bd[i]) empt++;
+    const score = (d, exact) => ms.map(m => { make(m); const v = -ab(d - 1, -1e9, 1e9, false, exact); unmake(); return [m, v]; });
+    if (o.level === 0 && !o.time) {   // 쉬움: 얕게 보고 괜찮은 수 중에서 고른다
+      stopAt = Date.now() + 3000;
+      const sc = score(2, false).sort((a, b) => b[1] - a[1]), ok = sc.filter(x => x[1] >= sc[0][1] - 25);
+      const p = Math.random() < 0.6 ? ok[0] : ok[Math.floor(Math.random() * ok.length)]; return { move: p[0], score: p[1] };
+    }
+    if (empt <= lv.end) {   // 끝판: 끝까지 읽는다
+      stopAt = Date.now() + 6000;
+      const sc = score(empt, true); if (!stopped) { sc.sort((a, b) => b[1] - a[1]); return { move: sc[0][0], score: sc[0][1], exact: true }; }
+      stopped = false; stopAt = Date.now() + lv.t;
+    }
+    let best = ms[0], bestV = 0;
+    for (let d = 1; d <= lv.d; d++) {
+      let alpha = -1e9, cur = null, curV = -1e9;
+      const ordered = [best, ...ms.filter(m => m !== best)];
+      for (const m of ordered) { make(m); const v = -ab(d - 1, -1e9, -alpha, false, false); unmake(); if (stopped) break; if (v > curV) { curV = v; cur = m; } if (v > alpha) alpha = v; }
+      if (stopped) break;
+      best = cur; bestV = curV;
+      if (Date.now() > stopAt - (o.time || lv.t) * 0.55) break;
+    }
+    return { move: best, score: bestV };
+  }
+  return { board: bd, reset, legal, make, unmake, flips, count, over, think, evaluate, get side() { return side; }, hist };
+}
+
+// ───────────────────────── 모양 ─────────────────────────
+function Geo() { return { p: [], n: [], i: [] }; }
+function lathe(g, prof, seg = 56) {
+  const base = g.p.length / 3, n = prof.length;
+  const nrm = prof.map((pt, i) => {
+    let a = prof[Math.max(0, i - 1)], b = prof[Math.min(n - 1, i + 1)];
+    if (i < n - 1 && prof[i + 1][0] === pt[0] && prof[i + 1][1] === pt[1]) b = pt;
+    if (i > 0 && prof[i - 1][0] === pt[0] && prof[i - 1][1] === pt[1]) a = pt;
+    const dr = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dr, dy) || 1; return [dy / l, -dr / l];
+  });
+  for (let j = 0; j <= seg; j++) {
+    const an = j / seg * Math.PI * 2, c = Math.cos(an), s = Math.sin(an);
+    for (let i = 0; i < n; i++) { const [r, y] = prof[i], [nr, ny] = nrm[i]; g.p.push(r * c, y, r * s); g.n.push(nr * c, ny, nr * s); }
+  }
+  for (let j = 0; j < seg; j++) for (let i = 0; i < n - 1; i++) { if (prof[i][0] === 0 && prof[i + 1][0] === 0) continue; const a = base + j * n + i, b = a + n; g.i.push(a, b, a + 1, a + 1, b, b + 1); }
+}
+function box(g, cx, cy, cz, sx, sy, sz) {
+  const F = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[-1, 0, 0], [0, 1, 0], [0, 0, -1]], [[0, 1, 0], [0, 0, 1], [1, 0, 0]], [[0, -1, 0], [0, 0, -1], [1, 0, 0]], [[0, 0, 1], [1, 0, 0], [0, 1, 0]], [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]];
+  for (const [nn, u, v] of F) {
+    const b = g.p.length / 3;
+    for (const [du, dv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) g.p.push(cx + (nn[0] + u[0] * du + v[0] * dv) * sx / 2, cy + (nn[1] + u[1] * du + v[1] * dv) * sy / 2, cz + (nn[2] + u[2] * du + v[2] * dv) * sz / 2), g.n.push(...nn);
+    g.i.push(b, b + 1, b + 2, b, b + 2, b + 3);
+  }
+}
+// 돌: 가운데(y=0)를 기준으로 위아래 대칭. 셰이더가 y 부호로 흰·검은 면을 나눈다
+const DR_ = 0.41, DH = 0.065;
+function discGeo() {
+  const g = Geo();
+  lathe(g, [[0, -DH], [.3, -DH], [.31, -DH + .006], [.32, -DH], [DR_ - .03, -DH], [DR_ - .03, -DH], [DR_, -DH + .025], [DR_ + .005, 0], [DR_, DH - .025], [DR_ - .03, DH], [DR_ - .03, DH], [.32, DH], [.31, DH - .006], [.3, DH], [0, DH]]);
+  return g;
+}
+function boardGeos() {
+  const board = Geo(); box(board, 0, -.05, 0, 8, .1, 8);
+  const frame = Geo(), E = 4.7, I = 4, t = .05, d = .34, h = t + d;
+  box(frame, 0, t - h / 2, (E + I) / 2, E * 2, h, E - I); box(frame, 0, t - h / 2, -(E + I) / 2, E * 2, h, E - I);
+  box(frame, (E + I) / 2, t - h / 2, 0, E - I, h, I * 2); box(frame, -(E + I) / 2, t - h / 2, 0, E - I, h, I * 2);
+  const ground = Geo(); box(ground, 0, -d - .005, 0, 60, .01, 60);
+  return { board, frame, ground };
+}
+
+// ───────────────────────── WebGL ─────────────────────────
+const MVS = `#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNor;
+uniform mat4 uVP, uM, uLVP; uniform float uMirror;
+out vec3 vW; out vec3 vN; out vec4 vL; out float vLy;
+void main(){ vec4 w = uM * vec4(aPos, 1.0); vec3 n = mat3(uM) * aNor; vLy = aPos.y;
+  if (uMirror > 0.5) { w.y = -w.y; n.y = -n.y; }
+  vW = w.xyz; vN = n; vL = uLVP * vec4(w.xyz, 1.0); gl_Position = uVP * w; }`;
+const MFS = `#version 300 es
+precision highp float; precision highp sampler2DShadow;
+in vec3 vW; in vec3 vN; in vec4 vL; in float vLy;
+uniform sampler2DShadow uShadow;
+uniform vec3 uEye, uLight, uColor, uColor2, uRim, uRim2, uEmis, uAcc, uSqL, uSqD, uFrame;
+uniform float uShin, uSpec, uRefl, uMode, uMirror, uTheme, uAlpha, uGlow, uTime;
+out vec4 o;
+float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1,0)), f.x), mix(h21(i + vec2(0,1)), h21(i + vec2(1,1)), f.x), f.y); }
+float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }
+float shadowAt(){ vec3 p = vL.xyz / vL.w * 0.5 + 0.5; if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) return 1.0;
+  vec2 t = 1.0 / vec2(textureSize(uShadow, 0)); float s = 0.0;
+  for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) s += texture(uShadow, vec3(p.xy + vec2(i, j) * t * 1.6, p.z - 0.0015));
+  return s / 9.0; }
+vec3 env(vec3 r){ vec3 c = mix(vec3(0.03, 0.03, 0.06), vec3(0.32, 0.30, 0.44), smoothstep(-0.2, 0.9, r.y));
+  c += vec3(1.0, 0.96, 0.9) * pow(max(dot(r, normalize(vec3(-0.45, 0.8, 0.4))), 0.0), 28.0) * 1.9;
+  c += uAcc * pow(max(dot(r, normalize(vec3(0.75, 0.35, -0.55))), 0.0), 16.0) * 1.0; return c; }
+void main(){
+  if (uMirror > 0.5 && vW.y > 0.001) discard;
+  vec3 N = normalize(vN), V = normalize(uEye - vW), L = normalize(uLight);
+  vec3 base = uColor, emis = uEmis, rim = uRim; float spec = uSpec, shin = uShin, refl = uRefl;
+  if (uMode > 0.5 && uMode < 1.5 && vW.y > -0.01) {           // 판: 칸 줄과 네 점
+    vec2 q = vW.xz + 4.0, f = fract(q); float e = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
+    float grid = smoothstep(0.03, 0.012, e);
+    float dd = min(min(length(q - vec2(2.0, 2.0)), length(q - vec2(6.0, 2.0))), min(length(q - vec2(2.0, 6.0)), length(q - vec2(6.0, 6.0))));
+    float star = smoothstep(0.075, 0.055, dd);
+    if (uTheme < 0.5) { base = uSqL * (0.86 + 0.22 * fbm(vW.xz * 22.0)) * (0.94 + 0.12 * fbm(vW.xz * 1.5)); base = mix(base, uSqD, max(grid, star) * 0.9); spec = 0.06; shin = 8.0; refl = 0.0; }
+    else if (uTheme < 1.5) { vec2 p = vW.xz * 1.3; float g = fbm(vec2(p.x * 1.2, p.y * 10.0)); base = uSqL * (0.8 + 0.35 * g) * (0.95 + 0.05 * sin(p.y * 60.0 + g * 12.0)); base = mix(base, uSqD, max(grid, star) * 0.85); }
+    else { base = uSqL * (0.7 + 0.5 * fbm(vW.xz * 2.0)); emis += uAcc * (grid * 0.9 + star * 1.2) + uAcc * 0.04 * fbm(vW.xz * 3.0 + uTime * 0.1); }
+  } else if (uMode > 1.5 && uMode < 2.5) {                    // 테두리
+    float g = fbm(vec2(vW.x + vW.z, vW.y * 3.0) * vec2(1.0, 14.0)); base = uFrame * (0.8 + 0.35 * g);
+    float inl = abs(max(abs(vW.x), abs(vW.z)) - 4.1);
+    if (vW.y > 0.04) emis += (uTheme > 1.5 ? uAcc * 1.2 : vec3(0.95, 0.78, 0.42) * 0.5) * smoothstep(0.02, 0.0, inl);
+  } else if (uMode > 2.5 && uMode < 3.5) {                    // 바닥
+    if (max(abs(vW.x), abs(vW.z)) < 4.69) discard;
+    float r = length(vW.xz); base = vec3(0.045, 0.045, 0.08) * (1.0 + 1.2 * exp(-r * 0.22)) + uAcc * 0.05 * exp(-r * 0.3); spec = 0.12; refl = 0.03;
+  } else if (uMode > 3.5) {                                   // 돌: 위는 흰 면, 아래는 검은 면
+    float k = smoothstep(-0.004, 0.004, vLy);
+    base = mix(uColor2, uColor, k); rim = mix(uRim2, uRim, k);
+    spec = mix(1.3, 0.8, k); shin = mix(150.0, 90.0, k); refl = mix(0.9, 0.45, k);
+  }
+  float sh = shadowAt(), d = max(dot(N, L), 0.0) * sh;
+  vec3 H = normalize(L + V); float sp = pow(max(dot(N, H), 0.0), shin) * spec * sh;
+  float nv = max(dot(N, V), 0.0), fr = 0.04 + 0.96 * pow(1.0 - nv, 5.0);
+  vec3 amb = mix(vec3(0.09, 0.09, 0.14), vec3(0.25, 0.24, 0.33), N.y * 0.5 + 0.5);
+  vec3 col = base * (amb + d * vec3(1.0, 0.96, 0.9) * 1.1) + sp * vec3(1.0, 0.97, 0.92) + env(reflect(-V, N)) * fr * refl + rim * pow(1.0 - nv, 2.5) + emis;
+  col += uGlow * uAcc * (0.35 + 1.0 * pow(1.0 - nv, 2.0));
+  if (uMirror > 0.5) col *= 0.5;
+  o = vec4(col, uAlpha);
+}`;
+const DVS = `#version 300 es
+layout(location=0) in vec3 aPos; uniform mat4 uLVP, uM; void main(){ gl_Position = uLVP * uM * vec4(aPos, 1.0); }`;
+const DFS = `#version 300 es
+precision mediump float; void main(){}`;
+const BVS = `#version 300 es
+out vec2 vQ; void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); vQ = p; gl_Position = vec4(p * 2.0 - 1.0, 0.999, 1.0); }`;
+const BFS = `#version 300 es
+precision mediump float; in vec2 vQ; uniform vec3 uC0, uC1, uAcc; uniform vec2 uAsp; out vec4 o;
+void main(){ vec2 d = (vQ - vec2(0.5, 0.62)) * uAsp; float r = clamp(length(d) * 1.2, 0.0, 1.0);
+  vec3 c = mix(uC0, uC1, r * r); c += uAcc * 0.05 * exp(-length((vQ - vec2(0.5, 0.95)) * uAsp) * 3.0); o = vec4(c, 1.0); }`;
+const FVS = `#version 300 es
+layout(location=0) in vec2 aQ; uniform mat4 uVP; uniform vec3 uC; uniform float uS; out vec2 vQ;
+void main(){ vQ = aQ; gl_Position = uVP * vec4(uC + vec3(aQ.x * uS, 0.0, aQ.y * uS), 1.0); }`;
+const FFS = `#version 300 es
+precision mediump float; in vec2 vQ; uniform vec3 uCol; uniform float uKind, uA, uTime, uAdd; out vec4 o;
+void main(){ vec2 q = vQ * 2.0; float r = length(q), a = 0.0;
+  if (uKind < 0.5) a = smoothstep(0.24, 0.14, r) + 0.3 * smoothstep(0.6, 0.0, r);
+  else if (uKind < 1.5) a = smoothstep(0.08, 0.0, abs(r - uTime)) * (1.0 - uTime);     /* 퍼지는 고리: uTime 을 반지름으로 */
+  else { vec2 e = 1.0 - abs(q); float m = min(e.x, e.y); a = (0.55 + 0.45 * smoothstep(0.0, 0.2, m)) * smoothstep(0.0, 0.03, m); }
+  o = vec4(uCol * a * uA, uAdd > 0.5 ? 0.0 : a * uA); }`;
+const PVS = `#version 300 es
+layout(location=0) in vec3 aP; layout(location=1) in float aS; layout(location=2) in vec4 aC;
+uniform mat4 uVP; uniform float uH; out vec4 vC;
+void main(){ vC = aC; gl_Position = uVP * vec4(aP, 1.0); gl_PointSize = clamp(aS * uH / gl_Position.w, 1.0, 120.0); }`;
+const PFS = `#version 300 es
+precision mediump float; in vec4 vC; out vec4 o;
+void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = smoothstep(1.0, 0.0, r); a *= a; o = vec4(vC.rgb * vC.a * a, 0.0); }`;
+
+const $ = id => document.getElementById(id);
+const cv = $('gl'), ov = $('ov'), octx = ov.getContext('2d');
+let gl = null, VW = 0, VH = 0, DPR = 1;
+const PR = {};
+function mkProg(vs, fs) {
+  const p = gl.createProgram();
+  for (const [t, s] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); gl.attachShader(p, sh); }
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name; u[nm] = gl.getUniformLocation(p, nm); }
+  return { p, u };
+}
+function upload(g) {
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const b1 = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b1); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.p), gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  const b2 = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b2); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g.n), gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+  const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(g.i), gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+  return { vao, count: g.i.length };
+}
+const SM = 2048;
+let DISC = null, BMESH = {}, fxVao = null, ptVao = null, ptBuf = null, shadowTex = null, shadowFb = null;
+function initGL() {
+  gl = cv.getContext('webgl2', { antialias: true, alpha: false });
+  if (!gl) throw new Error('nogl');
+  PR.m = mkProg(MVS, MFS); PR.d = mkProg(DVS, DFS); PR.b = mkProg(BVS, BFS); PR.f = mkProg(FVS, FFS); PR.p = mkProg(PVS, PFS);
+  DISC = upload(discGeo());
+  const bg = boardGeos(); BMESH = { board: upload(bg.board), frame: upload(bg.frame), ground: upload(bg.ground) };
+  fxVao = gl.createVertexArray(); gl.bindVertexArray(fxVao);
+  const fb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, fb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-.5, -.5, .5, -.5, .5, .5, -.5, -.5, .5, .5, -.5, .5]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  ptVao = gl.createVertexArray(); gl.bindVertexArray(ptVao); ptBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ptBuf);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 32, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 32, 12); gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, 32, 16);
+  gl.bindVertexArray(null);
+  shadowTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, shadowTex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, SM, SM);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+  shadowFb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, shadowTex, 0);
+  gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+// ───────────────────────── 행렬 ─────────────────────────
+const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const vnorm = a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+function mul4(a, b) { const r = new Float32Array(16); for (let c = 0; c < 4; c++) for (let rr = 0; rr < 4; rr++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + rr] * b[c * 4 + k]; r[c * 4 + rr] = s; } return r; }
+function lookAt(eye, tgt, up) {
+  const F = vnorm(vsub(tgt, eye)), R = vnorm(vcross(F, up)), U = vcross(R, F);
+  return { M: new Float32Array([R[0], U[0], -F[0], 0, R[1], U[1], -F[1], 0, R[2], U[2], -F[2], 0, -vdot(R, eye), -vdot(U, eye), vdot(F, eye), 1]), F, R, U };
+}
+function persp(fov, asp, n, f) { const t = 1 / Math.tan(fov / 2); return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]); }
+function ortho(l, r, b, t, n, f) { return new Float32Array([2 / (r - l), 0, 0, 0, 0, 2 / (t - b), 0, 0, 0, 0, -2 / (f - n), 0, -(r + l) / (r - l), -(t + b) / (t - b), -(f + n) / (f - n), 1]); }
+// 위치 + 수평 축(ax, az) 둘레 회전 + 크기
+function discM(x, y, z, ax, az, ang, s) {
+  const l = Math.hypot(ax, az) || 1, u = ax / l, w = az / l, c = Math.cos(ang), sn = Math.sin(ang), t = 1 - c;
+  // 축 (u, 0, w) 로돌리게스
+  const m00 = c + u * u * t, m01 = -w * sn, m02 = u * w * t, m10 = w * sn, m11 = c, m12 = -u * sn, m20 = u * w * t, m21 = u * sn, m22 = c + w * w * t;
+  return new Float32Array([m00 * s, m10 * s, m20 * s, 0, m01 * s, m11 * s, m21 * s, 0, m02 * s, m12 * s, m22 * s, 0, x, y, z, 1]);
+}
+const FOV = 0.68;
+const cam = { az: 0, el: 0.82, dist: 13, azT: 0, elT: 0.82, distT: 13, orbit: true };
+let BASE_DIST = 13, SHIFT = 0;
+function viewOf() {
+  const ce = Math.cos(cam.el), eye = [cam.dist * ce * Math.sin(cam.az), cam.dist * Math.sin(cam.el), cam.dist * ce * Math.cos(cam.az)];
+  const la = lookAt(eye, [0, -0.35, 0], [0, 1, 0]), P = persp(FOV, VW / VH, 0.1, 100); P[8] = -SHIFT;
+  return { VP: mul4(P, la.M), eye, F: la.F, R: la.R, U: la.U };
+}
+const LDIR = vnorm([-0.45, 1, 0.32]);
+const LVP = mul4(ortho(-7, 7, -7, 7, 1, 40), lookAt(LDIR.map(v => v * 18), [0, 0, 0], [0, 1, 0]).M);
+function project(VP, p) {
+  const x = VP[0] * p[0] + VP[4] * p[1] + VP[8] * p[2] + VP[12], y = VP[1] * p[0] + VP[5] * p[1] + VP[9] * p[2] + VP[13], w = VP[3] * p[0] + VP[7] * p[1] + VP[11] * p[2] + VP[15];
+  return w > 0 ? [(x / w * 0.5 + 0.5) * VW, (1 - (y / w * 0.5 + 0.5)) * VH, w] : null;
+}
+
+// ───────────────────────── 테마 ─────────────────────────
+const DISC_STD = { white: [.95, .94, .9], black: [.045, .045, .055], rimW: [.04, .04, .05], rimB: [.18, .16, .3] };
+const THEMES = {
+  felt: { i: 0, sqL: [.07, .36, .2], sqD: [.01, .07, .03], frame: [.2, .11, .06], alpha: 1, acc: [.49, .36, .99], bg: [[.07, .085, .12], [.01, .015, .025]], disc: DISC_STD },
+  wood: { i: 1, sqL: [.84, .64, .4], sqD: [.25, .13, .06], frame: [.25, .13, .07], alpha: .9, acc: [1, .68, .32], bg: [[.1, .07, .06], [.015, .01, .01]], disc: DISC_STD },
+  neon: { i: 2, sqL: [.06, .06, .13], sqD: [.03, .03, .07], frame: [.05, .05, .1], alpha: .62, acc: [.55, .4, 1], bg: [[.06, .04, .14], [.005, .005, .02]],
+    disc: { white: [.7, .92, 1], black: [.16, .02, .16], rimW: [.15, .6, 1], rimB: [1, .2, .8] } },
+};
+
+// ───────────────────────── 게임 상태 ─────────────────────────
+const E = ENGINE(); E.reset();
+const SET = { opp: 'ai', level: 1, color: 'b', theme: 'felt', sound: true };
+try { Object.assign(SET, JSON.parse(localStorage.getItem('wiiiv-othello3d') || '{}')); } catch { /* 저장 못 해도 동작 */ }
+const saveSet = () => { try { localStorage.setItem('wiiiv-othello3d', JSON.stringify(SET)); } catch { /* */ } };
+const GS = { started: false, human: 1, moves: [], over: false, hover: -1, thinking: false, hint: -1, review: false };
+let aiId = 0;
+const sqX = s => (s & 7) - 3.5, sqZ = s => (s >> 3) - 3.5;     // a1 은 화면 위 왼쪽 (흑 쪽에서 볼 때)
+const sqName = s => 'abcdefgh'[s & 7] + ((s >> 3) + 1);
+const nameOf = c => c === 1 ? T.black : T.white;
+
+// ── 3D 돌: ang = 0 이면 흰 면이 위, π 면 검은 면이 위
+let discs = [], parts = [], rings = [], now = 0;
+function discsFromBoard(drop) {
+  discs = [];
+  for (let s = 0; s < 64; s++) {
+    const v = E.board[s]; if (!v) continue;
+    discs.push({ sq: s, x: sqX(s), z: sqZ(s), y: 0, own: v, ang: v === 1 ? Math.PI : 0, ax: 1, az: 0, s: 1, drop: drop ? { t0: now + 0.3 + discs.length * 0.18, h: 3.5 } : null, flip: null });
+  }
+}
+const discAt = s => discs.find(d => d.sq === s);
+const busy = () => discs.some(d => (d.drop && now < d.drop.t0 + 0.6) || d.flip);
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+function bounce(t) { const n = 7.5625, d = 2.75; if (t < 1 / d) return n * t * t; if (t < 2 / d) return n * (t -= 1.5 / d) * t + .75; if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + .9375; return n * (t -= 2.625 / d) * t + .984375; }
+function placeAnim(sq, who, flipped) {
+  const d = { sq, x: sqX(sq), z: sqZ(sq), y: 0, own: who, ang: who === 1 ? Math.PI : 0, ax: 1, az: 0, s: 1, drop: { t0: now, h: 2.2 }, flip: null };
+  discs.push(d);
+  rings.push({ x: d.x, z: d.z, t0: now + 0.35 });
+  // 놓은 자리에서 가까운 돌부터 물결처럼 뒤집는다. 축은 놓은 자리 쪽을 향하게
+  for (const q of flipped) {
+    const t = discAt(q); if (!t) continue;
+    const dx = t.x - d.x, dz = t.z - d.z, dist = Math.hypot(dx, dz);
+    t.ax = -dz; t.az = dx; t.flip = { t0: now + 0.38 + dist * 0.09, dur: 0.5, from: t.ang, to: t.ang + Math.PI, own: who };
+  }
+}
+function burst(x, y, z, n, cols, speed = 2.5, size = 0.12, life = 1) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, s = Math.sqrt(1 - u * u), v = speed * (0.3 + Math.random());
+    parts.push({ p: [x, y, z], v: [s * Math.cos(a) * v, Math.abs(u) * v + 1, s * Math.sin(a) * v], life: life * (0.5 + Math.random() * 0.7), max: life * 1.2, c: cols[(Math.random() * cols.length) | 0], s: size * (0.5 + Math.random()), g: 1 });
+  }
+}
+const dust = Array.from({ length: 110 }, () => ({ p: [(Math.random() - .5) * 26, Math.random() * 8 - 1, (Math.random() - .5) * 26], v: [(Math.random() - .5) * .1, (Math.random() - .3) * .06, (Math.random() - .5) * .1], s: .2 + Math.random() * .55, a: .03 + Math.random() * .07, w: Math.random() < .5 }));
+
+// ── 소리
+let AC = null;
+function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { AC = null; } } if (AC && AC.state === 'suspended') AC.resume(); }
+function tone(f, d, v, type = 'sine', at = 0) {
+  if (!AC || !SET.sound) return; const t = AC.currentTime + at, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+}
+function clack(v = 0.5, pitch = 1, at = 0) {
+  if (!AC || !SET.sound) return;
+  const t = AC.currentTime + at, n = Math.floor(AC.sampleRate * 0.05), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 5);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  f.type = 'bandpass'; f.frequency.value = 2600 * pitch; f.Q.value = 2; g.gain.value = v;
+  s.buffer = buf; s.connect(f).connect(g).connect(AC.destination); s.start(t);
+  tone(420 * pitch, 0.06, v * 0.3, 'triangle', at);
+}
+
+// ── 두기
+let toastT = 0;
+function toast(msg) { const el = $('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2200); }
+function humanTurn() { return GS.started && !GS.over && !GS.review && (SET.opp === 'pvp' || E.side === GS.human); }
+function doMove(sq) {
+  if (!E.legal().includes(sq)) return;
+  const who = E.side, f = E.make(sq);
+  GS.moves.push({ sq, side: who, n: f.length });
+  GS.hint = -1;
+  placeAnim(sq, who, f);
+  clack(0.6, 1, 0.3);
+  afterMove();
+}
+function afterMove() {
+  ui();
+  // 다음 사람이 둘 곳이 없으면 넘긴다. 둘 다 없으면 끝
+  if (E.over()) { GS.over = true; setTimeout(gameOver, 1400); ui(); return; }
+  if (!E.legal().length) {
+    const who = E.side; E.make(-1); GS.moves.push({ sq: -1, side: who, n: 0 });
+    setTimeout(() => toast(T.pass(nameOf(who))), 900);
+  }
+  ui();
+  if (SET.opp === 'ai' && E.side !== GS.human) askAI();
+}
+let worker = null;
+try {
+  const src = `const ENGINE = ${ENGINE.toString()}; const E = ENGINE();
+    onmessage = e => { const d = e.data; E.reset(); for (const m of d.moves) E.make(m); postMessage(Object.assign(E.think(d), { id: d.id, kind: d.kind })); };`;
+  worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+  worker.onmessage = e => onAI(e.data);
+  worker.onerror = () => { worker = null; };
+} catch { worker = null; }
+const AE = ENGINE();
+function think(req) {
+  if (worker) { worker.postMessage(req); return; }
+  setTimeout(() => { AE.reset(); for (const m of req.moves) AE.make(m); onAI(Object.assign(AE.think(req), { id: req.id, kind: req.kind })); }, 30);
+}
+let aiAsked = 0;
+function askAI() { GS.thinking = true; aiAsked = performance.now(); const id = ++aiId; think({ id, kind: 'move', moves: GS.moves.map(x => x.sq), level: SET.level }); ui(); }
+function askHint() { if (!humanTurn() || GS.thinking) return; const id = ++aiId; GS.thinking = true; ui(); think({ id, kind: 'hint', moves: GS.moves.map(x => x.sq), level: 2, time: 900 }); }
+function onAI(r) {
+  if (r.id !== aiId) return;
+  if (r.kind === 'hint') { GS.thinking = false; GS.hint = r.move; ui(); return; }
+  if (GS.over) { GS.thinking = false; ui(); return; }
+  const wait = Math.max(0, 550 - (performance.now() - aiAsked));
+  const go = () => { if (r.id !== aiId) return; if (busy()) { setTimeout(go, 60); return; } GS.thinking = false; doMove(r.move); };
+  setTimeout(go, wait);
+}
+function undo() {
+  if (!GS.started || !GS.moves.length) return;
+  aiId++; GS.thinking = false; GS.over = false; GS.review = false; GS.hint = -1; $('mOver').hidden = true;
+  // 사람이 둔 마지막 수 앞까지 (넘김은 함께 무른다)
+  do { E.unmake(); GS.moves.pop(); } while (GS.moves.length && (GS.moves[GS.moves.length - 1].sq < 0 || (SET.opp === 'ai' && E.side !== GS.human)));
+  discsFromBoard(false);
+  for (const d of discs) burst(d.x, .2, d.z, 2, [[.6, .5, 1]], .6, .1, .6);
+  clack(.3); ui();
+  if (SET.opp === 'ai' && E.side !== GS.human) askAI();
+}
+function newGame() {
+  aiId++; E.reset();
+  GS.human = SET.opp === 'pvp' ? 1 : SET.color === 'r' ? (Math.random() < .5 ? 1 : 2) : SET.color === 'w' ? 2 : 1;
+  Object.assign(GS, { started: true, moves: [], over: false, thinking: false, hint: -1, review: false });
+  cam.orbit = false; cam.azT = GS.human === 2 ? Math.PI : 0; cam.elT = 0.82; cam.distT = BASE_DIST;
+  cam.az = ((cam.az % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+  if (Math.abs(cam.az - cam.azT) > Math.PI) cam.az += cam.az < cam.azT ? Math.PI * 2 : -Math.PI * 2;
+  discsFromBoard(true);
+  $('mStart').hidden = true; $('mOver').hidden = true;
+  ui();
+  if (SET.opp === 'ai' && GS.human === 2) setTimeout(askAI, 1500);
+}
+function gameOver() {
+  const [b, w] = E.count(), win = b > w ? 1 : w > b ? 2 : 0;
+  $('oTitle').textContent = win ? T.win(nameOf(win)) : T.draw;
+  $('oScore').innerHTML = `<span><i class="dot b"></i>${b}</span><span><i class="dot w"></i>${w}</span>`;
+  $('oText').textContent = SET.opp === 'ai' && win ? (win === GS.human ? T.youWin : T.youLose) : T.over;
+  $('mOver').hidden = false;
+  if (win) {
+    const th = THEMES[SET.theme], cols = [[1, .85, .4], th.acc, [.4, .8, 1], [1, .5, .8]];
+    discs.filter(d => d.own === win).forEach((d, i) => setTimeout(() => { burst(d.x, .4, d.z, 10, cols, 2.2, .1, 1.3); d.y = 0.25; }, i * 22));
+    tone(523, .5, .12, 'triangle'); tone(659, .5, .1, 'triangle', .12); tone(784, .8, .1, 'triangle', .24); tone(1047, 1, .08, 'triangle', .38);
+  } else tone(440, .6, .1, 'sine');
+  ui();
+}
+
+// ── 고르기
+function rayAt(mx, my) {
+  const v = viewOf(), t = Math.tan(FOV / 2), nx = (mx / VW) * 2 - 1 - SHIFT, ny = 1 - (my / VH) * 2, a = VW / VH;
+  return { o: v.eye, d: vnorm([0, 1, 2].map(k => v.F[k] + v.R[k] * nx * t * a + v.U[k] * ny * t)) };
+}
+function pickSquare(mx, my) {
+  const { o, d } = rayAt(mx, my); if (d[1] >= 0) return -1;
+  const t = (DH - o[1]) / d[1], x = o[0] + d[0] * t, z = o[2] + d[2] * t;
+  if (Math.abs(x) >= 4 || Math.abs(z) >= 4) return -1;
+  return Math.floor(z + 4) * 8 + Math.floor(x + 4);
+}
+function clickSquare(sq) {
+  if (!humanTurn() || GS.thinking || busy() || sq < 0) return;
+  if (E.legal().includes(sq)) doMove(sq); else clack(.15, .6);
+}
+const ptr = new Map(); let pinch = 0;
+cv.addEventListener('pointerdown', e => { audio(); cv.setPointerCapture(e.pointerId); ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false }); });
+cv.addEventListener('pointermove', e => {
+  const p = ptr.get(e.pointerId);
+  if (!p) { const sq = pickSquare(e.clientX, e.clientY); GS.hover = sq; cv.classList.toggle('pt', humanTurn() && !GS.thinking && sq >= 0 && E.legal().includes(sq)); return; }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.moved = true;
+  if (ptr.size === 2) { const [a, b] = [...ptr.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch) cam.distT = Math.min(22, Math.max(7, cam.distT * pinch / d)); pinch = d; return; }
+  if (p.moved) { cv.classList.add('grab'); cam.orbit = false; cam.azT -= dx * 0.008; cam.elT = Math.max(0.3, Math.min(1.5, cam.elT + dy * 0.006)); }
+});
+const up = e => { const p = ptr.get(e.pointerId); ptr.delete(e.pointerId); pinch = 0; cv.classList.remove('grab'); if (p && !p.moved && ptr.size === 0) clickSquare(pickSquare(e.clientX, e.clientY)); };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', e => { ptr.delete(e.pointerId); pinch = 0; });
+cv.addEventListener('pointerleave', () => { GS.hover = -1; });
+cv.addEventListener('wheel', e => { e.preventDefault(); cam.distT = Math.min(22, Math.max(7, cam.distT * Math.exp(e.deltaY * 0.0012))); }, { passive: false });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+// ───────────────────────── 그리기 ─────────────────────────
+function render() {
+  const th = THEMES[SET.theme], v = viewOf(), dm = d => discM(d.x, d.y + DH, d.z, d.ax, d.az, d.ang, d.s);
+  const shown = discs.filter(d => d.s > 0.01);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFb); gl.viewport(0, 0, SM, SM); gl.clear(gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST); gl.disable(gl.BLEND); gl.useProgram(PR.d.p); gl.uniformMatrix4fv(PR.d.u.uLVP, false, LVP);
+  gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2, 4); gl.bindVertexArray(DISC.vao);
+  for (const d of shown) { gl.uniformMatrix4fv(PR.d.u.uM, false, dm(d)); gl.drawElements(gl.TRIANGLES, DISC.count, gl.UNSIGNED_INT, 0); }
+  gl.disable(gl.POLYGON_OFFSET_FILL); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.disable(gl.DEPTH_TEST); gl.useProgram(PR.b.p); gl.uniform3fv(PR.b.u.uC0, th.bg[0]); gl.uniform3fv(PR.b.u.uC1, th.bg[1]); gl.uniform3fv(PR.b.u.uAcc, th.acc);
+  const mx = Math.max(VW, VH); gl.uniform2f(PR.b.u.uAsp, VW / mx, VH / mx); gl.bindVertexArray(null); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+  const u = PR.m.u; gl.useProgram(PR.m.p);
+  gl.uniformMatrix4fv(u.uVP, false, v.VP); gl.uniformMatrix4fv(u.uLVP, false, LVP); gl.uniform3fv(u.uEye, v.eye); gl.uniform3fv(u.uLight, LDIR);
+  gl.uniform3fv(u.uAcc, th.acc); gl.uniform3fv(u.uSqL, th.sqL); gl.uniform3fv(u.uSqD, th.sqD); gl.uniform3fv(u.uFrame, th.frame);
+  gl.uniform1f(u.uTheme, th.i); gl.uniform1f(u.uTime, now);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, shadowTex); gl.uniform1i(u.uShadow, 0);
+  const dk = th.disc;
+  gl.uniform3fv(u.uColor, dk.white); gl.uniform3fv(u.uColor2, dk.black); gl.uniform3fv(u.uRim, dk.rimW); gl.uniform3fv(u.uRim2, dk.rimB);
+  // 뒤집힐 돌 미리 보기 (마우스를 올린 자리)
+  const prev = new Set();
+  if (humanTurn() && !GS.thinking && !busy() && GS.hover >= 0 && E.legal().includes(GS.hover)) { const f = []; E.flips(GS.hover, E.side, f); f.forEach(q => prev.add(q)); }
+  const drawDiscs = mirror => {
+    gl.uniform1f(u.uMirror, mirror ? 1 : 0); gl.uniform1f(u.uMode, 4); gl.uniform1f(u.uAlpha, 1); gl.uniform3fv(u.uEmis, [0, 0, 0]);
+    gl.bindVertexArray(DISC.vao);
+    for (const d of shown) {
+      gl.uniform1f(u.uGlow, prev.has(d.sq) ? 0.55 + 0.35 * Math.sin(now * 7) : 0);
+      gl.uniformMatrix4fv(u.uM, false, dm(d)); gl.drawElements(gl.TRIANGLES, DISC.count, gl.UNSIGNED_INT, 0);
+    }
+  };
+  if (th.alpha < 1) drawDiscs(true);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.uniform1f(u.uMirror, 0); gl.uniform1f(u.uMode, 1); gl.uniform1f(u.uAlpha, th.alpha); gl.uniform1f(u.uGlow, 0); gl.uniform3fv(u.uEmis, [0, 0, 0]); gl.uniform3fv(u.uRim, [0, 0, 0]);
+  gl.uniform3fv(u.uColor, [1, 1, 1]); gl.uniform1f(u.uSpec, th.i === 1 ? .35 : .8); gl.uniform1f(u.uShin, th.i === 1 ? 40 : 90); gl.uniform1f(u.uRefl, .25);
+  gl.uniformMatrix4fv(u.uM, false, discM(0, 0, 0, 1, 0, 0, 1)); gl.bindVertexArray(BMESH.board.vao); gl.drawElements(gl.TRIANGLES, BMESH.board.count, gl.UNSIGNED_INT, 0);
+  gl.disable(gl.BLEND); gl.uniform1f(u.uAlpha, 1);
+  gl.uniform1f(u.uMode, 2); gl.uniform1f(u.uSpec, .6); gl.uniform1f(u.uShin, 60); gl.uniform1f(u.uRefl, .35); gl.bindVertexArray(BMESH.frame.vao); gl.drawElements(gl.TRIANGLES, BMESH.frame.count, gl.UNSIGNED_INT, 0);
+  gl.uniform1f(u.uMode, 3); gl.bindVertexArray(BMESH.ground.vao); gl.drawElements(gl.TRIANGLES, BMESH.ground.count, gl.UNSIGNED_INT, 0);
+  // 칸 표시
+  gl.useProgram(PR.f.p); const f = PR.f.u; gl.uniformMatrix4fv(f.uVP, false, v.VP);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.bindVertexArray(fxVao);
+  const mark = (x, z, kind, col, a, add, size = 1, t = 0) => { gl.uniform3f(f.uC, x, 0.008, z); gl.uniform1f(f.uS, size); gl.uniform1f(f.uKind, kind); gl.uniform3fv(f.uCol, col); gl.uniform1f(f.uA, a); gl.uniform1f(f.uAdd, add ? 1 : 0); gl.uniform1f(f.uTime, t); gl.drawArrays(gl.TRIANGLES, 0, 6); };
+  const lastMv = [...GS.moves].reverse().find(m => m.sq >= 0);
+  if (lastMv) mark(sqX(lastMv.sq), sqZ(lastMv.sq), 2, [1, .78, .35], .22, false);
+  if (humanTurn() && !GS.thinking && !busy()) {
+    for (const q of E.legal()) mark(sqX(q), sqZ(q), 0, E.side === 1 ? [.55, .45, 1] : [.75, .9, 1], .75 + .2 * Math.sin(now * 4), true);
+    if (GS.hover >= 0 && E.legal().includes(GS.hover)) mark(sqX(GS.hover), sqZ(GS.hover), 2, th.acc, .35, false);
+  }
+  if (GS.hint >= 0) { const a = .5 + .4 * Math.sin(now * 5); mark(sqX(GS.hint), sqZ(GS.hint), 2, [.35, 1, .6], a * .8, false); }
+  for (const r of rings) { const t = (now - r.t0) / 0.7; if (t > 0 && t < 1) mark(r.x, r.z, 1, th.acc, 1.4, true, 4, t); }
+  gl.depthMask(true); gl.disable(gl.BLEND);
+  gl.useProgram(PR.m.p); drawDiscs(false);
+  // 미리 보기 돌 (반투명)
+  if (humanTurn() && !GS.thinking && !busy() && GS.hover >= 0 && E.legal().includes(GS.hover)) {
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(u.uAlpha, 0.4); gl.uniform1f(u.uGlow, 0.3);
+    gl.uniformMatrix4fv(u.uM, false, discM(sqX(GS.hover), DH + 0.02, sqZ(GS.hover), 1, 0, E.side === 1 ? Math.PI : 0, 1));
+    gl.bindVertexArray(DISC.vao); gl.drawElements(gl.TRIANGLES, DISC.count, gl.UNSIGNED_INT, 0); gl.disable(gl.BLEND);
+  }
+  // 빛 알갱이
+  const arr = new Float32Array((parts.length + dust.length) * 8); let k = 0;
+  const put = (p, s, c, a) => { arr[k++] = p[0]; arr[k++] = p[1]; arr[k++] = p[2]; arr[k++] = s; arr[k++] = c[0]; arr[k++] = c[1]; arr[k++] = c[2]; arr[k++] = a; };
+  for (const d of dust) put(d.p, d.s, d.w ? [1, 1, 1] : th.acc, d.a);
+  for (const p of parts) put(p.p, p.s, p.c, Math.min(1, p.life / p.max * 1.6));
+  gl.useProgram(PR.p.p); gl.uniformMatrix4fv(PR.p.u.uVP, false, v.VP); gl.uniform1f(PR.p.u.uH, cv.height);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+  gl.bindVertexArray(ptVao); gl.bindBuffer(gl.ARRAY_BUFFER, ptBuf); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW); gl.drawArrays(gl.POINTS, 0, k / 8);
+  gl.depthMask(true); gl.disable(gl.BLEND); gl.bindVertexArray(null);
+  // 테두리 글자
+  octx.clearRect(0, 0, VW, VH);
+  const tc = SET.theme === 'neon' ? 'rgba(170,150,255,0.85)' : 'rgba(232,205,140,0.85)';
+  for (let i = 0; i < 8; i++) for (const [p, txt] of [[[i - 3.5, .06, -4.36], 'abcdefgh'[i]], [[i - 3.5, .06, 4.36], 'abcdefgh'[i]], [[-4.36, .06, i - 3.5], String(i + 1)], [[4.36, .06, i - 3.5], String(i + 1)]]) {
+    const q = project(v.VP, p); if (!q) continue;
+    octx.font = `600 ${Math.max(8, Math.min(19, 320 / q[2]))}px Georgia, 'Times New Roman', serif`; octx.textAlign = 'center'; octx.textBaseline = 'middle'; octx.fillStyle = tc; octx.fillText(txt, q[0], q[1]);
+  }
+}
+
+// ───────────────────────── 갱신 ─────────────────────────
+function update(dt) {
+  now += dt;
+  if (cam.orbit) cam.azT += dt * 0.12;
+  const k = 1 - Math.pow(0.0015, dt);
+  cam.az += (cam.azT - cam.az) * k; cam.el += (cam.elT - cam.el) * k; cam.dist += (cam.distT - cam.dist) * k;
+  const th = THEMES[SET.theme];
+  for (const d of discs) {
+    if (d.drop) {
+      const t = (now - d.drop.t0) / 0.6;
+      if (t < 0) { d.s = 0; d.y = d.drop.h; }
+      else if (t < 1) { d.s = 1; d.y = d.drop.h * (1 - bounce(t)); }
+      else { d.y = 0; d.drop = null; burst(d.x, .08, d.z, 14, [[1, .95, .8], th.acc], 1.2, .08, .6); }
+    }
+    if (d.flip) {
+      const f = d.flip, t = (now - f.t0) / f.dur;
+      if (t >= 0) {
+        const e = ease(Math.min(1, t)); d.ang = f.from + (f.to - f.from) * e; d.y = Math.sin(Math.PI * Math.min(1, t)) * 0.55;
+        if (!f.sounded) { f.sounded = true; clack(0.25, 1.25 + Math.random() * 0.2); }
+        if (t >= 1) {
+          d.ang = f.own === 1 ? Math.PI : 0; d.y = 0; d.own = f.own; d.flip = null;
+          const c = f.own === 1 ? [.55, .45, 1] : [1, 1, .9];
+          burst(d.x, .12, d.z, 12, [c, th.acc], 1.4, .08, .7);
+        }
+      }
+    }
+  }
+  rings = rings.filter(r => now - r.t0 < 0.8);
+  for (const p of parts) { p.v[1] -= 3.2 * dt * p.g; p.p[0] += p.v[0] * dt; p.p[1] += p.v[1] * dt; p.p[2] += p.v[2] * dt; if (p.p[1] < 0.02 && p.v[1] < 0) { p.p[1] = 0.02; p.v[1] *= -0.35; p.v[0] *= 0.7; p.v[2] *= 0.7; } p.life -= dt; }
+  parts = parts.filter(p => p.life > 0);
+  if (GS.over) for (const d of discs) if (d.y > 0) d.y *= 0.96;
+  for (const d of dust) { for (let i = 0; i < 3; i++) d.p[i] += d.v[i] * dt; if (d.p[1] > 7) d.p[1] = -1; if (Math.abs(d.p[0]) > 13) d.v[0] *= -1; if (Math.abs(d.p[2]) > 13) d.v[2] *= -1; }
+}
+
+// ───────────────────────── 화면 글자 ─────────────────────────
+function ui() {
+  const [b, w] = E.count();
+  $('status').textContent = !GS.started ? '' : GS.over ? T.over : GS.thinking && SET.opp === 'ai' && E.side !== GS.human ? T.cpuTurn : SET.opp === 'ai' ? (E.side === GS.human ? T.yourTurn : T.cpuTurn) : T.turn(nameOf(E.side));
+  for (const [id, c, n] of [['scB', 1, b], ['scW', 2, w]]) {
+    const el = $(id), who = SET.opp === 'ai' ? (c === GS.human ? T.you : T.cpu) : nameOf(c);
+    el.className = 'sc' + (GS.started && !GS.over && E.side === c ? ' turn' : '');
+    el.innerHTML = `<div class="who"><span class="dot ${c === 1 ? 'b' : 'w'}"></span>${who}${SET.opp === 'ai' && c !== GS.human ? ' · ' + T.levels[SET.level] : ''}</div><div class="n">${n}</div><div class="think">${GS.thinking && SET.opp === 'ai' && c !== GS.human ? T.thinking : ''}</div>`;
+  }
+  $('rb').style.width = (b / Math.max(1, b + w) * 100) + '%'; $('rw').style.width = (w / Math.max(1, b + w) * 100) + '%';
+  const mv = $('moves');
+  if (!GS.moves.length) mv.innerHTML = `<div class="empty">${T.noMoves}</div>`;
+  else { mv.innerHTML = GS.moves.map((m, i) => `<div class="mv ${i === GS.moves.length - 1 ? 'last' : ''} ${m.sq < 0 ? 'ps' : ''}"><span class="dot ${m.side === 1 ? 'b' : 'w'}"></span>${m.sq < 0 ? T.passMark : sqName(m.sq)}</div>`).join(''); mv.scrollTop = mv.scrollHeight; }
+  $('bUndo').disabled = !GS.started || !GS.moves.length;
+  $('bHint').disabled = !humanTurn() || GS.thinking;
+}
+function seg(el, opts, cur, on) {
+  el.innerHTML = opts.map(([v, l]) => `<button data-v="${v}" class="${String(v) === String(cur) ? 'on' : ''}">${l}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => on(b.dataset.v));
+}
+function settingsUI() {
+  const th = Object.keys(THEMES).map(k => [k, T.themes[k]]);
+  seg($('segOpp'), Object.entries(T.opps), SET.opp, v => { SET.opp = v; saveSet(); settingsUI(); });
+  seg($('segLevel'), T.levels.map((l, i) => [i, l]), SET.level, v => { SET.level = +v; saveSet(); settingsUI(); });
+  seg($('segColor'), Object.entries(T.colors), SET.color, v => { SET.color = v; saveSet(); settingsUI(); });
+  seg($('segTheme2'), th, SET.theme, v => { SET.theme = v; saveSet(); settingsUI(); });
+  seg($('segTheme'), th, SET.theme, v => { SET.theme = v; saveSet(); settingsUI(); });
+  seg($('segSound'), [[1, T.on], [0, T.off]], SET.sound ? 1 : 0, v => { SET.sound = v === '1'; saveSet(); settingsUI(); });
+  for (const id of ['segLevel', 'lLevel', 'segColor', 'lColor']) $(id).style.opacity = SET.opp === 'pvp' ? .35 : 1;
+}
+
+// ───────────────────────── 시작 ─────────────────────────
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1); VW = window.innerWidth; VH = window.innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR); ov.width = cv.width; ov.height = cv.height; octx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const wide = VW > 860; SHIFT = wide ? -(284 / VW) : 0;
+  BASE_DIST = Math.min(22, 14.4 * Math.max(1, 1.25 * (VH / Math.max(1, wide ? VW - 330 : VW))));
+  cam.distT = cam.dist = BASE_DIST;
+}
+function init() {
+  try { initGL(); } catch (e) { $('nogl').hidden = false; $('nogl').textContent = 'WebGL2 를 쓸 수 없어 3D 오델로를 그릴 수 없습니다.'; return; }
+  $('tTitle').textContent = T.title; $('sTitle').textContent = T.title; $('bStart').textContent = T.start; $('bAgain').textContent = T.again; $('bReview').textContent = T.review;
+  $('lOpp').textContent = T.opp; $('lLevel').textContent = T.level; $('lColor').textContent = T.color; $('lTheme').textContent = T.theme; $('lTheme2').textContent = T.theme; $('lSound').textContent = T.sound;
+  [['bNew', T.newg], ['bUndo', T.undo], ['bHint', T.hint], ['bFlip', T.flip]].forEach(([id, l]) => $(id).querySelector('span').textContent = l);
+  $('bStart').onclick = () => { audio(); newGame(); };
+  $('bAgain').onclick = () => { $('mOver').hidden = true; $('mStart').hidden = false; settingsUI(); };
+  $('bReview').onclick = () => { $('mOver').hidden = true; GS.review = true; ui(); };
+  $('bNew').onclick = () => { aiId++; GS.thinking = false; $('mStart').hidden = false; settingsUI(); };
+  $('bUndo').onclick = undo; $('bHint').onclick = askHint;
+  $('bFlip').onclick = () => { cam.orbit = false; cam.azT += Math.PI; };
+  $('menu').onclick = () => $('side').classList.toggle('open');
+  window.addEventListener('resize', resize); resize();
+  settingsUI(); discsFromBoard(false); ui();
+  let last = performance.now();
+  const loop = t => { const dt = Math.min(0.05, (t - last) / 1000); last = t; update(dt); render(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+(function boot() { if (window.innerWidth < 10 || window.innerHeight < 10) { requestAnimationFrame(boot); return; } init(); })();
+window.__o = { E, GS, SET, cam, newGame, doMove, clickSquare, pickSquare, project, viewOf, sqX, sqZ, busy, undo, ENGINE, get discs() { return discs; },
+  sync: () => { const a = []; for (let s = 0; s < 64; s++) { const v = E.board[s], d = discs.filter(x => x.sq === s); if ((v ? 1 : 0) !== d.length || (v && !d[0].flip && d[0].own !== v)) a.push(sqName(s)); } return a; } };
+</script>
+</body>
+</html>

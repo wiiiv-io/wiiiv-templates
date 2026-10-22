@@ -33,6 +33,7 @@
     { "id": "dday", "label": { "ko": "D-Day 카운터", "en": "D-Day Counter" }, "keywords": ["디데이", "d-day", "dday", "D-Day", "디데이 카운터", "날짜 계산", "날짜계산", "남은 날", "남은날"], "category": "tool" },
     { "id": "orion-raider", "label": { "ko": "오리온 레이더", "en": "Orion Raider" }, "keywords": ["오리온 레이더", "오리온레이더", "orion raider", "스타파이터", "우주 전투", "우주전투", "우주 전투기", "우주전투기", "우주 비행 슈팅", "엑스윙", "x-wing", "xwing", "윙커맨더", "wing commander", "starfighter", "space combat", "space shooter"], "category": "game" },
     { "id": "graph3d", "label": { "ko": "3D 함수 그래프", "en": "3D Function Grapher" }, "keywords": ["3D 함수 그래프", "3d 그래프", "3D 그래프", "함수 그래프", "3차원 그래프", "곡면 그래프", "수학 그래프", "그래퍼", "grapher", "3d graph", "function plot", "surface plot", "3d plot"], "category": "visualization" },
-    { "id": "chess3d", "label": { "ko": "3D 체스", "en": "3D Chess" }, "keywords": ["체스", "3D 체스", "3d 체스", "서양 장기", "chess", "3d chess"], "category": "game" }
+    { "id": "chess3d", "label": { "ko": "3D 체스", "en": "3D Chess" }, "keywords": ["체스", "3D 체스", "3d 체스", "서양 장기", "chess", "3d chess"], "category": "game" },
+    { "id": "othello3d", "label": { "ko": "3D 오델로", "en": "3D Othello" }, "keywords": ["오델로", "3D 오델로", "리버시", "othello", "reversi", "3d othello"], "category": "game" }
   ]
 }
