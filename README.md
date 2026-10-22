@@ -41,6 +41,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | drum-machine | music |
 | mandelbrot | visualization |
 | sorting-viz | visualization |
+| graph3d | visualization |
 | physics | visualization |
 | conway | visualization |
 
