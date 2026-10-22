@@ -33,6 +33,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | memory | game |
 | freecell | game |
 | calculator | tool |
+| scientific-calculator | tool |
 | pomodoro | tool |
 | paint | tool |
 | typing-practice | tool |
