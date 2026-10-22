@@ -24,29 +24,21 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | 2048 | game |
 | minesweeper | game |
 | breakout | game |
-| flappy-bird | game |
 | gomoku | game |
 | galaga | game |
 | orion-raider | game |
 | chess3d | game |
 | othello3d | game |
-| memory | game |
 | freecell | game |
+| pacman | game |
 | calculator | tool |
 | scientific-calculator | tool |
-| pomodoro | tool |
 | paint | tool |
 | typing-practice | tool |
-| typing-test | tool |
-| analog-clock | tool |
-| color-palette | tool |
 | piano | music |
 | drum-machine | music |
 | mandelbrot | visualization |
-| sorting-viz | visualization |
 | graph3d | visualization |
-| physics | visualization |
-| conway | visualization |
 
 ---
 
