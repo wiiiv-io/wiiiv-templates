@@ -10,7 +10,7 @@
     { "id": "gomoku", "label": { "ko": "오목", "en": "Gomoku" }, "keywords": ["오목", "gomoku", "five in a row"], "category": "game" },
     { "id": "hive-strike", "label": { "ko": "하이브 스트라이크", "en": "Hive Strike" }, "keywords": ["하이브 스트라이크", "hive strike", "갤러그", "galaga", "슈팅", "비행기 게임", "shooter"], "category": "game" },
     { "id": "pacman", "label": { "ko": "팩맨", "en": "PAC-MAN" }, "keywords": ["팩맨", "패크맨", "pacman", "pac-man", "pac man", "미로 게임", "유령 게임"], "category": "game" },
-    { "id": "freecell", "label": { "ko": "프리셀", "en": "FreeCell" }, "keywords": ["프리셀", "프리 셀", "프리쉘", "프리 쉘", "프레셀", "프레 셀", "프레쉘", "프리셸", "후리셀", "후리쉘", "freecell", "free cell", "free-cell", "freecel", "프리셀 게임", "freecell solitaire"], "category": "game" },
+    { "id": "freecell", "label": { "ko": "프리셀", "en": "FreeCell" }, "keywords": ["프리셀", "프리 셀", "프리쉘", "프리 쉘", "프레셀", "프레 셀", "프레쉘", "프리셸", "후리셀", "후리쉘", "freecell", "free cell", "free-cell", "freecel", "프리셀 게임", "freecell solitaire", "카드 게임", "솔리테어", "solitaire"], "category": "game" },
     { "id": "calculator", "label": { "ko": "계산기", "en": "Calculator" }, "keywords": ["계산기", "일반 계산기", "calculator"], "category": "tool" },
     { "id": "scientific-calculator", "label": { "ko": "공학용 계산기", "en": "Scientific Calculator" }, "keywords": ["공학용 계산기", "공학 계산기", "scientific calculator"], "category": "tool" },
     { "id": "paint", "label": { "ko": "그림판", "en": "Paint" }, "keywords": ["그림판", "paint", "drawing"], "category": "tool" },

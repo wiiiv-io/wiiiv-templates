@@ -2,491 +2,895 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>프리셀</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title id="pageTitle">프리셀</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; }
-body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
-#controls { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; flex-wrap: wrap; justify-content: center; }
-.btn { background: #333; border: 1px solid #555; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-.btn:hover { background: #444; }
-.btn:disabled { opacity: 0.4; cursor: default; }
-.btn.primary { background: #7c5cfc; border-color: #7c5cfc; }
-.btn.primary:hover { background: #6a4ce0; }
-#seedInput { width: 84px; background: #1a1a2e; border: 1px solid #555; color: #fff; padding: 6px 8px; border-radius: 6px; font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
-#ui { display: flex; gap: 20px; margin-bottom: 8px; font-size: 14px; }
-.stat { display: flex; gap: 6px; align-items: center; }
-.label { color: #888; }
-.value { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
-#board { position: relative; flex: 1; width: 100%; max-width: 900px; padding: 0 8px 8px; overflow-y: auto; overflow-x: hidden; }
-#top { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--gap); margin-bottom: calc(var(--gap) * 2); }
-#tableau { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--gap); }
-.slot { position: relative; height: var(--ch); border-radius: 8px; border: 2px dashed rgba(255,255,255,0.18); background: rgba(255,255,255,0.03); }
-.slot.foundation::after { content: attr(data-suit); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.4); color: rgba(255,255,255,0.15); }
-.slot.freecell::after { content: '✦'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.28); color: rgba(124,92,252,0.35); }
-.col { position: relative; min-height: var(--ch); }
-.slot.target, .col.target { border-color: #7c5cfc; box-shadow: 0 0 10px rgba(124,92,252,0.45); }
-.card { position: absolute; left: 0; top: 0; width: 100%; height: var(--ch); border-radius: 8px; background: #f4f1ea; color: #111; border: 1px solid #b9b3a6; box-shadow: 0 2px 4px rgba(0,0,0,0.35); cursor: grab; transition: transform 0.18s, box-shadow 0.18s; overflow: hidden; }
-.card.red { color: #c8202e; }
-.card .corner { position: absolute; left: 6px; top: 3px; font-size: calc(var(--ch) * 0.19); font-weight: 700; line-height: 1.1; white-space: nowrap; }
-.card .corner .s { font-size: calc(var(--ch) * 0.16); margin-left: 2px; }
-.card .center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--ch) * 0.46); padding-top: calc(var(--ch) * 0.12); }
-.card.selected { box-shadow: 0 0 0 3px #7c5cfc, 0 6px 14px rgba(0,0,0,0.5); transform: translateY(-4px); z-index: 50; }
-.card.dragging { transition: none; cursor: grabbing; z-index: 100; pointer-events: none; animation: none; }
-.card.hint { animation: pulse 0.9s ease-in-out 2; }
-.card.shake { animation: shake 0.35s ease-in-out 1; }
-@keyframes shake { 0%,100% { translate: 0 0; } 25% { translate: -6px 0; } 50% { translate: 6px 0; } 75% { translate: -4px 0; } }
-@keyframes pulse { 0%,100% { box-shadow: 0 2px 4px rgba(0,0,0,0.35); } 50% { box-shadow: 0 0 0 4px #ffd700; } }
-#overlay { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,0.72); z-index: 200; text-align: center; padding: 20px; }
-#overlay.active { display: flex; }
-#overlay h2 { font-size: 28px; color: #ffd700; }
-#overlay p { font-size: 16px; color: #ccc; }
-#overlay button { background: #7c5cfc; border: none; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 14px; cursor: pointer; }
-#overlay button:hover { background: #6a4ce0; }
-#toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1e1e3e; border: 1px solid #3a3a5a; color: #ddd; padding: 8px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 150; }
-#toast.show { opacity: 1; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; overflow: hidden; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
+.ib { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: #dfe3ff; cursor: pointer; display: grid; place-items: center; flex: none; }
+.ib svg { width: 18px; height: 18px; }
+.stats { width: var(--bw); display: flex; gap: 8px; }
+.stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .05); border: 1px solid rgba(160, 170, 255, .14); border-radius: 12px; padding: 6px 10px; position: relative; }
+.stat small { display: block; font-size: 11px; letter-spacing: .03em; color: #9aa3c7; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stat .plus { position: absolute; right: 10px; top: 4px; font-weight: 900; color: #7dffb0; animation: plus .8s ease-out forwards; pointer-events: none; }
+@keyframes plus { to { transform: translateY(-26px); opacity: 0; } }
+.btn { flex: 1 1 auto; padding: 10px 12px; font: inherit; font-size: 14px; font-weight: 700; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; white-space: nowrap; }
+.btn:hover { filter: brightness(1.15); } .btn:disabled { opacity: .35; cursor: default; filter: none; }
+.btn.primary { background: linear-gradient(160deg, #ffcf5c, #e8913a); border-color: transparent; color: #2a1600; box-shadow: 0 8px 20px -8px rgba(255, 200, 90, .5); }
+.btn.wide { display: block; width: 100%; margin-top: 10px; }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; background: rgba(5, 7, 16, .6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ov[hidden] { display: none; }
+.pcard { background: linear-gradient(160deg, rgba(30, 34, 64, .9), rgba(12, 14, 30, .95)); border: 1px solid rgba(160, 170, 255, .18); border-radius: 22px; padding: 22px 22px 18px; width: min(420px, 100%); max-height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); }
+.pcard::-webkit-scrollbar { display: none; }
+.logo { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.tag { text-align: center; color: #9aa3c7; font-size: 13px; letter-spacing: .08em; margin-bottom: 16px; }
+.mbox { border: 1px solid rgba(160, 170, 255, .16); background: rgba(255, 255, 255, .04); border-radius: 16px; padding: 14px; margin-top: 10px; }
+.mbox h3 { font-size: 17px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mbox h3 small { font-size: 12px; color: #ffb35c; font-weight: 800; white-space: nowrap; }
+.mbox p { font-size: 12.5px; color: #9aa3c7; margin-top: 4px; line-height: 1.45; }
+.mbox .status { font-size: 13px; color: #c5cbea; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { padding: 6px 11px; font: inherit; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; }
+.chip.on { background: linear-gradient(160deg, #ffcf5c, #e8913a); border-color: transparent; color: #2a1600; }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+h2 { font-size: 22px; text-align: center; margin-bottom: 10px; }
+.big { text-align: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #ffd23f, #ff8a5c, #ff4f7a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { text-align: center; color: #9aa3c7; font-size: 13px; }
+.newrec { text-align: center; color: #ffd23f; font-weight: 800; letter-spacing: .1em; font-size: 13px; margin-top: 4px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.grid2 { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin-top: 14px; font-size: 14px; color: #c5cbea; font-variant-numeric: tabular-nums; }
+.grid2 b { color: #fff; text-align: right; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.row > span:first-child { white-space: nowrap; }
+.row .chips { margin-top: 0; justify-content: flex-end; }
+.sl { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.sl input { width: 100%; accent-color: #8a7cff; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); } td:last-child { text-align: right; color: #9aa3c7; font-size: 12.5px; }
+td:first-child { color: #b9a6ff; font-weight: 800; }
+h4 { font-size: 13px; color: #9aa3c7; letter-spacing: .08em; margin-top: 14px; }
+.keys { display: grid; grid-template-columns: minmax(0, 45%) 1fr; gap: 7px 14px; font-size: 13.5px; color: #c5cbea; align-items: center; }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: #fff; justify-self: start; white-space: normal; overflow-wrap: anywhere; }
+.tips { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: #9aa3c7; line-height: 1.45; }
+.tips div::before { content: '•'; color: #a05cff; margin-right: 6px; }
+.toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 12; background: rgba(20, 24, 50, .92); border: 1px solid rgba(160, 170, 255, .3); padding: 10px 18px; border-radius: 14px; font-weight: 800; animation: toast 1.8s ease forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 12%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+
+.logo { align-items: center; gap: 10px; }
+@keyframes shake { 15% { transform: translate(-6px, 3px); } 30% { transform: translate(5px, -4px); } 45% { transform: translate(-4px, -3px); } 60% { transform: translate(3px, 4px); } 80% { transform: translate(-2px, 1px); } }
+.btn.on { background: linear-gradient(160deg, #ff6a6a, #d81e3c); border-color: transparent; color: #fff; }
+
+body { background: radial-gradient(120% 90% at 50% 10%, #1d5a4a 0%, #0f3a30 55%, #082420 100%); font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK KR', system-ui, sans-serif; color: #eef6f2; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+body::before { content: ''; position: fixed; inset: 0; pointer-events: none; opacity: .5; background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1px); background-size: 4px 4px; }
+.bar { position: fixed; left: 0; right: 0; top: 0; z-index: 5; display: flex; align-items: center; gap: 6px; padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 6px; }
+.bar .ttl { font-weight: 900; font-size: 18px; white-space: nowrap; }
+.bar .ttl small { font-weight: 700; font-size: 12px; color: #a8cfc2; margin-left: 6px; }
+.bar .sp { flex: 1; }
+.bar .info { font-size: 13px; color: #cfe7de; font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; gap: 10px; }
+.bar .info b { color: #fff; }
+.ib { height: 38px; min-width: 38px; padding: 0 10px; border-radius: 11px; border: 1px solid rgba(255, 255, 255, .18); background: rgba(0, 0, 0, .22); color: #eef6f2; cursor: pointer; display: grid; place-items: center; font: inherit; font-size: 13px; font-weight: 700; flex: none; }
+.ib svg { width: 18px; height: 18px; } .ib:disabled { opacity: .35; }
+.ib.lbl { display: flex; gap: 6px; align-items: center; }
+#table { position: fixed; inset: 0; }
+.slot { position: absolute; border-radius: var(--cr); border: 2px dashed rgba(255, 255, 255, .18); background: rgba(0, 0, 0, .12); display: grid; place-items: center; color: rgba(255, 255, 255, .22); font-size: calc(var(--cw) * .5); }
+.slot.found { border-style: solid; border-color: rgba(255, 220, 140, .25); }
+.slot.hl, .card.hl { box-shadow: 0 0 0 3px #ffd23f, 0 0 18px 4px rgba(255, 210, 63, .7) !important; }
+.card { position: absolute; left: 0; top: 0; width: var(--cw); height: var(--ch); border-radius: var(--cr); background: linear-gradient(170deg, #ffffff, #f1f3f8); box-shadow: 0 1px 0 rgba(0,0,0,.15), 0 2px 6px rgba(0, 0, 0, .3); transition: transform var(--sp) cubic-bezier(.2, .8, .3, 1); will-change: transform; cursor: pointer; overflow: hidden; }
+.card.drag { transition: none; box-shadow: 0 12px 26px rgba(0, 0, 0, .45); }
+.card .ix { position: absolute; left: calc(var(--cw) * .07); top: calc(var(--cw) * .03); line-height: 1; font-weight: 800; text-align: center; letter-spacing: -.04em; }
+.card .ix { display: flex; align-items: baseline; gap: calc(var(--cw) * .03); }
+.card .ix .r { font-size: calc(var(--cw) * .33); }
+.card .ix .s { font-size: calc(var(--cw) * .27); }
+.card .ix2 { display: none; position: absolute; right: calc(var(--cw) * .07); top: calc(var(--cw) * .06); font-size: calc(var(--cw) * .3); line-height: 1; }
+.card .mid { position: absolute; left: 0; right: 0; bottom: calc(var(--ch) * .1); text-align: center; font-size: calc(var(--cw) * .62); line-height: 1; }
+.card .face { position: absolute; inset: calc(var(--ch) * .36) calc(var(--cw) * .14) calc(var(--ch) * .07); border-radius: calc(var(--cr) * .7); display: grid; place-items: center; font-weight: 900; font-size: calc(var(--cw) * .44); }
+.card.red { color: #d0203a; } .card.blk { color: #1b1f2e; }
+.four .card.su1 { color: #1a6fd8; } .four .card.su0 { color: #178a3c; }
+.card.small .ix2, .card.small .mid .pip2 { display: none; }
+.dropok { outline: 2px solid rgba(255, 210, 63, .8); }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
+.toast { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); z-index: 12; background: rgba(10, 30, 26, .94); border: 1px solid rgba(255, 255, 255, .25); padding: 10px 18px; border-radius: 14px; font-weight: 800; animation: toast 2.2s ease forwards; pointer-events: none; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+.logo { align-items: center; gap: 8px; flex-direction: column; }
+.logo b { font-size: clamp(30px, 8.5vw, 44px); font-weight: 900; white-space: nowrap; background: linear-gradient(90deg, #ffd23f, #ff8a5c 50%, #ff4f7a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fan { position: relative; width: 150px; height: 70px; }
+.fan i { position: absolute; left: 55px; top: 4px; width: 42px; height: 60px; border-radius: 6px; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.35); font-style: normal; font-weight: 900; font-size: 20px; display: grid; place-items: center; transform-origin: 50% 120%; }
+.dealin { display: flex; gap: 8px; margin-top: 8px; } .dealin input { flex: 1; min-width: 0; padding: 9px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.25); color: #fff; font: inherit; font-size: 15px; }
+
+.pcard { background: linear-gradient(160deg, rgba(20, 60, 50, .92), rgba(6, 24, 20, .96)); border-color: rgba(255,255,255,.16); }
+.mbox { border-color: rgba(255,255,255,.14); }
+@media (max-width: 480px) { .bar .ttl small, .bar .info .lb { display: none; } .bar .ttl { font-size: 16px; } .bar .info { gap: 8px; } .ib { min-width: 34px; height: 34px; padding: 0 6px; } }
+.logo b { white-space: normal !important; text-align: center; line-height: 1.1; }
+.row > span:first-child { white-space: normal !important; }
 </style>
 </head>
-<body>
-<div id="controls">
-  <button class="btn primary" id="newBtn">새 게임</button>
-  <input id="seedInput" type="number" min="1" max="999999" placeholder="#">
-  <button class="btn" id="seedBtn">번호로 시작</button>
-  <button class="btn" id="undoBtn">되돌리기</button>
-  <button class="btn" id="hintBtn">힌트</button>
-  <button class="btn" id="autoBtn">자동 완성</button>
+<body tabindex="0">
+<div id="table"></div>
+<div class="bar">
+  <button class="ib" id="bMenu" title="Esc"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="16" height="2.4" rx="1.2"/><rect x="4" y="10.8" width="16" height="2.4" rx="1.2"/><rect x="4" y="16.6" width="16" height="2.4" rx="1.2"/></svg></button>
+  <div class="ttl" id="ttl"></div><div class="sp"></div>
+  <div class="info"><span id="iTime"></span><span id="iMoves"></span></div>
+  <button class="ib" id="bUndo" title="U"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a6 6 0 010 12h-2" transform="translate(0,-6)"/></svg></button>
+  <button class="ib" id="bHint" title="H"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-4 12.7V17a1 1 0 001 1h6a1 1 0 001-1v-2.3A7 7 0 0012 2zm-3 18h6v1a1 1 0 01-1 1h-4a1 1 0 01-1-1z"/></svg></button>
+  <button class="ib" id="bMute" title="M"></button>
 </div>
-<div id="ui">
-  <div class="stat"><span class="label" id="lGame">게임</span><span class="value" id="gameNo">-</span></div>
-  <div class="stat"><span class="label" id="lMoves">이동</span><span class="value" id="moves">0</span></div>
-  <div class="stat"><span class="label" id="lTime">시간</span><span class="value" id="timer">0:00</span></div>
-</div>
-<div id="board">
-  <div id="top"></div>
-  <div id="tableau"></div>
-</div>
-<div id="overlay">
-  <h2 id="ovTitle">🎉 축하합니다!</h2>
-  <p id="resultText"></p>
-  <button id="againBtn">다시 하기</button>
-</div>
-<div id="toast"></div>
-
+<canvas id="fx"></canvas>
+<div class="ov" id="menu"><div class="pcard">
+  <div class="logo"><div class="fan" id="fan"></div><b id="logo"></b></div><div class="tag" id="tTag"></div>
+  <div class="mbox"><h3 id="hClassic"></h3><button class="btn primary wide" id="bNewGame"></button><button class="btn wide" id="bCont" hidden></button><div class="dealin"><input id="dealIn" type="number" min="1" max="1000000" inputmode="numeric"><button class="btn" id="bDealGo" style="flex:none"></button></div></div>
+  <div class="mbox"><h3><span id="hDaily"></span><small id="dStreak"></small></h3><p id="pDaily"></p><div class="status" id="dStatus"></div><button class="btn primary wide" id="bDaily"></button></div>
+  <div class="foot"><button class="btn" id="bSettings"></button><button class="btn" id="bRecords"></button><button class="btn" id="bHelp"></button></div>
+</div></div>
+<div class="ov" id="settings" hidden><div class="pcard"><h2 id="tSettings"></h2><div id="setBody"></div><div class="foot"><button class="btn primary" id="bSetDone"></button></div></div></div>
+<div class="ov" id="records" hidden><div class="pcard"><h2 id="tRecords"></h2><div id="recBody"></div><div class="foot"><button class="btn primary" id="bRecDone"></button></div></div></div>
+<div class="ov" id="help" hidden><div class="pcard"><h2 id="tHelp"></h2><div class="keys" id="helpKeys"></div><div class="tips" id="helpTips"></div><div class="foot"><button class="btn primary" id="bHelpDone"></button></div></div></div>
+<div class="ov" id="confirm" hidden><div class="pcard"><h2 id="cfTitle"></h2><div class="foot"><button class="btn" id="bCfNo"></button><button class="btn primary" id="bCfYes"></button></div></div></div>
+<div class="ov" id="result" hidden><div class="pcard"><h2 id="resTitle"></h2><div class="big" id="resScore"></div><div class="sub" id="resSub"></div><div class="newrec" id="resNew" hidden></div><div class="grid2" id="resGrid"></div><button class="btn wide" id="bShare" hidden></button><div class="foot"><button class="btn" id="bResMenu"></button><button class="btn primary" id="bAgain"></button></div></div></div>
 <script>
-const LANG = 'ko';
-const T = {
-  ko: { title: '프리셀', newGame: '새 게임', seedStart: '번호로 시작', undo: '되돌리기', hint: '힌트', auto: '자동 완성',
-        game: '게임', moves: '이동', time: '시간', congrats: '🎉 축하합니다!', playAgain: '다시 하기',
-        result: (n, m, min, sec) => `게임 #${n} · ${m}회 이동 · ${min}분 ${sec}초`,
-        noHint: '가능한 이동이 없습니다', tooMany: (k) => `한 번에 최대 ${k}장까지만 옮길 수 있습니다`,
-        nothingAuto: '자동으로 올릴 카드가 없습니다',
-        badStack: (a, b) => `${a}은(는) ${b} 위에 놓을 수 없습니다 (색이 다르고 한 단계 낮아야 함)`,
-        cellFull: '프리셀에는 한 장만 놓을 수 있습니다', notFound: (a) => `${a}은(는) 아직 파운데이션에 올릴 수 없습니다` },
-  en: { title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
-        game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
-        result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
-        noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
-        nothingAuto: 'Nothing to send to foundations',
-        badStack: (a, b) => `${a} cannot go on ${b} (needs opposite color, one rank lower)`,
-        cellFull: 'Only one card fits in a free cell', notFound: (a) => `${a} cannot go to the foundation yet` }
-}[LANG] || {
-  title: 'FreeCell', newGame: 'New Game', seedStart: 'Start #', undo: 'Undo', hint: 'Hint', auto: 'Auto Finish',
-  game: 'Game', moves: 'Moves', time: 'Time', congrats: '🎉 Congratulations!', playAgain: 'Play Again',
-  result: (n, m, min, sec) => `Game #${n} · ${m} moves · ${min}m ${sec}s`,
-  noHint: 'No moves available', tooMany: (k) => `You can move at most ${k} cards at once`,
-  nothingAuto: 'Nothing to send to foundations',
-  badStack: (a, b) => `${a} cannot go on ${b} (needs opposite color, one rank lower)`,
-  cellFull: 'Only one card fits in a free cell', notFound: (a) => `${a} cannot go to the foundation yet`
-};
-
-// Apply i18n to static DOM
-document.title = T.title;
-document.getElementById('newBtn').textContent = T.newGame;
-document.getElementById('seedBtn').textContent = T.seedStart;
-document.getElementById('undoBtn').textContent = T.undo;
-document.getElementById('hintBtn').textContent = T.hint;
-document.getElementById('autoBtn').textContent = T.auto;
-document.getElementById('lGame').textContent = T.game;
-document.getElementById('lMoves').textContent = T.moves;
-document.getElementById('lTime').textContent = T.time;
-document.getElementById('ovTitle').textContent = T.congrats;
-document.getElementById('againBtn').textContent = T.playAgain;
-
-// ---- Constants ----
-const SUITS = ['S', 'H', 'D', 'C'];               // spades, hearts, diamonds, clubs
-const SUIT_CHAR = { S: '♠', H: '♥', D: '♦', C: '♣' };
-const RANK_CHAR = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-const isRed = s => s === 'H' || s === 'D';
-const CARD_OVERLAP = 0.30;   // fraction of card height visible per stacked card
-const MAX_SEED = 32000;
-
-// ---- State ----
-// card = { id, suit, rank }
-let cells = [null, null, null, null];        // free cells
-let found = { S: 0, H: 0, D: 0, C: 0 };      // foundation top rank per suit
-let cols = [];                               // 8 arrays of cards
-let history = [];
-let moves = 0, seed = 0, startTime = null, timerId = null, won = false;
-let selected = null;                         // { from: {type,index}, count }
-let cardEls = new Map();
-
-const topEl = document.getElementById('top');
-const tabEl = document.getElementById('tableau');
-const boardEl = document.getElementById('board');
-const movesEl = document.getElementById('moves');
-const timerEl = document.getElementById('timer');
-const gameNoEl = document.getElementById('gameNo');
-const overlay = document.getElementById('overlay');
-const toastEl = document.getElementById('toast');
-
-// ---- Deal (Microsoft FreeCell compatible numbering) ----
-function msRandom(s) {
-  let state = s;
-  return () => { state = (state * 214013 + 2531011) & 0x7fffffff; return (state >> 16) & 0x7fff; };
+// ───────────────────────── 프리셀 엔진 · 풀이기 (화면과 무관) ─────────────────────────
+// 카드 = 숫자 0~51: 끗 r = c >> 2 (0=A … 12=K), 무늬 s = c & 3 (0 ♣, 1 ♦, 2 ♥, 3 ♠)
+const RANK = c => c >> 2, SUIT = c => c & 3, RED = c => (c & 3) === 1 || (c & 3) === 2;
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const SUITS = ['♣', '♦', '♥', '♠'];
+// 널리 쓰이는 번호 판 나누기 (1~1,000,000번 판이 어디서나 같은 배치)
+function dealNumber(n) {
+  let seed = n >>> 0; const rand = () => { seed = (seed * 214013 + 2531011) & 0x7fffffff; return seed >> 16; };
+  const deck = Array.from({ length: 52 }, (_, i) => i), cols = [[], [], [], [], [], [], [], []];
+  for (let i = 0; i < 52; i++) { const left = 52 - i, j = rand() % left; cols[i % 8].push(deck[j]); deck[j] = deck[left - 1]; }
+  return cols;
 }
-function deal(gameSeed) {
-  const rnd = msRandom(gameSeed);
-  // MS deck order: rank-major, suit order C D H S
-  const deck = [];
-  for (let r = 1; r <= 13; r++) for (const s of ['C', 'D', 'H', 'S']) deck.push({ id: s + r, suit: s, rank: r });
-  cols = Array.from({ length: 8 }, () => []);
-  let left = 52, i = 0;
-  while (left > 0) {
-    const j = rnd() % left;
-    cols[i % 8].push(deck[j]);
-    deck[j] = deck[left - 1];
-    left--; i++;
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const canStack = (a, b) => RANK(a) + 1 === RANK(b) && RED(a) !== RED(b);   // a 를 b 위에
+// 오늘의 퍼즐: 날짜 → 판 번호 (모두에게 같다)
+function dailyDeal(date) { return 1 + (hashStr('wiiiv-freecell-' + date) % 1000000); }
+
+class FreeCell {
+  constructor(o = {}) {
+    this.deal = o.deal ?? 1 + Math.floor(Math.random() * 1000000);
+    this.cols = dealNumber(this.deal); this.free = [-1, -1, -1, -1]; this.found = [0, 0, 0, 0];
+    this.moves = 0; this.hist = []; this.redoStack = []; this.won = false; this.undos = 0; this.hints = 0;
   }
-}
-
-// ---- Game control ----
-function startGame(gameSeed) {
-  seed = gameSeed || (1 + Math.floor(Math.random() * MAX_SEED));
-  deal(seed);
-  cells = [null, null, null, null];
-  found = { S: 0, H: 0, D: 0, C: 0 };
-  history = []; moves = 0; won = false; selected = null;
-  startTime = null; if (timerId) clearInterval(timerId); timerId = null;
-  timerEl.textContent = '0:00';
-  gameNoEl.textContent = '#' + seed;
-  document.getElementById('seedInput').value = seed;
-  overlay.classList.remove('active');
-  buildBoard();
-  render();
-}
-function tick() {
-  if (!startTime) return;
-  const s = Math.floor((Date.now() - startTime) / 1000);
-  timerEl.textContent = `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
-}
-function ensureTimer() { if (!startTime) { startTime = Date.now(); timerId = setInterval(tick, 500); } }
-
-// ---- Layout ----
-function layout() {
-  const w = boardEl.clientWidth - 16;
-  const gap = Math.max(4, Math.floor(w * 0.012));
-  const cw = Math.floor((w - gap * 7) / 8);
-  const ch = Math.floor(cw * 1.42);
-  boardEl.style.setProperty('--gap', gap + 'px');
-  boardEl.style.setProperty('--ch', ch + 'px');
-  return { cw, ch, gap };
-}
-function buildBoard() {
-  topEl.innerHTML = '';
-  for (let i = 0; i < 4; i++) { const d = document.createElement('div'); d.className = 'slot freecell'; d.dataset.type = 'cell'; d.dataset.index = i; topEl.appendChild(d); }
-  for (const s of SUITS) { const d = document.createElement('div'); d.className = 'slot foundation'; d.dataset.type = 'found'; d.dataset.index = s; d.dataset.suit = SUIT_CHAR[s]; topEl.appendChild(d); }
-  tabEl.innerHTML = '';
-  for (let i = 0; i < 8; i++) { const d = document.createElement('div'); d.className = 'col'; d.dataset.type = 'col'; d.dataset.index = i; tabEl.appendChild(d); }
-  cardEls.clear();
-}
-function cardEl(card) {
-  let el = cardEls.get(card.id);
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'card' + (isRed(card.suit) ? ' red' : '');
-    el.dataset.id = card.id;
-    el.innerHTML = `<div class="corner">${RANK_CHAR[card.rank]}<span class="s">${SUIT_CHAR[card.suit]}</span></div><div class="center">${SUIT_CHAR[card.suit]}</div>`;
-    el.addEventListener('animationend', () => el.classList.remove('shake', 'hint'));
-    cardEls.set(card.id, el);
+  snapshot() { return { cols: this.cols.map(c => c.slice()), free: this.free.slice(), found: this.found.slice(), moves: this.moves }; }
+  restore(s) { this.cols = s.cols.map(c => c.slice()); this.free = s.free.slice(); this.found = s.found.slice(); this.moves = s.moves; this.won = this.found.every(f => f === 13); }
+  // 한 번에 옮길 수 있는 장수: (빈 칸 + 1) × 2^(빈 줄)
+  capacity(toEmptyCol) { const fc = this.free.filter(x => x < 0).length; let ec = this.cols.filter(c => !c.length).length; if (toEmptyCol) ec--; return (fc + 1) * 2 ** Math.max(0, ec); }
+  // c 번째 줄의 i 번째 카드부터 아래가 이어진 줄인가
+  isRun(col, i) { const c = this.cols[col]; for (let k = i; k < c.length - 1; k++) if (!canStack(c[k + 1], c[k])) return false; return i < c.length; }
+  canFound(card) { return this.found[SUIT(card)] === RANK(card); }
+  // 이동: from/to = {t:'col'|'free'|'found', i}, n = 장수 (줄에서)
+  legal(from, to, n = 1) {
+    let cards;
+    if (from.t === 'col') { const c = this.cols[from.i]; if (n < 1 || n > c.length || !this.isRun(from.i, c.length - n)) return false; cards = c.slice(c.length - n); }
+    else if (from.t === 'free') { if (this.free[from.i] < 0 || n !== 1) return false; cards = [this.free[from.i]]; }
+    else return false;
+    const top = cards[0];
+    if (to.t === 'found') return n === 1 && this.canFound(top);
+    if (to.t === 'free') return n === 1 && this.free[to.i] < 0;
+    if (to.t === 'col') {
+      if (from.t === 'col' && from.i === to.i) return false;
+      const dst = this.cols[to.i];
+      if (dst.length && !canStack(top, dst[dst.length - 1])) return false;
+      return n <= this.capacity(!dst.length);
+    }
+    return false;
   }
-  return el;
-}
-function render() {
-  const { ch } = layout();
-  const step = Math.floor(ch * CARD_OVERLAP);
-  // free cells
-  topEl.querySelectorAll('.slot.freecell').forEach((slot, i) => {
-    slot.innerHTML = '';
-    if (cells[i]) { const el = cardEl(cells[i]); el.style.top = '0'; el.style.zIndex = 1; slot.appendChild(el); }
-  });
-  // foundations
-  topEl.querySelectorAll('.slot.foundation').forEach(slot => {
-    const s = slot.dataset.index; slot.innerHTML = '';
-    if (found[s] > 0) { const el = cardEl({ id: s + found[s], suit: s, rank: found[s] }); el.style.top = '0'; el.style.zIndex = 1; slot.appendChild(el); }
-  });
-  // tableau
-  let maxLen = 0;
-  tabEl.querySelectorAll('.col').forEach((colEl, i) => {
-    colEl.innerHTML = '';
-    cols[i].forEach((c, k) => { const el = cardEl(c); el.style.top = (k * step) + 'px'; el.style.zIndex = k + 1; colEl.appendChild(el); });
-    maxLen = Math.max(maxLen, cols[i].length);
-  });
-  tabEl.style.height = (ch + Math.max(0, maxLen - 1) * step) + 'px';
-  movesEl.textContent = moves;
-  document.getElementById('undoBtn').disabled = history.length === 0;
-  document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
-  if (selected) selectionCards().forEach((c, k) => { const el = cardEl(c); el.classList.add('selected'); el.style.zIndex = 500 + k; });
-}
-
-// ---- Rules ----
-function canStack(upper, lower) { return upper.rank === lower.rank - 1 && isRed(upper.suit) !== isRed(lower.suit); }
-function isRun(arr) { for (let i = 0; i < arr.length - 1; i++) if (!canStack(arr[i + 1], arr[i])) return false; return true; }
-function maxMovable(toEmptyCol) {
-  const freeCells = cells.filter(c => !c).length;
-  let emptyCols = cols.filter(c => c.length === 0).length;
-  if (toEmptyCol) emptyCols = Math.max(0, emptyCols - 1);
-  return (freeCells + 1) * Math.pow(2, emptyCols);
-}
-function selectionCards() {
-  if (!selected) return [];
-  const { from, count } = selected;
-  if (from.type === 'cell') return [cells[from.index]];
-  return cols[from.index].slice(cols[from.index].length - count);
-}
-// Try moving `count` cards from `from` to `to`; returns true on success
-function tryMove(from, to, count) {
-  if (from.type === to.type && from.index === to.index) return false;
-  const moving = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
-  if (!moving.length || moving.some(c => !c)) return false;
-  const first = moving[0];
-  if (to.type === 'found') {
-    if (moving.length !== 1) return false;
-    const s = first.suit;
-    if (to.index !== s && to.index !== undefined) { /* dropped on wrong suit slot → route to own suit */ }
-    if (found[s] !== first.rank - 1) return false;
-    apply({ from, to: { type: 'found', index: s }, cards: moving });
+  apply(from, to, n = 1, record = true) {
+    if (record) { this.hist.push(this.snapshot()); this.redoStack = []; }
+    let cards;
+    if (from.t === 'col') cards = this.cols[from.i].splice(this.cols[from.i].length - n, n);
+    else { cards = [this.free[from.i]]; this.free[from.i] = -1; }
+    if (to.t === 'found') this.found[SUIT(cards[0])]++;
+    else if (to.t === 'free') this.free[to.i] = cards[0];
+    else this.cols[to.i].push(...cards);
+    if (record) this.moves++;
+    this.won = this.found.every(f => f === 13);
+    return cards;
+  }
+  move(from, to, n = 1) { if (!this.legal(from, to, n)) return null; return this.apply(from, to, n); }
+  undo() { if (!this.hist.length) return false; this.redoStack.push(this.snapshot()); this.restore(this.hist.pop()); this.undos++; return true; }
+  redo() { if (!this.redoStack.length) return false; this.hist.push(this.snapshot()); this.restore(this.redoStack.pop()); return true; }
+  // 안전한 자동 올리기: 이 카드가 더 이상 필요 없을 때만 (반대 색 한 단계 아래가 다 올라갔을 때)
+  safeAuto(card) {
+    const r = RANK(card); if (!this.canFound(card)) return false; if (r <= 1) return true;
+    const opp = RED(card) ? [0, 3] : [1, 2];
+    return opp.every(s => this.found[s] >= r);
+  }
+  // 자동으로 올릴 수 있는 다음 한 장 → {from, card} (없으면 null)
+  nextAuto() {
+    for (let i = 0; i < 4; i++) { const c = this.free[i]; if (c >= 0 && this.safeAuto(c)) return { from: { t: 'free', i }, card: c }; }
+    for (let i = 0; i < 8; i++) { const col = this.cols[i]; if (col.length && this.safeAuto(col[col.length - 1])) return { from: { t: 'col', i }, card: col[col.length - 1] }; }
+    return null;
+  }
+  // 카드를 눌렀을 때 가장 좋은 곳 (올리기 → 줄 위 → 빈 칸 → 빈 줄)
+  bestTarget(from, n) {
+    const tries = [];
+    if (n === 1) tries.push({ t: 'found', i: 0 });
+    for (let i = 0; i < 8; i++) if (this.cols[i].length && !(from.t === 'col' && from.i === i)) tries.push({ t: 'col', i });
+    if (n === 1 && from.t === 'col') { const f = this.free.indexOf(-1); if (f >= 0) tries.push({ t: 'free', i: f }); }
+    for (let i = 0; i < 8; i++) if (!this.cols[i].length && !(from.t === 'col' && from.i === i)) tries.push({ t: 'col', i });
+    for (const to of tries) if (this.legal(from, to, n)) return to;
+    // 줄 전체가 안 되면 빈 줄로 가능한 만큼 (사용자가 큰 줄을 눌렀을 때)
+    return null;
+  }
+  noMoves() {
+    for (let i = 0; i < 4; i++) if (this.free[i] < 0) return false;
+    const srcs = []; for (let i = 0; i < 4; i++) srcs.push({ t: 'free', i }); for (let i = 0; i < 8; i++) if (this.cols[i].length) srcs.push({ t: 'col', i });
+    for (const f of srcs) { if (this.legal(f, { t: 'found', i: 0 })) return false; for (let i = 0; i < 8; i++) if (this.legal(f, { t: 'col', i }, 1)) return false; }
     return true;
   }
-  if (to.type === 'cell') {
-    if (moving.length !== 1 || cells[to.index]) return false;
-    apply({ from, to, cards: moving }); return true;
-  }
-  // to column
-  const dest = cols[to.index];
-  const limit = maxMovable(dest.length === 0);
-  if (moving.length > limit) { toast(T.tooMany(limit)); return false; }
-  if (dest.length && !canStack(first, dest[dest.length - 1])) return false;
-  apply({ from, to, cards: moving }); return true;
+  save() { return { deal: this.deal, ...this.snapshot(), hist: this.hist.slice(-200), undos: this.undos, hints: this.hints }; }
+  static load(s) { const g = new FreeCell({ deal: s.deal }); g.restore(s); g.hist = s.hist || []; g.undos = s.undos || 0; g.hints = s.hints || 0; return g; }
 }
-const name = c => RANK_CHAR[c.rank] + SUIT_CHAR[c.suit];
-// Forgiving move: if the grabbed run can't go there but a longer run starting just above it can
-// (user grabbed the 8 while meaning the 9 in a tight stack), move that instead. On failure, explain.
-function tryMoveSmart(from, to, count) {
-  if (tryMove(from, to, count)) return true;
-  if (from.type === 'col' && to.type === 'col') {
-    const src = cols[from.index];
-    for (let extra = 1; src.length - count - extra >= 1; extra++) {
-      const run = src.slice(src.length - count - extra);
-      if (!isRun(run)) break;
-      if (tryMove(from, to, count + extra)) return true;
+
+// ───────────── 풀이기: 가장 그럴듯한 판부터 넓혀 가는 탐색 ─────────────
+function solve(state, limit = 120000, wg = 0.5) {
+  const start = { cols: state.cols.map(c => c.slice()), free: state.free.slice(), found: state.found.slice() };
+  const key = s => s.found.join(',') + '|' + s.free.filter(x => x >= 0).sort((a, b) => a - b).join(',') + '|' + s.cols.map(c => c.join('.')).sort().join('/');
+  const h = s => {
+    let v = (52 - s.found.reduce((a, b) => a + b, 0)) * 4;
+    for (const c of s.cols) { let min = 99; for (let i = 0; i < c.length; i++) { const r = RANK(c[i]); if (r > min) v += 2; min = Math.min(min, r); } }
+    v += s.free.filter(x => x >= 0).length; return v;
+  };
+  const autoUp = (s, path) => {
+    let moved = true;
+    while (moved) { moved = false;
+      const safe = c => { const r = RANK(c); if (s.found[SUIT(c)] !== r) return false; if (r <= 1) return true; const opp = RED(c) ? [0, 3] : [1, 2]; return opp.every(x => s.found[x] >= r); };
+      for (let i = 0; i < 4; i++) { const c = s.free[i]; if (c >= 0 && safe(c)) { s.found[SUIT(c)]++; s.free[i] = -1; path.push({ from: { t: 'free', i }, to: { t: 'found', i: 0 }, n: 1, auto: true }); moved = true; } }
+      for (let i = 0; i < 8; i++) { const col = s.cols[i]; if (col.length && safe(col[col.length - 1])) { const c = col.pop(); s.found[SUIT(c)]++; path.push({ from: { t: 'col', i }, to: { t: 'found', i: 0 }, n: 1, auto: true }); moved = true; } }
     }
-  }
-  rejectFeedback(from, to, count);
-  return false;
-}
-function rejectFeedback(from, to, count) {
-  const moving = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
-  if (!moving.length || !moving[0]) return;
-  moving.forEach(c => { const el = cardEl(c); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); });
-  const first = moving[0];
-  if (to.type === 'col') { const d = cols[to.index]; if (d.length && !canStack(first, d[d.length - 1])) toast(T.badStack(name(first), name(d[d.length - 1]))); }
-  else if (to.type === 'cell') { if (moving.length > 1 || cells[to.index]) toast(T.cellFull); }
-  else if (to.type === 'found') toast(T.notFound(name(first)));
-}
-function apply(mv, record = true) {
-  const n = mv.cards.length;
-  if (mv.from.type === 'cell') cells[mv.from.index] = null;
-  else if (mv.from.type === 'found') found[mv.from.index]--;
-  else cols[mv.from.index].splice(cols[mv.from.index].length - n, n);
-  if (mv.to.type === 'cell') cells[mv.to.index] = mv.cards[0];
-  else if (mv.to.type === 'found') found[mv.to.index] = mv.cards[0].rank;
-  else cols[mv.to.index].push(...mv.cards);
-  if (record) { history.push(mv); moves++; ensureTimer(); }
-  selected = null;
-}
-function undo() {
-  const mv = history.pop(); if (!mv) return;
-  apply({ from: mv.to, to: mv.from, cards: mv.cards }, false);
-  moves++; render();
-}
-function checkWin() {
-  if (SUITS.every(s => found[s] === 13)) {
-    won = true; clearInterval(timerId);
-    const s = Math.floor((Date.now() - startTime) / 1000);
-    document.getElementById('resultText').textContent = T.result(seed, moves, Math.floor(s / 60), s % 60);
-    overlay.classList.add('active');
-  }
-}
-// Safe auto-moves to foundation (only cards that can never be needed in tableau)
-function safeToFoundation(card) {
-  if (found[card.suit] !== card.rank - 1) return false;
-  if (card.rank <= 2) return true;
-  const opp = isRed(card.suit) ? ['S', 'C'] : ['H', 'D'];
-  return opp.every(s => found[s] >= card.rank - 1);
-}
-function autoPlay(force) {
-  let moved = false, any = true;
-  while (any) {
-    any = false;
+  };
+  const p0 = []; autoUp(start, p0);
+  // 우선순위 큐 (작은 값 먼저)
+  const heap = []; const push = x => { heap.push(x); let i = heap.length - 1; while (i) { const p = (i - 1) >> 1; if (heap[p].f <= heap[i].f) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l].f < heap[m].f) m = l; if (r < heap.length && heap[r].f < heap[m].f) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  const seen = new Set([key(start)]); push({ s: start, path: p0, f: h(start), g: 0 });
+  let nodes = 0;
+  while (heap.length && nodes++ < limit) {
+    const { s, path, g } = pop();
+    if (s.found.every(f => f === 13)) return path;
+    const fc = s.free.filter(x => x < 0).length, ec = s.cols.filter(c => !c.length).length;
+    const moves = [];
+    const tryMove = (from, to, n) => moves.push({ from, to, n });
+    // 칸 → 올리기 / 줄
+    for (let i = 0; i < 4; i++) { const c = s.free[i]; if (c < 0) continue; if (s.found[SUIT(c)] === RANK(c)) tryMove({ t: 'free', i }, { t: 'found', i: 0 }, 1); for (let j = 0; j < 8; j++) { const d = s.cols[j]; if (!d.length || canStack(c, d[d.length - 1])) tryMove({ t: 'free', i }, { t: 'col', i: j }, 1); } }
     for (let i = 0; i < 8; i++) {
-      const c = cols[i][cols[i].length - 1];
-      if (c && (force ? found[c.suit] === c.rank - 1 : safeToFoundation(c))) { apply({ from: { type: 'col', index: i }, to: { type: 'found', index: c.suit }, cards: [c] }); any = moved = true; }
+      const col = s.cols[i]; if (!col.length) continue; const top = col[col.length - 1];
+      if (s.found[SUIT(top)] === RANK(top)) tryMove({ t: 'col', i }, { t: 'found', i: 0 }, 1);
+      // 이어진 줄 길이
+      let run = 1; while (run < col.length && canStack(col[col.length - run], col[col.length - run - 1])) run++;
+      for (let j = 0; j < 8; j++) {
+        if (j === i) continue; const d = s.cols[j];
+        if (d.length) { const dt = d[d.length - 1]; for (let n = 1; n <= run; n++) if (canStack(col[col.length - n], dt) && n <= (fc + 1) * 2 ** ec) tryMove({ t: 'col', i }, { t: 'col', i: j }, n); }
+        else if (col.length > 1) { const cap = (fc + 1) * 2 ** Math.max(0, ec - 1); tryMove({ t: 'col', i }, { t: 'col', i: j }, Math.min(run, cap)); }
+      }
+      if (fc) tryMove({ t: 'col', i }, { t: 'free', i: s.free.indexOf(-1) }, 1);
     }
-    for (let i = 0; i < 4; i++) {
-      const c = cells[i];
-      if (c && (force ? found[c.suit] === c.rank - 1 : safeToFoundation(c))) { apply({ from: { type: 'cell', index: i }, to: { type: 'found', index: c.suit }, cards: [c] }); any = moved = true; }
-    }
-  }
-  return moved;
-}
-function afterMove() { autoPlay(false); render(); checkWin(); }
-
-// ---- Hint ----
-function findHint() {
-  const sources = [];
-  cols.forEach((col, i) => { for (let k = col.length - 1; k >= 0; k--) { const run = col.slice(k); if (!isRun(run)) break; sources.push({ from: { type: 'col', index: i }, cards: run }); } });
-  cells.forEach((c, i) => { if (c) sources.push({ from: { type: 'cell', index: i }, cards: [c] }); });
-  // priority: foundation → non-empty column → empty column → free cell
-  for (const s of sources) if (s.cards.length === 1 && found[s.cards[0].suit] === s.cards[0].rank - 1) return { ...s, to: { type: 'found', index: s.cards[0].suit } };
-  for (const s of sources) for (let i = 0; i < 8; i++) {
-    if (s.from.type === 'col' && s.from.index === i) continue;
-    const d = cols[i]; if (!d.length) continue;
-    if (canStack(s.cards[0], d[d.length - 1]) && s.cards.length <= maxMovable(false)) {
-      if (s.from.type === 'col' && s.cards.length === cols[s.from.index].length) continue; // don't just relocate whole column
-      return { ...s, to: { type: 'col', index: i } };
+    for (const m of moves) {
+      const ns = { cols: s.cols.map(c => c.slice()), free: s.free.slice(), found: s.found.slice() };
+      let cards; if (m.from.t === 'col') cards = ns.cols[m.from.i].splice(ns.cols[m.from.i].length - m.n, m.n); else { cards = [ns.free[m.from.i]]; ns.free[m.from.i] = -1; }
+      if (m.to.t === 'found') ns.found[SUIT(cards[0])]++; else if (m.to.t === 'free') ns.free[m.to.i] = cards[0]; else ns.cols[m.to.i].push(...cards);
+      const np = path.concat([m]); autoUp(ns, np);
+      const k = key(ns); if (seen.has(k)) continue; seen.add(k);
+      push({ s: ns, path: np, g: g + 1, f: h(ns) + (g + 1) * wg });
     }
   }
-  for (const s of sources) { const i = cols.findIndex(c => c.length === 0); if (i >= 0 && !(s.from.type === 'col' && s.cards.length === cols[s.from.index].length) && s.cards.length <= maxMovable(true)) return { ...s, to: { type: 'col', index: i } }; }
-  for (const s of sources) if (s.from.type === 'col' && s.cards.length === 1) { const i = cells.findIndex(c => !c); if (i >= 0) return { ...s, to: { type: 'cell', index: i } }; }
   return null;
 }
-function showHint() {
-  const h = findHint();
-  if (!h) { toast(T.noHint); return; }
-  h.cards.forEach(c => { const el = cardEl(c); el.classList.remove('hint'); void el.offsetWidth; el.classList.add('hint'); });
-  const target = h.to.type === 'col' ? tabEl.children[h.to.index] : topEl.querySelector(`.slot[data-type="${h.to.type === 'found' ? 'found' : 'cell'}"][data-index="${h.to.index}"]`);
-  if (target) { target.classList.add('target'); setTimeout(() => target.classList.remove('target'), 1800); }
+// 한 번에 안 풀리면 탐색 성격을 바꿔 다시 (더 욕심껏)
+function solveHard(state, limit = 120000) { return solve(state, limit, 0.5) || solve(state, limit, 0.1) || solve(state, limit * 2, 0); }
+
+const ENGINE_SRC = "// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \ud504\ub9ac\uc140 \uc5d4\uc9c4 \u00b7 \ud480\uc774\uae30 (\ud654\uba74\uacfc \ubb34\uad00) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// \uce74\ub4dc = \uc22b\uc790 0~51: \ub057 r = c >> 2 (0=A \u2026 12=K), \ubb34\ub2ac s = c & 3 (0 \u2663, 1 \u2666, 2 \u2665, 3 \u2660)\nconst RANK = c => c >> 2, SUIT = c => c & 3, RED = c => (c & 3) === 1 || (c & 3) === 2;\nconst RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];\nconst SUITS = ['\u2663', '\u2666', '\u2665', '\u2660'];\n// \ub110\ub9ac \uc4f0\uc774\ub294 \ubc88\ud638 \ud310 \ub098\ub204\uae30 (1~1,000,000\ubc88 \ud310\uc774 \uc5b4\ub514\uc11c\ub098 \uac19\uc740 \ubc30\uce58)\nfunction dealNumber(n) {\n  let seed = n >>> 0; const rand = () => { seed = (seed * 214013 + 2531011) & 0x7fffffff; return seed >> 16; };\n  const deck = Array.from({ length: 52 }, (_, i) => i), cols = [[], [], [], [], [], [], [], []];\n  for (let i = 0; i < 52; i++) { const left = 52 - i, j = rand() % left; cols[i % 8].push(deck[j]); deck[j] = deck[left - 1]; }\n  return cols;\n}\nfunction hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }\nconst canStack = (a, b) => RANK(a) + 1 === RANK(b) && RED(a) !== RED(b);   // a \ub97c b \uc704\uc5d0\n// \uc624\ub298\uc758 \ud37c\uc990: \ub0a0\uc9dc \u2192 \ud310 \ubc88\ud638 (\ubaa8\ub450\uc5d0\uac8c \uac19\ub2e4)\nfunction dailyDeal(date) { return 1 + (hashStr('wiiiv-freecell-' + date) % 1000000); }\n\nclass FreeCell {\n  constructor(o = {}) {\n    this.deal = o.deal ?? 1 + Math.floor(Math.random() * 1000000);\n    this.cols = dealNumber(this.deal); this.free = [-1, -1, -1, -1]; this.found = [0, 0, 0, 0];\n    this.moves = 0; this.hist = []; this.redoStack = []; this.won = false; this.undos = 0; this.hints = 0;\n  }\n  snapshot() { return { cols: this.cols.map(c => c.slice()), free: this.free.slice(), found: this.found.slice(), moves: this.moves }; }\n  restore(s) { this.cols = s.cols.map(c => c.slice()); this.free = s.free.slice(); this.found = s.found.slice(); this.moves = s.moves; this.won = this.found.every(f => f === 13); }\n  // \ud55c \ubc88\uc5d0 \uc62e\uae38 \uc218 \uc788\ub294 \uc7a5\uc218: (\ube48 \uce78 + 1) \u00d7 2^(\ube48 \uc904)\n  capacity(toEmptyCol) { const fc = this.free.filter(x => x < 0).length; let ec = this.cols.filter(c => !c.length).length; if (toEmptyCol) ec--; return (fc + 1) * 2 ** Math.max(0, ec); }\n  // c \ubc88\uc9f8 \uc904\uc758 i \ubc88\uc9f8 \uce74\ub4dc\ubd80\ud130 \uc544\ub798\uac00 \uc774\uc5b4\uc9c4 \uc904\uc778\uac00\n  isRun(col, i) { const c = this.cols[col]; for (let k = i; k < c.length - 1; k++) if (!canStack(c[k + 1], c[k])) return false; return i < c.length; }\n  canFound(card) { return this.found[SUIT(card)] === RANK(card); }\n  // \uc774\ub3d9: from/to = {t:'col'|'free'|'found', i}, n = \uc7a5\uc218 (\uc904\uc5d0\uc11c)\n  legal(from, to, n = 1) {\n    let cards;\n    if (from.t === 'col') { const c = this.cols[from.i]; if (n < 1 || n > c.length || !this.isRun(from.i, c.length - n)) return false; cards = c.slice(c.length - n); }\n    else if (from.t === 'free') { if (this.free[from.i] < 0 || n !== 1) return false; cards = [this.free[from.i]]; }\n    else return false;\n    const top = cards[0];\n    if (to.t === 'found') return n === 1 && this.canFound(top);\n    if (to.t === 'free') return n === 1 && this.free[to.i] < 0;\n    if (to.t === 'col') {\n      if (from.t === 'col' && from.i === to.i) return false;\n      const dst = this.cols[to.i];\n      if (dst.length && !canStack(top, dst[dst.length - 1])) return false;\n      return n <= this.capacity(!dst.length);\n    }\n    return false;\n  }\n  apply(from, to, n = 1, record = true) {\n    if (record) { this.hist.push(this.snapshot()); this.redoStack = []; }\n    let cards;\n    if (from.t === 'col') cards = this.cols[from.i].splice(this.cols[from.i].length - n, n);\n    else { cards = [this.free[from.i]]; this.free[from.i] = -1; }\n    if (to.t === 'found') this.found[SUIT(cards[0])]++;\n    else if (to.t === 'free') this.free[to.i] = cards[0];\n    else this.cols[to.i].push(...cards);\n    if (record) this.moves++;\n    this.won = this.found.every(f => f === 13);\n    return cards;\n  }\n  move(from, to, n = 1) { if (!this.legal(from, to, n)) return null; return this.apply(from, to, n); }\n  undo() { if (!this.hist.length) return false; this.redoStack.push(this.snapshot()); this.restore(this.hist.pop()); this.undos++; return true; }\n  redo() { if (!this.redoStack.length) return false; this.hist.push(this.snapshot()); this.restore(this.redoStack.pop()); return true; }\n  // \uc548\uc804\ud55c \uc790\ub3d9 \uc62c\ub9ac\uae30: \uc774 \uce74\ub4dc\uac00 \ub354 \uc774\uc0c1 \ud544\uc694 \uc5c6\uc744 \ub54c\ub9cc (\ubc18\ub300 \uc0c9 \ud55c \ub2e8\uacc4 \uc544\ub798\uac00 \ub2e4 \uc62c\ub77c\uac14\uc744 \ub54c)\n  safeAuto(card) {\n    const r = RANK(card); if (!this.canFound(card)) return false; if (r <= 1) return true;\n    const opp = RED(card) ? [0, 3] : [1, 2];\n    return opp.every(s => this.found[s] >= r);\n  }\n  // \uc790\ub3d9\uc73c\ub85c \uc62c\ub9b4 \uc218 \uc788\ub294 \ub2e4\uc74c \ud55c \uc7a5 \u2192 {from, card} (\uc5c6\uc73c\uba74 null)\n  nextAuto() {\n    for (let i = 0; i < 4; i++) { const c = this.free[i]; if (c >= 0 && this.safeAuto(c)) return { from: { t: 'free', i }, card: c }; }\n    for (let i = 0; i < 8; i++) { const col = this.cols[i]; if (col.length && this.safeAuto(col[col.length - 1])) return { from: { t: 'col', i }, card: col[col.length - 1] }; }\n    return null;\n  }\n  // \uce74\ub4dc\ub97c \ub20c\ub800\uc744 \ub54c \uac00\uc7a5 \uc88b\uc740 \uacf3 (\uc62c\ub9ac\uae30 \u2192 \uc904 \uc704 \u2192 \ube48 \uce78 \u2192 \ube48 \uc904)\n  bestTarget(from, n) {\n    const tries = [];\n    if (n === 1) tries.push({ t: 'found', i: 0 });\n    for (let i = 0; i < 8; i++) if (this.cols[i].length && !(from.t === 'col' && from.i === i)) tries.push({ t: 'col', i });\n    if (n === 1 && from.t === 'col') { const f = this.free.indexOf(-1); if (f >= 0) tries.push({ t: 'free', i: f }); }\n    for (let i = 0; i < 8; i++) if (!this.cols[i].length && !(from.t === 'col' && from.i === i)) tries.push({ t: 'col', i });\n    for (const to of tries) if (this.legal(from, to, n)) return to;\n    // \uc904 \uc804\uccb4\uac00 \uc548 \ub418\uba74 \ube48 \uc904\ub85c \uac00\ub2a5\ud55c \ub9cc\ud07c (\uc0ac\uc6a9\uc790\uac00 \ud070 \uc904\uc744 \ub20c\ub800\uc744 \ub54c)\n    return null;\n  }\n  noMoves() {\n    for (let i = 0; i < 4; i++) if (this.free[i] < 0) return false;\n    const srcs = []; for (let i = 0; i < 4; i++) srcs.push({ t: 'free', i }); for (let i = 0; i < 8; i++) if (this.cols[i].length) srcs.push({ t: 'col', i });\n    for (const f of srcs) { if (this.legal(f, { t: 'found', i: 0 })) return false; for (let i = 0; i < 8; i++) if (this.legal(f, { t: 'col', i }, 1)) return false; }\n    return true;\n  }\n  save() { return { deal: this.deal, ...this.snapshot(), hist: this.hist.slice(-200), undos: this.undos, hints: this.hints }; }\n  static load(s) { const g = new FreeCell({ deal: s.deal }); g.restore(s); g.hist = s.hist || []; g.undos = s.undos || 0; g.hints = s.hints || 0; return g; }\n}\n\n// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \ud480\uc774\uae30: \uac00\uc7a5 \uadf8\ub7f4\ub4ef\ud55c \ud310\ubd80\ud130 \ub113\ud600 \uac00\ub294 \ud0d0\uc0c9 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nfunction solve(state, limit = 120000, wg = 0.5) {\n  const start = { cols: state.cols.map(c => c.slice()), free: state.free.slice(), found: state.found.slice() };\n  const key = s => s.found.join(',') + '|' + s.free.filter(x => x >= 0).sort((a, b) => a - b).join(',') + '|' + s.cols.map(c => c.join('.')).sort().join('/');\n  const h = s => {\n    let v = (52 - s.found.reduce((a, b) => a + b, 0)) * 4;\n    for (const c of s.cols) { let min = 99; for (let i = 0; i < c.length; i++) { const r = RANK(c[i]); if (r > min) v += 2; min = Math.min(min, r); } }\n    v += s.free.filter(x => x >= 0).length; return v;\n  };\n  const autoUp = (s, path) => {\n    let moved = true;\n    while (moved) { moved = false;\n      const safe = c => { const r = RANK(c); if (s.found[SUIT(c)] !== r) return false; if (r <= 1) return true; const opp = RED(c) ? [0, 3] : [1, 2]; return opp.every(x => s.found[x] >= r); };\n      for (let i = 0; i < 4; i++) { const c = s.free[i]; if (c >= 0 && safe(c)) { s.found[SUIT(c)]++; s.free[i] = -1; path.push({ from: { t: 'free', i }, to: { t: 'found', i: 0 }, n: 1, auto: true }); moved = true; } }\n      for (let i = 0; i < 8; i++) { const col = s.cols[i]; if (col.length && safe(col[col.length - 1])) { const c = col.pop(); s.found[SUIT(c)]++; path.push({ from: { t: 'col', i }, to: { t: 'found', i: 0 }, n: 1, auto: true }); moved = true; } }\n    }\n  };\n  const p0 = []; autoUp(start, p0);\n  // \uc6b0\uc120\uc21c\uc704 \ud050 (\uc791\uc740 \uac12 \uba3c\uc800)\n  const heap = []; const push = x => { heap.push(x); let i = heap.length - 1; while (i) { const p = (i - 1) >> 1; if (heap[p].f <= heap[i].f) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };\n  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l].f < heap[m].f) m = l; if (r < heap.length && heap[r].f < heap[m].f) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };\n  const seen = new Set([key(start)]); push({ s: start, path: p0, f: h(start), g: 0 });\n  let nodes = 0;\n  while (heap.length && nodes++ < limit) {\n    const { s, path, g } = pop();\n    if (s.found.every(f => f === 13)) return path;\n    const fc = s.free.filter(x => x < 0).length, ec = s.cols.filter(c => !c.length).length;\n    const moves = [];\n    const tryMove = (from, to, n) => moves.push({ from, to, n });\n    // \uce78 \u2192 \uc62c\ub9ac\uae30 / \uc904\n    for (let i = 0; i < 4; i++) { const c = s.free[i]; if (c < 0) continue; if (s.found[SUIT(c)] === RANK(c)) tryMove({ t: 'free', i }, { t: 'found', i: 0 }, 1); for (let j = 0; j < 8; j++) { const d = s.cols[j]; if (!d.length || canStack(c, d[d.length - 1])) tryMove({ t: 'free', i }, { t: 'col', i: j }, 1); } }\n    for (let i = 0; i < 8; i++) {\n      const col = s.cols[i]; if (!col.length) continue; const top = col[col.length - 1];\n      if (s.found[SUIT(top)] === RANK(top)) tryMove({ t: 'col', i }, { t: 'found', i: 0 }, 1);\n      // \uc774\uc5b4\uc9c4 \uc904 \uae38\uc774\n      let run = 1; while (run < col.length && canStack(col[col.length - run], col[col.length - run - 1])) run++;\n      for (let j = 0; j < 8; j++) {\n        if (j === i) continue; const d = s.cols[j];\n        if (d.length) { const dt = d[d.length - 1]; for (let n = 1; n <= run; n++) if (canStack(col[col.length - n], dt) && n <= (fc + 1) * 2 ** ec) tryMove({ t: 'col', i }, { t: 'col', i: j }, n); }\n        else if (col.length > 1) { const cap = (fc + 1) * 2 ** Math.max(0, ec - 1); tryMove({ t: 'col', i }, { t: 'col', i: j }, Math.min(run, cap)); }\n      }\n      if (fc) tryMove({ t: 'col', i }, { t: 'free', i: s.free.indexOf(-1) }, 1);\n    }\n    for (const m of moves) {\n      const ns = { cols: s.cols.map(c => c.slice()), free: s.free.slice(), found: s.found.slice() };\n      let cards; if (m.from.t === 'col') cards = ns.cols[m.from.i].splice(ns.cols[m.from.i].length - m.n, m.n); else { cards = [ns.free[m.from.i]]; ns.free[m.from.i] = -1; }\n      if (m.to.t === 'found') ns.found[SUIT(cards[0])]++; else if (m.to.t === 'free') ns.free[m.to.i] = cards[0]; else ns.cols[m.to.i].push(...cards);\n      const np = path.concat([m]); autoUp(ns, np);\n      const k = key(ns); if (seen.has(k)) continue; seen.add(k);\n      push({ s: ns, path: np, g: g + 1, f: h(ns) + (g + 1) * wg });\n    }\n  }\n  return null;\n}\n// \ud55c \ubc88\uc5d0 \uc548 \ud480\ub9ac\uba74 \ud0d0\uc0c9 \uc131\uaca9\uc744 \ubc14\uafd4 \ub2e4\uc2dc (\ub354 \uc695\uc2ec\uaecf)\nfunction solveHard(state, limit = 120000) { return solve(state, limit, 0.5) || solve(state, limit, 0.1) || solve(state, limit * 2, 0); }\n";
+// ───────────────────────── 8비트 소리 장치 (펄스 2 · 삼각 1 · 잡음 1, 옛 게임기 방식) ─────────────────────────
+const NOTE_IX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function noteMidi(n) { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); if (!m) throw new Error('note ' + n); return 12 * (+m[3] + 1) + NOTE_IX[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); }
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+// 악보 한 채널: "E5:4 B4:2 | r:2 …" (길이 단위 = 16분음표, | 는 마디 경계 표시일 뿐)
+function parseTrack(src) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [n, l] = tok.split(':'); const len = +(l || 1);
+    if (n !== 'r') ev.push({ t, len, n });
+    t += len;
+  }
+  return { ev, len: t };
+}
+// 화음으로 반주 만들기: 마디마다 화음 이름 (예: 'Am', 'E', 'Bb', 'F#', 'C#7')
+const CH_Q = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 10], m7: [0, 3, 10], dim: [0, 3, 6] };
+function chordNotes(name) { const m = /^([A-G][#b]?)(m7|m|7|dim)?$/.exec(name); const root = noteMidi(m[1] + '3'); return CH_Q[m[2] || ''].map(i => root + i); }
+const MN = m => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][m % 12] + (Math.floor(m / 12) - 1);
+// 베이스: 근음 옥타브 왕복 (8분), 3박자 곡은 근음·5음·5음
+function bassLine(chords, bar, style) {
+  return chords.map(c => {
+    const [r, , f] = chordNotes(c); const R = r - 12, F5 = f - 12;
+    if (bar === 12) return `${MN(R)}:4 ${MN(F5)}:4 ${MN(F5 + 0)}:4`;
+    if (style === 'pizz') return `${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2 ${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2`;
+    return Array.from({ length: bar / 2 }, (_, i) => `${MN(i % 2 ? R + 12 : R)}:2`).join(' ');
+  }).join(' | ');
+}
+// 반주: 뒷박에 짧게 끊는 화음 (3음·5음)
+function compLine(chords, bar) {
+  return chords.map(c => {
+    const [, th, fi] = chordNotes(c).map(m => m + 12);
+    if (bar === 12) return `r:4 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2`;
+    return `r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2`;
+  }).join(' | ');
+}
+const rep = (s, n) => Array(n).fill(s).join(' | ');
+
+// ── 곡 (자작곡)
+const SONGS = {
+  // A: 「카드 라운지」 — 느긋한 곡
+  A: (() => {
+    const m = 'A4:4 C5:4 F5:6 E5:2 | D5:4 F5:4 Bb5:8 | A5:4 G5:2 F5:2 E5:4 C5:4 | F5:12 r:4 | C5:4 F5:4 A5:6 G5:2 | F5:4 D5:4 Bb4:8 | C5:4 E5:4 G5:4 Bb5:4 | A5:12 r:4 | '
+      + 'D5:4 F5:4 A5:4 D6:4 | C6:6 Bb5:2 A5:8 | Bb5:4 A5:2 G5:2 F5:4 D5:4 | C5:8 E5:4 G5:4 | A5:4 F5:4 C5:4 F5:4 | Bb5:6 A5:2 G5:8 | E5:4 G5:4 Bb5:4 E5:4 | F5:12 r:4';
+    const ch = ['F', 'Bb', 'C', 'F', 'F', 'Bb', 'C', 'F', 'Dm', 'Am', 'Bb', 'C', 'F', 'Gm', 'C', 'F'];
+    return { name: 'Card Lounge', bpm: 92, bar: 16, duty: [0.125, 0.25], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16, 'pizz'), noi: rep('k:4 h:4 s:4 h:4', 16) };
+  })(),
+};
+
+class Chip {
+  constructor() { this.ctx = null; this.musicVol = 0.55; this.sfxVol = 0.7; this.song = null; this.tempo = 1; this.beatCbs = []; this.muted = false; }
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const c = this.ctx = new AC();
+    this.out = c.createDynamicsCompressor(); this.out.threshold.value = -12; this.out.ratio.value = 4; this.out.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(this.out);
+    this.mus = c.createGain(); this.mus.gain.value = this.musicVol; this.mus.connect(this.master);
+    this.fx = c.createGain(); this.fx.gain.value = this.sfxVol; this.fx.connect(this.master);
+    // 펄스파 (듀티 12.5·25·50%)
+    this.pw = {};
+    for (const d of [0.125, 0.25, 0.5]) { const N = 48, re = new Float32Array(N), im = new Float32Array(N); for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * d)) / (n * Math.PI); } this.pw[d] = c.createPeriodicWave(re, im); }
+    // 4비트 계단 삼각파
+    { const S = 32, N = 40, re = new Float32Array(N), im = new Float32Array(N); const v = i => { const k = i < 16 ? i : 31 - i; return (k / 7.5) - 1; };
+      for (let n = 1; n < N; n++) { let a = 0, b = 0; for (let i = 0; i < S; i++) { const t0 = i / S, t1 = (i + 1) / S, w = 2 * Math.PI * n; a += v(i) * (Math.sin(w * t1) - Math.sin(w * t0)) / w; b += v(i) * (Math.cos(w * t0) - Math.cos(w * t1)) / w; } re[n] = 2 * a; im[n] = 2 * b; }
+      this.tw = c.createPeriodicWave(re, im); }
+    // 잡음 (15비트 LFSR)
+    const mk = short => { const len = c.sampleRate; const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0); let r = 1, v = 0; const step = Math.max(1, Math.round(c.sampleRate / 22000));
+      for (let i = 0; i < len; i++) { if (i % step === 0) { const bit = ((r & 1) ^ ((r >> (short ? 6 : 1)) & 1)); r = (r >> 1) | (bit << 14); v = (r & 1) ? 0.8 : -0.8; } d[i] = v; } return b; };
+    this.nz = mk(false); this.nzs = mk(true);
+    this.timer = setInterval(() => this.pump(), 25);
+  }
+  setVol(music, sfx) { if (music != null) this.musicVol = music; if (sfx != null) this.sfxVol = sfx; if (this.ctx) { this.mus.gain.setTargetAtTime(this.musicVol, this.ctx.currentTime, 0.05); this.fx.gain.setTargetAtTime(this.sfxVol, this.ctx.currentTime, 0.05); } }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); }
+  // ── 한 음
+  tone(dest, wave, f, t, dur, vol, o = {}) {
+    const c = this.ctx, os = c.createOscillator(), g = c.createGain();
+    if (wave === 'tri') os.setPeriodicWave(this.tw); else os.setPeriodicWave(this.pw[wave] || this.pw[0.5]);
+    os.frequency.setValueAtTime(f, t);
+    if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + (o.sweep || dur));
+    if (o.vib && dur > 0.25) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.25); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    const a = 0.004, rel = o.rel ?? 0.03, sus = o.decay ? vol * o.decay : vol;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+    if (o.decay != null) g.gain.exponentialRampToValueAtTime(Math.max(0.0001, sus), t + Math.max(a + 0.01, dur));
+    g.gain.setValueAtTime(o.decay != null ? Math.max(0.0001, sus) : vol, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + rel);
+    os.connect(g); g.connect(dest); os.start(t); os.stop(t + dur + rel + 0.02);
+  }
+  noise(dest, t, dur, vol, o = {}) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = o.short ? this.nzs : this.nz; s.playbackRate.value = o.rate || 1; s.loop = true;
+    f.type = o.type || 'highpass'; f.frequency.value = o.freq || 1000; if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+  }
+  // ── 음악 순서기
+  play(id) {
+    this.init(); if (!this.ctx) return;
+    this.stop();
+    const S = SONGS[id]; if (!S) return;
+    const ch = ['p1', 'p2', 'tri', 'noi'].map(k => ({ k, ...parseTrack(S[k]) }));
+    const L = ch[0].len; const at = {}; ch.forEach(c => { if (c.len !== L) console.warn('track length', S.name, c.k, c.len, L); c.ev.forEach(e => { (at[e.t] = at[e.t] || []).push({ ...e, k: c.k }); }); });
+    this.song = { S, at, L, step: 0, next: this.ctx.currentTime + 0.08, loops: 0, id };
+  }
+  stop() { this.song = null; }
+  pause(p) { this.paused = p; if (!p && this.song && this.ctx) this.song.next = this.ctx.currentTime + 0.05; }
+  pump() {
+    const sg = this.song; if (!sg || this.paused || !this.ctx) return;
+    const c = this.ctx, ahead = c.currentTime + 0.12;
+    if (sg.next < c.currentTime - 0.25) sg.next = c.currentTime + 0.02;     // 탭이 잠들었다 깨면 따라잡지 않고 이어서
+    while (sg.next < ahead) {
+      const S = sg.S, accel = S.accel ? Math.min(1.6, Math.pow(S.accel, sg.loops)) : 1;
+      const sp = 60 / (S.bpm * this.tempo * accel) / 4;      // 16분음표 길이(초)
+      const evs = sg.at[sg.step];
+      if (evs) for (const e of evs) {
+        const d = e.len * sp;
+        if (e.k === 'noi') {
+          if (e.n === 'k') { this.noise(this.mus, sg.next, 0.09, 0.32, { type: 'lowpass', freq: 900, fto: 120 }); this.tone(this.mus, 'tri', 140, sg.next, 0.07, 0.35, { to: 50, sweep: 0.07, rel: 0.01 }); }
+          else if (e.n === 's') this.noise(this.mus, sg.next, 0.12, 0.2, { type: 'bandpass', freq: 2200 });
+          else if (e.n === 'h') this.noise(this.mus, sg.next, 0.035, 0.07, { type: 'highpass', freq: 7000 });
+        } else {
+          const f = midiHz(noteMidi(e.n));
+          if (e.k === 'p1') this.tone(this.mus, S.duty[0], f, sg.next, d * 0.92, 0.13, { vib: true, decay: 0.75 });
+          else if (e.k === 'p2') this.tone(this.mus, S.duty[1], f, sg.next, d * 0.8, 0.065, { decay: 0.5 });
+          else this.tone(this.mus, 'tri', f, sg.next, d * 0.85, 0.3, {});
+        }
+      }
+      if (sg.step % 4 === 0) { const when = sg.next; this.beatCbs.forEach(cb => cb(when, sg.step % (S.bar) === 0)); }
+      sg.next += sp; sg.step++;
+      if (sg.step >= sg.L) { sg.step = 0; sg.loops++; }
+    }
+  }
+  onBeat(cb) { this.beatCbs.push(cb); }
+  // ── 효과음
+  sfx(name, a = {}) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + 0.005, F = this.fx;
+    const arp = (notes, step, wave = 0.5, vol = 0.16, len) => notes.forEach((n, i) => this.tone(F, wave, midiHz(typeof n === 'number' ? n : noteMidi(n)), t + i * step, len || step * 1.6, vol, { decay: 0.4 }));
+    switch (name) {
+      case 'place': this.noise(F, t, 0.05, 0.12, { type: 'bandpass', freq: 2200, fto: 900 }); this.tone(F, 'tri', 220, t, 0.04, 0.18, { to: 120, sweep: 0.04, rel: 0.01 }); break;
+      case 'pick': this.noise(F, t, 0.04, 0.06, { type: 'highpass', freq: 4000 }); break;
+      case 'found': { const m = 72 + [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21][a.r || 0]; this.tone(F, 0.25, midiHz(m), t, 0.1, 0.1, { decay: 0.4 }); this.tone(F, 0.125, midiHz(m + 12), t + 0.02, 0.08, 0.05, { decay: 0.3 }); break; }
+      case 'nope': this.tone(F, 0.5, 160, t, 0.07, 0.08, { to: 120, sweep: 0.07 }); break;
+      case 'undo': this.tone(F, 0.25, 900, t, 0.07, 0.07, { to: 500, sweep: 0.07 }); break;
+      case 'hint': arp([84, 88, 91], 0.05, 0.125, 0.08); break;
+      case 'deal': this.noise(F, t, 0.03, 0.05, { type: 'bandpass', freq: 3000 }); break;
+      case 'win': arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6', 'G6', 'C7'], 0.08, 0.5, 0.14, 0.3); break;
+      case 'bounce': this.tone(F, 0.125, 300 + Math.random() * 500, t, 0.03, 0.03, { rel: 0.01 }); break;
+      case 'stuck': arp([67, 63, 60], 0.09, 0.5, 0.1); break;
+      case 'menu': this.tone(F, 0.25, 1000, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'select': arp([76, 83], 0.05, 0.25, 0.1); break;
+    }
+  }
 }
 
-// ---- Input: click-select + drag ----
-function locate(cardId) {
-  for (let i = 0; i < 4; i++) if (cells[i] && cells[i].id === cardId) return { type: 'cell', index: i, pos: 0 };
-  for (let i = 0; i < 8; i++) { const k = cols[i].findIndex(c => c.id === cardId); if (k >= 0) return { type: 'col', index: i, pos: k }; }
-  return null;
-}
-function slotToTarget(slot) {
-  return { type: slot.dataset.type, index: slot.dataset.type === 'col' || slot.dataset.type === 'cell' ? +slot.dataset.index : slot.dataset.index };
-}
-function targetFromPoint(x, y) {
-  const el = document.elementFromPoint(x, y);
-  const slot = el && el.closest('.slot, .col');
-  if (slot) return slotToTarget(slot);
-  // Fallback: pointer is between/below the piles (e.g. dropping a run "under" a short column).
-  // Pick the top-row slot or tableau column whose horizontal span contains x.
-  const topRect = topEl.getBoundingClientRect(), tabRect = tabEl.getBoundingClientRect();
-  const row = y < (topRect.bottom + tabRect.top) / 2 ? topEl : tabEl;
-  for (const child of row.children) {
-    const r = child.getBoundingClientRect();
-    if (x >= r.left && x <= r.right && y >= topRect.top - 20) return slotToTarget(child);
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+const TX = {
+  ko: { title: '프리셀', tag: '거의 모든 판을 풀 수 있는 카드 퍼즐', newGame: '새 게임', chooseDeal: '번호로 고르기', dealN: '#{n}', go: '시작', cont: '이어하기 · #{n}', daily: '오늘의 퍼즐', dailyDesc: '모두 같은 판. 처음 완성한 기록이 공식 기록', play: '도전하기', resume: '이어서 도전', viewResult: '결과 보기', notYet: '아직 도전하지 않았어요', doneTime: '완성 · {t}', inProgress: '진행 중', streak: '연속 {n}일',
+    settings: '설정', records: '기록', help: '규칙·조작', done: '확인', menu: '메뉴', again: '새 게임', newRec: '★ 새 기록 ★', none: '아직 기록이 없습니다',
+    undo: '되돌리기', redo: '다시', hint: '힌트', time: '시간', moves: '수', won: '완성!', stuck: '더 둘 곳이 없어요', stuckSub: '되돌리기로 다른 길을 찾아보세요', hintNone: '이 판에서는 풀 길을 못 찾았어요. 되돌려 보세요', thinking: '생각 중…', restart: '처음부터',
+    confirmNew: '이 판을 그만두고 새로 할까요?', yes: '새로 하기', no: '취소', share: '결과 복사하기', copied: '복사했습니다', nextIn: '다음 퍼즐까지 {t}',
+    fourColor: '네 가지 색 카드', autoMove: '자동으로 올리기', music: '음악', musicNames: { A: '카드 라운지', off: '끔' }, mv: '음악 볼륨', sv: '효과음 볼륨', speed: '움직임', speeds: ['보통', '빠름'], on: '켬', off: '끔',
+    played: '판 수', wins: '이긴 판', winRate: '승률', bestTime: '최고 시간', fewest: '가장 적은 수', streakNow: '연속 승', history: '최근 오늘의 퍼즐', bests: '기록',
+    keys: [['클릭 · 누르기', '가장 좋은 곳으로 자동 이동'], ['끌어서 놓기', '원하는 곳으로 옮기기'], ['U / Ctrl+Z', '되돌리기'], ['Ctrl+Y', '다시'], ['H', '힌트'], ['N', '새 게임'], ['Esc', '메뉴'], ['M', '소리 끄기·켜기']],
+    tips: ['목표: 네 무늬를 A부터 K까지 오른쪽 위 자리에 모두 올린다', '줄 위에는 색이 다르고 하나 작은 카드만 놓을 수 있다', '왼쪽 위 빈칸 네 개에는 아무 카드나 한 장씩 잠시 둘 수 있다', '여러 장을 한꺼번에 옮길 수 있는 수 = (빈칸 + 1) × 2^(빈 줄)', '힌트는 풀이기가 실제로 끝까지 풀어 본 길에서 다음 한 수를 알려 준다'] },
+  en: { title: 'FreeCell', tag: 'THE CARD PUZZLE WHERE NEARLY EVERY DEAL IS WINNABLE', newGame: 'New game', chooseDeal: 'Pick by number', dealN: '#{n}', go: 'Start', cont: 'Continue · #{n}', daily: 'Daily Puzzle', dailyDesc: 'Same deal for everyone. Your first win is the official record', play: 'Play', resume: 'Resume', viewResult: 'See result', notYet: 'Not played yet', doneTime: 'Solved · {t}', inProgress: 'In progress', streak: '{n}-day streak',
+    settings: 'Settings', records: 'Records', help: 'Rules & controls', done: 'Done', menu: 'Menu', again: 'New game', newRec: '★ NEW RECORD ★', none: 'No records yet',
+    undo: 'Undo', redo: 'Redo', hint: 'Hint', time: 'TIME', moves: 'MOVES', won: 'Solved!', stuck: 'No moves left', stuckSub: 'Undo and try another path', hintNone: 'No winning path found from here. Try undoing', thinking: 'Thinking…', restart: 'Restart',
+    confirmNew: 'Quit this deal and start a new one?', yes: 'New game', no: 'Cancel', share: 'Copy result', copied: 'Copied', nextIn: 'Next puzzle in {t}',
+    fourColor: 'Four-color deck', autoMove: 'Auto-move to foundations', music: 'Music', musicNames: { A: 'Card Lounge', off: 'Off' }, mv: 'Music volume', sv: 'Sound volume', speed: 'Animation', speeds: ['Normal', 'Fast'], on: 'On', off: 'Off',
+    played: 'Played', wins: 'Won', winRate: 'Win rate', bestTime: 'Best time', fewest: 'Fewest moves', streakNow: 'Win streak', history: 'Recent daily puzzles', bests: 'Records',
+    keys: [['Click · tap', 'Auto-move to the best spot'], ['Drag and drop', 'Move where you want'], ['U / Ctrl+Z', 'Undo'], ['Ctrl+Y', 'Redo'], ['H', 'Hint'], ['N', 'New game'], ['Esc', 'Menu'], ['M', 'Mute']],
+    tips: ['Goal: build all four suits from A to K on the top-right foundations', 'On the columns, place a card only on one rank higher of the opposite color', 'Each of the four free cells at top left holds any one card', 'Cards you can move at once = (free cells + 1) × 2^(empty columns)', 'Hints come from a solver that actually plays the deal to the end'] },
+  ja: { title: 'フリーセル', tag: 'ほとんどの配りが解けるカードパズル', newGame: '新しいゲーム', chooseDeal: '番号で選ぶ', dealN: '#{n}', go: 'スタート', cont: '続きから · #{n}', daily: '今日のパズル', dailyDesc: '全員が同じ配り。最初にクリアした記録が公式記録', play: '挑戦する', resume: '続きから挑戦', viewResult: '結果を見る', notYet: 'まだ挑戦していません', doneTime: 'クリア · {t}', inProgress: '挑戦中', streak: '{n}日連続',
+    settings: '設定', records: '記録', help: 'ルール・操作', done: 'OK', menu: 'メニュー', again: '新しいゲーム', newRec: '★ 新記録 ★', none: 'まだ記録がありません',
+    undo: '元に戻す', redo: 'やり直し', hint: 'ヒント', time: '時間', moves: '手数', won: 'クリア!', stuck: '動かせる手がありません', stuckSub: '元に戻して別の道を探そう', hintNone: 'ここからは解ける道が見つかりません。戻してみよう', thinking: '考え中…', restart: '最初から',
+    confirmNew: 'この配りをやめて新しく始めますか?', yes: '新しく始める', no: 'キャンセル', share: '結果をコピー', copied: 'コピーしました', nextIn: '次のパズルまで {t}',
+    fourColor: '4色カード', autoMove: '自動で上げる', music: '音楽', musicNames: { A: 'カードラウンジ', off: 'オフ' }, mv: '音楽の音量', sv: '効果音の音量', speed: 'アニメーション', speeds: ['ふつう', '速い'], on: 'オン', off: 'オフ',
+    played: 'プレイ数', wins: '勝ち', winRate: '勝率', bestTime: 'ベストタイム', fewest: '最少手数', streakNow: '連勝', history: '最近の今日のパズル', bests: '記録',
+    keys: [['クリック · タップ', '一番いい場所へ自動移動'], ['ドラッグ', '好きな場所へ移動'], ['U / Ctrl+Z', '元に戻す'], ['Ctrl+Y', 'やり直し'], ['H', 'ヒント'], ['N', '新しいゲーム'], ['Esc', 'メニュー'], ['M', '消音']],
+    tips: ['目的: 4つのマークをAからKまで右上の組札に全部積む', '列には色が違い、1つ大きいカードの上にだけ置ける', '左上の空きセル4つには、どのカードでも1枚ずつ置ける', '一度に動かせる枚数 = (空きセル + 1) × 2^(空き列)', 'ヒントはソルバーが実際に最後まで解いた道から次の1手を教える'] },
+  zh: { title: '空当接龙', tag: '几乎每一局都能解开的纸牌谜题', newGame: '新游戏', chooseDeal: '按编号选择', dealN: '#{n}', go: '开始', cont: '继续 · #{n}', daily: '每日谜题', dailyDesc: '所有人同一局。第一次完成的成绩为正式记录', play: '挑战', resume: '继续挑战', viewResult: '查看结果', notYet: '还没有挑战', doneTime: '完成 · {t}', inProgress: '进行中', streak: '连续 {n} 天',
+    settings: '设置', records: '记录', help: '规则与操作', done: '确定', menu: '菜单', again: '新游戏', newRec: '★ 新纪录 ★', none: '还没有记录',
+    undo: '撤销', redo: '重做', hint: '提示', time: '时间', moves: '步数', won: '完成!', stuck: '没有可走的步了', stuckSub: '撤销后换一条路试试', hintNone: '从这里找不到能解开的路，试试撤销', thinking: '思考中…', restart: '从头开始',
+    confirmNew: '放弃这一局并开始新的一局吗？', yes: '新游戏', no: '取消', share: '复制结果', copied: '已复制', nextIn: '距离下一题 {t}',
+    fourColor: '四色纸牌', autoMove: '自动收牌', music: '音乐', musicNames: { A: '纸牌休息室', off: '关' }, mv: '音乐音量', sv: '音效音量', speed: '动画', speeds: ['普通', '快'], on: '开', off: '关',
+    played: '局数', wins: '胜局', winRate: '胜率', bestTime: '最快时间', fewest: '最少步数', streakNow: '连胜', history: '最近的每日谜题', bests: '记录',
+    keys: [['点击', '自动移到最好的位置'], ['拖放', '移到想要的位置'], ['U / Ctrl+Z', '撤销'], ['Ctrl+Y', '重做'], ['H', '提示'], ['N', '新游戏'], ['Esc', '菜单'], ['M', '静音']],
+    tips: ['目标：把四种花色从 A 到 K 全部收到右上角', '列上只能放比它小一点、颜色不同的牌', '左上角四个空当，每个可以暂放任意一张牌', '一次能移动的张数 = (空当 + 1) × 2^(空列)', '提示来自求解器真正走到底的路线中的下一步'] },
+  'zh-TW': { title: '新接龍', tag: '幾乎每一局都能解開的紙牌謎題', newGame: '新遊戲', chooseDeal: '依編號選擇', dealN: '#{n}', go: '開始', cont: '繼續 · #{n}', daily: '每日謎題', dailyDesc: '所有人同一局。第一次完成的成績為正式紀錄', play: '挑戰', resume: '繼續挑戰', viewResult: '查看結果', notYet: '還沒有挑戰', doneTime: '完成 · {t}', inProgress: '進行中', streak: '連續 {n} 天',
+    settings: '設定', records: '紀錄', help: '規則與操作', done: '確定', menu: '選單', again: '新遊戲', newRec: '★ 新紀錄 ★', none: '還沒有紀錄',
+    undo: '復原', redo: '重做', hint: '提示', time: '時間', moves: '步數', won: '完成!', stuck: '沒有可走的步了', stuckSub: '復原後換一條路試試', hintNone: '從這裡找不到能解開的路，試試復原', thinking: '思考中…', restart: '從頭開始',
+    confirmNew: '放棄這一局並開始新的一局嗎？', yes: '新遊戲', no: '取消', share: '複製結果', copied: '已複製', nextIn: '距離下一題 {t}',
+    fourColor: '四色紙牌', autoMove: '自動收牌', music: '音樂', musicNames: { A: '紙牌休息室', off: '關' }, mv: '音樂音量', sv: '音效音量', speed: '動畫', speeds: ['普通', '快'], on: '開', off: '關',
+    played: '局數', wins: '勝局', winRate: '勝率', bestTime: '最快時間', fewest: '最少步數', streakNow: '連勝', history: '最近的每日謎題', bests: '紀錄',
+    keys: [['點擊', '自動移到最好的位置'], ['拖放', '移到想要的位置'], ['U / Ctrl+Z', '復原'], ['Ctrl+Y', '重做'], ['H', '提示'], ['N', '新遊戲'], ['Esc', '選單'], ['M', '靜音']],
+    tips: ['目標：把四種花色從 A 到 K 全部收到右上角', '列上只能放比它小一點、顏色不同的牌', '左上角四個空格，每個可以暫放任意一張牌', '一次能移動的張數 = (空格 + 1) × 2^(空列)', '提示來自求解器真正走到底的路線中的下一步'] },
+  es: { title: 'FreeCell', tag: 'EL SOLITARIO DONDE CASI TODAS LAS MANOS TIENEN SOLUCIÓN', newGame: 'Nueva partida', chooseDeal: 'Elegir por número', dealN: '#{n}', go: 'Empezar', cont: 'Continuar · #{n}', daily: 'Reto diario', dailyDesc: 'La misma mano para todos. Tu primera victoria es el récord oficial', play: 'Jugar', resume: 'Continuar reto', viewResult: 'Ver resultado', notYet: 'Aún no lo has jugado', doneTime: 'Resuelto · {t}', inProgress: 'En curso', streak: 'Racha de {n} días',
+    settings: 'Ajustes', records: 'Récords', help: 'Reglas y controles', done: 'Listo', menu: 'Menú', again: 'Nueva partida', newRec: '★ NUEVO RÉCORD ★', none: 'Aún no hay récords',
+    undo: 'Deshacer', redo: 'Rehacer', hint: 'Pista', time: 'TIEMPO', moves: 'MOVIMIENTOS', won: '¡Resuelto!', stuck: 'No quedan movimientos', stuckSub: 'Deshaz y prueba otro camino', hintNone: 'No hay camino ganador desde aquí. Prueba a deshacer', thinking: 'Pensando…', restart: 'Reiniciar',
+    confirmNew: '¿Dejar esta mano y empezar otra?', yes: 'Nueva partida', no: 'Cancelar', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo reto en {t}',
+    fourColor: 'Baraja de cuatro colores', autoMove: 'Subir cartas automáticamente', music: 'Música', musicNames: { A: 'Salón de cartas', off: 'No' }, mv: 'Volumen de música', sv: 'Volumen de efectos', speed: 'Animación', speeds: ['Normal', 'Rápida'], on: 'Sí', off: 'No',
+    played: 'Jugadas', wins: 'Ganadas', winRate: 'Victorias', bestTime: 'Mejor tiempo', fewest: 'Menos movimientos', streakNow: 'Racha', history: 'Retos diarios recientes', bests: 'Récords',
+    keys: [['Clic · tocar', 'Mover al mejor sitio'], ['Arrastrar y soltar', 'Mover donde quieras'], ['U / Ctrl+Z', 'Deshacer'], ['Ctrl+Y', 'Rehacer'], ['H', 'Pista'], ['N', 'Nueva partida'], ['Esc', 'Menú'], ['M', 'Silenciar']],
+    tips: ['Objetivo: subir los cuatro palos del A al K arriba a la derecha', 'En las columnas, una carta solo va sobre otra un punto mayor y de color contrario', 'Cada una de las cuatro celdas libres de arriba a la izquierda guarda una carta', 'Cartas que puedes mover a la vez = (celdas libres + 1) × 2^(columnas vacías)', 'Las pistas salen de un resolutor que juega la mano hasta el final'] },
+  fr: { title: 'FreeCell', tag: 'LA RÉUSSITE OÙ PRESQUE TOUTES LES DONNES SE RÉSOLVENT', newGame: 'Nouvelle partie', chooseDeal: 'Choisir un numéro', dealN: 'n°{n}', go: 'Jouer', cont: 'Continuer · n°{n}', daily: 'Défi du jour', dailyDesc: 'La même donne pour tous. Votre première victoire est le record officiel', play: 'Relever le défi', resume: 'Reprendre', viewResult: 'Voir le résultat', notYet: 'Pas encore joué', doneTime: 'Réussi · {t}', inProgress: 'En cours', streak: 'Série de {n} jours',
+    settings: 'Réglages', records: 'Records', help: 'Règles et commandes', done: 'OK', menu: 'Menu', again: 'Nouvelle partie', newRec: '★ NOUVEAU RECORD ★', none: 'Pas encore de record',
+    undo: 'Annuler', redo: 'Rétablir', hint: 'Indice', time: 'TEMPS', moves: 'COUPS', won: 'Réussi !', stuck: 'Plus aucun coup possible', stuckSub: 'Annulez et essayez un autre chemin', hintNone: 'Aucune solution trouvée d’ici. Essayez d’annuler', thinking: 'Réflexion…', restart: 'Recommencer',
+    confirmNew: 'Abandonner cette donne et en commencer une autre ?', yes: 'Nouvelle partie', no: 'Annuler', share: 'Copier le résultat', copied: 'Copié', nextIn: 'Prochain défi dans {t}',
+    fourColor: 'Jeu à quatre couleurs', autoMove: 'Monter automatiquement', music: 'Musique', musicNames: { A: 'Salon des cartes', off: 'Non' }, mv: 'Volume musique', sv: 'Volume effets', speed: 'Animation', speeds: ['Normale', 'Rapide'], on: 'Oui', off: 'Non',
+    played: 'Parties', wins: 'Gagnées', winRate: 'Victoires', bestTime: 'Meilleur temps', fewest: 'Moins de coups', streakNow: 'Série', history: 'Défis du jour récents', bests: 'Records',
+    keys: [['Clic · toucher', 'Déplacer au meilleur endroit'], ['Glisser-déposer', 'Déplacer où vous voulez'], ['U / Ctrl+Z', 'Annuler'], ['Ctrl+Y', 'Rétablir'], ['H', 'Indice'], ['N', 'Nouvelle partie'], ['Échap', 'Menu'], ['M', 'Couper le son']],
+    tips: ['But : monter les quatre couleurs de l’As au Roi en haut à droite', 'Dans les colonnes, une carte se pose seulement sur une carte d’une valeur au-dessus et de couleur opposée', 'Chacune des quatre cellules libres en haut à gauche garde une carte', 'Cartes déplaçables d’un coup = (cellules libres + 1) × 2^(colonnes vides)', 'Les indices viennent d’un solveur qui joue la donne jusqu’au bout'] },
+  de: { title: 'FreeCell', tag: 'DAS KARTENRÄTSEL, BEI DEM FAST JEDES SPIEL LÖSBAR IST', newGame: 'Neues Spiel', chooseDeal: 'Nach Nummer wählen', dealN: 'Nr. {n}', go: 'Start', cont: 'Weiter · Nr. {n}', daily: 'Tagesrätsel', dailyDesc: 'Für alle dasselbe Spiel. Dein erster Sieg ist der offizielle Rekord', play: 'Spielen', resume: 'Weiterspielen', viewResult: 'Ergebnis ansehen', notYet: 'Noch nicht gespielt', doneTime: 'Gelöst · {t}', inProgress: 'Läuft', streak: '{n} Tage in Folge',
+    settings: 'Einstellungen', records: 'Rekorde', help: 'Regeln & Steuerung', done: 'Fertig', menu: 'Menü', again: 'Neues Spiel', newRec: '★ NEUER REKORD ★', none: 'Noch keine Rekorde',
+    undo: 'Zurück', redo: 'Wiederholen', hint: 'Tipp', time: 'ZEIT', moves: 'ZÜGE', won: 'Gelöst!', stuck: 'Keine Züge mehr', stuckSub: 'Nimm Züge zurück und versuch einen anderen Weg', hintNone: 'Von hier aus kein Lösungsweg gefunden. Nimm Züge zurück', thinking: 'Überlege…', restart: 'Neu beginnen',
+    confirmNew: 'Dieses Spiel abbrechen und ein neues beginnen?', yes: 'Neues Spiel', no: 'Abbrechen', share: 'Ergebnis kopieren', copied: 'Kopiert', nextIn: 'Nächstes Rätsel in {t}',
+    fourColor: 'Vierfarbiges Blatt', autoMove: 'Automatisch ablegen', music: 'Musik', musicNames: { A: 'Kartenlounge', off: 'Aus' }, mv: 'Musiklautstärke', sv: 'Effektlautstärke', speed: 'Animation', speeds: ['Normal', 'Schnell'], on: 'An', off: 'Aus',
+    played: 'Gespielt', wins: 'Gewonnen', winRate: 'Siegquote', bestTime: 'Bestzeit', fewest: 'Wenigste Züge', streakNow: 'Siegesserie', history: 'Letzte Tagesrätsel', bests: 'Rekorde',
+    keys: [['Klick · Tippen', 'Automatisch an die beste Stelle'], ['Ziehen und Ablegen', 'Wohin du willst'], ['U / Strg+Z', 'Zurück'], ['Strg+Y', 'Wiederholen'], ['H', 'Tipp'], ['N', 'Neues Spiel'], ['Esc', 'Menü'], ['M', 'Ton aus']],
+    tips: ['Ziel: alle vier Farben von A bis K oben rechts ablegen', 'In den Spalten passt eine Karte nur auf eine um eins höhere der anderen Farbe', 'Jede der vier freien Zellen oben links hält eine beliebige Karte', 'Gleichzeitig verschiebbare Karten = (freie Zellen + 1) × 2^(leere Spalten)', 'Tipps stammen von einem Löser, der das Spiel wirklich zu Ende spielt'] },
+  pt: { title: 'FreeCell', tag: 'O PACIÊNCIA EM QUE QUASE TODA MÃO TEM SOLUÇÃO', newGame: 'Novo jogo', chooseDeal: 'Escolher pelo número', dealN: 'nº {n}', go: 'Jogar', cont: 'Continuar · nº {n}', daily: 'Desafio do dia', dailyDesc: 'A mesma mão para todos. A primeira vitória é o recorde oficial', play: 'Desafiar', resume: 'Continuar desafio', viewResult: 'Ver resultado', notYet: 'Ainda não jogado', doneTime: 'Resolvido · {t}', inProgress: 'Em andamento', streak: '{n} dias seguidos',
+    settings: 'Configurações', records: 'Recordes', help: 'Regras e controles', done: 'OK', menu: 'Menu', again: 'Novo jogo', newRec: '★ NOVO RECORDE ★', none: 'Ainda não há recordes',
+    undo: 'Desfazer', redo: 'Refazer', hint: 'Dica', time: 'TEMPO', moves: 'JOGADAS', won: 'Resolvido!', stuck: 'Sem jogadas', stuckSub: 'Desfaça e tente outro caminho', hintNone: 'Não há caminho de vitória a partir daqui. Tente desfazer', thinking: 'Pensando…', restart: 'Recomeçar',
+    confirmNew: 'Abandonar esta mão e começar outra?', yes: 'Novo jogo', no: 'Cancelar', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo desafio em {t}',
+    fourColor: 'Baralho de quatro cores', autoMove: 'Subir cartas automaticamente', music: 'Música', musicNames: { A: 'Salão de cartas', off: 'Desligada' }, mv: 'Volume da música', sv: 'Volume dos efeitos', speed: 'Animação', speeds: ['Normal', 'Rápida'], on: 'Ligado', off: 'Desligado',
+    played: 'Jogos', wins: 'Vitórias', winRate: 'Taxa de vitória', bestTime: 'Melhor tempo', fewest: 'Menos jogadas', streakNow: 'Sequência', history: 'Desafios do dia recentes', bests: 'Recordes',
+    keys: [['Clique · toque', 'Mover para o melhor lugar'], ['Arrastar e soltar', 'Mover para onde quiser'], ['U / Ctrl+Z', 'Desfazer'], ['Ctrl+Y', 'Refazer'], ['H', 'Dica'], ['N', 'Novo jogo'], ['Esc', 'Menu'], ['M', 'Silenciar']],
+    tips: ['Objetivo: subir os quatro naipes do Ás ao Rei no canto superior direito', 'Nas colunas, uma carta só vai sobre outra um valor acima e de cor oposta', 'Cada uma das quatro células livres no canto superior esquerdo guarda uma carta', 'Cartas que dá para mover de uma vez = (células livres + 1) × 2^(colunas vazias)', 'As dicas vêm de um solucionador que joga a mão até o fim'] },
+  ru: { title: 'Свободная ячейка', tag: 'ПАСЬЯНС, В КОТОРОМ ПОЧТИ ЛЮБАЯ РАСКЛАДКА РЕШАЕТСЯ', newGame: 'Новая игра', chooseDeal: 'Выбрать по номеру', dealN: '№{n}', go: 'Начать', cont: 'Продолжить · №{n}', daily: 'Задача дня', dailyDesc: 'У всех одна раскладка. Первая победа — официальный рекорд', play: 'Играть', resume: 'Продолжить', viewResult: 'Посмотреть итог', notYet: 'Ещё не сыграно', doneTime: 'Решено · {t}', inProgress: 'Идёт', streak: '{n} дн. подряд',
+    settings: 'Настройки', records: 'Рекорды', help: 'Правила и управление', done: 'Готово', menu: 'Меню', again: 'Новая игра', newRec: '★ НОВЫЙ РЕКОРД ★', none: 'Рекордов пока нет',
+    undo: 'Отменить', redo: 'Повторить', hint: 'Подсказка', time: 'ВРЕМЯ', moves: 'ХОДЫ', won: 'Решено!', stuck: 'Ходов больше нет', stuckSub: 'Отмени ходы и попробуй другой путь', hintNone: 'Отсюда решение не найдено. Попробуй отменить ходы', thinking: 'Думаю…', restart: 'Заново',
+    confirmNew: 'Бросить эту раскладку и начать новую?', yes: 'Новая игра', no: 'Отмена', share: 'Скопировать итог', copied: 'Скопировано', nextIn: 'Следующая задача через {t}',
+    fourColor: 'Четырёхцветная колода', autoMove: 'Автоматически в дом', music: 'Музыка', musicNames: { A: 'Карточный салон', off: 'Выкл' }, mv: 'Громкость музыки', sv: 'Громкость эффектов', speed: 'Анимация', speeds: ['Обычная', 'Быстрая'], on: 'Вкл', off: 'Выкл',
+    played: 'Сыграно', wins: 'Победы', winRate: 'Процент побед', bestTime: 'Лучшее время', fewest: 'Меньше всего ходов', streakNow: 'Серия побед', history: 'Недавние задачи дня', bests: 'Рекорды',
+    keys: [['Клик · касание', 'Автоход в лучшее место'], ['Перетаскивание', 'Переложить куда хочешь'], ['U / Ctrl+Z', 'Отменить'], ['Ctrl+Y', 'Повторить'], ['H', 'Подсказка'], ['N', 'Новая игра'], ['Esc', 'Меню'], ['M', 'Звук']],
+    tips: ['Цель: собрать все четыре масти от туза до короля справа вверху', 'В столбцах карту можно класть только на карту на единицу старше и другого цвета', 'В каждую из четырёх свободных ячеек слева вверху можно положить одну карту', 'Сколько карт можно перенести сразу = (свободные ячейки + 1) × 2^(пустые столбцы)', 'Подсказки дают решатель, который действительно доигрывает раскладку до конца'] },
+  vi: { title: 'FreeCell', tag: 'TRÒ XẾP BÀI GẦN NHƯ VÁN NÀO CŨNG GIẢI ĐƯỢC', newGame: 'Ván mới', chooseDeal: 'Chọn theo số', dealN: '#{n}', go: 'Bắt đầu', cont: 'Chơi tiếp · #{n}', daily: 'Câu đố hôm nay', dailyDesc: 'Mọi người cùng một ván. Lần thắng đầu tiên là kỷ lục chính thức', play: 'Thử thách', resume: 'Chơi tiếp', viewResult: 'Xem kết quả', notYet: 'Chưa chơi', doneTime: 'Đã giải · {t}', inProgress: 'Đang chơi', streak: 'Chuỗi {n} ngày',
+    settings: 'Cài đặt', records: 'Kỷ lục', help: 'Luật và điều khiển', done: 'Xong', menu: 'Menu', again: 'Ván mới', newRec: '★ KỶ LỤC MỚI ★', none: 'Chưa có kỷ lục',
+    undo: 'Hoàn tác', redo: 'Làm lại', hint: 'Gợi ý', time: 'THỜI GIAN', moves: 'NƯỚC ĐI', won: 'Đã giải!', stuck: 'Hết nước đi', stuckSub: 'Hoàn tác và thử đường khác', hintNone: 'Từ đây không tìm được đường thắng. Hãy thử hoàn tác', thinking: 'Đang nghĩ…', restart: 'Chơi lại từ đầu',
+    confirmNew: 'Bỏ ván này và bắt đầu ván mới?', yes: 'Ván mới', no: 'Hủy', share: 'Sao chép kết quả', copied: 'Đã sao chép', nextIn: 'Câu đố mới sau {t}',
+    fourColor: 'Bài bốn màu', autoMove: 'Tự động đưa bài lên', music: 'Nhạc', musicNames: { A: 'Phòng chờ bài', off: 'Tắt' }, mv: 'Âm lượng nhạc', sv: 'Âm lượng hiệu ứng', speed: 'Hoạt ảnh', speeds: ['Vừa', 'Nhanh'], on: 'Bật', off: 'Tắt',
+    played: 'Đã chơi', wins: 'Thắng', winRate: 'Tỉ lệ thắng', bestTime: 'Thời gian tốt nhất', fewest: 'Ít nước nhất', streakNow: 'Chuỗi thắng', history: 'Câu đố hôm nay gần đây', bests: 'Kỷ lục',
+    keys: [['Nhấp · chạm', 'Tự chuyển tới chỗ tốt nhất'], ['Kéo thả', 'Chuyển tới nơi bạn muốn'], ['U / Ctrl+Z', 'Hoàn tác'], ['Ctrl+Y', 'Làm lại'], ['H', 'Gợi ý'], ['N', 'Ván mới'], ['Esc', 'Menu'], ['M', 'Tắt tiếng']],
+    tips: ['Mục tiêu: đưa cả bốn chất từ A đến K lên góc trên bên phải', 'Ở các cột, chỉ đặt lá bài lên lá lớn hơn một bậc và khác màu', 'Mỗi ô trống ở góc trên bên trái giữ được một lá bất kỳ', 'Số lá chuyển được một lần = (ô trống + 1) × 2^(cột trống)', 'Gợi ý lấy từ bộ giải đã thật sự chơi ván bài đến cuối'] },
+};
+
+// ───────────────────────── 화면·흐름·조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const tfmt = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dateLabel = ds => { try { return new Intl.DateTimeFormat(LANG, { month: 'long', day: 'numeric' }).format(new Date(ds + 'T12:00:00')); } catch { return ds; } };
+const DEF = { four: false, auto: true, music: 'A', mv: 0.3, sv: 0.7, speed: 0, muted: false };
+let ST = { set: { ...DEF }, stats: { played: 0, won: 0, streak: 0, bestStreak: 0, bestTime: 0, fewest: 0 }, cur: null, curDaily: null, daily: {}, dailyDeal: {} };
+try { const d = JSON.parse(localStorage.getItem('wiiiv-freecell') || '{}'); ST = { ...ST, ...d, set: { ...DEF, ...(d.set || {}) }, stats: { ...ST.stats, ...(d.stats || {}) } }; } catch { /* 저장소 없이도 동작 */ }
+const SET = ST.set;
+const save = () => { try { localStorage.setItem('wiiiv-freecell', JSON.stringify(ST)); } catch { /* 무시 */ } };
+const chip = new Chip(); chip.setVol(SET.mv, SET.sv); chip.muted = SET.muted;
+let game = null, mode = 'classic', dayKey = null, phase = 'menu', elapsed = 0, running = false, lastT = 0, busy = false, counted = false;
+const table = $('table'), els = [];
+let L = {};
+
+// ── 풀이기는 따로 일하는 일꾼에서 (화면이 멈추지 않게)
+let worker = null, wid = 0; const pending = new Map();
+try {
+  const code = ENGINE_SRC + '\nonmessage = e => { const { id, state, limit } = e.data; let path = null; try { path = solveHard(state, limit); } catch (err) {} postMessage({ id, path }); };';
+  worker = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+  worker.onmessage = e => { const cb = pending.get(e.data.id); pending.delete(e.data.id); if (cb) cb(e.data.path); };
+  worker.onerror = () => { worker = null; };
+} catch { worker = null; }
+function solveAsync(state, limit) { return new Promise(res => { if (worker) { const id = ++wid; pending.set(id, res); worker.postMessage({ id, state, limit }); } else setTimeout(() => res(solveHard(state, limit)), 20); }); }
+
+// ── 카드 만들기
+function makeCards() {
+  for (let c = 0; c < 52; c++) {
+    const el = document.createElement('div'), r = RANK(c), s = SUIT(c);
+    el.className = `card ${RED(c) ? 'red' : 'blk'} su${s}`; el.dataset.c = c;
+    const face = r >= 10 ? `<div class="face" style="background:${RED(c) ? 'linear-gradient(160deg,#ffe3e8,#ffc2cc)' : 'linear-gradient(160deg,#e3e8ff,#c4cdf0)'}">${RANKS[r]}<span style="font-size:.55em;margin-left:1px">${SUITS[s]}</span></div>` : `<div class="mid">${SUITS[s]}</div>`;
+    el.innerHTML = `<div class="ix"><span class="r">${RANKS[r]}</span><span class="s">${SUITS[s]}</span></div><div class="ix2">${SUITS[s]}</div>${face}`;
+    table.appendChild(el); els[c] = el;
   }
-  return null;
+  for (let i = 0; i < 8; i++) { const s = document.createElement('div'); s.className = 'slot' + (i >= 4 ? ' found' : ''); s.id = 'slot' + i; if (i >= 4) s.textContent = SUITS[i - 4]; table.appendChild(s); }
 }
-function smartDestination(from, count) {
-  // double-click / tap on selected: foundation first, then best column, then free cell
-  const cards = from.type === 'cell' ? [cells[from.index]] : cols[from.index].slice(cols[from.index].length - count);
-  const first = cards[0];
-  if (cards.length === 1 && found[first.suit] === first.rank - 1) return { type: 'found', index: first.suit };
-  for (let i = 0; i < 8; i++) { if (from.type === 'col' && from.index === i) continue; const d = cols[i]; if (d.length && canStack(first, d[d.length - 1]) && cards.length <= maxMovable(false)) return { type: 'col', index: i }; }
-  if (cards.length === 1 && from.type === 'col') { const i = cells.findIndex(c => !c); if (i >= 0) return { type: 'cell', index: i }; }
-  const e = cols.findIndex(c => c.length === 0); if (e >= 0 && cards.length <= maxMovable(true) && !(from.type === 'col' && cards.length === cols[from.index].length)) return { type: 'col', index: e };
-  return null;
+// ── 배치
+function layout() {
+  const W = innerWidth, H = innerHeight, top = 56;
+  const gap = Math.max(4, Math.round(Math.min(W, 1100) * 0.012)), cw = Math.floor(Math.max(36, Math.min(100, (Math.min(W, 1100) - 20 - 7 * gap) / 8, (H - top - 40) / 1.4 / 3.2)));
+  const ch = Math.round(cw * 1.4), x0 = Math.round((W - (8 * cw + 7 * gap)) / 2), y0 = top + 6, y1 = y0 + ch + Math.max(12, Math.round(cw * 0.22));
+  L = { W, H, gap, cw, ch, x0, y0, y1 };
+  const R = document.documentElement.style; R.setProperty('--cw', cw + 'px'); R.setProperty('--ch', ch + 'px'); R.setProperty('--cr', Math.round(cw * 0.09) + 'px'); R.setProperty('--sp', (SET.speed ? 110 : 190) + 'ms');
+  document.body.classList.toggle('four', SET.four);
+  for (const el of els) el.classList.toggle('small', cw < 58);
+  for (let i = 0; i < 8; i++) { const s = $('slot' + i); Object.assign(s.style, { left: colX(i) + 'px', top: y0 + 'px', width: cw + 'px', height: ch + 'px' }); }
+  fx.width = W * devicePixelRatio; fx.height = H * devicePixelRatio; fx.style.width = W + 'px'; fx.style.height = H + 'px';
+  if (game) place(true);
+}
+addEventListener('resize', () => layout());
+const colX = i => L.x0 + i * (L.cw + L.gap);
+function fanOf(i) { const n = game.cols[i].length; const base = Math.max(16, L.cw * 0.42), avail = L.H - L.y1 - L.ch - 10; return n > 1 ? Math.min(base, Math.max(Math.min(base, L.cw * 0.36), avail / (n - 1))) : base; }
+function posOf(c) {
+  for (let i = 0; i < 4; i++) if (game.free[i] === c) return [colX(i), L.y0, 10];
+  for (let i = 0; i < 8; i++) { const k = game.cols[i].indexOf(c); if (k >= 0) return [colX(i), L.y1 + k * fanOf(i), 20 + k]; }
+  const s = SUIT(c); return [colX(4 + s), L.y0, 10 + RANK(c)];
+}
+function place(instant) {
+  for (let c = 0; c < 52; c++) {
+    const el = els[c]; if (el.classList.contains('drag')) continue;
+    const [x, y, z] = posOf(c); if (instant) el.style.transition = 'none';
+    el.style.transform = `translate(${x}px,${y}px)`; el.style.zIndex = z;
+    // 올라간 카드는 맨 위만 보인다
+    el.style.visibility = 'visible';
+    if (instant) { void el.offsetWidth; el.style.transition = ''; }
+  }
+  hud();
+}
+function hud() {
+  if (!game) return;
+  $('ttl').innerHTML = ''; const t = document.createElement('span'); t.textContent = mode === 'daily' ? T.daily : T.title; const sm = document.createElement('small'); sm.textContent = mode === 'daily' ? dateLabel(dayKey) : fmt(T.dealN, game.deal); $('ttl').append(t, sm);
+  $('iTime').innerHTML = `<span class="lb">${T.time}</span> <b>⏱ ${tfmt(elapsed)}</b>`; $('iMoves').innerHTML = `<span class="lb">${T.moves}</span> <b>${game.moves}</b>`;
+  $('bUndo').disabled = !game.hist.length || phase !== 'play';
+}
+// ── 효과 캔버스
+const fx = $('fx'), fc = fx.getContext('2d'); let cascade = null;
+function toast(text, ms = 2200) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = text; d.style.animationDuration = ms + 'ms'; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+
+// ── 움직임 + 자동 올리기
+function afterMove() {
+  chip.sfx('place'); startClock(); place(); persist();
+  autoUp().then(() => { if (game.won) return win(); if (game.noMoves()) { chip.sfx('stuck'); toast(`${T.stuck} — ${T.stuckSub}`, 3200); } });
+}
+function autoUp() {
+  return new Promise(res => {
+    const stepA = () => {
+      if (!SET.auto || !game) return res();
+      const a = game.nextAuto(); if (!a) return res();
+      game.apply(a.from, { t: 'found', i: 0 }, 1, false); chip.sfx('found', { r: RANK(a.card) }); place(); persist();
+      setTimeout(stepA, SET.speed ? 70 : 110);
+    };
+    setTimeout(stepA, SET.speed ? 90 : 150);
+  });
+}
+function startClock() { if (!running && phase === 'play') { running = true; lastT = performance.now(); if (!counted) { counted = true; if (mode === 'classic') { ST.stats.played++; save(); } } } }
+function tryMove(from, to, n) { if (!game.legal(from, to, n)) return false; game.apply(from, to, n); hintClear(); afterMove(); return true; }
+function smartMove(from, n) {
+  const to = game.bestTarget(from, n);
+  if (to) { tryMove(from, to, n); return true; }
+  chip.sfx('nope'); return false;
 }
 
-let drag = null;   // { from, count, els, startX, startY, moved, offsets }
-let lastTap = { id: null, t: 0 };
-
-boardEl.addEventListener('pointerdown', e => {
-  if (won) return;
-  const cardNode = e.target.closest('.card');
-  if (!cardNode) {
-    // clicking an empty slot with a selection = move there
-    if (selected) { const to = targetFromPoint(e.clientX, e.clientY); if (to && tryMoveSmart(selected.from, to, selected.count)) afterMove(); else { selected = null; render(); } }
-    return;
-  }
-  const loc = locate(cardNode.dataset.id);
-  if (!loc) return;   // foundation cards are not movable
-  let count = 1, from = { type: loc.type, index: loc.index };
-  if (loc.type === 'col') { const run = cols[loc.index].slice(loc.pos); if (!isRun(run)) return; count = run.length; }
-  const now = Date.now();
-  if (lastTap.id === cardNode.dataset.id && now - lastTap.t < 350) {
-    lastTap = { id: null, t: 0 };
-    const to = smartDestination(from, count);
-    if (to && tryMove(from, to, count)) afterMove(); else { selected = null; render(); }
-    return;
-  }
-  lastTap = { id: cardNode.dataset.id, t: now };
-  // If a selection exists and we click a different card, try moving onto its pile
-  if (selected && !(selected.from.type === from.type && selected.from.index === from.index)) {
-    const to = { type: from.type, index: from.index };
-    if (tryMoveSmart(selected.from, to, selected.count)) { afterMove(); return; }
-  }
-  selected = { from, count };
-  render();
-  const els = selectionCards().map(cardEl);
-  const rects = els.map(el => el.getBoundingClientRect());
-  drag = { from, count, els, startX: e.clientX, startY: e.clientY, moved: false, rects };
-  boardEl.setPointerCapture(e.pointerId);
+// ── 끌어 놓기 · 누르기
+let drag = null;
+function locate(c) {
+  for (let i = 0; i < 4; i++) if (game.free[i] === c) return { t: 'free', i, k: 0, n: 1 };
+  for (let i = 0; i < 8; i++) { const k = game.cols[i].indexOf(c); if (k >= 0) return { t: 'col', i, k, n: game.cols[i].length - k }; }
+  return { t: 'found' };
+}
+table.addEventListener('pointerdown', e => {
+  chip.init(); const el = e.target.closest('.card'); if (!el || !game || phase !== 'play' || busy) return; e.preventDefault();
+  const c = +el.dataset.c, loc = locate(c); if (loc.t === 'found') return;
+  if (loc.t === 'col' && !game.isRun(loc.i, loc.k)) { chip.sfx('nope'); wiggle(el); return; }
+  const cards = loc.t === 'col' ? game.cols[loc.i].slice(loc.k) : [c];
+  const [x, y] = posOf(c);
+  drag = { id: e.pointerId, loc, cards, sx: e.clientX, sy: e.clientY, ox: e.clientX - x, oy: e.clientY - y, moved: false };
+  try { table.setPointerCapture(e.pointerId); } catch { /* 무시 */ }
 });
-boardEl.addEventListener('pointermove', e => {
-  if (!drag) return;
-  const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
-  if (!drag.moved && Math.hypot(dx, dy) < 5) return;
-  drag.moved = true;
-  drag.els.forEach((el, k) => { el.classList.add('dragging'); el.style.zIndex = 1000 + k; el.style.transform = `translate(${dx}px, ${dy}px)`; });
-  document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
-  const to = targetFromPoint(e.clientX, e.clientY);
-  if (to) { const t = to.type === 'col' ? tabEl.children[to.index] : topEl.querySelector(`.slot[data-type="${to.type}"][data-index="${to.index}"]`); if (t) t.classList.add('target'); }
+table.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 7) return;
+  if (!drag.moved) { drag.moved = true; chip.sfx('pick'); drag.cards.forEach((c, j) => { els[c].classList.add('drag'); els[c].style.zIndex = 1000 + j; }); }
+  const off = drag.loc.t === 'col' ? fanOf(drag.loc.i) : 0;
+  drag.cards.forEach((c, j) => { els[c].style.transform = `translate(${e.clientX - drag.ox}px,${e.clientY - drag.oy + j * Math.max(off, L.cw * 0.25)}px)`; });
 });
-function endDrag(e) {
-  if (!drag) return;
-  const d = drag; drag = null;
-  document.querySelectorAll('.target').forEach(t => t.classList.remove('target'));
-  // Hit-test BEFORE restoring the cards: while .dragging they are pointer-events:none, and the
-  // transform transition would otherwise leave them under the pointer and hit their own column.
-  const to = d.moved ? targetFromPoint(e.clientX, e.clientY) : null;
-  d.els.forEach((el, k) => { el.classList.remove('dragging'); el.style.transform = ''; el.style.zIndex = 500 + k; });
-  if (!d.moved) return;                       // plain click: keep selection
-  if (to && tryMoveSmart(d.from, to, d.count)) afterMove(); else { selected = null; render(); }
+const endDrag = e => {
+  if (!drag || drag.id !== e.pointerId) return; const d = drag; drag = null;
+  d.cards.forEach(c => els[c].classList.remove('drag'));
+  const from = { t: d.loc.t, i: d.loc.i }, n = d.cards.length;
+  if (!d.moved) {
+    // 힌트가 가리킨 카드를 누르면 힌트대로 옮긴다
+    if (hintMove && hintMove.from.t === from.t && hintMove.from.i === from.i) { const m = hintMove; if (tryMove(m.from, m.to, m.n)) return; }
+    if (!smartMove(from, n)) { if (n > 1) { /* 줄 일부만이라도: 맨 아래 장부터 가능한 만큼 */ for (let m = n - 1; m >= 1; m--) { const to = game.bestTarget(from, m); if (to && to.t !== 'free') { tryMove(from, to, m); return; } } } place(); } return; }
+  // 놓은 곳 찾기: 카드 가운데 위치 기준
+  const cx = e.clientX - d.ox + L.cw / 2, cy = e.clientY - d.oy + L.ch / 2;
+  let col = Math.round((cx - L.x0 - L.cw / 2) / (L.cw + L.gap)); col = Math.max(0, Math.min(7, col));
+  let to;
+  if (cy < L.y1 - 4) to = col < 4 ? { t: 'free', i: game.free[col] < 0 ? col : game.free.indexOf(-1) } : { t: 'found', i: 0 };
+  else to = { t: 'col', i: col };
+  if (to.i < 0 || !tryMove(from, to, n)) { chip.sfx('nope'); place(); }
+};
+table.addEventListener('pointerup', endDrag); table.addEventListener('pointercancel', e => { if (drag) { drag.cards.forEach(c => els[c].classList.remove('drag')); drag = null; place(); } });
+function wiggle(el) { el.animate([{ marginLeft: '0px' }, { marginLeft: '-4px' }, { marginLeft: '4px' }, { marginLeft: '0px' }], { duration: 180 }); }
+
+// ── 되돌리기 · 힌트
+function undo() { if (!game || phase !== 'play' || !game.undo()) return; chip.sfx('undo'); hintClear(); place(); persist(); }
+function redo() { if (!game || phase !== 'play' || !game.redo()) return; chip.sfx('undo'); place(); persist(); }
+let hintEls = [], hintMove = null;
+function hintClear() { for (const e of hintEls) e.classList.remove('hl'); hintEls = []; hintMove = null; }
+async function hint() {
+  if (!game || phase !== 'play' || busy) return; busy = true; $('bHint').disabled = true; const tm = setTimeout(() => toast(T.thinking, 1500), 400);
+  const path = await solveAsync({ cols: game.cols, free: game.free, found: game.found }, 60000);
+  clearTimeout(tm); busy = false; $('bHint').disabled = false;
+  if (!path || !path.length) { chip.sfx('stuck'); toast(T.hintNone, 3000); return; }
+  const m = path[0]; game.hints++; chip.sfx('hint'); hintClear(); hintMove = m;
+  const src = m.from.t === 'free' ? [game.free[m.from.i]] : game.cols[m.from.i].slice(-m.n);
+  for (const c of src) { els[c].classList.add('hl'); hintEls.push(els[c]); }
+  let dst = null;
+  if (m.to.t === 'found') dst = $('slot' + (4 + SUIT(src[0])));
+  else if (m.to.t === 'free') dst = $('slot' + m.to.i);
+  else { const col = game.cols[m.to.i]; dst = col.length ? els[col[col.length - 1]] : null; if (!dst) { const ghost = document.createElement('div'); ghost.className = 'slot hl'; Object.assign(ghost.style, { left: colX(m.to.i) + 'px', top: L.y1 + 'px', width: L.cw + 'px', height: L.ch + 'px' }); table.appendChild(ghost); setTimeout(() => ghost.remove(), 2000); } }
+  if (dst) { dst.classList.add('hl'); hintEls.push(dst); }
+  setTimeout(() => { for (const e of hintEls) e.classList.remove('hl'); }, 2400);
 }
-boardEl.addEventListener('pointerup', endDrag);
-boardEl.addEventListener('pointercancel', endDrag);
 
-// ---- Buttons ----
-document.getElementById('newBtn').onclick = () => startGame();
-document.getElementById('seedBtn').onclick = () => { const v = parseInt(document.getElementById('seedInput').value, 10); startGame(v > 0 ? v : undefined); };
-document.getElementById('seedInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('seedBtn').click(); });
-document.getElementById('undoBtn').onclick = undo;
-document.getElementById('hintBtn').onclick = showHint;
-document.getElementById('autoBtn').onclick = () => { if (autoPlay(true)) { render(); checkWin(); } else toast(T.nothingAuto); };
-document.getElementById('againBtn').onclick = () => startGame();
-document.addEventListener('keydown', e => { if (e.ctrlKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); } if (e.key === 'Escape') { selected = null; render(); } });
-window.addEventListener('resize', render);
+// ── 시작·끝
+function newDeal(deal) { chip.init(); mode = 'classic'; game = new FreeCell({ deal }); elapsed = 0; counted = false; begin(true); }
+function contClassic() { chip.init(); mode = 'classic'; game = FreeCell.load(ST.cur.g); elapsed = ST.cur.elapsed || 0; counted = true; begin(false); }
+async function startDaily() {
+  chip.init(); dayKey = today();
+  const cur = ST.curDaily && ST.curDaily.date === dayKey ? ST.curDaily : null, rec = ST.daily[dayKey];
+  if (cur) { mode = 'daily'; game = FreeCell.load(cur.g); elapsed = cur.elapsed || 0; counted = true; begin(false); if (rec && rec.done && game.won) finish(true); return; }
+  let deal = ST.dailyDeal[dayKey];
+  if (!deal) {
+    toast(T.thinking, 1500); deal = dailyDeal(dayKey);
+    for (let k = 0; k < 5; k++) { const p = await solveAsync({ cols: dealNumber(deal), free: [-1, -1, -1, -1], found: [0, 0, 0, 0] }, 80000); if (p) break; deal = deal % 1000000 + 1; }
+    ST.dailyDeal = { [dayKey]: deal }; save();
+  }
+  mode = 'daily'; game = new FreeCell({ deal }); elapsed = 0; counted = true; begin(true);
+}
+function begin(dealAnim) {
+  phase = 'play'; running = false; showOnly(null); layout(); hintClear(); cascade = null; fc.clearRect(0, 0, fx.width, fx.height);
+  if (dealAnim) {
+    // 카드를 위에서 한 장씩 나눠 준다
+    for (const el of els) { el.style.transition = 'none'; el.style.transform = `translate(${L.W / 2 - L.cw / 2}px,${-L.ch - 20}px)`; }
+    void table.offsetWidth; let k = 0;
+    for (let r = 0; r < 7; r++) for (let i = 0; i < 8; i++) { const c = game.cols[i][r]; if (c == null) continue; const el = els[c], d = k++ * 18; setTimeout(() => { el.style.transition = ''; const [x, y, z] = posOf(c); el.style.zIndex = z; el.style.transform = `translate(${x}px,${y}px)`; if (d % 72 === 0) chip.sfx('deal'); }, d); }
+    setTimeout(() => { place(); autoUp(); }, k * 18 + 250);
+  } else place(true);
+  persist();
+  if (SET.music !== 'off') chip.play(SET.music); else chip.stop();
+}
+function persist() {
+  if (!game) return; const s = { g: game.save(), elapsed };
+  if (mode === 'daily') ST.curDaily = { date: dayKey, ...s }; else ST.cur = game.won ? null : s;
+  save();
+}
+function showOnly(id) { for (const k of ['menu', 'settings', 'records', 'help', 'confirm', 'result']) $(k).hidden = k !== id; }
+function toMenu() { running = false; persist(); phase = 'menu'; chip.stop(); buildMenu(); showOnly('menu'); cascade = null; fc.clearRect(0, 0, fx.width, fx.height); }
+function win() {
+  if (phase !== 'play') return; phase = 'won'; running = false; chip.stop(); chip.sfx('win'); persist();
+  const st = ST.stats;
+  if (mode === 'classic') { st.won++; st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); }
+  game._newTime = mode === 'classic' && (!st.bestTime || elapsed < st.bestTime); game._newMoves = mode === 'classic' && (!st.fewest || game.moves < st.fewest);
+  if (mode === 'classic') { if (game._newTime) st.bestTime = elapsed; if (game._newMoves) st.fewest = game.moves; ST.cur = null; }
+  else if (!(ST.daily[dayKey] || {}).done) ST.daily[dayKey] = { done: true, time: elapsed, moves: game.moves, deal: game.deal };
+  save();
+  startCascade(); setTimeout(() => { if (phase === 'won') finish(); }, 6500);
+}
+function finish(quiet) {
+  phase = 'result'; cascade = null; const st = ST.stats, rows = [];
+  if (mode === 'daily') {
+    const rec = ST.daily[dayKey] || { time: elapsed, moves: game.moves };
+    $('resTitle').textContent = `${T.daily} · ${dateLabel(dayKey)}`; $('resScore').textContent = tfmt(rec.time);
+    const s = streak(); $('resSub').textContent = `${fmt(T.dealN, game.deal)}${s ? ' · ' + fmt(T.streak, s) : ''}`;
+    rows.push([T.time, tfmt(rec.time)], [T.moves, rec.moves]);
+    $('bShare').hidden = false; $('bAgain').textContent = T.newGame;
+  } else {
+    $('resTitle').textContent = T.won; $('resScore').textContent = tfmt(elapsed); $('resSub').textContent = fmt(T.dealN, game.deal);
+    rows.push([T.moves, game.moves], [T.winRate, Math.round(st.won / Math.max(1, st.played) * 100) + '%'], [T.streakNow, st.streak], [T.bestTime, tfmt(st.bestTime)], [T.fewest, st.fewest]);
+    $('bShare').hidden = true; $('bAgain').textContent = T.newGame;
+  }
+  $('resNew').hidden = !(game._newTime || game._newMoves); $('resNew').textContent = T.newRec;
+  $('resGrid').innerHTML = ''; for (const [k, v] of rows) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; $('resGrid').append(a, b); }
+  showOnly('result');
+}
+function streak() {
+  let n = 0; const d = new Date(); if (!(ST.daily[today()] || {}).done) d.setDate(d.getDate() - 1);
+  for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if ((ST.daily[k] || {}).done) { n++; d.setDate(d.getDate() - 1); } else break; }
+  return n;
+}
+// ── 이겼을 때: 카드가 튀며 흘러내린다
+function cardCanvas(c) {
+  const w = L.cw, h = L.ch, d = devicePixelRatio, cv = document.createElement('canvas'); cv.width = w * d; cv.height = h * d; const x = cv.getContext('2d'); x.scale(d, d);
+  x.fillStyle = '#fff'; x.beginPath(); x.roundRect ? x.roundRect(0.5, 0.5, w - 1, h - 1, w * 0.09) : x.rect(0, 0, w, h); x.fill(); x.strokeStyle = 'rgba(0,0,0,.2)'; x.stroke();
+  const col = SET.four ? ['#178a3c', '#1a6fd8', '#d0203a', '#1b1f2e'][SUIT(c)] : (RED(c) ? '#d0203a' : '#1b1f2e');
+  x.fillStyle = col; x.font = `800 ${w * 0.34}px system-ui, sans-serif`; x.textBaseline = 'top'; x.fillText(RANKS[RANK(c)], w * 0.07, w * 0.04); x.font = `${w * 0.28}px system-ui, sans-serif`; x.fillText(SUITS[SUIT(c)], w * 0.08, w * 0.4);
+  x.font = `${w * 0.6}px system-ui, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'alphabetic'; x.fillText(SUITS[SUIT(c)], w / 2, h * 0.88);
+  return cv;
+}
+function startCascade() {
+  const order = []; for (let r = 12; r >= 0; r--) for (let s = 0; s < 4; s++) order.push(r * 4 + s);
+  cascade = { order, i: 0, cur: null, imgs: {}, t: 0 };
+  fc.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); fc.clearRect(0, 0, L.W, L.H);
+}
+function stepCascade() {
+  const C = cascade; if (!C) return;
+  if (!C.cur || C.cur.x < -L.cw || C.cur.x > L.W + 10) {
+    if (C.i >= C.order.length) { cascade = null; return; }
+    const c = C.order[C.i++]; els[c].style.visibility = 'hidden';
+    C.cur = { img: C.imgs[c] || (C.imgs[c] = cardCanvas(c)), x: colX(4 + SUIT(c)), y: L.y0, vx: (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 5), vy: -Math.random() * 8 };
+  }
+  const p = C.cur; p.vy += 0.6; p.x += p.vx; p.y += p.vy;
+  if (p.y > L.H - L.ch) { p.y = L.H - L.ch; p.vy = -p.vy * 0.78; if (Math.abs(p.vy) > 2) chip.sfx('bounce'); }
+  fc.drawImage(p.img, p.x, p.y, L.cw, L.ch);
+}
 
-let toastId = null;
-function toast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); clearTimeout(toastId); toastId = setTimeout(() => toastEl.classList.remove('show'), 2600); }
+// ── 반복
+function loop(now) {
+  if (running && phase === 'play') { elapsed += now - lastT; lastT = now; if (Math.floor(elapsed / 1000) !== Math.floor((elapsed - 16) / 1000)) hud(); }
+  if (cascade) for (let k = 0; k < 2; k++) stepCascade();
+  requestAnimationFrame(loop);
+}
+addEventListener('keydown', e => {
+  chip.init();
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (phase === 'play') toMenu(); else if (phase === 'won') finish(); else if (!$('settings').hidden || !$('records').hidden || !$('help').hidden) showOnly(phase === 'menu' ? 'menu' : null); return; }
+  if (phase === 'won') { finish(); return; }
+  if (phase !== 'play' || e.target.tagName === 'INPUT') return;
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) { e.preventDefault(); redo(); return; }
+  if (e.key === 'u' || e.key === 'U') undo();
+  if (e.key === 'h' || e.key === 'H') hint();
+  if ((e.key === 'n' || e.key === 'N') && mode === 'classic') askNew();
+});
+fx.addEventListener('pointerdown', () => { if (phase === 'won') finish(); });
+addEventListener('pointerdown', () => { if (phase === 'won') finish(); });
+addEventListener('blur', () => { if (running) { running = false; persist(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && running) { running = false; persist(); } });
+function askNew() { if (!game) return; phase = 'confirm'; $('cfTitle').textContent = T.confirmNew; showOnly('confirm'); }
 
-startGame();
+// ── 메뉴
+function toggleMute() { SET.muted = !SET.muted; chip.setMuted(SET.muted); muteIcon(); save(); }
+function muteIcon() { $('bMute').innerHTML = SET.muted ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>'; }
+function buildMenu() {
+  $('hClassic').textContent = T.newGame; $('bNewGame').textContent = T.newGame;
+  const c = ST.cur && ST.cur.g && !ST.cur.g.won ? ST.cur : null; $('bCont').hidden = !c; if (c) $('bCont').textContent = fmt(T.cont, c.g.deal);
+  $('dealIn').placeholder = T.chooseDeal + ' (1 ~ 1,000,000)'; $('bDealGo').textContent = T.go;
+  const dk = today(), rec = ST.daily[dk], cur = ST.curDaily && ST.curDaily.date === dk ? ST.curDaily : null;
+  $('hDaily').textContent = `${T.daily} · ${dateLabel(dk)}`; $('pDaily').textContent = T.dailyDesc;
+  const s = streak(); $('dStreak').textContent = s ? fmt(T.streak, s) : '';
+  $('dStatus').textContent = rec && rec.done ? fmt(T.doneTime, tfmt(rec.time)) : cur ? T.inProgress : T.notYet;
+  $('bDaily').textContent = rec && rec.done ? T.viewResult : cur ? T.resume : T.play;
+}
+function chipsRow(parent, label, opts, cur, onPick) {
+  const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips';
+  for (const [v, txt] of opts) { const b = document.createElement('button'); b.className = 'chip' + (cur === v ? ' on' : ''); b.textContent = txt; b.onclick = () => { chip.init(); chip.sfx('menu'); onPick(v); c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); }; c.appendChild(b); }
+  r.append(s, c); parent.appendChild(r);
+}
+function slider(parent, label, val, on) { const r = document.createElement('label'); r.className = 'sl'; const s = document.createElement('span'); s.textContent = label; const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = val; i.oninput = () => on(+i.value); r.append(s, i); parent.appendChild(r); return i; }
+function buildSettings() {
+  $('tSettings').textContent = T.settings; const B = $('setBody'); B.innerHTML = '';
+  chipsRow(B, T.fourColor, [[true, T.on], [false, T.off]], SET.four, v => { SET.four = v; save(); layout(); });
+  chipsRow(B, T.autoMove, [[true, T.on], [false, T.off]], SET.auto, v => { SET.auto = v; save(); });
+  chipsRow(B, T.speed, T.speeds.map((s, i) => [i, s]), SET.speed, v => { SET.speed = v; save(); layout(); });
+  chipsRow(B, T.music, ['A', 'off'].map(k => [k, T.musicNames[k]]), SET.music, v => { SET.music = v; save(); if (phase === 'play') { if (v !== 'off') chip.play(v); else chip.stop(); } });
+  slider(B, T.mv, SET.mv, v => { SET.mv = v; chip.setVol(v, null); save(); });
+  const sv = slider(B, T.sv, SET.sv, v => { SET.sv = v; chip.setVol(null, v); save(); }); sv.onchange = () => { chip.init(); chip.sfx('place'); };
+}
+function buildRecords() {
+  $('tRecords').textContent = T.records; const B = $('recBody'); B.innerHTML = ''; const st = ST.stats;
+  const g = document.createElement('div'); g.className = 'grid2';
+  for (const [k, v] of [[T.played, st.played], [T.wins, st.won], [T.winRate, Math.round(st.won / Math.max(1, st.played) * 100) + '%'], [T.streakNow, `${st.streak} (${st.bestStreak})`], [T.bestTime, st.bestTime ? tfmt(st.bestTime) : '-'], [T.fewest, st.fewest || '-']]) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; g.append(a, b); }
+  B.appendChild(g);
+  const h = document.createElement('h4'); const s = streak(); h.textContent = `${T.history}${s ? ' · ' + fmt(T.streak, s) : ''}`; B.appendChild(h);
+  const t = document.createElement('table'); const days = Object.keys(ST.daily).filter(k => ST.daily[k].done).sort().reverse().slice(0, 10);
+  if (!days.length) { const td = t.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#a8cfc2'; td.style.fontWeight = '400'; }
+  for (const k of days) { const r = ST.daily[k], tr = t.insertRow(); tr.insertCell().textContent = dateLabel(k); tr.insertCell().textContent = tfmt(r.time); tr.insertCell().textContent = `${fmt(T.dealN, r.deal)} · ${r.moves}`; }
+  B.appendChild(t);
+}
+function build() {
+  $('pageTitle').textContent = T.title; $('logo').textContent = T.title; $('tTag').textContent = T.tag;
+  const fan = $('fan'); fan.innerHTML = ''; [[51, -24], [46, -12], [41, 0], [36, 12], [0, 24]].forEach(([c, a]) => { const i = document.createElement('i'); i.textContent = RANKS[RANK(c)] + SUITS[SUIT(c)]; i.style.color = RED(c) ? '#d0203a' : '#1b1f2e'; i.style.transform = `rotate(${a}deg)`; i.style.fontSize = '15px'; fan.appendChild(i); });
+  $('bNewGame').onclick = () => newDeal();
+  $('bCont').onclick = contClassic;
+  $('bDealGo').onclick = () => { const n = parseInt($('dealIn').value, 10); if (n >= 1 && n <= 1000000) newDeal(n); else { $('dealIn').focus(); chip.sfx('nope'); } };
+  $('dealIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('bDealGo').click(); });
+  $('bDaily').onclick = startDaily;
+  $('bSettings').textContent = T.settings; $('bRecords').textContent = T.records; $('bHelp').textContent = T.help;
+  $('bSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bRecords').onclick = () => { buildRecords(); showOnly('records'); };
+  $('bHelp').onclick = () => {
+    $('tHelp').textContent = T.help; $('helpKeys').innerHTML = ''; $('helpTips').innerHTML = '';
+    for (const [k, v] of T.keys) { const a = document.createElement('kbd'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; $('helpKeys').append(a, b); }
+    for (const t of T.tips) { const d = document.createElement('div'); d.textContent = t; $('helpTips').appendChild(d); }
+    showOnly('help');
+  };
+  for (const id of ['bSetDone', 'bRecDone', 'bHelpDone']) { $(id).textContent = T.done; $(id).onclick = () => { showOnly(phase === 'menu' ? 'menu' : null); if (phase === 'menu') buildMenu(); }; }
+  $('bMenu').onclick = () => { chip.init(); if (phase === 'play') toMenu(); else if (phase === 'won') finish(); };
+  $('bUndo').onclick = undo; $('bHint').onclick = hint; $('bUndo').title = T.undo + ' (U)'; $('bHint').title = T.hint + ' (H)';
+  $('bMute').onclick = () => { chip.init(); toggleMute(); }; muteIcon();
+  $('bCfNo').textContent = T.no; $('bCfYes').textContent = T.yes; $('bCfNo').onclick = () => { phase = 'play'; showOnly(null); };
+  $('bCfYes').onclick = () => { if (mode === 'classic' && counted && !game.won) { ST.stats.streak = 0; save(); } newDeal(); };
+  $('bResMenu').textContent = T.menu; $('bResMenu').onclick = toMenu; $('bAgain').onclick = () => newDeal();
+  $('bShare').textContent = T.share;
+  $('bShare').onclick = () => {
+    const rec = ST.daily[dayKey]; if (!rec) return;
+    const txt = `wiiiv ${T.title} · ${T.daily} ${dayKey} (${fmt(T.dealN, rec.deal)})\n⏱ ${tfmt(rec.time)} · ${T.moves} ${rec.moves}`;
+    const fb = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 무시 */ } ta.remove(); toast(T.copied); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(T.copied), fb); else fb();
+  };
+}
+makeCards(); build(); buildMenu(); layout(); showOnly('menu');
+// 메뉴 뒤 판: 1번 판을 보여 준다
+game = new FreeCell({ deal: 1 }); place(true); game = null; $('ttl').textContent = T.title;
+addEventListener('pointerdown', () => chip.init(), { capture: true, once: true });
+requestAnimationFrame(loop);
+window.__fc = { get game() { return game; }, get phase() { return phase; }, get mode() { return mode; }, newDeal, startDaily, toMenu, undo, hint, ST, place, T };
+
 </script>
 </body>
 </html>
