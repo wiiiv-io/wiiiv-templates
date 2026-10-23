@@ -35,14 +35,15 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | scientific-calculator | tool |
 | paint | tool |
 | typing-practice | tool |
-| piano | music |
-| drum-machine | music |
+| music-studio | music |
 | mandelbrot | visualization |
 | graph3d | visualization |
 
 ---
 
 *wiiiv inc.*
+
+Exception: `music-studio` loads its grand-piano samples from `assets/piano/*.mp3` in this repo (Salamander Grand Piano by Alexander Holm, CC BY 3.0, credited in the app). They are kept out of the HTML so that an LLM editing the template never reads them; offline it falls back to a synthesized piano. `piano.html` and `drum-machine.html` stay only for old links — `index.json` now points to `music-studio`.
 
 ## Adding a template (no server/desktop build needed)
 
