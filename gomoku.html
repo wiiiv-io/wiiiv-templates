@@ -2,327 +2,961 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>오목</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title id="pageTitle">오목</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; user-select: none; }
-#controls { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-#modeBtn { background: #333; border: 1px solid #555; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
-#modeBtn:hover { background: #444; }
-#resetBtn { background: #7c5cfc; border: none; color: #fff; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.2s; }
-#resetBtn:hover { background: #6a4ce0; }
-#status { font-size: 15px; margin-bottom: 8px; min-height: 24px; }
-.turn-black { color: #ccc; }
-.turn-white { color: #fff; }
-.win-msg { color: #ffd700; font-weight: 700; }
-canvas { border-radius: 8px; display: block; cursor: pointer; }
-#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0,0,0,0.6); border-radius: 8px; }
-#overlay.active { display: flex; }
-#overlay h2 { font-size: 24px; color: #ffd700; }
-#overlay button { background: #7c5cfc; border: none; color: #fff; padding: 10px 28px; border-radius: 8px; font-size: 14px; cursor: pointer; }
-#overlay button:hover { background: #6a4ce0; }
-.wrapper { position: relative; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; overflow: hidden; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+.ib { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: #dfe3ff; cursor: pointer; display: grid; place-items: center; flex: none; }
+.ib svg { width: 18px; height: 18px; }
+.stats { width: var(--bw); display: flex; gap: 8px; }
+.stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .05); border: 1px solid rgba(160, 170, 255, .14); border-radius: 12px; padding: 6px 10px; position: relative; }
+.stat small { display: block; font-size: 11px; letter-spacing: .03em; color: #9aa3c7; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stat .plus { position: absolute; right: 10px; top: 4px; font-weight: 900; color: #7dffb0; animation: plus .8s ease-out forwards; pointer-events: none; }
+@keyframes plus { to { transform: translateY(-26px); opacity: 0; } }
+.btn { flex: 1 1 auto; padding: 10px 12px; font: inherit; font-size: 14px; font-weight: 700; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; white-space: nowrap; }
+.btn:hover { filter: brightness(1.15); } .btn:disabled { opacity: .35; cursor: default; filter: none; }
+.btn.primary { background: linear-gradient(160deg, #e8b46a, #b8763a); border-color: transparent; color: #2a1600; box-shadow: 0 8px 20px -8px rgba(232, 180, 106, .5); }
+.btn.wide { display: block; width: 100%; margin-top: 10px; }
+.hint { font-size: 12.5px; color: #7d86ad; text-align: center; width: var(--bw); }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; background: rgba(5, 7, 16, .6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ov[hidden] { display: none; }
+.pcard { background: linear-gradient(160deg, rgba(30, 34, 64, .9), rgba(12, 14, 30, .95)); border: 1px solid rgba(160, 170, 255, .18); border-radius: 22px; padding: 22px 22px 18px; width: min(420px, 100%); max-height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); }
+.pcard::-webkit-scrollbar { display: none; }
+.logo { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.tag { text-align: center; color: #9aa3c7; font-size: 13px; letter-spacing: .08em; margin-bottom: 16px; }
+.mbox { border: 1px solid rgba(160, 170, 255, .16); background: rgba(255, 255, 255, .04); border-radius: 16px; padding: 14px; margin-top: 10px; }
+.mbox h3 { font-size: 17px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mbox h3 small { font-size: 12px; color: #ffb35c; font-weight: 800; white-space: nowrap; }
+.mbox p { font-size: 12.5px; color: #9aa3c7; margin-top: 4px; line-height: 1.45; }
+.mbox .status { font-size: 13px; color: #c5cbea; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { padding: 6px 11px; font: inherit; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; }
+.chip.on { background: linear-gradient(160deg, #e8b46a, #b8763a); border-color: transparent; color: #2a1600; }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+h2 { font-size: 22px; text-align: center; margin-bottom: 10px; }
+.big { text-align: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #f5d9a8, #e0a85c, #b8763a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { text-align: center; color: #9aa3c7; font-size: 13px; }
+.newrec { text-align: center; color: #ffd23f; font-weight: 800; letter-spacing: .1em; font-size: 13px; margin-top: 4px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.grid2 { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin-top: 14px; font-size: 14px; color: #c5cbea; font-variant-numeric: tabular-nums; }
+.grid2 b { color: #fff; text-align: right; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.row > span:first-child { white-space: nowrap; }
+.row .chips { margin-top: 0; justify-content: flex-end; }
+.sl { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.sl input { width: 100%; accent-color: #8a7cff; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); } td:last-child { text-align: right; color: #9aa3c7; font-size: 12.5px; }
+td:first-child { color: #b9a6ff; font-weight: 800; }
+h4 { font-size: 13px; color: #9aa3c7; letter-spacing: .08em; margin-top: 14px; }
+.keys { display: grid; grid-template-columns: minmax(0, 45%) 1fr; gap: 7px 14px; font-size: 13.5px; color: #c5cbea; align-items: center; }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: #fff; justify-self: start; white-space: normal; overflow-wrap: anywhere; }
+.tips { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: #9aa3c7; line-height: 1.45; }
+.tips div::before { content: '•'; color: #a05cff; margin-right: 6px; }
+.toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 12; background: rgba(20, 24, 50, .92); border: 1px solid rgba(160, 170, 255, .3); padding: 10px 18px; border-radius: 14px; font-weight: 800; animation: toast 1.8s ease forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 12%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+
+.logo { align-items: center; gap: 10px; }
+@keyframes shake { 15% { transform: translate(-6px, 3px); } 30% { transform: translate(5px, -4px); } 45% { transform: translate(-4px, -3px); } 60% { transform: translate(3px, 4px); } 80% { transform: translate(-2px, 1px); } }
+.btn.on { background: linear-gradient(160deg, #ff6a6a, #d81e3c); border-color: transparent; color: #fff; }
+
+body { background: radial-gradient(120% 90% at 50% 0%, #3a2c22 0%, #1f1712 60%, #120d0a 100%); font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK KR', system-ui, sans-serif; color: #f6eee4; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+.pcard { background: linear-gradient(160deg, rgba(60, 44, 32, .94), rgba(26, 18, 13, .97)); border-color: rgba(240, 210, 160, .2); }
+.mbox { border-color: rgba(240, 210, 160, .16); }
+.app { gap: 8px; }
+.top { width: var(--bw); display: flex; align-items: center; gap: 8px; }
+.top .ttl { font-weight: 900; font-size: 20px; margin-right: auto; white-space: nowrap; }
+.status { width: var(--bw); display: flex; align-items: center; gap: 10px; min-height: 30px; font-size: 15px; font-weight: 700; }
+.status .st { width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: inset -3px -3px 6px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.4); }
+.status .st.b { background: radial-gradient(circle at 35% 30%, #666, #111 60%); } .status .st.w { background: radial-gradient(circle at 35% 30%, #fff, #d6d2c8 70%); }
+.status .info { margin-left: auto; font-size: 12.5px; color: #c9b8a2; font-weight: 600; }
+.dots::after { content: ''; animation: dots 1.2s steps(4) infinite; } @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+#cv { display: block; touch-action: none; border-radius: 6px; box-shadow: 0 24px 50px -20px rgba(0, 0, 0, .9); }
+.actions { width: var(--bw); display: flex; gap: 8px; }
+.logo b { font-size: clamp(32px, 9vw, 48px); font-weight: 900; white-space: nowrap; background: linear-gradient(90deg, #f5d9a8, #e0a85c 50%, #b8763a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.logo { flex-direction: column; align-items: center; gap: 6px; }
+.row > span:first-child { white-space: normal; }
 </style>
 </head>
-<body>
-<div id="controls">
-  <button id="modeBtn">모드: AI 대전</button>
-  <button id="resetBtn">새 게임</button>
+<body tabindex="0">
+<div class="app" id="app">
+  <div class="top"><button class="ib" id="bMenu" title="Esc"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="16" height="2.4" rx="1.2"/><rect x="4" y="10.8" width="16" height="2.4" rx="1.2"/><rect x="4" y="16.6" width="16" height="2.4" rx="1.2"/></svg></button><div class="ttl" id="ttl"></div><button class="ib" id="bMute" title="M"></button></div>
+  <div class="status"><span class="st b" id="stStone"></span><span id="stText"></span><span class="info" id="stInfo"></span></div>
+  <canvas id="cv"></canvas>
+  <div class="actions"><button class="btn" id="bUndo"></button><button class="btn" id="bHint"></button><button class="btn" id="bResign"></button></div>
 </div>
-<div id="status" class="turn-black">⚫ 흑 차례</div>
-<div class="wrapper">
-  <canvas id="c"></canvas>
-  <div id="overlay">
-    <h2 id="winText"></h2>
-    <button onclick="resetGame()">다시 시작</button>
-  </div>
-</div>
-
+<div class="ov" id="menu"><div class="pcard">
+  <div class="logo"><svg width="170" height="62" viewBox="0 0 120 44"><defs><radialGradient id="gb" cx=".35" cy=".3"><stop offset="0" stop-color="#777"/><stop offset=".6" stop-color="#111"/></radialGradient><radialGradient id="gw" cx=".35" cy=".3"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d2cdc2"/></radialGradient></defs><circle cx="14" cy="22" r="11" fill="url(#gb)"/><circle cx="37" cy="22" r="11" fill="url(#gw)"/><circle cx="60" cy="22" r="11" fill="url(#gb)"/><circle cx="83" cy="22" r="11" fill="url(#gw)"/><circle cx="106" cy="22" r="11" fill="url(#gb)"/></svg><b id="logo"></b></div><div class="tag" id="tTag"></div>
+  <div class="mbox"><h3 id="hAI"></h3><div id="aiOpts"></div><button class="btn primary wide" id="bAI"></button></div>
+  <div class="mbox"><h3 id="hHuman"></h3><p id="pHuman"></p><button class="btn wide" id="bHuman"></button></div>
+  <div class="mbox"><h3><span id="hPuzzle"></span><small id="pzStreak"></small></h3><p id="pPuzzle"></p><div id="pzStatus" style="font-size:13px;font-weight:600;margin-top:6px;color:#c9b8a2"></div><button class="btn primary wide" id="bPuzzle"></button></div>
+  <div class="foot"><button class="btn" id="bSettings"></button><button class="btn" id="bRecords"></button><button class="btn" id="bHelp"></button></div>
+</div></div>
+<div class="ov" id="settings" hidden><div class="pcard"><h2 id="tSettings"></h2><div id="setBody"></div><div class="foot"><button class="btn primary" id="bSetDone"></button></div></div></div>
+<div class="ov" id="records" hidden><div class="pcard"><h2 id="tRecords"></h2><div id="recBody"></div><div class="foot"><button class="btn primary" id="bRecDone"></button></div></div></div>
+<div class="ov" id="help" hidden><div class="pcard"><h2 id="tHelp"></h2><div class="keys" id="helpKeys"></div><div class="tips" id="helpTips"></div><div class="foot"><button class="btn primary" id="bHelpDone"></button></div></div></div>
+<div class="ov" id="confirm" hidden><div class="pcard"><h2 id="cfTitle"></h2><div class="foot"><button class="btn" id="bCfNo"></button><button class="btn primary" id="bCfYes"></button></div></div></div>
+<div class="ov" id="result" hidden style="align-items:flex-end;padding-bottom:6%;background:rgba(10,7,5,.35);backdrop-filter:none"><div class="pcard" style="width:min(360px,100%)"><h2 id="resTitle"></h2><div class="sub" id="resSub"></div><div class="newrec" id="resNew" hidden></div><div class="grid2" id="resGrid"></div><button class="btn wide" id="bShare" hidden></button><div class="foot"><button class="btn" id="bResMenu"></button><button class="btn" id="bResLook"></button><button class="btn primary" id="bAgain"></button></div></div></div>
 <script>
-const LANG = 'ko';
-const T = {
-  ko: { title: '오목', modeAI: '모드: AI 대전', mode2P: '모드: 2인 대전', newGame: '새 게임',
-        turnBlack: '⚫ 흑 차례', turnWhite: '⚪ 백 차례', winBlack: '⚫ 흑 승리!', winWhite: '⚪ 백 승리!', restart: '다시 시작' },
-  en: { title: 'Gomoku', modeAI: 'Mode: vs AI', mode2P: 'Mode: 2 Players', newGame: 'New Game',
-        turnBlack: '⚫ Black\'s Turn', turnWhite: '⚪ White\'s Turn', winBlack: '⚫ Black Wins!', winWhite: '⚪ White Wins!', restart: 'Restart' }
-}[LANG] || {
-  title: 'Gomoku', modeAI: 'Mode: vs AI', mode2P: 'Mode: 2 Players', newGame: 'New Game',
-  turnBlack: '⚫ Black\'s Turn', turnWhite: '⚪ White\'s Turn', winBlack: '⚫ Black Wins!', winWhite: '⚪ White Wins!', restart: 'Restart'
-};
-
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const modeBtn = document.getElementById('modeBtn');
-const statusEl = document.getElementById('status');
-const overlayEl = document.getElementById('overlay');
-const winTextEl = document.getElementById('winText');
-
-// Apply i18n to static DOM
-document.title = T.title;
-modeBtn.textContent = T.modeAI;
-document.getElementById('resetBtn').textContent = T.newGame;
-document.querySelector('#overlay button').textContent = T.restart;
-
-const SIZE = 15;
-let board, currentPlayer, gameOver, winner, lastMove, winCells;
-let vsAI = true;
-let cellSize, boardPx, pad;
-
-function resize() {
-  const maxS = Math.min(window.innerWidth - 40, window.innerHeight - 120, 500);
-  boardPx = Math.floor(maxS);
-  cellSize = boardPx / (SIZE + 1);
-  pad = cellSize;
-  canvas.width = boardPx;
-  canvas.height = boardPx;
-}
-
-function resetGame() {
-  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-  currentPlayer = 1;
-  gameOver = false;
-  winner = 0;
-  lastMove = null;
-  winCells = [];
-  overlayEl.className = '';
-  updateStatus();
-  draw();
-}
-
-function updateStatus() {
-  if (gameOver) {
-    statusEl.className = 'win-msg';
-    statusEl.textContent = winner === 1 ? T.winBlack : T.winWhite;
-  } else {
-    statusEl.className = currentPlayer === 1 ? 'turn-black' : 'turn-white';
-    statusEl.textContent = currentPlayer === 1 ? T.turnBlack : T.turnWhite;
+// ───────────────────────── 오목 엔진 · AI (화면과 무관, 일꾼 스레드에서도 돈다) ─────────────────────────
+const N = 15, EMPTY = 0, BLACK = 1, WHITE = 2;
+const DIRS4 = [[1, 0], [0, 1], [1, 1], [1, -1]];
+const other = p => 3 - p;
+const inside = (x, y) => x >= 0 && y >= 0 && x < N && y < N;
+// ── 한 줄 모양 판정: 가운데(4번 자리)에 내 돌을 둔 9칸 줄 → 모양
+// 글자: x 내 돌, _ 빈칸, o 막힘(상대 돌·판 밖)
+const SHAPE = { NONE: 0, TWO_C: 1, TWO: 2, THREE_C: 3, THREE: 4, FOUR: 5, FOUR_OPEN: 6, FIVE: 7, OVER: 8 };
+const shapeMemo = [new Map(), new Map()];
+function classifyLine(key, exact) {
+  const memo = shapeMemo[exact ? 1 : 0]; let r = memo.get(key); if (r !== undefined) return r;
+  r = SHAPE.NONE;
+  // 가운데를 지나는 연속 길이
+  let L = 4, R = 4; while (L > 0 && key[L - 1] === 'x') L--; while (R < 8 && key[R + 1] === 'x') R++;
+  const run = R - L + 1;
+  if (run >= 6 && exact) r = SHAPE.OVER;
+  else if (run >= 5) r = SHAPE.FIVE;
+  else {
+    // 한 수로 다섯이 되는 빈칸 수
+    const fives = [];
+    for (let i = 0; i < 9; i++) if (key[i] === '_') { const k2 = key.slice(0, i) + 'x' + key.slice(i + 1); if (lineFive(k2, exact)) fives.push(i); }
+    if (fives.length >= 2) r = SHAPE.FOUR_OPEN;
+    else if (fives.length === 1) r = SHAPE.FOUR;
+    else {
+      let best = SHAPE.NONE;
+      for (let i = 0; i < 9; i++) if (key[i] === '_') {
+        const k2 = key.slice(0, i) + 'x' + key.slice(i + 1), s = classifyLine(k2, exact);
+        if (s === SHAPE.FOUR_OPEN) best = Math.max(best, SHAPE.THREE);
+        else if (s === SHAPE.FOUR) best = Math.max(best, SHAPE.THREE_C);
+        else if (s === SHAPE.THREE) best = Math.max(best, SHAPE.TWO);
+        else if (s === SHAPE.THREE_C) best = Math.max(best, SHAPE.TWO_C);
+      }
+      // 두는 돌이 셋 이상 이어져야 진짜 모양 (가운데를 지나는 것만)
+      r = best;
+    }
   }
+  memo.set(key, r); return r;
+}
+function lineFive(key, exact) { let L = 4, R = 4; while (L > 0 && key[L - 1] === 'x') L--; while (R < 8 && key[R + 1] === 'x') R++; const run = R - L + 1; return exact ? run === 5 : run >= 5; }
+
+class Board {
+  constructor(o = {}) { this.c = new Uint8Array(N * N); this.moves = []; this.renju = !!o.renju; }
+  clone() { const b = new Board({ renju: this.renju }); b.c.set(this.c); b.moves = this.moves.slice(); return b; }
+  at(x, y) { return inside(x, y) ? this.c[y * N + x] : -1; }
+  // (x,y) 에 p 를 둔다고 보고 한 방향 9칸 줄 글자
+  lineKey(x, y, dx, dy, p) {
+    let s = '';
+    for (let k = -4; k <= 4; k++) { if (!k) { s += 'x'; continue; } const v = this.at(x + dx * k, y + dy * k); s += v === p ? 'x' : v === EMPTY ? '_' : 'o'; }
+    return s;
+  }
+  shapes(x, y, p) { const exact = this.renju && p === BLACK; return DIRS4.map(([dx, dy]) => classifyLine(this.lineKey(x, y, dx, dy, p), exact)); }
+  // 렌주 규칙: 흑의 금수 (삼삼 · 사사 · 장목). 다섯이 되면 금수가 아니다
+  forbidden(x, y) {
+    if (!this.renju || this.c[y * N + x] !== EMPTY) return null;
+    const sh = this.shapes(x, y, BLACK);
+    if (sh.includes(SHAPE.FIVE)) return null;
+    if (sh.includes(SHAPE.OVER)) return 'over';
+    const fours = sh.filter(s => s === SHAPE.FOUR || s === SHAPE.FOUR_OPEN).length;
+    if (fours >= 2) return '44';
+    const threes = sh.filter(s => s === SHAPE.THREE).length;
+    if (threes >= 2) return '33';
+    return null;
+  }
+  play(x, y, p) { this.c[y * N + x] = p; this.moves.push([x, y, p]); }
+  undo() { const m = this.moves.pop(); if (m) this.c[m[1] * N + m[0]] = EMPTY; return m; }
+  // 방금 둔 돌로 이겼나 → 다섯 줄 좌표
+  winLine(x, y) {
+    const p = this.c[y * N + x]; if (!p) return null; const exact = this.renju && p === BLACK;
+    for (const [dx, dy] of DIRS4) {
+      const line = [[x, y]]; let k = 1; while (this.at(x + dx * k, y + dy * k) === p) line.push([x + dx * k, y + dy * k]), k++;
+      k = 1; while (this.at(x - dx * k, y - dy * k) === p) line.unshift([x - dx * k, y - dy * k]), k++;
+      if (exact ? line.length === 5 : line.length >= 5) return line;
+    }
+    return null;
+  }
+  full() { return this.moves.length >= N * N; }
 }
 
-function checkWin(r, c, player) {
-  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-  for (const [dr, dc] of dirs) {
-    let cells = [[r, c]];
-    for (let d = -1; d <= 1; d += 2) {
-      for (let i = 1; i < 5; i++) {
-        const nr = r + dr * i * d, nc = c + dc * i * d;
-        if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE || board[nr][nc] !== player) break;
-        cells.push([nr, nc]);
+// ── 수 평가: 내가 두면 얼마나 좋은가 (공격) + 상대가 두면 얼마나 나쁜가 (수비)
+const SCORE = [0, 10, 60, 120, 900, 1500, 12000, 1e6, -1];
+function moveScore(b, x, y, p) {
+  if (b.c[y * N + x] !== EMPTY) return -Infinity;
+  if (p === BLACK && b.forbidden(x, y)) return -Infinity;
+  const sh = b.shapes(x, y, p); let s = 0, fours = 0, threes = 0;
+  for (const v of sh) { if (v === SHAPE.OVER) { if (b.renju && p === BLACK) return -Infinity; continue; } s += SCORE[v]; if (v === SHAPE.FOUR || v === SHAPE.FOUR_OPEN) fours++; if (v === SHAPE.THREE) threes++; }
+  if (sh.includes(SHAPE.FIVE)) return 1e7;
+  if (fours >= 2 || (fours && threes)) s += 50000;      // 사사 · 사삼 = 다음 수에 이김
+  else if (threes >= 2) s += 8000;                       // 삼삼
+  return s;
+}
+function bestReply(b, p) { let m = 0; for (const [x, y] of candidates(b)) { const v = moveScore(b, x, y, p); if (v > m) m = v; } return m; }
+function candidates(b, dist = 2) {
+  const out = [], seen = new Uint8Array(N * N);
+  if (!b.moves.length) return [[7, 7]];
+  for (const [mx, my] of b.moves) for (let dy = -dist; dy <= dist; dy++) for (let dx = -dist; dx <= dist; dx++) {
+    const x = mx + dx, y = my + dy; if (!inside(x, y)) continue; const i = y * N + x; if (seen[i] || b.c[i]) continue; seen[i] = 1; out.push([x, y]);
+  }
+  return out;
+}
+function ranked(b, p, k = 14) {
+  const o = other(p), list = [];
+  for (const [x, y] of candidates(b)) {
+    const a = moveScore(b, x, y, p); if (a === -Infinity) continue;
+    const d = moveScore(b, x, y, o); const s = a + Math.max(0, d === -Infinity ? 0 : d) * 0.85;
+    list.push({ x, y, s, a, d });
+  }
+  list.sort((m, n) => n.s - m.s); return list.slice(0, k);
+}
+// 판 전체 점수 (p 입장): 양쪽의 가장 좋은 수 몇 개로 어림
+function evaluate(b, p) {
+  const o = other(p); let mine = 0, theirs = 0;
+  const cs = candidates(b);
+  const ma = [], ta = [];
+  for (const [x, y] of cs) { const a = moveScore(b, x, y, p), d = moveScore(b, x, y, o); if (a > 0) ma.push(a); if (d > 0) ta.push(d); }
+  ma.sort((a, c) => c - a); ta.sort((a, c) => c - a);
+  for (let i = 0; i < 3; i++) { mine += (ma[i] || 0) / (i + 1); theirs += (ta[i] || 0) / (i + 1); }
+  return mine - theirs * 1.1;
+}
+// ── 연속 사(四) 공격으로 이기는 길 찾기 (VCF): 내가 계속 사를 두고 상대는 막을 수밖에 없을 때
+function fourMoves(b, p) {
+  const out = [];
+  for (const [x, y] of candidates(b, 2)) {
+    if (p === BLACK && b.forbidden(x, y)) continue;
+    const sh = b.shapes(x, y, p);
+    if (sh.includes(SHAPE.FIVE)) return [{ x, y, five: true }];
+    if (sh.some(s => s === SHAPE.FOUR || s === SHAPE.FOUR_OPEN)) out.push({ x, y, open: sh.includes(SHAPE.FOUR_OPEN) });
+  }
+  return out;
+}
+function fiveSpot(b, p) { for (const [x, y] of candidates(b, 1)) { if (p === BLACK && b.renju && b.forbidden(x, y)) continue; if (b.shapes(x, y, p).includes(SHAPE.FIVE)) return [x, y]; } return null; }
+function vcf(b, p, depth, deadline) {
+  if (depth <= 0 || Date.now() > deadline) return null;
+  for (const m of fourMoves(b, p)) {
+    if (m.five) return [[m.x, m.y]];
+    b.play(m.x, m.y, p);
+    const block = fiveSpot(b, p);       // 상대가 막아야 하는 자리
+    let res = null;
+    if (block) {
+      const o = other(p);
+      // 상대가 막는 수로 오히려 상대가 다섯이 되면 실패, 백 금수 자리는 흑이 못 막음
+      const oppFive = fiveSpot(b, o);
+      if (!oppFive) {
+        if (o === BLACK && b.renju && b.forbidden(block[0], block[1])) res = [[m.x, m.y], block];   // 막을 수 없는 자리 → 이김
+        else { b.play(block[0], block[1], o); const rest = vcf(b, p, depth - 1, deadline); b.undo(); if (rest) res = [[m.x, m.y], block, ...rest]; }
       }
     }
-    if (cells.length >= 5) return cells;
+    b.undo(); if (res) return res;
+  }
+  return null;
+}
+// ── AI: 다섯 칸 창(窓) 점수를 수마다 바로 고치며 여러 수 앞을 내다본다
+const WINS = [], CELL_WINS = Array.from({ length: N * N }, () => []);
+for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const [dx, dy] of DIRS4) {
+  const ex = x + dx * 4, ey = y + dy * 4; if (!inside(ex, ey)) continue;
+  const id = WINS.length, cells = []; for (let k = 0; k < 5; k++) { const i = (y + dy * k) * N + x + dx * k; cells.push(i); CELL_WINS[i].push(id); } WINS.push(cells);
+}
+const WSC = [0, 1, 12, 120, 1500, 0];
+class Searcher {
+  constructor(b) { this.b = b; this.nb = new Uint8Array(WINS.length); this.nw = new Uint8Array(WINS.length); this.total = 0;
+    for (let i = 0; i < N * N; i++) if (b.c[i]) this.add(i, b.c[i]); }
+  ws(w) { const a = this.nb[w], c = this.nw[w]; return a && c ? 0 : a ? WSC[a] : c ? -WSC[c] : 0; }
+  add(i, p) { for (const w of CELL_WINS[i]) { this.total -= this.ws(w); if (p === BLACK) this.nb[w]++; else this.nw[w]++; this.total += this.ws(w); } }
+  sub(i, p) { for (const w of CELL_WINS[i]) { this.total -= this.ws(w); if (p === BLACK) this.nb[w]--; else this.nw[w]--; this.total += this.ws(w); } }
+  play(x, y, p) { this.b.play(x, y, p); this.add(y * N + x, p); }
+  undo() { const m = this.b.undo(); this.sub(m[1] * N + m[0], m[2]); }
+  eval(p) { return (p === BLACK ? this.total : -this.total) + 30; }        // 둘 차례인 쪽이 조금 유리
+}
+const LEVELS = { easy: { depth: 1, vcf: 0, noise: 0.5, k: 6 }, normal: { depth: 2, vcf: 6, noise: 0.08, k: 8 }, hard: { depth: 4, vcf: 12, noise: 0, k: 10 }, master: { depth: 5, vcf: 18, noise: 0, k: 10 } };
+const WIN = 1e9;
+function genMoves(S, p, k) {
+  const b = S.b, o = other(p), list = ranked(b, p, 30);
+  if (!list.length) return [];
+  const win = list.find(m => m.a >= 1e7); if (win) return [win];
+  const blocks = list.filter(m => m.d >= 1e7); if (blocks.length) return blocks.slice(0, 2);
+  // 상대가 열린 사를 만들 수 있으면(= 열린 삼) 막는 수와 내 사만 본다
+  const oppOpen = list.filter(m => m.d >= 12000);
+  if (oppOpen.length) { const mine = list.filter(m => m.a >= 1500); const set = new Map(); for (const m of [...mine, ...oppOpen]) set.set(m.x * 32 + m.y, m); return [...set.values()].sort((a, c) => c.s - a.s).slice(0, k); }
+  return list.slice(0, k);
+}
+function search(S, p, depth, alpha, beta, deadline, stat) {
+  stat.n++;
+  if (depth === 0 || (stat.n & 255) === 0 && Date.now() > deadline) return S.eval(p);
+  const moves = genMoves(S, p, depth >= 4 ? 10 : 8);
+  if (!moves.length) return 0;
+  if (moves[0].a >= 1e7) return WIN - (20 - depth);
+  let best = -Infinity;
+  for (const m of moves) {
+    S.play(m.x, m.y, p); const v = -search(S, other(p), depth - 1, -beta, -alpha, deadline, stat); S.undo();
+    if (v > best) best = v; if (v > alpha) alpha = v; if (alpha >= beta) break;
+  }
+  return best;
+}
+function chooseMove(b0, p, level = 'normal', rand = Math.random) {
+  const L = LEVELS[level] || LEVELS.normal, o = other(p), deadline = Date.now() + (level === 'master' ? 2500 : level === 'hard' ? 1500 : 800);
+  const b = b0.clone();
+  if (!b.moves.length) return [7, 7];
+  const list = ranked(b, p, 24);
+  if (!list.length) { for (let i = 0; i < N * N; i++) if (!b.c[i] && !(p === BLACK && b.forbidden(i % N, Math.floor(i / N)))) return [i % N, Math.floor(i / N)]; return null; }
+  const win = list.find(m => m.a >= 1e7); if (win) return [win.x, win.y];
+  const must = list.find(m => m.d >= 1e7); if (must && !(level === 'easy' && rand() < 0.35)) return [must.x, must.y];
+  if (L.vcf) { const w = vcf(b, p, L.vcf, deadline); if (w) return w[0]; }
+  // 상대의 연속 사 승리를 끊는다
+  if (L.vcf) {
+    const threat = vcf(b, o, Math.min(L.vcf, 12), deadline);
+    if (threat) { for (const m of ranked(b, p, 16)) { b.play(m.x, m.y, p); const still = vcf(b, o, Math.min(L.vcf, 12), deadline); b.undo(); if (!still) return [m.x, m.y]; } }
+  }
+  // 반복 깊이 늘리기 (시간 안에서 가장 깊이 본 결과)
+  const S = new Searcher(b); let bestMove = list[0], stat = { n: 0 };
+  const root = genMoves(S, p, L.k);
+  for (let d = 1; d <= L.depth; d++) {
+    let bm = null, bv = -Infinity, alpha = -Infinity;
+    const order = bestMove ? [root.find(m => m.x === bestMove.x && m.y === bestMove.y), ...root.filter(m => m !== bestMove)].filter(Boolean) : root;
+    for (const m of order) {
+      S.play(m.x, m.y, p); let v = -search(S, o, d - 1, -Infinity, -alpha, deadline, stat); S.undo();
+      if (L.noise) v += (rand() - 0.5) * 400 * L.noise;
+      if (v > bv) { bv = v; bm = m; } if (v > alpha) alpha = v;
+      if (Date.now() > deadline) break;
+    }
+    if (bm && (Date.now() <= deadline || d === 1)) bestMove = bm;
+    if (Date.now() > deadline || bv >= WIN - 50) break;
+  }
+  return [bestMove.x, bestMove.y];
+}
+// ── 오늘의 묘수: 날짜 씨앗으로 자동 대국 → '연속 사로 이길 수 있는' 판을 찾는다
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function makePuzzle(date, renju) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const rand = mulberry(hashStr(`wiiiv-gomoku-${date}-${attempt}`)), b = new Board({ renju });
+    // 처음 몇 수는 가운데 근처에 흩어 둔다
+    b.play(7, 7, BLACK); let p = WHITE;
+    for (let i = 0; i < 3; i++) { let x, y; do { x = 5 + Math.floor(rand() * 5); y = 5 + Math.floor(rand() * 5); } while (b.c[y * N + x]); b.play(x, y, p); p = other(p); }
+    for (let ply = 0; ply < 40; ply++) {
+      // 두려는 쪽이 3~6수 연속 사로 이길 수 있고, 지금 당장 사로 끝나는 게 아니면 문제로 쓴다
+      if (ply > 6 && !fiveSpot(b, p) && !fiveSpot(b, other(p))) {
+        const sol = vcf(b, p, 8, Date.now() + 400);
+        if (sol && sol.length >= 5 && sol.length <= 11 && !vcf(b, p, 2, Date.now() + 50)) return { board: b, toMove: p, solution: sol, moves: Math.ceil(sol.length / 2) };
+      }
+      const m = chooseMove(b, p, 'normal', rand); if (!m) break;
+      b.play(m[0], m[1], p); if (b.winLine(m[0], m[1])) break; p = other(p);
+    }
   }
   return null;
 }
 
-function placeStone(r, c) {
-  if (gameOver || board[r][c] !== 0) return false;
-  board[r][c] = currentPlayer;
-  lastMove = [r, c];
-  const win = checkWin(r, c, currentPlayer);
-  if (win) {
-    gameOver = true;
-    winner = currentPlayer;
-    winCells = win;
-    updateStatus();
-    draw();
-    setTimeout(() => {
-      winTextEl.textContent = winner === 1 ? T.winBlack : T.winWhite;
-      overlayEl.className = 'active';
-    }, 300);
-    return true;
+const ENGINE_SRC = "// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \uc624\ubaa9 \uc5d4\uc9c4 \u00b7 AI (\ud654\uba74\uacfc \ubb34\uad00, \uc77c\uafbc \uc2a4\ub808\ub4dc\uc5d0\uc11c\ub3c4 \ub3c8\ub2e4) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\nconst N = 15, EMPTY = 0, BLACK = 1, WHITE = 2;\nconst DIRS4 = [[1, 0], [0, 1], [1, 1], [1, -1]];\nconst other = p => 3 - p;\nconst inside = (x, y) => x >= 0 && y >= 0 && x < N && y < N;\n// \u2500\u2500 \ud55c \uc904 \ubaa8\uc591 \ud310\uc815: \uac00\uc6b4\ub370(4\ubc88 \uc790\ub9ac)\uc5d0 \ub0b4 \ub3cc\uc744 \ub454 9\uce78 \uc904 \u2192 \ubaa8\uc591\n// \uae00\uc790: x \ub0b4 \ub3cc, _ \ube48\uce78, o \ub9c9\ud798(\uc0c1\ub300 \ub3cc\u00b7\ud310 \ubc16)\nconst SHAPE = { NONE: 0, TWO_C: 1, TWO: 2, THREE_C: 3, THREE: 4, FOUR: 5, FOUR_OPEN: 6, FIVE: 7, OVER: 8 };\nconst shapeMemo = [new Map(), new Map()];\nfunction classifyLine(key, exact) {\n  const memo = shapeMemo[exact ? 1 : 0]; let r = memo.get(key); if (r !== undefined) return r;\n  r = SHAPE.NONE;\n  // \uac00\uc6b4\ub370\ub97c \uc9c0\ub098\ub294 \uc5f0\uc18d \uae38\uc774\n  let L = 4, R = 4; while (L > 0 && key[L - 1] === 'x') L--; while (R < 8 && key[R + 1] === 'x') R++;\n  const run = R - L + 1;\n  if (run >= 6 && exact) r = SHAPE.OVER;\n  else if (run >= 5) r = SHAPE.FIVE;\n  else {\n    // \ud55c \uc218\ub85c \ub2e4\uc12f\uc774 \ub418\ub294 \ube48\uce78 \uc218\n    const fives = [];\n    for (let i = 0; i < 9; i++) if (key[i] === '_') { const k2 = key.slice(0, i) + 'x' + key.slice(i + 1); if (lineFive(k2, exact)) fives.push(i); }\n    if (fives.length >= 2) r = SHAPE.FOUR_OPEN;\n    else if (fives.length === 1) r = SHAPE.FOUR;\n    else {\n      let best = SHAPE.NONE;\n      for (let i = 0; i < 9; i++) if (key[i] === '_') {\n        const k2 = key.slice(0, i) + 'x' + key.slice(i + 1), s = classifyLine(k2, exact);\n        if (s === SHAPE.FOUR_OPEN) best = Math.max(best, SHAPE.THREE);\n        else if (s === SHAPE.FOUR) best = Math.max(best, SHAPE.THREE_C);\n        else if (s === SHAPE.THREE) best = Math.max(best, SHAPE.TWO);\n        else if (s === SHAPE.THREE_C) best = Math.max(best, SHAPE.TWO_C);\n      }\n      // \ub450\ub294 \ub3cc\uc774 \uc14b \uc774\uc0c1 \uc774\uc5b4\uc838\uc57c \uc9c4\uc9dc \ubaa8\uc591 (\uac00\uc6b4\ub370\ub97c \uc9c0\ub098\ub294 \uac83\ub9cc)\n      r = best;\n    }\n  }\n  memo.set(key, r); return r;\n}\nfunction lineFive(key, exact) { let L = 4, R = 4; while (L > 0 && key[L - 1] === 'x') L--; while (R < 8 && key[R + 1] === 'x') R++; const run = R - L + 1; return exact ? run === 5 : run >= 5; }\n\nclass Board {\n  constructor(o = {}) { this.c = new Uint8Array(N * N); this.moves = []; this.renju = !!o.renju; }\n  clone() { const b = new Board({ renju: this.renju }); b.c.set(this.c); b.moves = this.moves.slice(); return b; }\n  at(x, y) { return inside(x, y) ? this.c[y * N + x] : -1; }\n  // (x,y) \uc5d0 p \ub97c \ub454\ub2e4\uace0 \ubcf4\uace0 \ud55c \ubc29\ud5a5 9\uce78 \uc904 \uae00\uc790\n  lineKey(x, y, dx, dy, p) {\n    let s = '';\n    for (let k = -4; k <= 4; k++) { if (!k) { s += 'x'; continue; } const v = this.at(x + dx * k, y + dy * k); s += v === p ? 'x' : v === EMPTY ? '_' : 'o'; }\n    return s;\n  }\n  shapes(x, y, p) { const exact = this.renju && p === BLACK; return DIRS4.map(([dx, dy]) => classifyLine(this.lineKey(x, y, dx, dy, p), exact)); }\n  // \ub80c\uc8fc \uaddc\uce59: \ud751\uc758 \uae08\uc218 (\uc0bc\uc0bc \u00b7 \uc0ac\uc0ac \u00b7 \uc7a5\ubaa9). \ub2e4\uc12f\uc774 \ub418\uba74 \uae08\uc218\uac00 \uc544\ub2c8\ub2e4\n  forbidden(x, y) {\n    if (!this.renju || this.c[y * N + x] !== EMPTY) return null;\n    const sh = this.shapes(x, y, BLACK);\n    if (sh.includes(SHAPE.FIVE)) return null;\n    if (sh.includes(SHAPE.OVER)) return 'over';\n    const fours = sh.filter(s => s === SHAPE.FOUR || s === SHAPE.FOUR_OPEN).length;\n    if (fours >= 2) return '44';\n    const threes = sh.filter(s => s === SHAPE.THREE).length;\n    if (threes >= 2) return '33';\n    return null;\n  }\n  play(x, y, p) { this.c[y * N + x] = p; this.moves.push([x, y, p]); }\n  undo() { const m = this.moves.pop(); if (m) this.c[m[1] * N + m[0]] = EMPTY; return m; }\n  // \ubc29\uae08 \ub454 \ub3cc\ub85c \uc774\uacbc\ub098 \u2192 \ub2e4\uc12f \uc904 \uc88c\ud45c\n  winLine(x, y) {\n    const p = this.c[y * N + x]; if (!p) return null; const exact = this.renju && p === BLACK;\n    for (const [dx, dy] of DIRS4) {\n      const line = [[x, y]]; let k = 1; while (this.at(x + dx * k, y + dy * k) === p) line.push([x + dx * k, y + dy * k]), k++;\n      k = 1; while (this.at(x - dx * k, y - dy * k) === p) line.unshift([x - dx * k, y - dy * k]), k++;\n      if (exact ? line.length === 5 : line.length >= 5) return line;\n    }\n    return null;\n  }\n  full() { return this.moves.length >= N * N; }\n}\n\n// \u2500\u2500 \uc218 \ud3c9\uac00: \ub0b4\uac00 \ub450\uba74 \uc5bc\ub9c8\ub098 \uc88b\uc740\uac00 (\uacf5\uaca9) + \uc0c1\ub300\uac00 \ub450\uba74 \uc5bc\ub9c8\ub098 \ub098\uc05c\uac00 (\uc218\ube44)\nconst SCORE = [0, 10, 60, 120, 900, 1500, 12000, 1e6, -1];\nfunction moveScore(b, x, y, p) {\n  if (b.c[y * N + x] !== EMPTY) return -Infinity;\n  if (p === BLACK && b.forbidden(x, y)) return -Infinity;\n  const sh = b.shapes(x, y, p); let s = 0, fours = 0, threes = 0;\n  for (const v of sh) { if (v === SHAPE.OVER) { if (b.renju && p === BLACK) return -Infinity; continue; } s += SCORE[v]; if (v === SHAPE.FOUR || v === SHAPE.FOUR_OPEN) fours++; if (v === SHAPE.THREE) threes++; }\n  if (sh.includes(SHAPE.FIVE)) return 1e7;\n  if (fours >= 2 || (fours && threes)) s += 50000;      // \uc0ac\uc0ac \u00b7 \uc0ac\uc0bc = \ub2e4\uc74c \uc218\uc5d0 \uc774\uae40\n  else if (threes >= 2) s += 8000;                       // \uc0bc\uc0bc\n  return s;\n}\nfunction bestReply(b, p) { let m = 0; for (const [x, y] of candidates(b)) { const v = moveScore(b, x, y, p); if (v > m) m = v; } return m; }\nfunction candidates(b, dist = 2) {\n  const out = [], seen = new Uint8Array(N * N);\n  if (!b.moves.length) return [[7, 7]];\n  for (const [mx, my] of b.moves) for (let dy = -dist; dy <= dist; dy++) for (let dx = -dist; dx <= dist; dx++) {\n    const x = mx + dx, y = my + dy; if (!inside(x, y)) continue; const i = y * N + x; if (seen[i] || b.c[i]) continue; seen[i] = 1; out.push([x, y]);\n  }\n  return out;\n}\nfunction ranked(b, p, k = 14) {\n  const o = other(p), list = [];\n  for (const [x, y] of candidates(b)) {\n    const a = moveScore(b, x, y, p); if (a === -Infinity) continue;\n    const d = moveScore(b, x, y, o); const s = a + Math.max(0, d === -Infinity ? 0 : d) * 0.85;\n    list.push({ x, y, s, a, d });\n  }\n  list.sort((m, n) => n.s - m.s); return list.slice(0, k);\n}\n// \ud310 \uc804\uccb4 \uc810\uc218 (p \uc785\uc7a5): \uc591\ucabd\uc758 \uac00\uc7a5 \uc88b\uc740 \uc218 \uba87 \uac1c\ub85c \uc5b4\ub9bc\nfunction evaluate(b, p) {\n  const o = other(p); let mine = 0, theirs = 0;\n  const cs = candidates(b);\n  const ma = [], ta = [];\n  for (const [x, y] of cs) { const a = moveScore(b, x, y, p), d = moveScore(b, x, y, o); if (a > 0) ma.push(a); if (d > 0) ta.push(d); }\n  ma.sort((a, c) => c - a); ta.sort((a, c) => c - a);\n  for (let i = 0; i < 3; i++) { mine += (ma[i] || 0) / (i + 1); theirs += (ta[i] || 0) / (i + 1); }\n  return mine - theirs * 1.1;\n}\n// \u2500\u2500 \uc5f0\uc18d \uc0ac(\u56db) \uacf5\uaca9\uc73c\ub85c \uc774\uae30\ub294 \uae38 \ucc3e\uae30 (VCF): \ub0b4\uac00 \uacc4\uc18d \uc0ac\ub97c \ub450\uace0 \uc0c1\ub300\ub294 \ub9c9\uc744 \uc218\ubc16\uc5d0 \uc5c6\uc744 \ub54c\nfunction fourMoves(b, p) {\n  const out = [];\n  for (const [x, y] of candidates(b, 2)) {\n    if (p === BLACK && b.forbidden(x, y)) continue;\n    const sh = b.shapes(x, y, p);\n    if (sh.includes(SHAPE.FIVE)) return [{ x, y, five: true }];\n    if (sh.some(s => s === SHAPE.FOUR || s === SHAPE.FOUR_OPEN)) out.push({ x, y, open: sh.includes(SHAPE.FOUR_OPEN) });\n  }\n  return out;\n}\nfunction fiveSpot(b, p) { for (const [x, y] of candidates(b, 1)) { if (p === BLACK && b.renju && b.forbidden(x, y)) continue; if (b.shapes(x, y, p).includes(SHAPE.FIVE)) return [x, y]; } return null; }\nfunction vcf(b, p, depth, deadline) {\n  if (depth <= 0 || Date.now() > deadline) return null;\n  for (const m of fourMoves(b, p)) {\n    if (m.five) return [[m.x, m.y]];\n    b.play(m.x, m.y, p);\n    const block = fiveSpot(b, p);       // \uc0c1\ub300\uac00 \ub9c9\uc544\uc57c \ud558\ub294 \uc790\ub9ac\n    let res = null;\n    if (block) {\n      const o = other(p);\n      // \uc0c1\ub300\uac00 \ub9c9\ub294 \uc218\ub85c \uc624\ud788\ub824 \uc0c1\ub300\uac00 \ub2e4\uc12f\uc774 \ub418\uba74 \uc2e4\ud328, \ubc31 \uae08\uc218 \uc790\ub9ac\ub294 \ud751\uc774 \ubabb \ub9c9\uc74c\n      const oppFive = fiveSpot(b, o);\n      if (!oppFive) {\n        if (o === BLACK && b.renju && b.forbidden(block[0], block[1])) res = [[m.x, m.y], block];   // \ub9c9\uc744 \uc218 \uc5c6\ub294 \uc790\ub9ac \u2192 \uc774\uae40\n        else { b.play(block[0], block[1], o); const rest = vcf(b, p, depth - 1, deadline); b.undo(); if (rest) res = [[m.x, m.y], block, ...rest]; }\n      }\n    }\n    b.undo(); if (res) return res;\n  }\n  return null;\n}\n// \u2500\u2500 AI: \ub2e4\uc12f \uce78 \ucc3d(\u7a93) \uc810\uc218\ub97c \uc218\ub9c8\ub2e4 \ubc14\ub85c \uace0\uce58\uba70 \uc5ec\ub7ec \uc218 \uc55e\uc744 \ub0b4\ub2e4\ubcf8\ub2e4\nconst WINS = [], CELL_WINS = Array.from({ length: N * N }, () => []);\nfor (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const [dx, dy] of DIRS4) {\n  const ex = x + dx * 4, ey = y + dy * 4; if (!inside(ex, ey)) continue;\n  const id = WINS.length, cells = []; for (let k = 0; k < 5; k++) { const i = (y + dy * k) * N + x + dx * k; cells.push(i); CELL_WINS[i].push(id); } WINS.push(cells);\n}\nconst WSC = [0, 1, 12, 120, 1500, 0];\nclass Searcher {\n  constructor(b) { this.b = b; this.nb = new Uint8Array(WINS.length); this.nw = new Uint8Array(WINS.length); this.total = 0;\n    for (let i = 0; i < N * N; i++) if (b.c[i]) this.add(i, b.c[i]); }\n  ws(w) { const a = this.nb[w], c = this.nw[w]; return a && c ? 0 : a ? WSC[a] : c ? -WSC[c] : 0; }\n  add(i, p) { for (const w of CELL_WINS[i]) { this.total -= this.ws(w); if (p === BLACK) this.nb[w]++; else this.nw[w]++; this.total += this.ws(w); } }\n  sub(i, p) { for (const w of CELL_WINS[i]) { this.total -= this.ws(w); if (p === BLACK) this.nb[w]--; else this.nw[w]--; this.total += this.ws(w); } }\n  play(x, y, p) { this.b.play(x, y, p); this.add(y * N + x, p); }\n  undo() { const m = this.b.undo(); this.sub(m[1] * N + m[0], m[2]); }\n  eval(p) { return (p === BLACK ? this.total : -this.total) + 30; }        // \ub458 \ucc28\ub840\uc778 \ucabd\uc774 \uc870\uae08 \uc720\ub9ac\n}\nconst LEVELS = { easy: { depth: 1, vcf: 0, noise: 0.5, k: 6 }, normal: { depth: 2, vcf: 6, noise: 0.08, k: 8 }, hard: { depth: 4, vcf: 12, noise: 0, k: 10 }, master: { depth: 5, vcf: 18, noise: 0, k: 10 } };\nconst WIN = 1e9;\nfunction genMoves(S, p, k) {\n  const b = S.b, o = other(p), list = ranked(b, p, 30);\n  if (!list.length) return [];\n  const win = list.find(m => m.a >= 1e7); if (win) return [win];\n  const blocks = list.filter(m => m.d >= 1e7); if (blocks.length) return blocks.slice(0, 2);\n  // \uc0c1\ub300\uac00 \uc5f4\ub9b0 \uc0ac\ub97c \ub9cc\ub4e4 \uc218 \uc788\uc73c\uba74(= \uc5f4\ub9b0 \uc0bc) \ub9c9\ub294 \uc218\uc640 \ub0b4 \uc0ac\ub9cc \ubcf8\ub2e4\n  const oppOpen = list.filter(m => m.d >= 12000);\n  if (oppOpen.length) { const mine = list.filter(m => m.a >= 1500); const set = new Map(); for (const m of [...mine, ...oppOpen]) set.set(m.x * 32 + m.y, m); return [...set.values()].sort((a, c) => c.s - a.s).slice(0, k); }\n  return list.slice(0, k);\n}\nfunction search(S, p, depth, alpha, beta, deadline, stat) {\n  stat.n++;\n  if (depth === 0 || (stat.n & 255) === 0 && Date.now() > deadline) return S.eval(p);\n  const moves = genMoves(S, p, depth >= 4 ? 10 : 8);\n  if (!moves.length) return 0;\n  if (moves[0].a >= 1e7) return WIN - (20 - depth);\n  let best = -Infinity;\n  for (const m of moves) {\n    S.play(m.x, m.y, p); const v = -search(S, other(p), depth - 1, -beta, -alpha, deadline, stat); S.undo();\n    if (v > best) best = v; if (v > alpha) alpha = v; if (alpha >= beta) break;\n  }\n  return best;\n}\nfunction chooseMove(b0, p, level = 'normal', rand = Math.random) {\n  const L = LEVELS[level] || LEVELS.normal, o = other(p), deadline = Date.now() + (level === 'master' ? 2500 : level === 'hard' ? 1500 : 800);\n  const b = b0.clone();\n  if (!b.moves.length) return [7, 7];\n  const list = ranked(b, p, 24);\n  if (!list.length) { for (let i = 0; i < N * N; i++) if (!b.c[i] && !(p === BLACK && b.forbidden(i % N, Math.floor(i / N)))) return [i % N, Math.floor(i / N)]; return null; }\n  const win = list.find(m => m.a >= 1e7); if (win) return [win.x, win.y];\n  const must = list.find(m => m.d >= 1e7); if (must && !(level === 'easy' && rand() < 0.35)) return [must.x, must.y];\n  if (L.vcf) { const w = vcf(b, p, L.vcf, deadline); if (w) return w[0]; }\n  // \uc0c1\ub300\uc758 \uc5f0\uc18d \uc0ac \uc2b9\ub9ac\ub97c \ub04a\ub294\ub2e4\n  if (L.vcf) {\n    const threat = vcf(b, o, Math.min(L.vcf, 12), deadline);\n    if (threat) { for (const m of ranked(b, p, 16)) { b.play(m.x, m.y, p); const still = vcf(b, o, Math.min(L.vcf, 12), deadline); b.undo(); if (!still) return [m.x, m.y]; } }\n  }\n  // \ubc18\ubcf5 \uae4a\uc774 \ub298\ub9ac\uae30 (\uc2dc\uac04 \uc548\uc5d0\uc11c \uac00\uc7a5 \uae4a\uc774 \ubcf8 \uacb0\uacfc)\n  const S = new Searcher(b); let bestMove = list[0], stat = { n: 0 };\n  const root = genMoves(S, p, L.k);\n  for (let d = 1; d <= L.depth; d++) {\n    let bm = null, bv = -Infinity, alpha = -Infinity;\n    const order = bestMove ? [root.find(m => m.x === bestMove.x && m.y === bestMove.y), ...root.filter(m => m !== bestMove)].filter(Boolean) : root;\n    for (const m of order) {\n      S.play(m.x, m.y, p); let v = -search(S, o, d - 1, -Infinity, -alpha, deadline, stat); S.undo();\n      if (L.noise) v += (rand() - 0.5) * 400 * L.noise;\n      if (v > bv) { bv = v; bm = m; } if (v > alpha) alpha = v;\n      if (Date.now() > deadline) break;\n    }\n    if (bm && (Date.now() <= deadline || d === 1)) bestMove = bm;\n    if (Date.now() > deadline || bv >= WIN - 50) break;\n  }\n  return [bestMove.x, bestMove.y];\n}\n// \u2500\u2500 \uc624\ub298\uc758 \ubb18\uc218: \ub0a0\uc9dc \uc528\uc557\uc73c\ub85c \uc790\ub3d9 \ub300\uad6d \u2192 '\uc5f0\uc18d \uc0ac\ub85c \uc774\uae38 \uc218 \uc788\ub294' \ud310\uc744 \ucc3e\ub294\ub2e4\nfunction hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }\nfunction mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }\nfunction makePuzzle(date, renju) {\n  for (let attempt = 0; attempt < 60; attempt++) {\n    const rand = mulberry(hashStr(`wiiiv-gomoku-${date}-${attempt}`)), b = new Board({ renju });\n    // \ucc98\uc74c \uba87 \uc218\ub294 \uac00\uc6b4\ub370 \uadfc\ucc98\uc5d0 \ud769\uc5b4 \ub454\ub2e4\n    b.play(7, 7, BLACK); let p = WHITE;\n    for (let i = 0; i < 3; i++) { let x, y; do { x = 5 + Math.floor(rand() * 5); y = 5 + Math.floor(rand() * 5); } while (b.c[y * N + x]); b.play(x, y, p); p = other(p); }\n    for (let ply = 0; ply < 40; ply++) {\n      // \ub450\ub824\ub294 \ucabd\uc774 3~6\uc218 \uc5f0\uc18d \uc0ac\ub85c \uc774\uae38 \uc218 \uc788\uace0, \uc9c0\uae08 \ub2f9\uc7a5 \uc0ac\ub85c \ub05d\ub098\ub294 \uac8c \uc544\ub2c8\uba74 \ubb38\uc81c\ub85c \uc4f4\ub2e4\n      if (ply > 6 && !fiveSpot(b, p) && !fiveSpot(b, other(p))) {\n        const sol = vcf(b, p, 8, Date.now() + 400);\n        if (sol && sol.length >= 5 && sol.length <= 11 && !vcf(b, p, 2, Date.now() + 50)) return { board: b, toMove: p, solution: sol, moves: Math.ceil(sol.length / 2) };\n      }\n      const m = chooseMove(b, p, 'normal', rand); if (!m) break;\n      b.play(m[0], m[1], p); if (b.winLine(m[0], m[1])) break; p = other(p);\n    }\n  }\n  return null;\n}\n";
+// ───────────────────────── 8비트 소리 장치 (펄스 2 · 삼각 1 · 잡음 1, 옛 게임기 방식) ─────────────────────────
+const NOTE_IX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function noteMidi(n) { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); if (!m) throw new Error('note ' + n); return 12 * (+m[3] + 1) + NOTE_IX[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); }
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+// 악보 한 채널: "E5:4 B4:2 | r:2 …" (길이 단위 = 16분음표, | 는 마디 경계 표시일 뿐)
+function parseTrack(src) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [n, l] = tok.split(':'); const len = +(l || 1);
+    if (n !== 'r') ev.push({ t, len, n });
+    t += len;
   }
-  currentPlayer = currentPlayer === 1 ? 2 : 1;
-  updateStatus();
-  draw();
+  return { ev, len: t };
+}
+// 화음으로 반주 만들기: 마디마다 화음 이름 (예: 'Am', 'E', 'Bb', 'F#', 'C#7')
+const CH_Q = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 10], m7: [0, 3, 10], dim: [0, 3, 6] };
+function chordNotes(name) { const m = /^([A-G][#b]?)(m7|m|7|dim)?$/.exec(name); const root = noteMidi(m[1] + '3'); return CH_Q[m[2] || ''].map(i => root + i); }
+const MN = m => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][m % 12] + (Math.floor(m / 12) - 1);
+// 베이스: 근음 옥타브 왕복 (8분), 3박자 곡은 근음·5음·5음
+function bassLine(chords, bar, style) {
+  return chords.map(c => {
+    const [r, , f] = chordNotes(c); const R = r - 12, F5 = f - 12;
+    if (bar === 12) return `${MN(R)}:4 ${MN(F5)}:4 ${MN(F5 + 0)}:4`;
+    if (style === 'pizz') return `${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2 ${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2`;
+    return Array.from({ length: bar / 2 }, (_, i) => `${MN(i % 2 ? R + 12 : R)}:2`).join(' ');
+  }).join(' | ');
+}
+// 반주: 뒷박에 짧게 끊는 화음 (3음·5음)
+function compLine(chords, bar) {
+  return chords.map(c => {
+    const [, th, fi] = chordNotes(c).map(m => m + 12);
+    if (bar === 12) return `r:4 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2`;
+    return `r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2`;
+  }).join(' | ');
+}
+const rep = (s, n) => Array(n).fill(s).join(' | ');
+
+// ── 곡 (자작곡)
+const SONGS = {
+  // A: 「아침 마당」 — 오음계로 느긋하게
+  A: (() => {
+    const m = 'A4:4 C5:4 D5:6 C5:2 | A4:4 G4:4 E4:8 | G4:4 A4:4 C5:4 D5:4 | E5:12 r:4 | D5:4 E5:4 G5:6 E5:2 | D5:4 C5:4 A4:8 | C5:4 D5:2 C5:2 A4:4 G4:4 | A4:12 r:4 | '
+      + 'E5:4 G5:4 A5:6 G5:2 | E5:4 D5:4 C5:8 | D5:4 E5:4 G5:4 E5:4 | D5:12 r:4 | C5:4 D5:4 E5:6 D5:2 | C5:4 A4:4 G4:8 | A4:4 C5:2 A4:2 G4:4 E4:4 | A4:12 r:4';
+    const ch = ['Am', 'Em', 'C', 'Am', 'G', 'Am', 'F', 'Am', 'C', 'Am', 'G', 'Dm', 'Am', 'F', 'G', 'Am'];
+    return { name: 'Morning Yard', bpm: 84, bar: 16, duty: [0.125, 0.25], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16, 'pizz'), noi: rep('k:8 h:4 h:4', 16) };
+  })(),
+};
+
+class Chip {
+  constructor() { this.ctx = null; this.musicVol = 0.55; this.sfxVol = 0.7; this.song = null; this.tempo = 1; this.beatCbs = []; this.muted = false; }
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const c = this.ctx = new AC();
+    this.out = c.createDynamicsCompressor(); this.out.threshold.value = -12; this.out.ratio.value = 4; this.out.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(this.out);
+    this.mus = c.createGain(); this.mus.gain.value = this.musicVol; this.mus.connect(this.master);
+    this.fx = c.createGain(); this.fx.gain.value = this.sfxVol; this.fx.connect(this.master);
+    // 펄스파 (듀티 12.5·25·50%)
+    this.pw = {};
+    for (const d of [0.125, 0.25, 0.5]) { const N = 48, re = new Float32Array(N), im = new Float32Array(N); for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * d)) / (n * Math.PI); } this.pw[d] = c.createPeriodicWave(re, im); }
+    // 4비트 계단 삼각파
+    { const S = 32, N = 40, re = new Float32Array(N), im = new Float32Array(N); const v = i => { const k = i < 16 ? i : 31 - i; return (k / 7.5) - 1; };
+      for (let n = 1; n < N; n++) { let a = 0, b = 0; for (let i = 0; i < S; i++) { const t0 = i / S, t1 = (i + 1) / S, w = 2 * Math.PI * n; a += v(i) * (Math.sin(w * t1) - Math.sin(w * t0)) / w; b += v(i) * (Math.cos(w * t0) - Math.cos(w * t1)) / w; } re[n] = 2 * a; im[n] = 2 * b; }
+      this.tw = c.createPeriodicWave(re, im); }
+    // 잡음 (15비트 LFSR)
+    const mk = short => { const len = c.sampleRate; const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0); let r = 1, v = 0; const step = Math.max(1, Math.round(c.sampleRate / 22000));
+      for (let i = 0; i < len; i++) { if (i % step === 0) { const bit = ((r & 1) ^ ((r >> (short ? 6 : 1)) & 1)); r = (r >> 1) | (bit << 14); v = (r & 1) ? 0.8 : -0.8; } d[i] = v; } return b; };
+    this.nz = mk(false); this.nzs = mk(true);
+    this.timer = setInterval(() => this.pump(), 25);
+  }
+  setVol(music, sfx) { if (music != null) this.musicVol = music; if (sfx != null) this.sfxVol = sfx; if (this.ctx) { this.mus.gain.setTargetAtTime(this.musicVol, this.ctx.currentTime, 0.05); this.fx.gain.setTargetAtTime(this.sfxVol, this.ctx.currentTime, 0.05); } }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); }
+  // ── 한 음
+  tone(dest, wave, f, t, dur, vol, o = {}) {
+    const c = this.ctx, os = c.createOscillator(), g = c.createGain();
+    if (wave === 'tri') os.setPeriodicWave(this.tw); else os.setPeriodicWave(this.pw[wave] || this.pw[0.5]);
+    os.frequency.setValueAtTime(f, t);
+    if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + (o.sweep || dur));
+    if (o.vib && dur > 0.25) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.25); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    const a = 0.004, rel = o.rel ?? 0.03, sus = o.decay ? vol * o.decay : vol;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+    if (o.decay != null) g.gain.exponentialRampToValueAtTime(Math.max(0.0001, sus), t + Math.max(a + 0.01, dur));
+    g.gain.setValueAtTime(o.decay != null ? Math.max(0.0001, sus) : vol, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + rel);
+    os.connect(g); g.connect(dest); os.start(t); os.stop(t + dur + rel + 0.02);
+  }
+  noise(dest, t, dur, vol, o = {}) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = o.short ? this.nzs : this.nz; s.playbackRate.value = o.rate || 1; s.loop = true;
+    f.type = o.type || 'highpass'; f.frequency.value = o.freq || 1000; if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+  }
+  // ── 음악 순서기
+  play(id) {
+    this.init(); if (!this.ctx) return;
+    this.stop();
+    const S = SONGS[id]; if (!S) return;
+    const ch = ['p1', 'p2', 'tri', 'noi'].map(k => ({ k, ...parseTrack(S[k]) }));
+    const L = ch[0].len; const at = {}; ch.forEach(c => { if (c.len !== L) console.warn('track length', S.name, c.k, c.len, L); c.ev.forEach(e => { (at[e.t] = at[e.t] || []).push({ ...e, k: c.k }); }); });
+    this.song = { S, at, L, step: 0, next: this.ctx.currentTime + 0.08, loops: 0, id };
+  }
+  stop() { this.song = null; }
+  pause(p) { this.paused = p; if (!p && this.song && this.ctx) this.song.next = this.ctx.currentTime + 0.05; }
+  pump() {
+    const sg = this.song; if (!sg || this.paused || !this.ctx) return;
+    const c = this.ctx, ahead = c.currentTime + 0.12;
+    if (sg.next < c.currentTime - 0.25) sg.next = c.currentTime + 0.02;     // 탭이 잠들었다 깨면 따라잡지 않고 이어서
+    while (sg.next < ahead) {
+      const S = sg.S, accel = S.accel ? Math.min(1.6, Math.pow(S.accel, sg.loops)) : 1;
+      const sp = 60 / (S.bpm * this.tempo * accel) / 4;      // 16분음표 길이(초)
+      const evs = sg.at[sg.step];
+      if (evs) for (const e of evs) {
+        const d = e.len * sp;
+        if (e.k === 'noi') {
+          if (e.n === 'k') { this.noise(this.mus, sg.next, 0.09, 0.32, { type: 'lowpass', freq: 900, fto: 120 }); this.tone(this.mus, 'tri', 140, sg.next, 0.07, 0.35, { to: 50, sweep: 0.07, rel: 0.01 }); }
+          else if (e.n === 's') this.noise(this.mus, sg.next, 0.12, 0.2, { type: 'bandpass', freq: 2200 });
+          else if (e.n === 'h') this.noise(this.mus, sg.next, 0.035, 0.07, { type: 'highpass', freq: 7000 });
+        } else {
+          const f = midiHz(noteMidi(e.n));
+          if (e.k === 'p1') this.tone(this.mus, S.duty[0], f, sg.next, d * 0.92, 0.13, { vib: true, decay: 0.75 });
+          else if (e.k === 'p2') this.tone(this.mus, S.duty[1], f, sg.next, d * 0.8, 0.065, { decay: 0.5 });
+          else this.tone(this.mus, 'tri', f, sg.next, d * 0.85, 0.3, {});
+        }
+      }
+      if (sg.step % 4 === 0) { const when = sg.next; this.beatCbs.forEach(cb => cb(when, sg.step % (S.bar) === 0)); }
+      sg.next += sp; sg.step++;
+      if (sg.step >= sg.L) { sg.step = 0; sg.loops++; }
+    }
+  }
+  onBeat(cb) { this.beatCbs.push(cb); }
+  // ── 효과음
+  sfx(name, a = {}) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + 0.005, F = this.fx;
+    const arp = (notes, step, wave = 0.5, vol = 0.16, len) => notes.forEach((n, i) => this.tone(F, wave, midiHz(typeof n === 'number' ? n : noteMidi(n)), t + i * step, len || step * 1.6, vol, { decay: 0.4 }));
+    switch (name) {
+      case 'stone': this.noise(F, t, 0.06, 0.35, { type: 'bandpass', freq: a.white ? 2600 : 2100, fto: 900 }); this.tone(F, 'tri', a.white ? 330 : 280, t, 0.05, 0.35, { to: 140, sweep: 0.05, rel: 0.01 }); break;
+      case 'win': arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6', 'G6'], 0.08, 0.5, 0.14, 0.3); break;
+      case 'lose': [72, 69, 65, 64, 60].forEach((m, i) => this.tone(F, 0.5, midiHz(m), t + i * 0.14, 0.15, 0.12, { decay: 0.5 })); break;
+      case 'forbid': this.tone(F, 0.5, 160, t, 0.12, 0.12, { to: 120, sweep: 0.12 }); this.tone(F, 0.5, 170, t + 0.14, 0.12, 0.1, { to: 120, sweep: 0.12 }); break;
+      case 'hint': arp([84, 88, 91], 0.05, 0.125, 0.08); break;
+      case 'threat': arp([88, 84], 0.07, 0.125, 0.06); break;
+      case 'undo': this.tone(F, 0.25, 900, t, 0.07, 0.07, { to: 500, sweep: 0.07 }); break;
+      case 'menu': this.tone(F, 0.25, 1000, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'select': arp([76, 83], 0.05, 0.25, 0.1); break;
+    }
+  }
+}
+
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+const TX = {
+  ko: { title: '오목', tag: '다섯 줄을 먼저 만들어라', vsAI: '컴퓨터와 대국', vsHuman: '두 사람 대국', vsHumanDesc: '한 화면에서 번갈아 둔다', start: '대국 시작', puzzle: '오늘의 묘수', puzzleDesc: '연속 사(四)로 {n}수 안에 이겨라',
+    level: '실력', levels: { easy: '쉬움', normal: '보통', hard: '어려움', master: '최강' }, color: '내 돌', colors: { black: '흑 (먼저)', white: '백', alt: '번갈아' }, rule: '규칙', rules: { free: '자유룰', renju: '렌주룰' },
+    ruleDesc: { free: '다섯 이상 이으면 이긴다', renju: '흑은 삼삼·사사·장목(여섯 이상) 금지, 흑은 정확히 다섯' },
+    play: '도전하기', viewResult: '결과 보기', notYet: '아직 도전하지 않았어요', solved: '성공', failed: '실패', inProgress: '진행 중', streak: '연속 {n}일',
+    settings: '설정', records: '기록', help: '규칙·조작', done: '확인', menu: '메뉴', again: '한 판 더', newRec: '★ 새 기록 ★', none: '아직 기록이 없습니다',
+    undo: '무르기', hint: '힌트', resign: '기권', yourTurn: '당신 차례', aiThinking: '생각 중…', blackTurn: '흑 차례', whiteTurn: '백 차례', toWin: '{n}수 안에 이기기 · 남은 수 {m}',
+    youWin: '이겼습니다!', youLose: '졌습니다', draw: '비겼습니다', blackWins: '흑 승리!', whiteWins: '백 승리!', puzzleOk: '묘수 성공!', puzzleFail: '아쉽게 실패', forbidden: '금수 자리예요 ({k})', forb: { '33': '삼삼', '44': '사사', over: '장목' },
+    confirmResign: '기권할까요?', yes: '기권', no: '취소', share: '결과 복사하기', copied: '복사했습니다', nextIn: '다음 문제까지 {t}', moves: '수',
+    music: '음악', musicNames: { A: '아침 마당', off: '끔' }, mv: '음악 볼륨', sv: '효과음 볼륨', numbers: '수 번호 보기', coords: '좌표 보기', on: '켬', off: '끔',
+    wins: '승', losses: '패', draws: '무', history: '최근 오늘의 묘수', byLevel: '실력별 전적',
+    keys: [['클릭 · 누르기', '돌 두기 (휴대폰은 한 번 눌러 고르고 다시 눌러 확정)'], ['U / Ctrl+Z', '무르기'], ['H', '힌트'], ['Esc', '메뉴'], ['M', '소리 끄기·켜기']],
+    tips: ['가로·세로·대각선으로 다섯 개를 먼저 이으면 이긴다', '열린 삼(양쪽이 빈 셋)은 다음 수에 열린 사가 되니 바로 막아야 한다', '사(四)를 연달아 두면 상대는 막기만 하다가 진다 — 오늘의 묘수가 바로 그것', '렌주룰에서 흑은 삼삼·사사·장목을 둘 수 없다 (판에 ✕ 표시)'] },
+  en: { title: 'Gomoku', tag: 'GET FIVE IN A ROW FIRST', vsAI: 'Play the computer', vsHuman: 'Two players', vsHumanDesc: 'Take turns on one screen', start: 'Start', puzzle: 'Daily Puzzle', puzzleDesc: 'Win in {n} moves with continuous fours',
+    level: 'Level', levels: { easy: 'Easy', normal: 'Normal', hard: 'Hard', master: 'Master' }, color: 'My stones', colors: { black: 'Black (first)', white: 'White', alt: 'Alternate' }, rule: 'Rules', rules: { free: 'Freestyle', renju: 'Renju' },
+    ruleDesc: { free: 'Five or more in a row wins', renju: 'Black may not make 3-3, 4-4 or six+; Black needs exactly five' },
+    play: 'Play', viewResult: 'See result', notYet: 'Not played yet', solved: 'Solved', failed: 'Failed', inProgress: 'In progress', streak: '{n}-day streak',
+    settings: 'Settings', records: 'Records', help: 'Rules & controls', done: 'Done', menu: 'Menu', again: 'Play again', newRec: '★ NEW RECORD ★', none: 'No records yet',
+    undo: 'Undo', hint: 'Hint', resign: 'Resign', yourTurn: 'Your turn', aiThinking: 'Thinking…', blackTurn: 'Black to play', whiteTurn: 'White to play', toWin: 'Win in {n} · {m} left',
+    youWin: 'You win!', youLose: 'You lose', draw: 'Draw', blackWins: 'Black wins!', whiteWins: 'White wins!', puzzleOk: 'Puzzle solved!', puzzleFail: 'Not this time', forbidden: 'Forbidden point ({k})', forb: { '33': 'double three', '44': 'double four', over: 'overline' },
+    confirmResign: 'Resign this game?', yes: 'Resign', no: 'Cancel', share: 'Copy result', copied: 'Copied', nextIn: 'Next puzzle in {t}', moves: 'moves',
+    music: 'Music', musicNames: { A: 'Morning Yard', off: 'Off' }, mv: 'Music volume', sv: 'Sound volume', numbers: 'Move numbers', coords: 'Coordinates', on: 'On', off: 'Off',
+    wins: 'W', losses: 'L', draws: 'D', history: 'Recent daily puzzles', byLevel: 'Record by level',
+    keys: [['Click · tap', 'Place a stone (on phones tap once to aim, again to confirm)'], ['U / Ctrl+Z', 'Undo'], ['H', 'Hint'], ['Esc', 'Menu'], ['M', 'Mute']],
+    tips: ['Line up five stones horizontally, vertically or diagonally to win', 'An open three becomes an open four next move, so block it right away', 'Play fours one after another and your opponent can only block — that is the daily puzzle', 'In Renju, Black cannot play double-three, double-four or overline (marked ✕)'] },
+  ja: { title: '五目並べ', tag: '先に五つ並べよう', vsAI: 'コンピューターと対局', vsHuman: '二人で対局', vsHumanDesc: '一つの画面で交互に打つ', start: '対局開始', puzzle: '今日の詰め五目', puzzleDesc: '四の連続で{n}手以内に勝て',
+    level: '強さ', levels: { easy: 'やさしい', normal: 'ふつう', hard: 'むずかしい', master: '最強' }, color: '自分の石', colors: { black: '黒 (先手)', white: '白', alt: '交互' }, rule: 'ルール', rules: { free: '自由ルール', renju: '連珠' },
+    ruleDesc: { free: '五つ以上並べれば勝ち', renju: '黒は三三・四四・長連が禁手、黒はちょうど五つ' },
+    play: '挑戦する', viewResult: '結果を見る', notYet: 'まだ挑戦していません', solved: '成功', failed: '失敗', inProgress: '挑戦中', streak: '{n}日連続',
+    settings: '設定', records: '記録', help: 'ルール・操作', done: 'OK', menu: 'メニュー', again: 'もう一局', newRec: '★ 新記録 ★', none: 'まだ記録がありません',
+    undo: '待った', hint: 'ヒント', resign: '投了', yourTurn: 'あなたの番', aiThinking: '考え中…', blackTurn: '黒の番', whiteTurn: '白の番', toWin: '{n}手以内に勝つ · 残り{m}',
+    youWin: '勝ちました!', youLose: '負けました', draw: '引き分け', blackWins: '黒の勝ち!', whiteWins: '白の勝ち!', puzzleOk: '詰め成功!', puzzleFail: '残念、失敗', forbidden: '禁手の場所です ({k})', forb: { '33': '三三', '44': '四四', over: '長連' },
+    confirmResign: '投了しますか?', yes: '投了', no: 'キャンセル', share: '結果をコピー', copied: 'コピーしました', nextIn: '次の問題まで {t}', moves: '手',
+    music: '音楽', musicNames: { A: '朝の庭', off: 'オフ' }, mv: '音楽の音量', sv: '効果音の音量', numbers: '手数を表示', coords: '座標を表示', on: 'オン', off: 'オフ',
+    wins: '勝', losses: '敗', draws: '分', history: '最近の詰め五目', byLevel: '強さ別の成績',
+    keys: [['クリック · タップ', '石を打つ (スマホは1回で選び、もう1回で確定)'], ['U / Ctrl+Z', '待った'], ['H', 'ヒント'], ['Esc', 'メニュー'], ['M', '消音']],
+    tips: ['縦・横・斜めに五つ先に並べたら勝ち', '活三(両端が空いた三)は次に活四になるのですぐ止めよう', '四を続けて打てば相手は止めるだけで負ける — それが詰め五目', '連珠では黒は三三・四四・長連を打てない (盤に✕表示)'] },
+  zh: { title: '五子棋', tag: '先连成五子者胜', vsAI: '人机对弈', vsHuman: '双人对弈', vsHumanDesc: '同一屏幕轮流落子', start: '开始对局', puzzle: '每日残局', puzzleDesc: '用连续冲四在 {n} 步内取胜',
+    level: '难度', levels: { easy: '简单', normal: '普通', hard: '困难', master: '大师' }, color: '我的棋子', colors: { black: '黑 (先手)', white: '白', alt: '轮换' }, rule: '规则', rules: { free: '无禁手', renju: '连珠 (禁手)' },
+    ruleDesc: { free: '连成五子或以上即胜', renju: '黑方禁止三三、四四、长连，黑方必须正好五子' },
+    play: '挑战', viewResult: '查看结果', notYet: '还没有挑战', solved: '成功', failed: '失败', inProgress: '进行中', streak: '连续 {n} 天',
+    settings: '设置', records: '记录', help: '规则与操作', done: '确定', menu: '菜单', again: '再来一局', newRec: '★ 新纪录 ★', none: '还没有记录',
+    undo: '悔棋', hint: '提示', resign: '认输', yourTurn: '轮到你', aiThinking: '思考中…', blackTurn: '黑方落子', whiteTurn: '白方落子', toWin: '{n} 步内取胜 · 剩 {m} 步',
+    youWin: '你赢了!', youLose: '你输了', draw: '平局', blackWins: '黑方胜!', whiteWins: '白方胜!', puzzleOk: '破解成功!', puzzleFail: '可惜失败了', forbidden: '这是禁手点 ({k})', forb: { '33': '三三', '44': '四四', over: '长连' },
+    confirmResign: '要认输吗？', yes: '认输', no: '取消', share: '复制结果', copied: '已复制', nextIn: '距离下一题 {t}', moves: '步',
+    music: '音乐', musicNames: { A: '清晨庭院', off: '关' }, mv: '音乐音量', sv: '音效音量', numbers: '显示手数', coords: '显示坐标', on: '开', off: '关',
+    wins: '胜', losses: '负', draws: '和', history: '最近的每日残局', byLevel: '各难度战绩',
+    keys: [['点击', '落子 (手机上点一次选择，再点一次确认)'], ['U / Ctrl+Z', '悔棋'], ['H', '提示'], ['Esc', '菜单'], ['M', '静音']],
+    tips: ['横、竖、斜任意方向先连成五子即胜', '活三下一步会变成活四，要马上堵住', '连续冲四，对手只能被动防守直到输 — 这就是每日残局', '连珠规则下黑方不能下三三、四四、长连 (棋盘上标 ✕)'] },
+  'zh-TW': { title: '五子棋', tag: '先連成五子者勝', vsAI: '人機對弈', vsHuman: '雙人對弈', vsHumanDesc: '同一螢幕輪流落子', start: '開始對局', puzzle: '每日殘局', puzzleDesc: '用連續衝四在 {n} 步內取勝',
+    level: '難度', levels: { easy: '簡單', normal: '普通', hard: '困難', master: '大師' }, color: '我的棋子', colors: { black: '黑 (先手)', white: '白', alt: '輪換' }, rule: '規則', rules: { free: '無禁手', renju: '連珠 (禁手)' },
+    ruleDesc: { free: '連成五子或以上即勝', renju: '黑方禁止三三、四四、長連，黑方必須正好五子' },
+    play: '挑戰', viewResult: '查看結果', notYet: '還沒有挑戰', solved: '成功', failed: '失敗', inProgress: '進行中', streak: '連續 {n} 天',
+    settings: '設定', records: '紀錄', help: '規則與操作', done: '確定', menu: '選單', again: '再來一局', newRec: '★ 新紀錄 ★', none: '還沒有紀錄',
+    undo: '悔棋', hint: '提示', resign: '認輸', yourTurn: '輪到你', aiThinking: '思考中…', blackTurn: '黑方落子', whiteTurn: '白方落子', toWin: '{n} 步內取勝 · 剩 {m} 步',
+    youWin: '你贏了!', youLose: '你輸了', draw: '平手', blackWins: '黑方勝!', whiteWins: '白方勝!', puzzleOk: '破解成功!', puzzleFail: '可惜失敗了', forbidden: '這是禁手點 ({k})', forb: { '33': '三三', '44': '四四', over: '長連' },
+    confirmResign: '要認輸嗎？', yes: '認輸', no: '取消', share: '複製結果', copied: '已複製', nextIn: '距離下一題 {t}', moves: '步',
+    music: '音樂', musicNames: { A: '清晨庭院', off: '關' }, mv: '音樂音量', sv: '音效音量', numbers: '顯示手數', coords: '顯示座標', on: '開', off: '關',
+    wins: '勝', losses: '負', draws: '和', history: '最近的每日殘局', byLevel: '各難度戰績',
+    keys: [['點擊', '落子 (手機上點一次選擇，再點一次確認)'], ['U / Ctrl+Z', '悔棋'], ['H', '提示'], ['Esc', '選單'], ['M', '靜音']],
+    tips: ['橫、直、斜任意方向先連成五子即勝', '活三下一步會變成活四，要馬上擋住', '連續衝四，對手只能被動防守直到輸 — 這就是每日殘局', '連珠規則下黑方不能下三三、四四、長連 (棋盤上標 ✕)'] },
+  es: { title: 'Gomoku', tag: 'CONSIGUE CINCO EN LÍNEA ANTES', vsAI: 'Contra la computadora', vsHuman: 'Dos jugadores', vsHumanDesc: 'Por turnos en la misma pantalla', start: 'Empezar', puzzle: 'Reto diario', puzzleDesc: 'Gana en {n} jugadas con cuatros seguidos',
+    level: 'Nivel', levels: { easy: 'Fácil', normal: 'Normal', hard: 'Difícil', master: 'Maestro' }, color: 'Mis piedras', colors: { black: 'Negras (salen)', white: 'Blancas', alt: 'Alternar' }, rule: 'Reglas', rules: { free: 'Libre', renju: 'Renju' },
+    ruleDesc: { free: 'Cinco o más en línea gana', renju: 'Las negras no pueden hacer 3-3, 4-4 ni seis o más; necesitan exactamente cinco' },
+    play: 'Jugar', viewResult: 'Ver resultado', notYet: 'Aún no lo has jugado', solved: 'Resuelto', failed: 'Fallido', inProgress: 'En curso', streak: 'Racha de {n} días',
+    settings: 'Ajustes', records: 'Récords', help: 'Reglas y controles', done: 'Listo', menu: 'Menú', again: 'Otra partida', newRec: '★ NUEVO RÉCORD ★', none: 'Aún no hay récords',
+    undo: 'Deshacer', hint: 'Pista', resign: 'Rendirse', yourTurn: 'Tu turno', aiThinking: 'Pensando…', blackTurn: 'Juegan negras', whiteTurn: 'Juegan blancas', toWin: 'Gana en {n} · quedan {m}',
+    youWin: '¡Ganaste!', youLose: 'Perdiste', draw: 'Empate', blackWins: '¡Ganan negras!', whiteWins: '¡Ganan blancas!', puzzleOk: '¡Reto resuelto!', puzzleFail: 'Esta vez no', forbidden: 'Punto prohibido ({k})', forb: { '33': 'doble tres', '44': 'doble cuatro', over: 'línea larga' },
+    confirmResign: '¿Rendirte en esta partida?', yes: 'Rendirse', no: 'Cancelar', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo reto en {t}', moves: 'jugadas',
+    music: 'Música', musicNames: { A: 'Patio matinal', off: 'No' }, mv: 'Volumen de música', sv: 'Volumen de efectos', numbers: 'Números de jugada', coords: 'Coordenadas', on: 'Sí', off: 'No',
+    wins: 'G', losses: 'P', draws: 'E', history: 'Retos diarios recientes', byLevel: 'Resultados por nivel',
+    keys: [['Clic · tocar', 'Poner piedra (en el móvil, toca para apuntar y otra vez para confirmar)'], ['U / Ctrl+Z', 'Deshacer'], ['H', 'Pista'], ['Esc', 'Menú'], ['M', 'Silenciar']],
+    tips: ['Gana quien alinee primero cinco piedras en horizontal, vertical o diagonal', 'Un tres abierto se vuelve cuatro abierto en la siguiente jugada: bloquéalo ya', 'Encadena cuatros y el rival solo podrá tapar hasta perder: ese es el reto diario', 'En Renju las negras no pueden hacer doble tres, doble cuatro ni línea larga (marcado ✕)'] },
+  fr: { title: 'Gomoku', tag: 'ALIGNEZ CINQ PIERRES EN PREMIER', vsAI: 'Contre l’ordinateur', vsHuman: 'Deux joueurs', vsHumanDesc: 'Chacun son tour sur le même écran', start: 'Commencer', puzzle: 'Défi du jour', puzzleDesc: 'Gagnez en {n} coups par quatres successifs',
+    level: 'Niveau', levels: { easy: 'Facile', normal: 'Normal', hard: 'Difficile', master: 'Maître' }, color: 'Mes pierres', colors: { black: 'Noirs (commencent)', white: 'Blancs', alt: 'Alterner' }, rule: 'Règles', rules: { free: 'Libre', renju: 'Renju' },
+    ruleDesc: { free: 'Cinq ou plus alignés gagnent', renju: 'Noir ne peut pas faire 3-3, 4-4 ni six+ ; il lui faut exactement cinq' },
+    play: 'Relever le défi', viewResult: 'Voir le résultat', notYet: 'Pas encore joué', solved: 'Réussi', failed: 'Échoué', inProgress: 'En cours', streak: 'Série de {n} jours',
+    settings: 'Réglages', records: 'Records', help: 'Règles et commandes', done: 'OK', menu: 'Menu', again: 'Rejouer', newRec: '★ NOUVEAU RECORD ★', none: 'Pas encore de record',
+    undo: 'Annuler', hint: 'Indice', resign: 'Abandonner', yourTurn: 'À vous', aiThinking: 'Réflexion…', blackTurn: 'Aux noirs', whiteTurn: 'Aux blancs', toWin: 'Gagner en {n} · reste {m}',
+    youWin: 'Gagné !', youLose: 'Perdu', draw: 'Match nul', blackWins: 'Les noirs gagnent !', whiteWins: 'Les blancs gagnent !', puzzleOk: 'Défi réussi !', puzzleFail: 'Pas cette fois', forbidden: 'Point interdit ({k})', forb: { '33': 'double trois', '44': 'double quatre', over: 'ligne trop longue' },
+    confirmResign: 'Abandonner la partie ?', yes: 'Abandonner', no: 'Annuler', share: 'Copier le résultat', copied: 'Copié', nextIn: 'Prochain défi dans {t}', moves: 'coups',
+    music: 'Musique', musicNames: { A: 'Cour du matin', off: 'Non' }, mv: 'Volume musique', sv: 'Volume effets', numbers: 'Numéros des coups', coords: 'Coordonnées', on: 'Oui', off: 'Non',
+    wins: 'V', losses: 'D', draws: 'N', history: 'Défis du jour récents', byLevel: 'Résultats par niveau',
+    keys: [['Clic · toucher', 'Poser une pierre (sur mobile : toucher pour viser, puis encore pour valider)'], ['U / Ctrl+Z', 'Annuler'], ['H', 'Indice'], ['Échap', 'Menu'], ['M', 'Couper le son']],
+    tips: ['Alignez cinq pierres en ligne, colonne ou diagonale pour gagner', 'Un trois ouvert devient un quatre ouvert au coup suivant : bloquez-le tout de suite', 'Enchaînez les quatres et l’adversaire ne peut que parer jusqu’à perdre : c’est le défi du jour', 'En Renju, Noir ne peut pas jouer double trois, double quatre ni ligne trop longue (marqué ✕)'] },
+  de: { title: 'Gomoku', tag: 'ZUERST FÜNF IN EINER REIHE', vsAI: 'Gegen den Computer', vsHuman: 'Zwei Spieler', vsHumanDesc: 'Abwechselnd auf einem Bildschirm', start: 'Start', puzzle: 'Tagesrätsel', puzzleDesc: 'Gewinne in {n} Zügen mit fortlaufenden Vieren',
+    level: 'Stärke', levels: { easy: 'Leicht', normal: 'Normal', hard: 'Schwer', master: 'Meister' }, color: 'Meine Steine', colors: { black: 'Schwarz (beginnt)', white: 'Weiß', alt: 'Abwechselnd' }, rule: 'Regeln', rules: { free: 'Freistil', renju: 'Renju' },
+    ruleDesc: { free: 'Fünf oder mehr in einer Reihe gewinnen', renju: 'Schwarz darf keine 3-3, 4-4 oder Sechserreihe; Schwarz braucht genau fünf' },
+    play: 'Spielen', viewResult: 'Ergebnis ansehen', notYet: 'Noch nicht gespielt', solved: 'Gelöst', failed: 'Gescheitert', inProgress: 'Läuft', streak: '{n} Tage in Folge',
+    settings: 'Einstellungen', records: 'Rekorde', help: 'Regeln & Steuerung', done: 'Fertig', menu: 'Menü', again: 'Noch eine Partie', newRec: '★ NEUER REKORD ★', none: 'Noch keine Rekorde',
+    undo: 'Zurück', hint: 'Tipp', resign: 'Aufgeben', yourTurn: 'Du bist dran', aiThinking: 'Überlege…', blackTurn: 'Schwarz am Zug', whiteTurn: 'Weiß am Zug', toWin: 'Sieg in {n} · noch {m}',
+    youWin: 'Gewonnen!', youLose: 'Verloren', draw: 'Unentschieden', blackWins: 'Schwarz gewinnt!', whiteWins: 'Weiß gewinnt!', puzzleOk: 'Rätsel gelöst!', puzzleFail: 'Diesmal nicht', forbidden: 'Verbotener Punkt ({k})', forb: { '33': 'Doppel-Drei', '44': 'Doppel-Vier', over: 'Überlänge' },
+    confirmResign: 'Diese Partie aufgeben?', yes: 'Aufgeben', no: 'Abbrechen', share: 'Ergebnis kopieren', copied: 'Kopiert', nextIn: 'Nächstes Rätsel in {t}', moves: 'Züge',
+    music: 'Musik', musicNames: { A: 'Morgenhof', off: 'Aus' }, mv: 'Musiklautstärke', sv: 'Effektlautstärke', numbers: 'Zugnummern', coords: 'Koordinaten', on: 'An', off: 'Aus',
+    wins: 'S', losses: 'N', draws: 'U', history: 'Letzte Tagesrätsel', byLevel: 'Bilanz je Stärke',
+    keys: [['Klick · Tippen', 'Stein setzen (am Handy: einmal tippen zum Zielen, nochmal zum Bestätigen)'], ['U / Strg+Z', 'Zurück'], ['H', 'Tipp'], ['Esc', 'Menü'], ['M', 'Ton aus']],
+    tips: ['Wer zuerst fünf Steine waagerecht, senkrecht oder diagonal hat, gewinnt', 'Eine offene Drei wird im nächsten Zug zur offenen Vier – sofort blockieren', 'Setze Vieren hintereinander, dann kann der Gegner nur noch blocken – das ist das Tagesrätsel', 'Im Renju darf Schwarz keine Doppel-Drei, Doppel-Vier oder Überlänge setzen (mit ✕ markiert)'] },
+  pt: { title: 'Gomoku', tag: 'FAÇA CINCO EM LINHA PRIMEIRO', vsAI: 'Contra o computador', vsHuman: 'Dois jogadores', vsHumanDesc: 'Revezando na mesma tela', start: 'Começar', puzzle: 'Desafio do dia', puzzleDesc: 'Vença em {n} lances com quatros seguidos',
+    level: 'Nível', levels: { easy: 'Fácil', normal: 'Normal', hard: 'Difícil', master: 'Mestre' }, color: 'Minhas pedras', colors: { black: 'Pretas (começam)', white: 'Brancas', alt: 'Alternar' }, rule: 'Regras', rules: { free: 'Livre', renju: 'Renju' },
+    ruleDesc: { free: 'Cinco ou mais em linha vence', renju: 'As pretas não podem fazer 3-3, 4-4 nem seis ou mais; precisam de exatamente cinco' },
+    play: 'Desafiar', viewResult: 'Ver resultado', notYet: 'Ainda não jogado', solved: 'Resolvido', failed: 'Falhou', inProgress: 'Em andamento', streak: '{n} dias seguidos',
+    settings: 'Configurações', records: 'Recordes', help: 'Regras e controles', done: 'OK', menu: 'Menu', again: 'Outra partida', newRec: '★ NOVO RECORDE ★', none: 'Ainda não há recordes',
+    undo: 'Desfazer', hint: 'Dica', resign: 'Desistir', yourTurn: 'Sua vez', aiThinking: 'Pensando…', blackTurn: 'Vez das pretas', whiteTurn: 'Vez das brancas', toWin: 'Vença em {n} · restam {m}',
+    youWin: 'Você venceu!', youLose: 'Você perdeu', draw: 'Empate', blackWins: 'Pretas vencem!', whiteWins: 'Brancas vencem!', puzzleOk: 'Desafio resolvido!', puzzleFail: 'Não foi dessa vez', forbidden: 'Ponto proibido ({k})', forb: { '33': 'três duplo', '44': 'quatro duplo', over: 'linha longa' },
+    confirmResign: 'Desistir desta partida?', yes: 'Desistir', no: 'Cancelar', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo desafio em {t}', moves: 'lances',
+    music: 'Música', musicNames: { A: 'Quintal da manhã', off: 'Desligada' }, mv: 'Volume da música', sv: 'Volume dos efeitos', numbers: 'Números dos lances', coords: 'Coordenadas', on: 'Ligado', off: 'Desligado',
+    wins: 'V', losses: 'D', draws: 'E', history: 'Desafios do dia recentes', byLevel: 'Resultados por nível',
+    keys: [['Clique · toque', 'Colocar pedra (no celular, toque para mirar e de novo para confirmar)'], ['U / Ctrl+Z', 'Desfazer'], ['H', 'Dica'], ['Esc', 'Menu'], ['M', 'Silenciar']],
+    tips: ['Vence quem alinhar cinco pedras primeiro na horizontal, vertical ou diagonal', 'Um três aberto vira quatro aberto no lance seguinte: bloqueie logo', 'Encadeie quatros e o adversário só pode bloquear até perder: esse é o desafio do dia', 'No Renju as pretas não podem fazer três duplo, quatro duplo nem linha longa (marcado ✕)'] },
+  ru: { title: 'Гомоку', tag: 'ПЕРВЫМ ПОСТРОЙ ПЯТЬ В РЯД', vsAI: 'Против компьютера', vsHuman: 'Два игрока', vsHumanDesc: 'По очереди на одном экране', start: 'Начать', puzzle: 'Задача дня', puzzleDesc: 'Выиграй за {n} ходов серией четвёрок',
+    level: 'Сила', levels: { easy: 'Лёгкий', normal: 'Средний', hard: 'Сложный', master: 'Мастер' }, color: 'Мои камни', colors: { black: 'Чёрные (первые)', white: 'Белые', alt: 'По очереди' }, rule: 'Правила', rules: { free: 'Свободные', renju: 'Рэндзю' },
+    ruleDesc: { free: 'Пять и больше в ряд — победа', renju: 'Чёрным нельзя 3-3, 4-4 и шесть и больше; чёрным нужно ровно пять' },
+    play: 'Играть', viewResult: 'Посмотреть итог', notYet: 'Ещё не сыграно', solved: 'Решено', failed: 'Провал', inProgress: 'Идёт', streak: '{n} дн. подряд',
+    settings: 'Настройки', records: 'Рекорды', help: 'Правила и управление', done: 'Готово', menu: 'Меню', again: 'Ещё партию', newRec: '★ НОВЫЙ РЕКОРД ★', none: 'Рекордов пока нет',
+    undo: 'Отменить ход', hint: 'Подсказка', resign: 'Сдаться', yourTurn: 'Твой ход', aiThinking: 'Думаю…', blackTurn: 'Ход чёрных', whiteTurn: 'Ход белых', toWin: 'Победа за {n} · осталось {m}',
+    youWin: 'Ты победил!', youLose: 'Ты проиграл', draw: 'Ничья', blackWins: 'Чёрные победили!', whiteWins: 'Белые победили!', puzzleOk: 'Задача решена!', puzzleFail: 'В этот раз не вышло', forbidden: 'Запрещённый пункт ({k})', forb: { '33': 'вилка 3-3', '44': 'вилка 4-4', over: 'длинный ряд' },
+    confirmResign: 'Сдаться в этой партии?', yes: 'Сдаться', no: 'Отмена', share: 'Скопировать итог', copied: 'Скопировано', nextIn: 'Следующая задача через {t}', moves: 'ходов',
+    music: 'Музыка', musicNames: { A: 'Утренний двор', off: 'Выкл' }, mv: 'Громкость музыки', sv: 'Громкость эффектов', numbers: 'Номера ходов', coords: 'Координаты', on: 'Вкл', off: 'Выкл',
+    wins: 'В', losses: 'П', draws: 'Н', history: 'Недавние задачи дня', byLevel: 'Итоги по силе',
+    keys: [['Клик · касание', 'Поставить камень (на телефоне: коснись, чтобы выбрать, и ещё раз, чтобы подтвердить)'], ['U / Ctrl+Z', 'Отменить ход'], ['H', 'Подсказка'], ['Esc', 'Меню'], ['M', 'Звук']],
+    tips: ['Побеждает тот, кто первым выстроит пять камней по горизонтали, вертикали или диагонали', 'Открытая тройка следующим ходом станет открытой четвёркой — блокируй сразу', 'Ставь четвёрки подряд, и соперник сможет только закрываться, пока не проиграет — это и есть задача дня', 'В рэндзю чёрным нельзя делать вилки 3-3, 4-4 и длинный ряд (отмечено ✕)'] },
+  vi: { title: 'Cờ caro', tag: 'XẾP ĐỦ NĂM QUÂN TRƯỚC', vsAI: 'Chơi với máy', vsHuman: 'Hai người', vsHumanDesc: 'Lần lượt trên cùng một màn hình', start: 'Bắt đầu', puzzle: 'Câu đố hôm nay', puzzleDesc: 'Thắng trong {n} nước bằng chuỗi bốn liên tiếp',
+    level: 'Độ khó', levels: { easy: 'Dễ', normal: 'Vừa', hard: 'Khó', master: 'Cao thủ' }, color: 'Quân của tôi', colors: { black: 'Đen (đi trước)', white: 'Trắng', alt: 'Luân phiên' }, rule: 'Luật', rules: { free: 'Tự do', renju: 'Renju' },
+    ruleDesc: { free: 'Năm quân trở lên liền nhau là thắng', renju: 'Đen không được đi 3-3, 4-4 hay sáu quân trở lên; Đen cần đúng năm' },
+    play: 'Thử thách', viewResult: 'Xem kết quả', notYet: 'Chưa chơi', solved: 'Thành công', failed: 'Thất bại', inProgress: 'Đang chơi', streak: 'Chuỗi {n} ngày',
+    settings: 'Cài đặt', records: 'Kỷ lục', help: 'Luật và điều khiển', done: 'Xong', menu: 'Menu', again: 'Ván nữa', newRec: '★ KỶ LỤC MỚI ★', none: 'Chưa có kỷ lục',
+    undo: 'Đi lại', hint: 'Gợi ý', resign: 'Đầu hàng', yourTurn: 'Lượt của bạn', aiThinking: 'Đang nghĩ…', blackTurn: 'Lượt Đen', whiteTurn: 'Lượt Trắng', toWin: 'Thắng trong {n} · còn {m}',
+    youWin: 'Bạn thắng!', youLose: 'Bạn thua', draw: 'Hòa', blackWins: 'Đen thắng!', whiteWins: 'Trắng thắng!', puzzleOk: 'Giải đúng!', puzzleFail: 'Lần này chưa được', forbidden: 'Điểm cấm ({k})', forb: { '33': 'ba kép', '44': 'bốn kép', over: 'quá năm' },
+    confirmResign: 'Đầu hàng ván này?', yes: 'Đầu hàng', no: 'Hủy', share: 'Sao chép kết quả', copied: 'Đã sao chép', nextIn: 'Câu đố mới sau {t}', moves: 'nước',
+    music: 'Nhạc', musicNames: { A: 'Sân buổi sáng', off: 'Tắt' }, mv: 'Âm lượng nhạc', sv: 'Âm lượng hiệu ứng', numbers: 'Số thứ tự nước', coords: 'Tọa độ', on: 'Bật', off: 'Tắt',
+    wins: 'T', losses: 'B', draws: 'H', history: 'Câu đố hôm nay gần đây', byLevel: 'Thành tích theo độ khó',
+    keys: [['Nhấp · chạm', 'Đặt quân (điện thoại: chạm để chọn, chạm lần nữa để xác nhận)'], ['U / Ctrl+Z', 'Đi lại'], ['H', 'Gợi ý'], ['Esc', 'Menu'], ['M', 'Tắt tiếng']],
+    tips: ['Ai xếp được năm quân liền theo hàng ngang, dọc hoặc chéo trước thì thắng', 'Ba mở sẽ thành bốn mở ở nước sau, hãy chặn ngay', 'Đi liên tiếp các nước bốn, đối thủ chỉ có thể chặn đến khi thua — đó là câu đố hôm nay', 'Luật Renju: Đen không được đi ba kép, bốn kép hay quá năm (đánh dấu ✕)'] },
+};
+
+// ───────────────────────── 화면·흐름·조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const coarse = matchMedia('(pointer: coarse)').matches;
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dateLabel = ds => { try { return new Intl.DateTimeFormat(LANG, { month: 'long', day: 'numeric' }).format(new Date(ds + 'T12:00:00')); } catch { return ds; } };
+const DEF = { level: 'normal', color: 'black', rule: 'free', music: 'A', mv: 0.25, sv: 0.7, numbers: false, coords: true, muted: false, lastColor: WHITE };
+let ST = { set: { ...DEF }, rec: {}, puzzles: {}, cur: null };
+try { const d = JSON.parse(localStorage.getItem('wiiiv-gomoku') || '{}'); ST = { ...ST, ...d, set: { ...DEF, ...(d.set || {}) } }; } catch { /* 저장소 없이도 동작 */ }
+const SET = ST.set;
+const save = () => { try { localStorage.setItem('wiiiv-gomoku', JSON.stringify(ST)); } catch { /* 무시 */ } };
+const chip = new Chip(); chip.setVol(SET.mv, SET.sv); chip.muted = SET.muted;
+let G = null, phase = 'menu', thinking = false, hover = null, aim = null, hintCell = null, hintT = 0, anim = null;
+
+// ── AI 는 일꾼 스레드에서
+let worker = null, wid = 0; const pending = new Map();
+try {
+  const code = ENGINE_SRC + `
+onmessage = e => { const d = e.data; let out = null;
+  try {
+    if (d.type === 'move') { const b = new Board({ renju: d.renju }); for (const [x, y, p] of d.moves) b.play(x, y, p); out = chooseMove(b, d.p, d.level); }
+    else if (d.type === 'puzzle') { const pz = makePuzzle(d.date, false); out = pz && { moves: pz.board.moves, toMove: pz.toMove, n: pz.moves, solution: pz.solution }; }
+  } catch (err) {}
+  postMessage({ id: d.id, out }); };`;
+  worker = new Worker(URL.createObjectURL(new Blob([code], { type: 'text/javascript' })));
+  worker.onmessage = e => { const cb = pending.get(e.data.id); pending.delete(e.data.id); if (cb) cb(e.data.out); };
+  worker.onerror = () => { worker = null; };
+} catch { worker = null; }
+function ask(msg) {
+  return new Promise(res => {
+    if (worker) { const id = ++wid; pending.set(id, res); worker.postMessage({ ...msg, id }); return; }
+    setTimeout(() => { let out = null; if (msg.type === 'move') { const b = new Board({ renju: msg.renju }); for (const [x, y, p] of msg.moves) b.play(x, y, p); out = chooseMove(b, msg.p, msg.level); } else { const pz = makePuzzle(msg.date, false); out = pz && { moves: pz.board.moves, toMove: pz.toMove, n: pz.moves, solution: pz.solution }; } res(out); }, 30);
+  });
+}
+
+// ── 판 그리기
+const cv = $('cv'), cx = cv.getContext('2d'); let L = {};
+function layout() {
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  const S = Math.floor(Math.max(260, Math.min(W - 16, H - 170, 680)));
+  const m = SET.coords ? S * 0.06 : S * 0.035, cell = (S - 2 * m) / (N - 1);
+  L = { S, m, cell, dpr }; cv.width = S * dpr; cv.height = S * dpr; cv.style.width = S + 'px'; cv.style.height = S + 'px';
+  document.documentElement.style.setProperty('--bw', S + 'px'); wood = null; draw();
+}
+addEventListener('resize', layout);
+let wood = null;
+function woodImage() {
+  if (wood) return wood; const { S, dpr } = L, c = document.createElement('canvas'); c.width = S * dpr; c.height = S * dpr; const x = c.getContext('2d'); x.scale(dpr, dpr);
+  const g = x.createLinearGradient(0, 0, S, S); g.addColorStop(0, '#ecc98e'); g.addColorStop(0.5, '#e0b373'); g.addColorStop(1, '#d6a564'); x.fillStyle = g; x.fillRect(0, 0, S, S);
+  // 나뭇결
+  let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 70; i++) { const y0 = r() * S, a = 2 + r() * 6, f = 0.004 + r() * 0.01, ph = r() * 6; x.strokeStyle = `rgba(${120 + r() * 40 | 0},${70 + r() * 30 | 0},${30},${0.05 + r() * 0.08})`; x.lineWidth = 0.6 + r() * 1.6; x.beginPath(); for (let px = 0; px <= S; px += 6) x.lineTo(px, y0 + Math.sin(px * f + ph) * a + Math.sin(px * f * 3.1) * a * 0.3); x.stroke(); }
+  const v = x.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(60,30,0,.18)'); x.fillStyle = v; x.fillRect(0, 0, S, S);
+  // 줄 · 화점 · 좌표
+  const { m, cell } = L; x.strokeStyle = '#3a2614'; x.lineWidth = 1;
+  for (let i = 0; i < N; i++) { const p = m + i * cell; x.beginPath(); x.moveTo(m, p); x.lineTo(S - m, p); x.stroke(); x.beginPath(); x.moveTo(p, m); x.lineTo(p, S - m); x.stroke(); }
+  x.lineWidth = 2; x.strokeRect(m, m, S - 2 * m, S - 2 * m);
+  x.fillStyle = '#3a2614'; for (const [a, b] of [[3, 3], [3, 11], [11, 3], [11, 11], [7, 7]]) { x.beginPath(); x.arc(m + a * cell, m + b * cell, Math.max(2.5, cell * 0.1), 0, 7); x.fill(); }
+  if (SET.coords) { x.font = `600 ${Math.max(9, cell * 0.32)}px system-ui, sans-serif`; x.fillStyle = 'rgba(58,38,20,.75)'; x.textAlign = 'center'; x.textBaseline = 'middle'; for (let i = 0; i < N; i++) { x.fillText('ABCDEFGHJKLMNOP'[i], m + i * cell, m * 0.45); x.fillText(String(N - i), m * 0.42, m + i * cell); } }
+  return (wood = c);
+}
+function stone(x, y, p, r, alpha = 1, scale = 1) {
+  const c = cx; c.save(); c.globalAlpha = alpha; c.translate(x, y); c.scale(scale, scale);
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.arc(r * 0.12, r * 0.16, r, 0, 7); c.fill();
+  const g = c.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
+  if (p === BLACK) { g.addColorStop(0, '#6a6a6a'); g.addColorStop(0.35, '#222'); g.addColorStop(1, '#050505'); } else { g.addColorStop(0, '#ffffff'); g.addColorStop(0.7, '#ece8de'); g.addColorStop(1, '#c4beb2'); }
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+  if (p === WHITE) { c.strokeStyle = 'rgba(120,110,95,.35)'; c.lineWidth = 0.8; c.stroke(); }
+  c.restore();
+}
+const P = (i) => L.m + i * L.cell;
+function draw() {
+  if (!L.S) return; const c = cx, { S, cell, dpr } = L, now = performance.now(); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.drawImage(woodImage(), 0, 0, S, S);
+  if (!G) return;
+  const b = G.b, r = cell * 0.47, toPlay = G.turn;
+  // 금수 표시 (렌주, 흑 차례인 사람)
+  if (b.renju && toPlay === BLACK && isHumanTurn() && !G.over) {
+    c.strokeStyle = 'rgba(200,30,40,.75)'; c.lineWidth = Math.max(1.5, cell * 0.07);
+    for (const [x, y] of candidates(b, 2)) if (b.forbidden(x, y)) { const px = P(x), py = P(y), k = cell * 0.18; c.beginPath(); c.moveTo(px - k, py - k); c.lineTo(px + k, py + k); c.moveTo(px + k, py - k); c.lineTo(px - k, py + k); c.stroke(); }
+  }
+  b.moves.forEach(([x, y, p], i) => {
+    let sc = 1; if (anim && anim.i === i) { const k = Math.min(1, (now - anim.t) / 140); sc = 1.25 - 0.25 * k; if (k >= 1) anim = null; }
+    stone(P(x), P(y), p, r, 1, sc);
+    if (SET.numbers) { c.fillStyle = p === BLACK ? '#f2ede4' : '#222'; c.font = `700 ${Math.max(8, cell * (i + 1 >= 100 ? 0.3 : 0.38))}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), P(x), P(y) + 0.5); }
+  });
+  // 마지막 수
+  const lm = b.moves[b.moves.length - 1];
+  if (lm && !SET.numbers) { c.fillStyle = '#e8303e'; c.beginPath(); c.arc(P(lm[0]), P(lm[1]), Math.max(2.5, cell * 0.11), 0, 7); c.fill(); }
+  // 놓을 자리 미리 보기
+  const ghost = aim || hover;
+  if (ghost && isHumanTurn() && !G.over && !b.c[ghost[1] * N + ghost[0]]) { stone(P(ghost[0]), P(ghost[1]), toPlay, r, aim ? 0.75 : 0.45); if (aim) { c.strokeStyle = '#e8303e'; c.lineWidth = 2; c.beginPath(); c.arc(P(aim[0]), P(aim[1]), r + 3, 0, 7); c.stroke(); } }
+  // 힌트
+  if (hintCell && now - hintT < 2600) { const a = 0.5 + Math.sin((now - hintT) / 130) * 0.5; c.strokeStyle = `rgba(40,160,255,${a})`; c.lineWidth = 3; c.beginPath(); c.arc(P(hintCell[0]), P(hintCell[1]), r + 4, 0, 7); c.stroke(); }
+  // 이긴 줄
+  if (G.winLine) {
+    const wl = G.winLine, a = wl[0], z = wl[wl.length - 1], k = 0.55 + Math.sin(now / 160) * 0.35;
+    c.strokeStyle = `rgba(255,210,63,${k})`; c.lineWidth = Math.max(4, cell * 0.22); c.lineCap = 'round'; c.shadowColor = '#ffd23f'; c.shadowBlur = 14;
+    c.beginPath(); c.moveTo(P(a[0]), P(a[1])); c.lineTo(P(z[0]), P(z[1])); c.stroke(); c.shadowBlur = 0;
+  }
+}
+function loop() { if (G && (anim || G.winLine || (hintCell && performance.now() - hintT < 2700))) draw(); requestAnimationFrame(loop); }
+
+// ── 대국
+function isHumanTurn() { return G && !G.over && !thinking && (G.mode === 'human' || G.turn === G.me); }
+function newGame(mode, o = {}) {
+  chip.init(); hover = aim = hintCell = null;
+  const renju = mode === 'puzzle' ? false : SET.rule === 'renju';
+  G = { mode, b: new Board({ renju }), turn: BLACK, over: false, winLine: null, level: SET.level, me: BLACK, undos: 0, hints: 0, ...o };
+  if (mode === 'ai') { G.me = SET.color === 'black' ? BLACK : SET.color === 'white' ? WHITE : other(SET.lastColor || WHITE); SET.lastColor = G.me; save(); }
+  phase = 'play'; showOnly(null); layout(); status(); persist();
+  if (SET.music !== 'off') chip.play(SET.music); else chip.stop();
+  if (G.mode === 'ai' && G.turn !== G.me) aiMove();
+}
+function place(x, y) {
+  const b = G.b, p = G.turn; if (G.over || b.c[y * N + x]) return false;
+  if (p === BLACK && b.renju) { const f = b.forbidden(x, y); if (f) { chip.sfx('forbid'); toast(fmt(T.forbidden, { k: T.forb[f] })); return false; } }
+  b.play(x, y, p); anim = { i: b.moves.length - 1, t: performance.now() }; chip.sfx('stone', { white: p === WHITE });
+  hintCell = null; aim = null;
+  const wl = b.winLine(x, y);
+  if (wl) { G.winLine = wl; G.over = true; G.winner = p; draw(); setTimeout(finish, 900); persist(); return true; }
+  if (b.full()) { G.over = true; G.winner = 0; setTimeout(finish, 600); return true; }
+  G.turn = other(p);
+  // 묘수: 남은 수
+  if (G.mode === 'puzzle' && p === G.me) { G.left--; if (G.left <= 0 && !G.over) { const f = fiveSpot(b, G.me); if (!f) { G.over = true; G.winner = other(G.me); setTimeout(finish, 600); } } }
+  status(); draw(); persist();
   return true;
 }
-
-function aiMove() {
-  if (gameOver || currentPlayer !== 2) return;
-  const move = findBestMove();
-  if (move) {
-    setTimeout(() => placeStone(move[0], move[1]), 200);
-  }
+async function aiMove() {
+  if (!G || G.over) return; thinking = true; status();
+  const t0 = performance.now(), mine = G, lvl = G.mode === 'puzzle' ? 'hard' : G.level;
+  const m = await ask({ type: 'move', moves: G.b.moves, renju: G.b.renju, p: G.turn, level: lvl });
+  const wait = Math.max(0, 380 - (performance.now() - t0)); await new Promise(r => setTimeout(r, wait));
+  if (G !== mine || phase !== 'play') { thinking = false; return; }
+  thinking = false; if (m) place(m[0], m[1]); status();
+  // 묘수에서 쓸 수가 남았는데 상대가 이미 다섯을 막아 이길 길이 없어진 경우는 그대로 진행 (남은 수가 0 이 되면 실패)
 }
-
-function findBestMove() {
-  let bestScore = -Infinity, bestMove = null;
-  const candidates = getCandidates();
-  for (const [r, c] of candidates) {
-    const s = evaluateMove(r, c);
-    if (s > bestScore) { bestScore = s; bestMove = [r, c]; }
-  }
-  return bestMove || [Math.floor(SIZE / 2), Math.floor(SIZE / 2)];
+function humanMove(x, y) {
+  if (!isHumanTurn()) return;
+  if (!place(x, y)) return;
+  if (G.mode !== 'human' && !G.over) aiMove();
 }
-
-function getCandidates() {
-  const set = new Set();
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      if (board[r][c] === 0) continue;
-      for (let dr = -2; dr <= 2; dr++) {
-        for (let dc = -2; dc <= 2; dc++) {
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && board[nr][nc] === 0) {
-            set.add(nr * SIZE + nc);
-          }
-        }
-      }
-    }
-  }
-  if (set.size === 0) return [[Math.floor(SIZE/2), Math.floor(SIZE/2)]];
-  return [...set].map(v => [Math.floor(v / SIZE), v % SIZE]);
+function undo() {
+  if (!G || thinking || G.mode === 'puzzle' || !G.b.moves.length) return;
+  if (G.over) { G.over = false; G.winLine = null; showOnly(null); }
+  const k = G.mode === 'ai' ? (G.turn === G.me ? 2 : 1) : 1;
+  for (let i = 0; i < k && G.b.moves.length; i++) { const m = G.b.undo(); G.turn = m[2]; }
+  if (G.mode === 'ai' && G.turn !== G.me && G.b.moves.length === 0) { /* AI 가 흑이면 다시 두게 */ }
+  G.undos++; chip.sfx('undo'); hintCell = null; status(); draw(); persist();
+  if (G.mode === 'ai' && G.turn !== G.me) aiMove();
 }
-
-function evaluateMove(r, c) {
-  let score = 0;
-  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
-  for (const player of [2, 1]) {
-    const mult = player === 2 ? 1 : 0.9;
-    for (const [dr, dc] of dirs) {
-      board[r][c] = player;
-      let count = 1, open = 0;
-      for (let d = -1; d <= 1; d += 2) {
-        let blocked = false;
-        for (let i = 1; i < 5; i++) {
-          const nr = r + dr * i * d, nc = c + dc * i * d;
-          if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) { blocked = true; break; }
-          if (board[nr][nc] === player) count++;
-          else { if (board[nr][nc] === 0) open++; blocked = true; break; }
-        }
-        if (!blocked) open++;
-      }
-      board[r][c] = 0;
-      if (count >= 5) score += 100000 * mult;
-      else if (count === 4 && open >= 2) score += 50000 * mult;
-      else if (count === 4 && open === 1) score += 5000 * mult;
-      else if (count === 3 && open >= 2) score += 3000 * mult;
-      else if (count === 3 && open === 1) score += 500 * mult;
-      else if (count === 2 && open >= 2) score += 200 * mult;
-      else if (count === 2 && open === 1) score += 50 * mult;
-    }
-  }
-  const center = Math.floor(SIZE / 2);
-  score += Math.max(0, 7 - Math.abs(r - center) - Math.abs(c - center)) * 3;
-  return score;
+async function hint() {
+  if (!isHumanTurn()) return; thinking = true; status();
+  const m = await ask({ type: 'move', moves: G.b.moves, renju: G.b.renju, p: G.turn, level: 'hard' }); thinking = false;
+  if (m) { hintCell = m; hintT = performance.now(); G.hints++; chip.sfx('hint'); } status(); draw();
 }
-
-function drawBoard() {
-  const grad = ctx.createLinearGradient(0, 0, boardPx, boardPx);
-  grad.addColorStop(0, '#c8a96e');
-  grad.addColorStop(0.5, '#d4b87a');
-  grad.addColorStop(1, '#ba9a5e');
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.roundRect(0, 0, boardPx, boardPx, 8);
-  ctx.fill();
-
-  ctx.strokeStyle = '#6b5530';
-  ctx.lineWidth = 0.8;
-  for (let i = 0; i < SIZE; i++) {
-    const pos = pad + i * ((boardPx - 2 * pad) / (SIZE - 1));
-    ctx.beginPath(); ctx.moveTo(pad, pos); ctx.lineTo(boardPx - pad, pos); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pos, pad); ctx.lineTo(pos, boardPx - pad); ctx.stroke();
-  }
-
-  const dots = [3, 7, 11];
-  ctx.fillStyle = '#6b5530';
-  for (const r of dots) {
-    for (const c of dots) {
-      const x = pad + c * ((boardPx - 2 * pad) / (SIZE - 1));
-      const y = pad + r * ((boardPx - 2 * pad) / (SIZE - 1));
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
-    }
-  }
+function status() {
+  if (!G) return; const p = G.turn;
+  $('stStone').className = 'st ' + (p === BLACK ? 'b' : 'w');
+  let txt;
+  if (G.over) txt = G.winner === 0 ? T.draw : G.mode === 'human' ? (G.winner === BLACK ? T.blackWins : T.whiteWins) : G.winner === G.me ? (G.mode === 'puzzle' ? T.puzzleOk : T.youWin) : (G.mode === 'puzzle' ? T.puzzleFail : T.youLose);
+  else if (thinking) txt = T.aiThinking;
+  else if (G.mode === 'human') txt = p === BLACK ? T.blackTurn : T.whiteTurn;
+  else txt = T.yourTurn;
+  $('stText').textContent = txt; $('stText').classList.toggle('dots', thinking && !G.over);
+  $('stInfo').textContent = G.mode === 'puzzle' ? fmt(T.toWin, { n: G.n, m: Math.max(0, G.left) }) : G.mode === 'ai' ? `${T.levels[G.level]} · ${T.rules[G.b.renju ? 'renju' : 'free']}` : T.rules[G.b.renju ? 'renju' : 'free'];
+  $('ttl').textContent = G.mode === 'puzzle' ? `${T.puzzle} · ${dateLabel(G.date)}` : G.mode === 'human' ? T.vsHuman : T.vsAI;
+  $('bUndo').disabled = thinking || G.mode === 'puzzle' || !G.b.moves.length; $('bHint').disabled = !isHumanTurn(); $('bResign').disabled = G.over || G.mode === 'human' && !G.b.moves.length;
+  $('bUndo').hidden = G.mode === 'puzzle';
 }
-
-function drawStone(r, c, player, highlight) {
-  const spacing = (boardPx - 2 * pad) / (SIZE - 1);
-  const x = pad + c * spacing;
-  const y = pad + r * spacing;
-  const radius = spacing * 0.42;
-
-  ctx.save();
-  if (highlight) {
-    ctx.shadowColor = '#ffd700';
-    ctx.shadowBlur = 15;
+function finish() {
+  if (!G) return; phase = 'result'; chip.stop(); const won = G.winner === G.me, rows = [[T.moves, G.b.moves.length]];
+  if (G.mode === 'human') { $('resTitle').textContent = G.winner === 0 ? T.draw : G.winner === BLACK ? T.blackWins : T.whiteWins; chip.sfx('win'); }
+  else if (G.mode === 'ai') {
+    const key = G.level + '/' + (G.b.renju ? 'renju' : 'free'), r = ST.rec[key] || { w: 0, l: 0, d: 0 };
+    if (!G.counted) { G.counted = true; if (G.winner === 0) r.d++; else if (won) r.w++; else r.l++; ST.rec[key] = r; }
+    $('resTitle').textContent = G.winner === 0 ? T.draw : won ? T.youWin : T.youLose; chip.sfx(won ? 'win' : 'lose');
+    rows.push([T.byLevel, `${T.levels[G.level]} ${r.w}${T.wins} ${r.l}${T.losses} ${r.d}${T.draws}`]);
   } else {
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+    if (!(ST.puzzles[G.date] || {}).done) ST.puzzles[G.date] = { done: true, ok: won, used: G.n - G.left, n: G.n };
+    const rec = ST.puzzles[G.date]; $('resTitle').textContent = rec.ok ? T.puzzleOk : T.puzzleFail; chip.sfx(rec.ok ? 'win' : 'lose');
+    const s = streak(); if (s) rows.push(['', fmt(T.streak, s)]);
   }
-
-  if (player === 1) {
-    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
-    grad.addColorStop(0, '#555');
-    grad.addColorStop(1, '#111');
-    ctx.fillStyle = grad;
-  } else {
-    const grad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
-    grad.addColorStop(0, '#fff');
-    grad.addColorStop(1, '#ccc');
-    ctx.fillStyle = grad;
-  }
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  if (lastMove && lastMove[0] === r && lastMove[1] === c) {
-    ctx.fillStyle = player === 1 ? '#ff4466' : '#ff4466';
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  ST.cur = null; save();
+  $('resSub').textContent = G.mode === 'puzzle' ? fmt(T.puzzleDesc, G.n) : '';
+  $('resGrid').innerHTML = ''; for (const [k, v] of rows) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; $('resGrid').append(a, b); }
+  $('bShare').hidden = G.mode !== 'puzzle'; $('bAgain').hidden = G.mode === 'puzzle';
+  $('resNew').hidden = true; showOnly('result'); status();
 }
-
-function draw() {
-  ctx.clearRect(0, 0, boardPx, boardPx);
-  drawBoard();
-  const isWin = winCells.length > 0;
-  const winSet = new Set(winCells.map(([r,c]) => r * SIZE + c));
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      if (board[r][c] !== 0) {
-        drawStone(r, c, board[r][c], isWin && winSet.has(r * SIZE + c));
-      }
-    }
-  }
+function streak() {
+  let n = 0; const d = new Date(); if (!(ST.puzzles[today()] || {}).ok) d.setDate(d.getDate() - 1);
+  for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if ((ST.puzzles[k] || {}).ok) { n++; d.setDate(d.getDate() - 1); } else break; }
+  return n;
 }
-
-function getCell(e) {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-  const spacing = (boardPx - 2 * pad) / (SIZE - 1);
-  const c = Math.round((mx - pad) / spacing);
-  const r = Math.round((my - pad) / spacing);
-  if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return null;
-  return [r, c];
+async function startPuzzle() {
+  chip.init(); const date = today(), rec = ST.puzzles[date];
+  if (ST.cur && ST.cur.mode === 'puzzle' && ST.cur.date === date && !rec) { restore(ST.cur); return; }
+  toast(T.aiThinking);
+  let pz = ST.pzCache && ST.pzCache.date === date ? ST.pzCache.pz : null;
+  if (!pz) { pz = await ask({ type: 'puzzle', date }); if (!pz) { toast('…'); return; } ST.pzCache = { date, pz }; save(); }
+  newGame('puzzle', { date, n: pz.n, left: pz.n, me: pz.toMove });
+  for (const [x, y, p] of pz.moves) G.b.play(x, y, p); G.turn = pz.toMove;
+  if (rec && rec.done) { G.over = true; G.winner = rec.ok ? G.me : other(G.me); G.left = rec.n - rec.used; }
+  status(); draw(); persist();
+  if (rec && rec.done) finish();
 }
+function persist() { if (!G || G.over || G.mode === 'human') { if (G && G.over) ST.cur = null; save(); return; } ST.cur = { mode: G.mode, level: G.level, renju: G.b.renju, me: G.me, moves: G.b.moves, turn: G.turn, date: G.date, n: G.n, left: G.left }; save(); }
+function restore(s) {
+  newGame(s.mode, { level: s.level, me: s.me, date: s.date, n: s.n, left: s.left });
+  G.b = new Board({ renju: s.renju }); for (const [x, y, p] of s.moves) G.b.play(x, y, p); G.turn = s.turn; G.level = s.level; G.me = s.me;
+  status(); draw(); if (G.mode === 'ai' && G.turn !== G.me) aiMove();
+}
+function toast(text) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = text; document.body.appendChild(d); setTimeout(() => d.remove(), 1900); }
+function showOnly(id) { for (const k of ['menu', 'settings', 'records', 'help', 'confirm', 'result']) $(k).hidden = k !== id; }
+function toMenu() { phase = 'menu'; chip.stop(); buildMenu(); showOnly('menu'); }
 
-canvas.addEventListener('click', e => {
-  const cell = getCell(e);
-  if (!cell) return;
-  if (vsAI && currentPlayer === 2) return;
-  if (placeStone(cell[0], cell[1]) && vsAI && !gameOver) {
-    aiMove();
-  }
+// ── 입력: 마우스는 바로 두고, 손가락은 한 번 눌러 고른 뒤 다시 눌러 확정
+function cellAt(e) { const r = cv.getBoundingClientRect(), x = Math.round(((e.clientX - r.left) / r.width * L.S - L.m) / L.cell), y = Math.round(((e.clientY - r.top) / r.height * L.S - L.m) / L.cell); return inside(x, y) ? [x, y] : null; }
+cv.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const c = cellAt(e); if (String(c) !== String(hover)) { hover = c; draw(); } });
+cv.addEventListener('pointerleave', () => { hover = null; draw(); });
+cv.addEventListener('pointerup', e => {
+  chip.init(); if (phase !== 'play' || !isHumanTurn()) return; const c = cellAt(e); if (!c) return;
+  if (e.pointerType === 'mouse') { humanMove(c[0], c[1]); return; }
+  if (aim && aim[0] === c[0] && aim[1] === c[1]) humanMove(c[0], c[1]); else { aim = c; chip.sfx('menu'); draw(); }
+});
+addEventListener('keydown', e => {
+  chip.init();
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (phase === 'play' || phase === 'result') toMenu(); else if (!$('settings').hidden || !$('records').hidden || !$('help').hidden) showOnly(phase === 'menu' ? 'menu' : null); return; }
+  if (phase !== 'play') return;
+  if (e.key === 'u' || e.key === 'U' || ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z'))) { e.preventDefault(); undo(); }
+  if (e.key === 'h' || e.key === 'H') hint();
 });
 
-modeBtn.addEventListener('click', () => {
-  vsAI = !vsAI;
-  modeBtn.textContent = vsAI ? T.modeAI : T.mode2P;
-  resetGame();
-});
+// ── 메뉴
+function toggleMute() { SET.muted = !SET.muted; chip.setMuted(SET.muted); muteIcon(); save(); }
+function muteIcon() { $('bMute').innerHTML = SET.muted ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>'; }
+function chipsRow(parent, label, opts, cur, onPick) {
+  const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips';
+  for (const [v, txt] of opts) { const b = document.createElement('button'); b.className = 'chip' + (cur === v ? ' on' : ''); b.textContent = txt; b.onclick = () => { chip.init(); chip.sfx('menu'); onPick(v); c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); }; c.appendChild(b); }
+  r.append(s, c); parent.appendChild(r); return r;
+}
+function buildMenu() {
+  $('hAI').textContent = T.vsAI; const A = $('aiOpts'); A.innerHTML = '';
+  chipsRow(A, T.level, ['easy', 'normal', 'hard', 'master'].map(k => [k, T.levels[k]]), SET.level, v => { SET.level = v; save(); });
+  chipsRow(A, T.color, ['black', 'white', 'alt'].map(k => [k, T.colors[k]]), SET.color, v => { SET.color = v; save(); });
+  const rr = chipsRow(A, T.rule, ['free', 'renju'].map(k => [k, T.rules[k]]), SET.rule, v => { SET.rule = v; save(); rd.textContent = T.ruleDesc[v]; });
+  const rd = document.createElement('p'); rd.textContent = T.ruleDesc[SET.rule]; A.appendChild(rd);
+  const cur = ST.cur && ST.cur.mode === 'ai' ? ST.cur : null;
+  $('bAI').textContent = T.start;
+  $('hHuman').textContent = T.vsHuman; $('pHuman').textContent = T.vsHumanDesc + ' · ' + T.rules[SET.rule]; $('bHuman').textContent = T.start;
+  const dk = today(), rec = ST.puzzles[dk], pc = ST.cur && ST.cur.mode === 'puzzle' && ST.cur.date === dk;
+  $('hPuzzle').textContent = `${T.puzzle} · ${dateLabel(dk)}`; $('pPuzzle').textContent = fmt(T.puzzleDesc, ST.pzCache && ST.pzCache.date === dk ? ST.pzCache.pz.n : '3~6');
+  const s = streak(); $('pzStreak').textContent = s ? fmt(T.streak, s) : '';
+  $('pzStatus').textContent = rec && rec.done ? (rec.ok ? T.solved : T.failed) : pc ? T.inProgress : T.notYet;
+  $('bPuzzle').textContent = rec && rec.done ? T.viewResult : T.play;
+  if (cur) { $('bAI').textContent = T.start; }
+}
+function slider(parent, label, val, on) { const r = document.createElement('label'); r.className = 'sl'; const s = document.createElement('span'); s.textContent = label; const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = val; i.oninput = () => on(+i.value); r.append(s, i); parent.appendChild(r); return i; }
+function buildSettings() {
+  $('tSettings').textContent = T.settings; const B = $('setBody'); B.innerHTML = '';
+  chipsRow(B, T.music, ['A', 'off'].map(k => [k, T.musicNames[k]]), SET.music, v => { SET.music = v; save(); if (phase === 'play') { if (v !== 'off') chip.play(v); else chip.stop(); } });
+  slider(B, T.mv, SET.mv, v => { SET.mv = v; chip.setVol(v, null); save(); });
+  const sv = slider(B, T.sv, SET.sv, v => { SET.sv = v; chip.setVol(null, v); save(); }); sv.onchange = () => { chip.init(); chip.sfx('stone'); };
+  chipsRow(B, T.numbers, [[true, T.on], [false, T.off]], SET.numbers, v => { SET.numbers = v; save(); draw(); });
+  chipsRow(B, T.coords, [[true, T.on], [false, T.off]], SET.coords, v => { SET.coords = v; save(); layout(); });
+}
+function buildRecords() {
+  $('tRecords').textContent = T.records; const B = $('recBody'); B.innerHTML = '';
+  const h1 = document.createElement('h4'); h1.textContent = T.byLevel; B.appendChild(h1);
+  const t1 = document.createElement('table'); let any = false;
+  for (const rule of ['free', 'renju']) for (const lv of ['easy', 'normal', 'hard', 'master']) { const r = ST.rec[lv + '/' + rule]; if (!r) continue; any = true; const tr = t1.insertRow(); tr.insertCell().textContent = T.levels[lv]; tr.insertCell().textContent = `${r.w}${T.wins} ${r.l}${T.losses} ${r.d}${T.draws}`; tr.insertCell().textContent = T.rules[rule]; }
+  if (!any) { const td = t1.insertRow().insertCell(); td.textContent = T.none; td.style.fontWeight = '400'; }
+  B.appendChild(t1);
+  const h2 = document.createElement('h4'); const s = streak(); h2.textContent = `${T.history}${s ? ' · ' + fmt(T.streak, s) : ''}`; B.appendChild(h2);
+  const t2 = document.createElement('table'); const days = Object.keys(ST.puzzles).filter(k => ST.puzzles[k].done).sort().reverse().slice(0, 10);
+  if (!days.length) { const td = t2.insertRow().insertCell(); td.textContent = T.none; td.style.fontWeight = '400'; }
+  for (const k of days) { const r = ST.puzzles[k], tr = t2.insertRow(); tr.insertCell().textContent = dateLabel(k); tr.insertCell().textContent = r.ok ? T.solved : T.failed; tr.insertCell().textContent = `${r.used}/${r.n}`; }
+  B.appendChild(t2);
+}
+function build() {
+  $('pageTitle').textContent = T.title; $('logo').textContent = T.title; $('tTag').textContent = T.tag;
+  $('bAI').onclick = () => newGame('ai'); $('bHuman').onclick = () => newGame('human'); $('bPuzzle').onclick = startPuzzle;
+  $('bSettings').textContent = T.settings; $('bRecords').textContent = T.records; $('bHelp').textContent = T.help;
+  $('bSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bRecords').onclick = () => { buildRecords(); showOnly('records'); };
+  $('bHelp').onclick = () => {
+    $('tHelp').textContent = T.help; $('helpKeys').innerHTML = ''; $('helpTips').innerHTML = '';
+    for (const [k, v] of T.keys) { const a = document.createElement('kbd'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; $('helpKeys').append(a, b); }
+    for (const t of T.tips) { const d = document.createElement('div'); d.textContent = t; $('helpTips').appendChild(d); }
+    showOnly('help');
+  };
+  for (const id of ['bSetDone', 'bRecDone', 'bHelpDone']) { $(id).textContent = T.done; $(id).onclick = () => { showOnly(phase === 'menu' ? 'menu' : null); if (phase === 'menu') buildMenu(); }; }
+  $('bMenu').onclick = () => { chip.init(); toMenu(); };
+  $('bMute').onclick = () => { chip.init(); toggleMute(); }; muteIcon();
+  $('bUndo').textContent = T.undo; $('bHint').textContent = T.hint; $('bResign').textContent = T.resign;
+  $('bUndo').onclick = undo; $('bHint').onclick = hint;
+  $('bResign').onclick = () => { if (!G || G.over) return; $('cfTitle').textContent = T.confirmResign; showOnly('confirm'); };
+  $('bCfNo').textContent = T.no; $('bCfYes').textContent = T.yes; $('bCfNo').onclick = () => showOnly(null);
+  $('bCfYes').onclick = () => { showOnly(null); if (!G || G.over) return; G.over = true; G.winner = G.mode === 'human' ? other(G.turn) : other(G.me); finish(); };
+  $('bResMenu').textContent = T.menu; $('bResMenu').onclick = toMenu;
+  $('bResLook').textContent = '▲'; $('bResLook').onclick = () => { showOnly(null); phase = 'play'; };
+  $('bAgain').textContent = T.again; $('bAgain').onclick = () => newGame(G.mode);
+  $('bShare').textContent = T.share;
+  $('bShare').onclick = () => {
+    const rec = ST.puzzles[G.date]; if (!rec) return; const txt = `wiiiv ${T.title} · ${T.puzzle} ${G.date}\n${rec.ok ? '✅ ' + T.solved : '❌ ' + T.failed} · ${rec.used}/${rec.n}`;
+    const fb = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 무시 */ } ta.remove(); toast(T.copied); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(T.copied), fb); else fb();
+  };
+}
+build(); buildMenu(); layout(); showOnly('menu');
+// 메뉴 뒤 판: 예쁜 배치 하나
+G = { mode: 'human', b: new Board(), turn: BLACK, over: true }; for (const [x, y, p] of [[7, 7, 1], [8, 6, 2], [8, 8, 1], [6, 6, 2], [9, 9, 1], [7, 8, 2], [6, 8, 1], [9, 7, 2], [10, 10, 1], [5, 5, 2]]) G.b.play(x, y, p); draw(); G = null;
+addEventListener('pointerdown', () => chip.init(), { capture: true, once: true });
+requestAnimationFrame(loop);
+document.body.focus();
+window.__gm = { get G() { return G; }, get phase() { return phase; }, get thinking() { return thinking; }, newGame, startPuzzle, humanMove, undo, hint, toMenu, ST };
 
-document.getElementById('resetBtn').addEventListener('click', resetGame);
-window.addEventListener('resize', () => { resize(); draw(); });
-
-resize();
-resetGame();
 </script>
 </body>
 </html>
