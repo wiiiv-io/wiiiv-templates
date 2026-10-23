@@ -2,326 +2,1803 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>뱀 게임</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title id="pageTitle">뱀 게임</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif;
-  display: flex; align-items: center; justify-content: center;
-  height: 100vh; overflow: hidden; user-select: none; outline: none;
-}
-.game-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-}
-.top-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 402px; gap: 12px;
-}
-.stat {
-  background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.25);
-  border-radius: 8px; padding: 6px 14px; text-align: center; flex: 1;
-}
-.stat .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-.stat .val { font-size: 20px; font-weight: 700; color: #7c5cfc; }
-canvas {
-  border: 2px solid #7c5cfc; border-radius: 4px; background: #000;
-  display: block;
-}
-.bottom-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 402px; gap: 8px;
-}
-.btn {
-  padding: 8px 20px; border: none; border-radius: 8px;
-  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-}
-.btn-play { background: #7c5cfc; color: #fff; }
-.btn-play:hover { background: #6a4ce0; }
-.btn-stop { background: #ff4757; color: #fff; }
-.btn-stop:hover { background: #e0333f; }
-.keys {
-  font-size: 10px; color: #666; display: flex; gap: 12px;
-}
-.keys span { color: #888; }
-.overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 12px;
-  background: rgba(13,13,26,0.92); border-radius: 4px; z-index: 10;
-}
-.overlay h2 { font-size: 24px; color: #7c5cfc; }
-.overlay .sub { font-size: 14px; color: #ccc; }
-.overlay button {
-  padding: 10px 28px; border: none; border-radius: 8px;
-  background: #7c5cfc; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.overlay button:hover { background: #6a4ce0; }
-.canvas-wrap { position: relative; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #070b0a; overflow: hidden; }
+body { font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK KR', system-ui, sans-serif; color: #eefaf2; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+canvas { display: block; position: fixed; inset: 0; }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
+.ov[hidden] { display: none; }
+.ov.dim { background: rgba(3, 8, 6, .5); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.card { background: linear-gradient(160deg, rgba(24, 44, 34, .86), rgba(8, 16, 12, .92)); border: 1px solid rgba(120, 240, 170, .18); border-radius: 22px; padding: 24px 24px 20px; width: min(420px, 100%); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .06); max-height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.card::-webkit-scrollbar { display: none; }
+.logo { display: block; text-align: center; white-space: nowrap; max-width: 100%; font-weight: 900; font-size: clamp(30px, 9vw, 50px); line-height: 1.1; letter-spacing: .03em; background: linear-gradient(90deg, #c6f24e, #3ee07a 45%, #3ff0d8); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)) drop-shadow(0 0 16px rgba(62, 224, 122, .35)); margin: 0 0 4px; }
+.logo-snake { display: block; margin: 0 auto 4px; width: 132px; height: 34px; }
+.tag { text-align: center; color: #8fb8a0; font-size: 12.5px; letter-spacing: .14em; margin-bottom: 18px; }
+.modes { display: grid; gap: 10px; }
+.mode { display: flex; align-items: center; gap: 14px; width: 100%; border: 1px solid rgba(120, 240, 170, .16); background: rgba(255, 255, 255, .04); color: inherit; font: inherit; text-align: left; padding: 12px 14px; border-radius: 14px; cursor: pointer; transition: transform .12s, background .2s, border-color .2s; }
+.mode:hover, .mode:focus-visible { background: rgba(62, 224, 122, .12); border-color: rgba(120, 240, 170, .5); transform: translateY(-1px); outline: none; }
+.mode b { display: block; font-size: 17px; } .mode small { color: #8fb8a0; font-size: 12.5px; line-height: 1.35; display: block; }
+.mode .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.mode .ic svg { width: 26px; height: 26px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; font-size: 14px; color: #c5e2d0; }
+.row > span:first-child { white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.chip, .btn { border: 1px solid rgba(120, 240, 170, .2); background: rgba(255, 255, 255, .06); color: inherit; font: inherit; border-radius: 10px; cursor: pointer; }
+.chip { padding: 6px 10px; font-size: 12.5px; }
+.chip.on { background: linear-gradient(160deg, #3ee07a, #13a896); border-color: transparent; color: #04140a; font-weight: 800; }
+.chip.dot { width: 30px; height: 30px; padding: 0; border-radius: 50%; border-width: 2px; }
+.chip.dot.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, .25); }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.btn { flex: 1 1 auto; padding: 11px 10px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.btn.primary { background: linear-gradient(160deg, #3ee07a, #12a65a); border-color: transparent; color: #03140a; font-weight: 800; box-shadow: 0 8px 20px -8px rgba(62, 224, 122, .7); }
+.btn.wide { display: block; width: 100%; margin-top: 10px; }
+.btn:hover { filter: brightness(1.12); }
+h2 { font-size: 22px; text-align: center; margin-bottom: 12px; letter-spacing: .04em; }
+.big { text-align: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #c6f24e, #3ee07a, #3ff0d8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { text-align: center; color: #8fb8a0; font-size: 13px; margin-top: -2px; }
+.newrec { text-align: center; color: #ffd23f; font-weight: 800; letter-spacing: .1em; font-size: 13px; margin-top: 4px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.grid2 { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin-top: 14px; font-size: 14px; color: #c5e2d0; font-variant-numeric: tabular-nums; }
+.grid2 b { color: #fff; text-align: right; }
+.sl { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5e2d0; }
+.sl input { width: 100%; accent-color: #3ee07a; }
+.tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); } td:last-child { text-align: right; color: #8fb8a0; font-size: 12px; }
+td:first-child { color: #3ee07a; font-weight: 800; width: 28px; } td:nth-child(2) { font-weight: 800; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 13.5px; color: #c5e2d0; margin-top: 4px; align-items: center; }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: #fff; justify-self: start; white-space: nowrap; }
+.tips { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: #8fb8a0; line-height: 1.45; }
+.tips div::before { content: '•'; color: #3ee07a; margin-right: 6px; }
+.hud { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; z-index: 5; display: flex; gap: 6px; }
+.hud button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(120, 240, 170, .2); background: rgba(6, 12, 10, .55); color: #dff5e8; font-size: 17px; cursor: pointer; backdrop-filter: blur(4px); display: grid; place-items: center; }
+.hud button svg { width: 18px; height: 18px; }
+#touch { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: none; padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px)); justify-content: center; align-items: flex-end; pointer-events: none; }
+#touch.show { display: flex; }
+.pad { display: grid; grid-template-columns: repeat(3, var(--tb)); grid-template-rows: repeat(3, var(--tb)); gap: 6px; pointer-events: auto; }
+.tb { width: var(--tb); height: var(--tb); border-radius: 16px; border: 1px solid rgba(120, 240, 170, .3); background: rgba(10, 24, 16, .6); color: #dff5e8; display: grid; place-items: center; touch-action: none; }
+.tb svg { width: 42%; height: 42%; }
+.tb.on { background: rgba(62, 224, 122, .45); transform: scale(.94); }
+.pad .u { grid-area: 1 / 2; } .pad .l { grid-area: 2 / 1; } .pad .r { grid-area: 2 / 3; } .pad .d { grid-area: 3 / 2; }
+#boost { position: fixed; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); width: calc(var(--tb) * 1.4); height: calc(var(--tb) * 1.4); border-radius: 50%; z-index: 6; display: none; border: 2px solid rgba(255, 210, 63, .6); background: rgba(60, 40, 0, .45); color: #ffd23f; font-weight: 900; font-size: 13px; letter-spacing: .05em; touch-action: none; }
+#boost.show { display: grid; place-items: center; } #boost.on { background: rgba(255, 210, 63, .45); color: #201400; }
+@media (max-height: 640px) { .card { padding: 16px 18px 14px; } .tag { margin-bottom: 10px; } .mode { padding: 9px 12px; } .modes { gap: 7px; } .logo-snake { display: none; } }
 </style>
 </head>
 <body tabindex="0">
-<div class="game-wrap">
-  <div class="top-bar">
-    <div class="stat"><div class="label" id="lScore">점수</div><div class="val" id="score">0</div></div>
-    <div class="stat"><div class="label" id="lBest">최고</div><div class="val" id="best">0</div></div>
-    <div class="stat"><div class="label" id="lLength">길이</div><div class="val" id="length">3</div></div>
-    <div class="stat"><div class="label" id="lSpeed">속도</div><div class="val" id="speed">1</div></div>
-  </div>
-  <div class="canvas-wrap">
-    <canvas id="board" width="400" height="400"></canvas>
-    <div class="overlay" id="startOverlay">
-      <h2 id="titleText">뱀 게임</h2>
-      <div class="sub" id="titleSub">화살표 키로 방향을 조종하세요</div>
-      <button id="startBtn" onclick="startGame()">▶ 시작</button>
-    </div>
-    <div class="overlay" id="gameOverOverlay" style="display:none">
-      <h2 id="gameOverText">게임 오버</h2>
-      <div class="sub" id="finalScore">점수: 0</div>
-      <button id="restartBtn" onclick="startGame()">다시 시작</button>
-    </div>
-    <div class="overlay" id="pauseOverlay" style="display:none">
-      <h2 id="pauseText">일시정지</h2>
-      <button id="resumeBtn" onclick="resumeGame()">▶ 계속</button>
-    </div>
-  </div>
-  <div class="bottom-bar">
-    <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ 시작</button>
-    <div class="keys">
-      <div><span>←→↑↓</span> <span id="kMove">이동</span></div>
-      <div><span>P</span> <span id="kPause">일시정지</span></div>
-    </div>
-  </div>
-</div>
+<canvas id="cv"></canvas>
+<div class="hud"><button id="bMute" title="M"></button><button id="bPause" title="Esc"></button></div>
 
+<div class="ov dim" id="menu"><div class="card">
+  <svg class="logo-snake" viewBox="0 0 132 34" aria-hidden="true"><path d="M6 22 C 22 6, 34 6, 46 18 S 70 30, 82 18 S 104 6, 116 16" fill="none" stroke="url(#lg)" stroke-width="9" stroke-linecap="round"/><circle cx="118" cy="16" r="7" fill="#3ff0d8"/><circle cx="120" cy="13" r="2" fill="#fff"/><circle cx="120.5" cy="13" r="1" fill="#000"/><circle cx="20" cy="27" r="4" fill="#ff5d73"/><defs><linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="#c6f24e"/><stop offset="1" stop-color="#3ee07a"/></linearGradient></defs></svg>
+  <div class="logo" id="logo"></div><div class="tag" id="tTag"></div>
+  <div class="modes">
+    <button class="mode" id="mClassic"><span class="ic" style="background:rgba(255,93,115,.16)"><svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="7" fill="#f0303c"/><path d="M12 7 Q13 3 16 2" stroke="#6a3a1a" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="16" cy="4.5" rx="3" ry="1.5" fill="#4fd060"/><ellipse cx="9" cy="11.5" rx="1.5" ry="2" fill="#ff9a9a"/></svg></span><span><b></b><small></small></span></button>
+    <button class="mode" id="mMaze"><span class="ic" style="background:rgba(79,195,255,.16)"><svg viewBox="0 0 24 24" fill="none" stroke="#4fc3ff" stroke-width="2.4" stroke-linecap="round"><path d="M3 3h18v18H3z M7 3v10 M7 17h10 M11 7h10 M15 11v6 M11 11v6"/></svg></span><span><b></b><small></small></span></button>
+    <button class="mode" id="mArena"><span class="ic" style="background:rgba(255,210,63,.16)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="#ffd23f" stroke-width="2"/><path d="M5 14 Q9 8 12 12 T19 10" stroke="#ff6fd0" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M6 8 Q10 5 13 7" stroke="#3ee07a" stroke-width="3" fill="none" stroke-linecap="round"/></svg></span><span><b></b><small></small></span></button>
+  </div>
+  <div class="foot"><button class="btn" id="bSettings"></button><button class="btn" id="bRecords"></button><button class="btn" id="bHelp"></button></div>
+</div></div>
+
+<div class="ov dim" id="classicOpt" hidden><div class="card"><h2 id="tClassic"></h2><div id="classicBody"></div><div class="foot"><button class="btn" id="bClassicBack"></button><button class="btn primary" id="bClassicGo"></button></div></div></div>
+<div class="ov dim" id="mazeOpt" hidden><div class="card"><h2 id="tMaze"></h2><div class="sub" id="mazeSub"></div><button class="btn primary wide" id="bMazeCont"></button><button class="btn wide" id="bMazeNew"></button><div class="foot"><button class="btn" id="bMazeBack"></button></div></div></div>
+<div class="ov dim" id="settings" hidden><div class="card"><h2 id="tSettings"></h2><div id="setBody"></div><div class="foot"><button class="btn primary" id="bSetDone"></button></div></div></div>
+<div class="ov dim" id="records" hidden><div class="card"><h2 id="tRecords"></h2><div class="tabs" id="recTabs"></div><table id="recTable"></table><div class="foot"><button class="btn primary" id="bRecDone"></button></div></div></div>
+<div class="ov dim" id="help" hidden><div class="card"><h2 id="tHelp"></h2><div class="keys" id="helpKeys"></div><div class="tips" id="helpTips"></div><div class="foot"><button class="btn primary" id="bHelpDone"></button></div></div></div>
+<div class="ov dim" id="pause" hidden><div class="card"><h2 id="tPause"></h2><button class="btn primary wide" id="bResume"></button><button class="btn wide" id="bRestart"></button><button class="btn wide" id="bPSettings"></button><button class="btn wide" id="bToMenu"></button></div></div>
+<div class="ov dim" id="result" hidden><div class="card"><h2 id="resTitle"></h2><div class="big" id="resScore"></div><div class="sub" id="resSub"></div><div class="newrec" id="resNew" hidden></div><div class="grid2" id="resGrid"></div><div class="foot"><button class="btn" id="bResMenu"></button><button class="btn primary" id="bAgain"></button></div></div></div>
+
+<div id="touch"><div class="pad">
+  <button class="tb u" data-d="up"><svg viewBox="0 0 24 24"><path d="M12 5l8 12H4z" fill="currentColor"/></svg></button>
+  <button class="tb l" data-d="left"><svg viewBox="0 0 24 24"><path d="M5 12l12-8v16z" fill="currentColor"/></svg></button>
+  <button class="tb r" data-d="right"><svg viewBox="0 0 24 24"><path d="M19 12L7 4v16z" fill="currentColor"/></svg></button>
+  <button class="tb d" data-d="down"><svg viewBox="0 0 24 24"><path d="M12 19l8-12H4z" fill="currentColor"/></svg></button>
+</div></div>
+<button id="boost">BOOST</button>
 <script>
-const LANG = 'ko';
-const T = {
-  ko: {
-    score: '점수', best: '최고', length: '길이', speed: '속도',
-    title: '뱀 게임', subtitle: '화살표 키로 방향을 조종하세요',
-    start: '▶ 시작', gameOver: '게임 오버', restart: '다시 시작',
-    pause: '일시정지', resume: '▶ 계속', stop: '⏸ 정지',
-    finalScore: (s, l) => '점수: ' + s + ' | 길이: ' + l,
-    move: '이동',
-  },
-  en: {
-    score: 'SCORE', best: 'BEST', length: 'LENGTH', speed: 'SPEED',
-    title: 'Snake', subtitle: 'Use arrow keys to steer',
-    start: '▶ Start', gameOver: 'GAME OVER', restart: 'Restart',
-    pause: 'PAUSED', resume: '▶ Resume', stop: '⏸ Stop',
-    finalScore: (s, l) => 'Score: ' + s + ' | Length: ' + l,
-    move: 'Move',
+// ───────────────────────── 공용 도구 · 미로 스테이지 20개 ─────────────────────────
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const GW = 24, GH = 24;
+const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+// 벽 그리기 도구
+function grid() {
+  const w = new Uint8Array(GW * GH);
+  const g = {
+    w,
+    set(x, y) { if (x >= 0 && y >= 0 && x < GW && y < GH) w[y * GW + x] = 1; return g; },
+    clr(x, y) { if (x >= 0 && y >= 0 && x < GW && y < GH) w[y * GW + x] = 0; return g; },
+    rect(x, y, ww, hh) { for (let j = 0; j < hh; j++) for (let i = 0; i < ww; i++) g.set(x + i, y + j); return g; },
+    hole(x, y, ww = 1, hh = 1) { for (let j = 0; j < hh; j++) for (let i = 0; i < ww; i++) g.clr(x + i, y + j); return g; },
+    box(x, y, ww, hh) { g.rect(x, y, ww, 1).rect(x, y + hh - 1, ww, 1).rect(x, y, 1, hh).rect(x + ww - 1, y, 1, hh); return g; },
+    border() { return g.box(0, 0, GW, GH); },
+    // 네 방향 대칭으로 같은 사각형
+    sym4(x, y, ww, hh) { g.rect(x, y, ww, hh).rect(GW - x - ww, y, ww, hh).rect(x, GH - y - hh, ww, hh).rect(GW - x - ww, GH - y - hh, ww, hh); return g; },
+  };
+  return g;
+}
+
+// 각 스테이지: 벽, 출발 (x, y, 방향), 출구, 포털 쌍, 먹어야 할 사과 수
+const STAGES = [
+  // 1 넓은 방
+  { build: g => g.border(), start: [5, 12, 'right'], exit: [12, 0] },
+  // 2 가운데 기둥
+  { build: g => g.border().rect(9, 9, 6, 6), start: [4, 4, 'right'], exit: [0, 12] },
+  // 3 네 기둥
+  { build: g => g.border().sym4(5, 5, 4, 4), start: [11, 12, 'right'], exit: [23, 11] },
+  // 4 뚫린 테두리 (가운데 틈으로 반대편에 나온다)
+  { build: g => g.border().hole(10, 0, 4, 1).hole(10, 23, 4, 1).hole(0, 10, 1, 4).hole(23, 10, 1, 4).rect(7, 11, 10, 2), start: [5, 5, 'right'], exit: [12, 23 - 0] },
+  // 5 십자
+  { build: g => g.border().rect(11, 3, 2, 7).rect(11, 14, 2, 7).rect(3, 11, 7, 2).rect(14, 11, 7, 2), start: [4, 4, 'right'], exit: [23, 4] },
+  // 6 가로 막대
+  { build: g => g.border().rect(1, 6, 15, 1).rect(8, 12, 15, 1).rect(1, 18, 15, 1), start: [3, 3, 'right'], exit: [22, 23] },
+  // 7 세로 막대
+  { build: g => g.border().rect(5, 1, 1, 15).rect(10, 8, 1, 15).rect(14, 1, 1, 15).rect(19, 8, 1, 15), start: [2, 20, 'up'], exit: [23, 3] },
+  // 8 상자 속 상자
+  { build: g => g.border().box(5, 5, 14, 14).hole(11, 5, 2, 1).hole(11, 18, 2, 1).box(9, 9, 6, 6).hole(9, 11, 1, 2).hole(14, 11, 1, 2), start: [2, 2, 'right'], exit: [11, 11] },
+  // 9 두 방과 포털
+  { build: g => g.border().rect(11, 1, 2, 22), start: [4, 12, 'right'], exit: [18, 0], portals: [[8, 4, 15, 19], [8, 19, 15, 4]] },
+  // 10 지그재그 통로
+  { build: g => { g.border(); for (let i = 0; i < 4; i++) { const y = 4 + i * 5; if (i % 2) g.rect(4, y, 19, 1); else g.rect(1, y, 19, 1); } return g; }, start: [2, 2, 'right'], exit: [0, 21] },
+  // 11 나선
+  { build: g => g.border().rect(3, 3, 18, 1).rect(20, 3, 1, 18).rect(3, 20, 18, 1).rect(3, 7, 1, 14).rect(3, 7, 14, 1).rect(16, 7, 1, 10).rect(7, 16, 10, 1).rect(7, 11, 1, 6).rect(7, 11, 6, 1), start: [1, 1, 'right'], exit: [11, 13] },
+  // 12 기둥 숲
+  { build: g => { g.border(); for (let y = 3; y < 22; y += 4) for (let x = 3; x < 22; x += 4) g.rect(x, y, 2, 2); return g; }, start: [1, 1, 'right'], exit: [23, 22] },
+  // 13 H 모양 + 포털
+  { build: g => g.border().rect(5, 3, 2, 18).rect(17, 3, 2, 18).rect(7, 11, 10, 2), start: [11, 5, 'right'], exit: [11, 23], portals: [[2, 2, 21, 21], [21, 2, 2, 21]] },
+  // 14 빗살
+  { build: g => { g.border().rect(1, 12, 22, 1).hole(11, 12, 2, 1); for (let x = 3; x < 22; x += 3) { g.rect(x, 1, 1, 8); g.rect(x, 16, 1, 7); } return g; }, start: [2, 10, 'right'], exit: [0, 3] },
+  // 15 네 개의 방, 포털 네 쌍
+  { build: g => g.border().rect(11, 1, 2, 22).rect(1, 11, 22, 2), start: [3, 3, 'right'], exit: [23, 17], portals: [[8, 8, 15, 15], [15, 8, 8, 15], [5, 9, 18, 9], [5, 14, 18, 14]] },
+  // 16 다이아몬드
+  { build: g => { g.border(); for (let i = 0; i < 8; i++) { g.set(11 - i, 4 + i).set(12 + i, 4 + i).set(11 - i, 19 - i).set(12 + i, 19 - i); } g.hole(11, 4, 2, 1).hole(11, 19, 2, 1); return g; }, start: [2, 2, 'right'], exit: [12, 11] },
+  // 17 통로 미로
+  { build: g => g.border().rect(4, 1, 1, 6).rect(4, 6, 8, 1).rect(15, 4, 1, 8).rect(8, 10, 8, 1).rect(1, 14, 8, 1).rect(12, 14, 1, 6).rect(12, 19, 8, 1).rect(19, 14, 4, 1).rect(5, 18, 1, 5), start: [2, 8, 'right'], exit: [23, 21] },
+  // 18 감옥 칸
+  { build: g => { g.border(); for (const [x, y] of [[2, 2], [9, 2], [16, 2], [2, 9], [16, 9], [2, 16], [9, 16], [16, 16]]) { g.box(x, y, 6, 6); g.hole(x + 2, y + (y < 9 ? 5 : 0), 2, 1); } return g; }, start: [11, 11, 'up'], exit: [23, 11] },
+  // 19 엇갈린 계단
+  { build: g => { g.border(); for (let i = 0; i < 5; i++) { g.rect(3 + i * 4, 3 + i * 3, 4, 1); g.rect(17 - i * 4, 7 + i * 3, 4, 1); } return g; }, start: [1, 21, 'right'], exit: [12, 0], portals: [[1, 1, 22, 22]] },
+  // 20 마지막 성
+  { build: g => g.border().box(4, 4, 16, 16).hole(11, 4, 2, 1).hole(4, 11, 1, 2).box(8, 8, 8, 8).hole(11, 15, 2, 1).hole(15, 11, 1, 2).rect(1, 11, 3, 1).rect(20, 12, 3, 1), start: [2, 2, 'right'], exit: [11, 11], portals: [[1, 22, 22, 1]] },
+];
+// 스테이지 n (1부터)
+function stageInfo(n) {
+  const s = STAGES[n - 1], g = grid(); s.build(g);
+  const ex = s.exit; g.clr(ex[0], ex[1]);                  // 출구는 벽에 뚫린다 (닫혀 있는 동안은 벽처럼 막힘)
+  const portals = (s.portals || []).map(p => ({ a: [p[0], p[1]], b: [p[2], p[3]] }));
+  for (const p of portals) { g.clr(...p.a); g.clr(...p.b); }
+  return { walls: g.w, start: s.start, exit: ex, portals, need: 6 + Math.min(14, Math.ceil(n * 0.7)), interval: Math.max(78, 140 - n * 3) };
+}
+
+// ───────────────────────── 격자 뱀 엔진 (클래식 · 미로) ─────────────────────────
+// 60 Hz 로 step() 을 부른다. 뱀은 interval(ms) 마다 한 칸 움직이고, prog(0~1) 로 칸 사이를 부드럽게 그린다.
+const SPEEDS = [150, 115, 88, 66];          // 느림 · 보통 · 빠름 · 아주 빠름 (ms/칸)
+const GRACE_MS = 170;            // 벽·몸 앞에서 멈칫하는 여유 (ms)
+const BONUS_KINDS = ['mouse', 'beetle', 'star'];
+class Grid {
+  constructor(o = {}) {
+    this.kind = o.kind || 'classic';                 // 'classic' | 'maze'
+    this.rng = mulberry32(o.seed ?? (Math.random() * 1e9) | 0);
+    this.speed = o.speed ?? 1; this.wallsOn = o.walls ?? true;
+    this.score = 0; this.lives = this.kind === 'maze' ? 3 : 1; this.stage = o.stage || 1;
+    this.events = []; this.t = 0; this.eatenTotal = 0; this.bonusTotal = 0; this.startStage = this.stage;
+    this.loadStage(true);
   }
-}[LANG] || {
-  score: 'SCORE', best: 'BEST', length: 'LENGTH', speed: 'SPEED',
-  title: 'Snake', subtitle: 'Use arrow keys to steer',
-  start: '▶ Start', gameOver: 'GAME OVER', restart: 'Restart',
-  pause: 'PAUSED', resume: '▶ Resume', stop: '⏸ Stop',
-  finalScore: (s, l) => 'Score: ' + s + ' | Length: ' + l,
-  move: 'Move',
+  emit(type, d = {}) { this.events.push({ ...d, type }); }
+  idx(x, y) { return y * GW + x; }
+  loadStage(first) {
+    if (this.kind === 'maze') {
+      const s = stageInfo(this.stage); this.walls = s.walls; this.st = s; this.portals = s.portals; this.exit = s.exit; this.need = s.need; this.baseInt = s.interval;
+    } else {
+      this.walls = new Uint8Array(GW * GH);
+      if (this.wallsOn) for (let i = 0; i < GW; i++) { this.walls[i] = 1; this.walls[(GH - 1) * GW + i] = 1; this.walls[i * GW] = 1; this.walls[i * GW + GW - 1] = 1; }
+      this.st = { start: [6, 12, 'right'] }; this.portals = []; this.exit = null; this.need = Infinity; this.baseInt = SPEEDS[this.speed];
+    }
+    this.eaten = 0; this.exitOpen = false; this.bonus = null; this.untilBonus = 5;
+    this.resetSnake();
+    this.food = null; this.spawnFood();
+    this.mode = 'ready'; this.readyT = 0; this.stageT = 0;
+    if (!first) this.emit('stage', { n: this.stage });
+  }
+  resetSnake() {
+    const [x, y, d] = this.st.start;
+    this.body = [[x, y]]; this.grow = 3; this.dir = d; this.queue = []; this.prev = [[x, y]]; this.prevLen = 1;
+    this.acc = 0; this.prog = 0; this.hold = 0; this.occ = new Uint8Array(GW * GH); this.occ[this.idx(x, y)] = 1; this.dead = false;
+  }
+  get interval() {
+    if (this.kind === 'maze') return this.baseInt;
+    return Math.max(SPEEDS[this.speed] * 0.6, SPEEDS[this.speed] * Math.pow(0.988, this.eaten));
+  }
+  // 막힌 칸인가 (벽 · 닫힌 출구)
+  blocked(x, y) { if (this.walls[this.idx(x, y)]) return true; return !!(this.exit && !this.exitOpen && x === this.exit[0] && y === this.exit[1]); }
+  isSpecial(x, y) { if (this.exit && x === this.exit[0] && y === this.exit[1]) return true; return this.portals.some(p => (p.a[0] === x && p.a[1] === y) || (p.b[0] === x && p.b[1] === y)); }
+  freeCell(avoidHead) {
+    const h = this.body[0], cand = [];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const i = this.idx(x, y); if (this.walls[i] || this.occ[i] || this.isSpecial(x, y)) continue;
+      if (this.food && this.food.x === x && this.food.y === y) continue;
+      if (this.bonus && this.bonus.x === x && this.bonus.y === y) continue;
+      if (avoidHead && Math.abs(x - h[0]) + Math.abs(y - h[1]) < 3) continue;
+      cand.push([x, y]);
+    }
+    if (!cand.length) return null;
+    return cand[Math.floor(this.rng() * cand.length)];
+  }
+  spawnFood() {
+    if (this.kind === 'maze' && this.eaten >= this.need) { this.food = null; return; }
+    const c = this.freeCell(true) || this.freeCell(false);
+    this.food = c ? { x: c[0], y: c[1], born: this.t } : null;
+  }
+  // 방향 입력 (최대 3개까지 미리 받아 둔다 — 빠른 꺾기도 놓치지 않게)
+  turn(d) {
+    if (!DIRV[d]) return;
+    if (this.mode === 'ready') { if (d === OPP[this.dir] && this.body.length === 1) this.dir = d; this.go(); }
+    if (this.mode !== 'play') return;
+    const last = this.queue.length ? this.queue[this.queue.length - 1] : this.dir;
+    if (d === last || d === OPP[last]) return;
+    if (this.queue.length < 3) this.queue.push(d);
+  }
+  go() { if (this.mode === 'ready') { this.mode = 'play'; this.emit('go'); } }
+  step() {
+    this.t++;
+    switch (this.mode) {
+      case 'ready': if (++this.readyT > 150) this.go(); break;
+      case 'play': {
+        this.stageT++;
+        if (this.hold > 0) {
+          // 부딪히기 직전의 여유: 그 사이 살 수 있는 쪽으로 꺾으면 바로 이어 간다
+          while (this.queue.length > 1 && this.fatal(this.queue[0])) this.queue.shift();
+          const d = this.queue.length ? this.queue[0] : this.dir;
+          if (!this.fatal(d)) { this.hold = 0; this.acc = 0; this.move(); }
+          else if ((this.hold -= 1000 / 60) <= 0) { this.hold = -1; this.move(); }
+          this.prog = this.mode === 'play' && this.hold === 0 ? 0 : 1;
+        } else {
+          this.acc += 1000 / 60; let n = 0;
+          while (this.acc >= this.interval && n++ < 3 && this.mode === 'play' && !(this.hold > 0)) { this.acc -= this.interval; this.move(); }
+          this.prog = this.mode === 'play' && !(this.hold > 0) ? Math.min(1, this.acc / this.interval) : 1;
+        }
+        if (this.bonus && --this.bonus.life <= 0) { this.emit('bonusGone', { x: this.bonus.x, y: this.bonus.y }); this.bonus = null; }
+        break;
+      }
+      case 'dying':
+        if (++this.dieT > 80) {
+          this.lives--;
+          if (this.lives > 0) { this.resetSnake(); this.eaten = Math.min(this.eaten, this.need); this.exitOpen = this.kind === 'maze' && this.eaten >= this.need; if (!this.food) this.spawnFood(); this.mode = 'ready'; this.readyT = 0; this.emit('retry'); }
+          else { this.mode = 'over'; this.emit('over', { score: this.score }); }
+        }
+        break;
+      case 'enter': {        // 출구로 몸이 빨려 들어간다
+        this.acc += 1000 / 60; const iv = 45;
+        while (this.acc >= iv) { this.acc -= iv; this.prev = this.body.map(c => c.slice()); this.prevLen = this.body.length; this.body.pop(); this.score += 5; this.emit('slurp', { n: this.body.length }); if (this.body.length <= 1) break; }
+        this.prog = Math.min(1, this.acc / iv);
+        if (this.body.length <= 1) {
+          const sec = this.stageT / 60, par = 30 + this.need * 4, tb = Math.max(0, Math.round(par - sec)) * 10, sb = this.stage * 100;
+          this.mode = 'clear'; this.clearT = 0; this.score += tb + sb; this.lastClear = { stage: this.stage, time: sec, timeBonus: tb, stageBonus: sb };
+          this.emit('clear', this.lastClear);
+        }
+        break;
+      }
+      case 'clear':
+        if (++this.clearT > 170) {
+          if (this.stage >= STAGES.length) { this.mode = 'won'; this.emit('won', { score: this.score }); }
+          else { this.stage++; this.loadStage(false); }
+        }
+        break;
+    }
+  }
+  // 방향 d 로 한 칸 가면 죽는가
+  fatal(d) {
+    const [dx, dy] = DIRV[d], h = this.body[0];
+    const nx = (h[0] + dx + GW) % GW, ny = (h[1] + dy + GH) % GH;
+    if (this.exit && this.exitOpen && nx === this.exit[0] && ny === this.exit[1]) return false;
+    if (this.blocked(nx, ny)) return true;
+    const tail = this.body[this.body.length - 1], tailMoves = this.grow === 0;
+    const busy = (x, y) => this.occ[this.idx(x, y)] && !(tailMoves && tail[0] === x && tail[1] === y && this.occ[this.idx(x, y)] === 1);
+    if (busy(nx, ny)) return true;
+    for (const p of this.portals) { const o = p.a[0] === nx && p.a[1] === ny ? p.b : p.b[0] === nx && p.b[1] === ny ? p.a : null; if (o) return !!busy(o[0], o[1]); }
+    return false;
+  }
+  move() {
+    const nd = this.queue.length ? this.queue[0] : this.dir;
+    if (!(this.hold < 0) && this.fatal(nd)) { this.hold = GRACE_MS; this.acc = 0; this.emit('brake'); return; }
+    this.hold = 0;
+    if (this.queue.length) this.dir = this.queue.shift();
+    const [dx, dy] = DIRV[this.dir], h = this.body[0];
+    let nx = h[0] + dx, ny = h[1] + dy, wrapped = false;
+    if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) { nx = (nx + GW) % GW; ny = (ny + GH) % GH; wrapped = true; }
+    this.prev = this.body.map(c => c.slice()); this.prevLen = this.body.length;
+    // 출구
+    if (this.exit && this.exitOpen && nx === this.exit[0] && ny === this.exit[1]) {
+      this.body.unshift([nx, ny]); this.mode = 'enter'; this.acc = 0; this.emit('enter', { x: nx, y: ny }); return;
+    }
+    if (this.blocked(nx, ny)) return this.die(nx, ny, 'wall');
+    const tail = this.body[this.body.length - 1], tailMoves = this.grow === 0;
+    const hitSelf = this.occ[this.idx(nx, ny)] && !(tailMoves && tail[0] === nx && tail[1] === ny && this.occ[this.idx(nx, ny)] === 1);
+    if (hitSelf) return this.die(nx, ny, 'self');
+    // 포털: 들어간 칸의 짝으로 나온다
+    let tele = null;
+    for (const p of this.portals) {
+      if (p.a[0] === nx && p.a[1] === ny) tele = p.b; else if (p.b[0] === nx && p.b[1] === ny) tele = p.a;
+      if (tele) break;
+    }
+    if (tele) {
+      const ox = tele[0], oy = tele[1];
+      const busy = this.occ[this.idx(ox, oy)] && !(tailMoves && tail[0] === ox && tail[1] === oy && this.occ[this.idx(ox, oy)] === 1);
+      if (busy) return this.die(ox, oy, 'self');
+      this.emit('portal', { from: [nx, ny], to: [ox, oy] }); nx = ox; ny = oy;
+    }
+    this.body.unshift([nx, ny]); this.occ[this.idx(nx, ny)]++;
+    if (this.grow > 0) this.grow--; else { const t = this.body.pop(); this.occ[this.idx(t[0], t[1])]--; }
+    if (wrapped) this.emit('wrap');
+    // 먹이
+    if (this.food && this.food.x === nx && this.food.y === ny) {
+      const pts = this.kind === 'maze' ? 10 + this.stage * 2 : 10 + this.speed * 5;
+      this.score += pts; this.grow += 1; this.eaten++; this.eatenTotal++;
+      this.emit('eat', { x: nx, y: ny, pts, n: this.eaten, quick: this.t - this.food.born < 180 });
+      if (this.kind === 'maze' && this.eaten >= this.need && !this.exitOpen) { this.exitOpen = true; this.food = null; this.emit('exitOpen', { x: this.exit[0], y: this.exit[1] }); }
+      else this.spawnFood();
+      if (--this.untilBonus <= 0 && !this.bonus && !(this.kind === 'maze' && this.exitOpen)) {
+        this.untilBonus = 5 + Math.floor(this.rng() * 3);
+        const c = this.freeCell(true);
+        if (c) { const life = 60 * 7; this.bonus = { x: c[0], y: c[1], life, max: life, kind: BONUS_KINDS[Math.floor(this.rng() * 3)] }; this.emit('bonus', { x: c[0], y: c[1] }); }
+      }
+      if (this.body.length + this.grow >= GW * GH - this.walls.reduce((a, b) => a + b, 0)) { this.mode = 'won'; this.emit('won', { score: this.score }); }
+    }
+    if (this.bonus && this.bonus.x === nx && this.bonus.y === ny) {
+      const pts = 50 + Math.round(this.bonus.life / this.bonus.max * 20) * 10;
+      this.score += pts; this.bonusTotal++; this.grow += 2;
+      this.emit('bonusEat', { x: nx, y: ny, pts, kind: this.bonus.kind }); this.bonus = null;
+    }
+  }
+  die(x, y, why) {
+    this.mode = 'dying'; this.dieT = 0; this.dead = true; this.prog = 1; this.queue = [];
+    this.emit('die', { x, y, why, body: this.body.map(c => c.slice()) });
+  }
+}
+
+// ───────────────────────── 아레나 엔진 (곡선으로 움직이는 뱀 여러 마리) ─────────────────────────
+const AR = 2400;                 // 경기장 반지름
+const FOOD_N = 1000;             // 떠 있는 먹이 수
+const HC = 96;                   // 공간 칸 크기 (충돌 찾기용)
+const TAIL_N = 5;                // 꼬리 끝 마디 (잡아먹을 수 있는 자리)
+const EAT_RATIO = 1.1;           // 10% 이상 길어야 잡아먹는다
+const ROUND_T = 60 * 60 * 5;     // 한 판 5분
+const BOT_NAMES = ['Viper', 'Cobra', 'Mamba', 'Boa', 'Python', 'Kraits', 'Taipan', 'Adder', 'Asp', 'Racer', 'Noodle', 'Ziggy', 'Slinky', 'Wiggles', 'Sir Hiss', 'Basil', 'Mochi', 'Pixel', 'Neon', 'Comet', 'Nova', 'Echo', 'Jade', 'Ruby', 'Onyx', 'Pepper', 'Tofu', 'Kiwi', 'Mango', 'Zest'];
+// 무늬: [몸 색, 줄무늬 색, 눈 테 색]
+const SKINS = [['#3ee07a', '#1f9e54'], ['#ff5d73', '#c22a48'], ['#ffd23f', '#e09a10'], ['#4fc3ff', '#1f7fd1'], ['#b07cff', '#7444d8'], ['#ff8f3a', '#d4561a'], ['#3ff0d8', '#13a896'], ['#ff6fd0', '#c43b9b'], ['#c6f24e', '#7fae1c'], ['#f0f0f0', '#9aa4b8'], ['#ff4040', '#ffd23f'], ['#4fc3ff', '#ffffff']];
+const FOOD_COLS = ['#ff5d73', '#ffd23f', '#3ee07a', '#4fc3ff', '#b07cff', '#ff8f3a', '#3ff0d8', '#ff6fd0', '#c6f24e'];
+const radiusOf = m => 6 + 0.5 * Math.sqrt(m);
+const lengthOf = m => 34 + 21 * Math.pow(m, 0.62);
+const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+
+class Arena {
+  constructor(o = {}) {
+    this.rng = mulberry32(o.seed ?? (Math.random() * 1e9) | 0);
+    this.t = 0; this.events = []; this.snakes = []; this.food = []; this.fh = new Map(); this.nextId = 1;
+    this.botN = o.bots ?? 14; this.demo = !!o.demo; this.mode = 'play';
+    for (let i = 0; i < FOOD_N; i++) this.addFood(this.randPos(AR - 40), 1 + (this.rng() < 0.12 ? 1 + Math.floor(this.rng() * 2) : 0));
+    this.player = this.demo ? null : this.spawn({ name: o.name || 'YOU', skin: o.skin ?? 0, player: true, x: 0, y: 0, mass: 10 });
+    for (let i = 0; i < this.botN; i++) this.spawnBot(true);
+    this.input = { ang: 0, boost: false };
+    this.stats = { kills: 0, eats: 0, maxMass: 10, bestRank: 99, time: 0 };
+    this.roundT = o.round ?? ROUND_T;
+  }
+  emit(type, d = {}) { this.events.push({ ...d, type }); }
+  randPos(r) { const a = this.rng() * Math.PI * 2, d = Math.sqrt(this.rng()) * r; return [Math.cos(a) * d, Math.sin(a) * d]; }
+  // ── 먹이 (공간 칸에 넣어 빠르게 찾는다)
+  fkey(x, y) { return (Math.floor(x / HC) + 512) * 4096 + Math.floor(y / HC) + 512; }
+  addFood([x, y], v, col, big) {
+    const f = { x, y, v, r: 3 + v * 1.4 + (big ? 2 : 0), c: col || FOOD_COLS[Math.floor(this.rng() * FOOD_COLS.length)], ph: this.rng() * 6.28, k: 0, eat: null, born: this.t, big: !!big };
+    f.k = this.fkey(x, y); let s = this.fh.get(f.k); if (!s) this.fh.set(f.k, s = new Set()); s.add(f); this.food.push(f); return f;
+  }
+  delFood(f) { const s = this.fh.get(f.k); if (s) s.delete(f); f.gone = true; }
+  foodNear(x, y, r, cb) {
+    const x0 = Math.floor((x - r) / HC), x1 = Math.floor((x + r) / HC), y0 = Math.floor((y - r) / HC), y1 = Math.floor((y + r) / HC);
+    for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++) { const s = this.fh.get((i + 512) * 4096 + j + 512); if (s) for (const f of s) cb(f); }
+  }
+  // ── 뱀
+  spawn({ name, skin, player, x, y, mass, ang }) {
+    const a = ang ?? this.rng() * Math.PI * 2, m = mass;
+    const s = { id: this.nextId++, name, skin, player: !!player, x, y, ang: a, tang: a, mass: m, r: radiusOf(m), pts: [], alive: true, boost: false, boostAcc: 0, kills: 0, born: this.t,
+      ai: player ? null : { per: this.rng() < 0.35 ? 'hunter' : this.rng() < 0.5 ? 'greedy' : 'timid', think: Math.floor(this.rng() * 4), wander: a, target: null, boostT: 0, flee: 0 } };
+    const sp = s.r * 0.55, n = Math.ceil(lengthOf(m) / sp);
+    for (let i = 0; i < n; i++) s.pts.push([x - Math.cos(a) * sp * i, y - Math.sin(a) * sp * i]);
+    this.snakes.push(s); return s;
+  }
+  spawnBot(initial) {
+    let pos, tries = 0;
+    do { pos = this.randPos(AR - 300); tries++; } while (tries < 30 && (this.player && Math.hypot(pos[0] - this.player.x, pos[1] - this.player.y) < (initial ? 600 : 900) || this.snakes.some(o => o.alive && Math.hypot(pos[0] - o.x, pos[1] - o.y) < 250)));
+    const used = new Set(this.snakes.filter(s => s.alive).map(s => s.name)), free = BOT_NAMES.filter(n => !used.has(n));
+    const name = free[Math.floor(this.rng() * free.length)] || 'Snek';
+    const big = this.rng(); const mass = big < 0.55 ? 10 + this.rng() * 20 : big < 0.9 ? 30 + this.rng() * 50 : 80 + this.rng() * 70;
+    return this.spawn({ name, skin: 1 + Math.floor(this.rng() * (SKINS.length - 1)), x: pos[0], y: pos[1], mass: initial ? mass : Math.min(mass, 90), ang: Math.atan2(-pos[1], -pos[0]) + (this.rng() - 0.5) });
+  }
+  // 몸 마디들을 공간 칸에 넣는다 (매 틱 새로)
+  buildHash() {
+    const h = this.bh = new Map();
+    for (const s of this.snakes) if (s.alive) for (let i = 0; i < s.pts.length; i += 1) {
+      const p = s.pts[i], k = (Math.floor(p[0] / HC) + 512) * 4096 + Math.floor(p[1] / HC) + 512;
+      let a = h.get(k); if (!a) h.set(k, a = []); a.push(s, p[0], p[1], i);
+    }
+  }
+  // 꼬리 끝 마디 · 머리인가
+  isTail(s, i) { return i >= s.pts.length - TAIL_N; }
+  canEat(a, b) { return a.mass >= b.mass * EAT_RATIO; }
+  // (x,y) 반지름 r 안에 닿은 다른 뱀 마디들 → [{s, i}]
+  hits(x, y, r, self, first) {
+    const out = [], x0 = Math.floor((x - r - 30) / HC), x1 = Math.floor((x + r + 30) / HC), y0 = Math.floor((y - r - 30) / HC), y1 = Math.floor((y + r + 30) / HC);
+    for (let i = x0; i <= x1; i++) for (let j = y0; j <= y1; j++) {
+      const a = this.bh.get((i + 512) * 4096 + j + 512); if (!a) continue;
+      for (let q = 0; q < a.length; q += 4) {
+        const s = a[q]; if (s === self || !s.alive) continue; const rr = r + s.r * 0.92;
+        const dx = a[q + 1] - x, dy = a[q + 2] - y; if (dx * dx + dy * dy < rr * rr) { out.push({ s, i: a[q + 3] }); if (first) return out; }
+      }
+    }
+    return out;
+  }
+  bodyHit(x, y, r, self) { const h = this.hits(x, y, r, self, true); return h.length ? h[0].s : null; }
+  // 머리가 닿았을 때: 꼬리 끝·머리는 큰 쪽이 잡아먹고, 몸통이면 부딪힌 쪽이 죽는다
+  collide(s) {
+    const hs = this.hits(s.x, s.y, s.r * 0.75, s); if (!hs.length) return;
+    const prey = hs.find(h => (this.isTail(h.s, h.i) || h.i <= 1) && this.canEat(s, h.s));
+    if (prey) { this.devour(s, prey.s); return; }
+    const head = hs.find(h => h.i <= 1);
+    if (head && this.canEat(head.s, s)) { this.devour(head.s, s); return; }
+    if (head && !hs.some(h => h.i > 1 && !this.isTail(h.s, h.i))) { this.kill(s, head.s); this.kill(head.s, s); return; }   // 비슷한 크기끼리 정면 충돌
+    this.kill(s, hs.find(h => h.i > 1)?.s || hs[0].s);
+  }
+  devour(a, b) {
+    const gain = b.mass * 0.5; this.kill(b, a, true); a.mass += gain; a.r = radiusOf(a.mass);
+    if (a.player) this.stats.eats++;
+  }
+  step() {
+    this.t++; if (this.mode === 'over') this.overT++;
+    this.buildHash();
+    const pl = this.player;
+    if (pl && pl.alive) {
+      pl.tang = this.input.ang; pl.boost = this.input.boost && pl.mass > 12; this.stats.time++;
+      if (this.stats.time >= this.roundT && this.mode === 'play') { this.mode = 'over'; this.overT = 0; this.roundEnd = true; this.finalRank = this.rankOf(pl); this.emit('roundEnd', { rank: this.finalRank, of: this.snakes.filter(o => o.alive).length }); }
+    }
+    if (this.roundEnd) { this.stats.maxMass = Math.max(this.stats.maxMass, pl.mass); this.stepFood(); return; }
+    for (const s of this.snakes) if (s.alive && s.ai) this.think(s);
+    for (const s of this.snakes) if (s.alive) this.moveSnake(s);
+    this.buildHash();
+    // 충돌
+    for (const s of this.snakes) {
+      if (!s.alive) continue;
+      if (Math.hypot(s.x, s.y) > AR - s.r) { this.kill(s, null); continue; }
+      this.collide(s);
+    }
+    this.snakes = this.snakes.filter(s => s.alive || s.fade > 0);
+    for (const s of this.snakes) if (!s.alive) s.fade--;
+    this.stepFood();
+    // 봇 채우기
+    const bots = this.snakes.filter(s => s.alive && !s.player).length;
+    if (bots < this.botN && this.t % 40 === 0) this.spawnBot(false);
+    if (pl) {
+      this.stats.maxMass = Math.max(this.stats.maxMass, pl.mass);
+      if (pl.alive && this.t % 30 === 0) this.stats.bestRank = Math.min(this.stats.bestRank, this.rankOf(pl));
+    }
+  }
+  rankOf(s) { return 1 + this.snakes.filter(o => o.alive && o !== s && o.mass > s.mass).length; }
+  leaders(n = 5) { return this.snakes.filter(s => s.alive).sort((a, b) => b.mass - a.mass).slice(0, n); }
+  moveSnake(s) {
+    // 덩치가 클수록 천천히 돈다
+    const turn = Math.max(0.045, 0.11 - s.r * 0.0024) * (s.boost ? 0.8 : 1);
+    const d = angDiff(s.ang, s.tang); s.ang += Math.max(-turn, Math.min(turn, d));
+    const v = s.boost ? 5.4 : 2.7;
+    s.x += Math.cos(s.ang) * v; s.y += Math.sin(s.ang) * v;
+    // 빠르게 달리면 몸이 줄고, 꼬리에서 먹이가 떨어진다
+    if (s.boost) {
+      const loss = 0.06 + s.mass * 0.0011; s.mass -= loss; s.boostAcc += loss;
+      if (s.boostAcc >= 1.2) { const tp = s.pts[s.pts.length - 1]; this.addFood([tp[0] + (this.rng() - 0.5) * 6, tp[1] + (this.rng() - 0.5) * 6], Math.min(3, s.boostAcc * 0.85), SKINS[s.skin][0]); s.boostAcc = 0; }
+      if (s.mass <= 10.5) s.boost = false;
+    }
+    s.r = radiusOf(s.mass);
+    // 사슬처럼 앞 마디를 따라간다
+    const sp = s.r * 0.55, want = Math.max(4, Math.ceil(lengthOf(s.mass) / sp)), P = s.pts;
+    P[0][0] = s.x; P[0][1] = s.y;
+    for (let i = 1; i < P.length; i++) {
+      const a = P[i - 1], b = P[i], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+      if (L > sp) { b[0] = a[0] + dx / L * sp; b[1] = a[1] + dy / L * sp; }
+    }
+    while (P.length < want) { const l = P[P.length - 1]; P.push([l[0], l[1]]); }
+    if (P.length > want) P.length = want;
+    // 먹기 (가까운 먹이는 입으로 끌려온다)
+    const reach = s.r + 22 + s.r * 0.6;
+    this.foodNear(s.x, s.y, reach + 10, f => {
+      if (f.gone || f.eat) return;
+      const dx = f.x - s.x, dy = f.y - s.y, d2 = dx * dx + dy * dy;
+      if (d2 < reach * reach && this.t - f.born > 8) f.eat = s;
+    });
+  }
+  stepFood() {
+    let n = 0;
+    for (const f of this.food) {
+      if (f.gone) continue;
+      if (f.eat) {
+        const s = f.eat;
+        if (!s.alive) { f.eat = null; continue; }
+        f.x += (s.x - f.x) * 0.35; f.y += (s.y - f.y) * 0.35;
+        if (Math.hypot(s.x - f.x, s.y - f.y) < s.r) {
+          this.delFood(f); s.mass += f.v * (f.big ? 1 : 0.9);
+          if (s.player) this.emit('eat', { v: f.v, big: f.big });
+          continue;
+        }
+      }
+      n++;
+    }
+    if (this.t % 60 === 0) this.food = this.food.filter(f => !f.gone);
+    // 모자란 만큼 새로 뿌린다
+    const natural = this.food.reduce((a, f) => a + (!f.gone && !f.big ? 1 : 0), 0);
+    for (let i = natural; i < FOOD_N && i < natural + 6; i++) this.addFood(this.randPos(AR - 40), 1 + (this.rng() < 0.12 ? 1 + Math.floor(this.rng() * 2) : 0));
+    // 오래된 큰 먹이는 천천히 사라진다
+    if (this.t % 30 === 0) for (const f of this.food) if (f.big && !f.gone && this.t - f.born > 60 * 50) this.delFood(f);
+  }
+  kill(s, by, eaten) {
+    if (!s.alive) return;
+    s.alive = false; s.fade = 36;
+    // 몸이 먹이로 흩어진다 (잡아먹히면 절반은 먹은 뱀에게 가고 나머지 일부만)
+    const total = Math.max(6, s.mass * (eaten ? 0.3 : 0.8)), step = Math.max(1, Math.floor(s.pts.length / Math.min(140, Math.ceil(total / 1.5))));
+    const cnt = Math.ceil(s.pts.length / step), v = total / cnt;
+    for (let i = 0; i < s.pts.length; i += step) {
+      const p = s.pts[i];
+      this.addFood([p[0] + (this.rng() - 0.5) * s.r * 1.6, p[1] + (this.rng() - 0.5) * s.r * 1.6], Math.min(9, v), i % 2 ? SKINS[s.skin][1] : SKINS[s.skin][0], true);
+    }
+    if (by && !eaten) { by.kills++; if (by.player) this.stats.kills++; }
+    this.emit('death', { id: s.id, name: s.name, by: by ? by.name : null, byPlayer: !!(by && by.player), player: s.player, eaten: !!eaten, bx: by ? by.x : 0, by_: by ? by.y : 0, x: s.x, y: s.y, mass: s.mass, col: SKINS[s.skin][0] });
+    if (s.player) { this.mode = 'over'; this.overT = 0; }
+  }
+  // ── 컴퓨터 뱀 판단 (4틱마다)
+  clearance(s, a, look) {
+    const ca = Math.cos(a), sa = Math.sin(a), stepL = Math.max(14, s.r);
+    for (let d = stepL; d <= look; d += stepL) {
+      const x = s.x + ca * d, y = s.y + sa * d;
+      if (Math.hypot(x, y) > AR - s.r - 30) return d;
+      if (this.hits(x, y, s.r + 8, s).some(h => !((this.isTail(h.s, h.i)) && this.canEat(s, h.s)))) return d;
+    }
+    return look;
+  }
+  think(s) {
+    const ai = s.ai;
+    if (ai.boostT > 0) ai.boostT--;
+    s.boost = ai.boostT > 0 && s.mass > 14;
+    if ((this.t + ai.think) % 4) return;
+    const look = 70 + s.r * 5 + (s.boost ? 90 : 0);
+    // 1) 앞이 막히면 가장 트인 쪽으로
+    const fwd = this.clearance(s, s.ang, look);
+    if (fwd < look * 0.85) {
+      let best = s.ang, bc = -1;
+      for (const o of [-0.4, 0.4, -0.8, 0.8, -1.25, 1.25, -1.7, 1.7, -2.3, 2.3]) {
+        const c = this.clearance(s, s.ang + o, look) - Math.abs(o) * 6;
+        if (c > bc) { bc = c; best = s.ang + o; }
+      }
+      s.tang = best; ai.flee = 10;
+      if (fwd < look * 0.4 && ai.per !== 'timid' && s.mass > 30 && this.rng() < 0.3) ai.boostT = 12;
+      return;
+    }
+    if (ai.flee > 0) { ai.flee--; return; }
+    // 2) 경기장 끝에서 멀어지기
+    const dc = Math.hypot(s.x, s.y);
+    if (dc > AR * 0.86) { s.tang = Math.atan2(-s.y, -s.x) + (this.rng() - 0.5) * 0.6; return; }
+    // 3) 큰 뱀이 뒤쫓아 오면 달아난다
+    for (const o of this.snakes) {
+      if (!o.alive || o === s || !this.canEat(o, s)) continue;
+      const tp = s.pts[s.pts.length - 1], d = Math.hypot(o.x - tp[0], o.y - tp[1]);
+      if (d < 140 + o.r * 2 && Math.abs(angDiff(o.ang, Math.atan2(tp[1] - o.y, tp[0] - o.x))) < 0.9) {
+        s.tang = Math.atan2(s.y - o.y, s.x - o.x); if (ai.per !== 'greedy' || this.rng() < 0.5) ai.boostT = 14; ai.flee = 4; return;
+      }
+    }
+    // 4) 작은 뱀의 꼬리 끝을 노린다 (사냥꾼은 멀리서도, 다른 뱀은 가까울 때만)
+    { const range = ai.per === 'hunter' ? 420 : 180; let tgt = null, td = range;
+      for (const o of this.snakes) { if (!o.alive || o === s || !this.canEat(s, o)) continue; const tp = o.pts[o.pts.length - 2] || o.pts[0], d = Math.hypot(tp[0] - s.x, tp[1] - s.y); if (d < td) { td = d; tgt = tp; } }
+      if (tgt) { s.tang = Math.atan2(tgt[1] - s.y, tgt[0] - s.x); if (td < 200 && td > 40 && s.mass > 20 && this.rng() < (ai.per === 'hunter' ? 0.12 : 0.04)) ai.boostT = 16; return; }
+    }
+    // 5) 사냥꾼: 근처 뱀의 머리 앞을 가로막는다
+    if (ai.per === 'hunter' && s.mass > 25) {
+      let tgt = null, td = 380;
+      for (const o of this.snakes) { if (!o.alive || o === s) continue; const d = Math.hypot(o.x - s.x, o.y - s.y); if (d < td && o.mass < s.mass * 1.6) { td = d; tgt = o; } }
+      if (tgt) {
+        const lead = 60 + s.r * 3, px = tgt.x + Math.cos(tgt.ang) * lead, py = tgt.y + Math.sin(tgt.ang) * lead;
+        s.tang = Math.atan2(py - s.y, px - s.x);
+        if (td < 240 && this.rng() < 0.08) ai.boostT = 20 + Math.floor(this.rng() * 20);
+        return;
+      }
+    }
+    // 4) 먹이: 가치 / 거리 가 가장 좋은 것
+    const sr = ai.per === 'greedy' ? 320 : 240;
+    let bf = null, bs = 0;
+    this.foodNear(s.x, s.y, sr, f => {
+      if (f.gone || f.eat) return; const d = Math.hypot(f.x - s.x, f.y - s.y) + 20; if (d > sr) return;
+      const turnCost = 1 + Math.abs(angDiff(s.ang, Math.atan2(f.y - s.y, f.x - s.x))) * 1.2;
+      const sc = (f.v * (f.big ? 2 : 1)) / (d * turnCost); if (sc > bs) { bs = sc; bf = f; }
+    });
+    if (bf) {
+      s.tang = Math.atan2(bf.y - s.y, bf.x - s.x);
+      if (bf.big && ai.per === 'greedy' && s.mass > 25 && this.rng() < 0.05) ai.boostT = 15;
+      return;
+    }
+    // 5) 어슬렁거리기
+    ai.wander += (this.rng() - 0.5) * 0.5; s.tang = ai.wander;
+  }
+}
+
+// ───────────────────────── 8비트 소리 장치 (펄스 2 · 삼각 1 · 잡음 1, 옛 게임기 방식) ─────────────────────────
+const NOTE_IX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function noteMidi(n) { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); if (!m) throw new Error('note ' + n); return 12 * (+m[3] + 1) + NOTE_IX[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); }
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+// 악보 한 채널: "E5:4 B4:2 | r:2 …" (길이 단위 = 16분음표, | 는 마디 경계 표시일 뿐)
+function parseTrack(src) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [n, l] = tok.split(':'); const len = +(l || 1);
+    if (n !== 'r') ev.push({ t, len, n });
+    t += len;
+  }
+  return { ev, len: t };
+}
+// 화음으로 반주 만들기: 마디마다 화음 이름 (예: 'Am', 'E', 'Bb', 'F#', 'C#7')
+const CH_Q = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 10], m7: [0, 3, 10], dim: [0, 3, 6] };
+function chordNotes(name) { const m = /^([A-G][#b]?)(m7|m|7|dim)?$/.exec(name); const root = noteMidi(m[1] + '3'); return CH_Q[m[2] || ''].map(i => root + i); }
+const MN = m => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][m % 12] + (Math.floor(m / 12) - 1);
+// 베이스: 근음 옥타브 왕복 (8분), 3박자 곡은 근음·5음·5음
+function bassLine(chords, bar, style) {
+  return chords.map(c => {
+    const [r, , f] = chordNotes(c); const R = r - 12, F5 = f - 12;
+    if (bar === 12) return `${MN(R)}:4 ${MN(F5)}:4 ${MN(F5 + 0)}:4`;
+    if (style === 'pizz') return `${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2 ${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2`;
+    return Array.from({ length: bar / 2 }, (_, i) => `${MN(i % 2 ? R + 12 : R)}:2`).join(' ');
+  }).join(' | ');
+}
+// 반주: 뒷박에 짧게 끊는 화음 (3음·5음)
+function compLine(chords, bar) {
+  return chords.map(c => {
+    const [, th, fi] = chordNotes(c).map(m => m + 12);
+    if (bar === 12) return `r:4 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2`;
+    return `r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2`;
+  }).join(' | ');
+}
+const rep = (s, n) => Array(n).fill(s).join(' | ');
+
+// ── 곡 (저작권이 끝난 곡 + 자작곡)
+const SONGS = {
+  // A: 「카이로의 거리」 (1895, 흔히 '뱀 부리는 사람의 노래'로 알려진 선율, 공유 저작물)
+  A: (() => {
+    const m = 'G4:4 F#4:2 F#4:2 E4:4 E4:2 F#4:2 | G4:2 B4:2 F#4:2 G4:2 E4:4 E4:2 F#4:2 | G4:4 F#4:4 E4:4 E4:2 F#4:2 | G4:2 B4:2 F#4:2 G4:2 E4:4 r:4 | B4:2 B4:2 B4:2 C5:2 B4:2 A4:2 F#4:2 G4:2 | A4:2 A4:2 A4:2 B4:2 A4:2 G4:2 E4:2 F#4:2 | G4:2 G4:2 G4:2 A4:2 G4:2 F#4:2 E4:2 F#4:2 | G4:4 F#4:2 F#4:2 E4:4 r:4 | B4:8 B4:6 G4:2 | A4:3 B4:1 A4:3 G4:1 E4:4 D4:4 | G4:4 B4:4 D5:4 E5:4 | D5:4 E5:4 D5:2 B4:2 A4:4 | B4:8 B4:6 G4:2 | A4:3 B4:1 A4:3 G4:1 E4:4 D4:4 | G4:4 B4:2 G4:2 A4:4 B4:4 | G4:4 B4:4 B4:4 E4:2 F#4:2 | G4:4 F#4:4 E4:4 E4:2 F#4:2 | G4:2 B4:2 F#4:2 G4:2 E4:4 r:4 | B4:2 B4:2 B4:2 C5:2 B4:2 A4:2 F#4:2 G4:2 | A4:2 A4:2 A4:2 B4:2 A4:2 G4:2 E4:2 F#4:2 | G4:2 G4:2 G4:2 A4:2 G4:2 F#4:2 E4:2 F#4:2 | G4:4 F#4:2 F#4:2 E4:4 r:4 | B4:8 B4:6 G4:2 | A4:3 B4:1 A4:3 G4:1 E4:4 D4:4 | G4:4 B4:4 D5:4 E5:4 | D5:4 E5:4 D5:2 B4:2 A4:4 | B4:8 B4:6 G4:2 | A4:3 B4:1 A4:3 G4:1 E4:4 D4:2 D4:2 | G4:4 B4:2 G4:2 A4:4 B4:4 | G4:8 r:4 E4:2 F#4:2';
+    const ch = ['Em', 'Em', 'Em', 'Em', 'B7', 'Am', 'Em', 'Em', 'G', 'D', 'G', 'D', 'G', 'D', 'G', 'Em', 'Em', 'Em', 'B7', 'Am', 'Em', 'Em', 'G', 'D', 'G', 'D', 'G', 'D', 'G', 'Em'];
+    return { name: 'The Streets of Cairo', bpm: 116, bar: 16, duty: [0.25, 0.125], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16, 'pizz'), noi: rep('k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2', 30) };
+  })(),
+  // B: 자작곡 「사과 밭」 (클래식)
+  B: (() => {
+    const m = 'F5:2 A5:2 C6:2 A5:2 F5:2 A5:2 C6:4 | E5:2 G5:2 C6:2 G5:2 E5:2 G5:2 C6:4 | D5:2 F5:2 A5:2 D6:2 C6:2 A5:2 F5:4 | G5:2 A5:2 Bb5:2 A5:2 G5:4 C5:4 | '
+      + 'A5:4 G5:2 F5:2 A5:4 C6:4 | D6:4 C6:2 Bb5:2 A5:4 F5:4 | G5:2 A5:2 Bb5:2 D6:2 C6:2 Bb5:2 A5:2 G5:2 | E5:4 G5:4 C6:8 | '
+      + 'F5:2 E5:2 D5:2 E5:2 F5:4 A5:4 | Bb5:2 A5:2 G5:2 A5:2 Bb5:4 D6:4 | C6:2 Bb5:2 A5:2 Bb5:2 C6:4 F5:4 | G5:2 F5:2 E5:2 F5:2 G5:4 C5:4 | '
+      + 'D5:2 F5:2 A5:2 D6:2 C6:2 A5:2 F5:2 D5:2 | Bb4:2 D5:2 F5:2 Bb5:2 A5:2 F5:2 D5:2 Bb4:2 | C5:2 E5:2 G5:2 C6:2 Bb5:2 G5:2 E5:2 C5:2 | F5:4 A5:4 F5:8';
+    const ch = ['F', 'C', 'Dm', 'C', 'F', 'Bb', 'Gm', 'C', 'Dm', 'Bb', 'F', 'C', 'Dm', 'Bb', 'C', 'F'];
+    return { name: 'Apple Orchard', bpm: 144, bar: 16, duty: [0.5, 0.25], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16), noi: rep('k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2', 16) };
+  })(),
+  // C: 자작곡 「네온 아레나」 (아레나)
+  C: (() => {
+    const X = 'A4:2 A4:2 E5:2 A4:2 D5:2 A4:2 C5:2 B4:2';
+    const m = X + ' | A4:2 A4:2 E5:2 A4:2 G5:2 E5:2 C5:2 E5:2 | F4:2 F4:2 C5:2 F4:2 E5:2 F4:2 D5:2 C5:2 | G4:2 G4:2 D5:2 G4:2 B4:2 D5:2 G5:4 | '
+      + X + ' | A4:2 A4:2 E5:2 A4:2 A5:4 G5:2 E5:2 | F5:2 E5:2 D5:2 C5:2 D5:2 E5:2 F5:2 A5:2 | G#5:4 E5:4 B4:4 G#4:4 | '
+      + 'C6:4 A5:2 F5:2 C6:4 A5:4 | B5:4 G5:2 D5:2 B5:4 G5:4 | A5:2 B5:2 C6:2 B5:2 A5:2 G5:2 E5:2 C5:2 | B4:2 E5:2 G5:2 B5:2 A5:2 G5:2 E5:4 | '
+      + 'F5:2 A5:2 C6:2 A5:2 G5:2 E5:2 C5:4 | D5:2 G5:2 B5:2 G5:2 A5:2 F5:2 D5:4 | E5:2 G#5:2 B5:2 E6:2 D6:2 B5:2 G#5:2 E5:2 | E5:4 B4:4 E5:8';
+    const ch = ['Am', 'Am', 'F', 'G', 'Am', 'Am', 'F', 'E', 'F', 'G', 'Am', 'Em', 'F', 'G', 'E', 'E'];
+    return { name: 'Neon Arena', bpm: 158, bar: 16, duty: [0.25, 0.5], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16), noi: rep('k:2 h:2 s:2 k:2 k:2 h:2 s:2 h:2', 16) };
+  })(),
 };
 
-(function applyLabels() {
-  document.getElementById('lScore').textContent = T.score;
-  document.getElementById('lBest').textContent = T.best;
-  document.getElementById('lLength').textContent = T.length;
-  document.getElementById('lSpeed').textContent = T.speed;
-  document.getElementById('titleText').textContent = T.title;
-  document.getElementById('titleSub').textContent = T.subtitle;
-  document.getElementById('startBtn').textContent = T.start;
-  document.getElementById('gameOverText').textContent = T.gameOver;
-  document.getElementById('restartBtn').textContent = T.restart;
-  document.getElementById('pauseText').textContent = T.pause;
-  document.getElementById('resumeBtn').textContent = T.resume;
-  document.getElementById('playBtn').textContent = T.start;
-  document.getElementById('kMove').textContent = T.move;
-  document.getElementById('kPause').textContent = T.pause;
-})();
-
-const canvas = document.getElementById('board');
-const ctx = canvas.getContext('2d');
-const GRID = 20;
-const COLS = canvas.width / GRID;
-const ROWS = canvas.height / GRID;
-
-let snake, dir, nextDir, food, score, bestScore, speed, gameRunning, gamePaused, gameOver;
-let loopTimer = null;
-
-try { bestScore = parseInt(localStorage.getItem('snake_best') || '0'); } catch(e) { bestScore = 0; }
-document.getElementById('best').textContent = bestScore;
-
-function init() {
-  snake = [];
-  for (let i = 2; i >= 0; i--) snake.push({x: 5 + i, y: Math.floor(ROWS / 2)});
-  dir = {x: 1, y: 0};
-  nextDir = {x: 1, y: 0};
-  score = 0; speed = 1;
-  gameOver = false; gamePaused = false;
-  spawnFood();
-  updateUI();
-}
-
-function spawnFood() {
-  let pos;
-  do {
-    pos = {x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS)};
-  } while (snake.some(s => s.x === pos.x && s.y === pos.y));
-  food = pos;
-}
-
-function step() {
-  dir = nextDir;
-  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
-
-  // wall collision
-  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) {
-    endGame(); return;
+class Chip {
+  constructor() { this.ctx = null; this.musicVol = 0.55; this.sfxVol = 0.7; this.song = null; this.tempo = 1; this.beatCbs = []; this.muted = false; }
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const c = this.ctx = new AC();
+    this.out = c.createDynamicsCompressor(); this.out.threshold.value = -12; this.out.ratio.value = 4; this.out.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(this.out);
+    this.mus = c.createGain(); this.mus.gain.value = this.musicVol; this.mus.connect(this.master);
+    this.fx = c.createGain(); this.fx.gain.value = this.sfxVol; this.fx.connect(this.master);
+    // 펄스파 (듀티 12.5·25·50%)
+    this.pw = {};
+    for (const d of [0.125, 0.25, 0.5]) { const N = 48, re = new Float32Array(N), im = new Float32Array(N); for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * d)) / (n * Math.PI); } this.pw[d] = c.createPeriodicWave(re, im); }
+    // 4비트 계단 삼각파
+    { const S = 32, N = 40, re = new Float32Array(N), im = new Float32Array(N); const v = i => { const k = i < 16 ? i : 31 - i; return (k / 7.5) - 1; };
+      for (let n = 1; n < N; n++) { let a = 0, b = 0; for (let i = 0; i < S; i++) { const t0 = i / S, t1 = (i + 1) / S, w = 2 * Math.PI * n; a += v(i) * (Math.sin(w * t1) - Math.sin(w * t0)) / w; b += v(i) * (Math.cos(w * t0) - Math.cos(w * t1)) / w; } re[n] = 2 * a; im[n] = 2 * b; }
+      this.tw = c.createPeriodicWave(re, im); }
+    // 잡음 (15비트 LFSR)
+    const mk = short => { const len = c.sampleRate; const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0); let r = 1, v = 0; const step = Math.max(1, Math.round(c.sampleRate / 22000));
+      for (let i = 0; i < len; i++) { if (i % step === 0) { const bit = ((r & 1) ^ ((r >> (short ? 6 : 1)) & 1)); r = (r >> 1) | (bit << 14); v = (r & 1) ? 0.8 : -0.8; } d[i] = v; } return b; };
+    this.nz = mk(false); this.nzs = mk(true);
+    this.timer = setInterval(() => this.pump(), 25);
   }
-  // self collision
-  if (snake.some(s => s.x === head.x && s.y === head.y)) {
-    endGame(); return;
+  setVol(music, sfx) { if (music != null) this.musicVol = music; if (sfx != null) this.sfxVol = sfx; if (this.ctx) { this.mus.gain.setTargetAtTime(this.musicVol, this.ctx.currentTime, 0.05); this.fx.gain.setTargetAtTime(this.sfxVol, this.ctx.currentTime, 0.05); } }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); }
+  // ── 한 음
+  tone(dest, wave, f, t, dur, vol, o = {}) {
+    const c = this.ctx, os = c.createOscillator(), g = c.createGain();
+    if (wave === 'tri') os.setPeriodicWave(this.tw); else os.setPeriodicWave(this.pw[wave] || this.pw[0.5]);
+    os.frequency.setValueAtTime(f, t);
+    if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + (o.sweep || dur));
+    if (o.vib && dur > 0.25) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.25); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    const a = 0.004, rel = o.rel ?? 0.03, sus = o.decay ? vol * o.decay : vol;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+    if (o.decay != null) g.gain.exponentialRampToValueAtTime(Math.max(0.0001, sus), t + Math.max(a + 0.01, dur));
+    g.gain.setValueAtTime(o.decay != null ? Math.max(0.0001, sus) : vol, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + rel);
+    os.connect(g); g.connect(dest); os.start(t); os.stop(t + dur + rel + 0.02);
   }
-
-  snake.unshift(head);
-
-  if (head.x === food.x && head.y === food.y) {
-    score += 10;
-    speed = Math.floor(snake.length / 5) + 1;
-    spawnFood();
-  } else {
-    snake.pop();
+  noise(dest, t, dur, vol, o = {}) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = o.short ? this.nzs : this.nz; s.playbackRate.value = o.rate || 1; s.loop = true;
+    f.type = o.type || 'highpass'; f.frequency.value = o.freq || 1000; if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
   }
-  updateUI();
-  draw();
-}
-
-function draw() {
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= COLS; x++) {
-    ctx.beginPath(); ctx.moveTo(x * GRID, 0); ctx.lineTo(x * GRID, canvas.height); ctx.stroke();
+  // ── 음악 순서기
+  play(id) {
+    this.init(); if (!this.ctx) return;
+    this.stop();
+    const S = SONGS[id]; if (!S) return;
+    const ch = ['p1', 'p2', 'tri', 'noi'].map(k => ({ k, ...parseTrack(S[k]) }));
+    const L = ch[0].len; const at = {}; ch.forEach(c => { if (c.len !== L) console.warn('track length', S.name, c.k, c.len, L); c.ev.forEach(e => { (at[e.t] = at[e.t] || []).push({ ...e, k: c.k }); }); });
+    this.song = { S, at, L, step: 0, next: this.ctx.currentTime + 0.08, loops: 0, id };
   }
-  for (let y = 0; y <= ROWS; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y * GRID); ctx.lineTo(canvas.width, y * GRID); ctx.stroke();
-  }
-
-  // food
-  ctx.fillStyle = '#ff4757';
-  ctx.beginPath();
-  ctx.arc(food.x * GRID + GRID/2, food.y * GRID + GRID/2, GRID/2 - 2, 0, Math.PI * 2);
-  ctx.fill();
-  // food shine
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.beginPath();
-  ctx.arc(food.x * GRID + GRID/2 - 2, food.y * GRID + GRID/2 - 3, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // snake
-  snake.forEach((seg, i) => {
-    const ratio = 1 - (i / snake.length) * 0.5;
-    const r = Math.floor(124 * ratio);
-    const g = Math.floor(92 * ratio);
-    const b = Math.floor(252 * ratio);
-    ctx.fillStyle = `rgb(${r},${g},${b})`;
-    ctx.fillRect(seg.x * GRID + 1, seg.y * GRID + 1, GRID - 2, GRID - 2);
-    if (i === 0) {
-      // eyes
-      ctx.fillStyle = '#fff';
-      const ex1 = seg.x * GRID + GRID * 0.3;
-      const ex2 = seg.x * GRID + GRID * 0.7;
-      const ey = seg.y * GRID + GRID * 0.35;
-      ctx.beginPath(); ctx.arc(ex1, ey, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex2, ey, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(ex1 + dir.x, ey + dir.y, 1.2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(ex2 + dir.x, ey + dir.y, 1.2, 0, Math.PI * 2); ctx.fill();
+  stop() { this.song = null; }
+  pause(p) { this.paused = p; if (!p && this.song && this.ctx) this.song.next = this.ctx.currentTime + 0.05; }
+  pump() {
+    const sg = this.song; if (!sg || this.paused || !this.ctx) return;
+    const c = this.ctx, ahead = c.currentTime + 0.12;
+    if (sg.next < c.currentTime - 0.25) sg.next = c.currentTime + 0.02;     // 탭이 잠들었다 깨면 따라잡지 않고 이어서
+    while (sg.next < ahead) {
+      const S = sg.S, accel = S.accel ? Math.min(1.6, Math.pow(S.accel, sg.loops)) : 1;
+      const sp = 60 / (S.bpm * this.tempo * accel) / 4;      // 16분음표 길이(초)
+      const evs = sg.at[sg.step];
+      if (evs) for (const e of evs) {
+        const d = e.len * sp;
+        if (e.k === 'noi') {
+          if (e.n === 'k') { this.noise(this.mus, sg.next, 0.09, 0.32, { type: 'lowpass', freq: 900, fto: 120 }); this.tone(this.mus, 'tri', 140, sg.next, 0.07, 0.35, { to: 50, sweep: 0.07, rel: 0.01 }); }
+          else if (e.n === 's') this.noise(this.mus, sg.next, 0.12, 0.2, { type: 'bandpass', freq: 2200 });
+          else if (e.n === 'h') this.noise(this.mus, sg.next, 0.035, 0.07, { type: 'highpass', freq: 7000 });
+        } else {
+          const f = midiHz(noteMidi(e.n));
+          if (e.k === 'p1') this.tone(this.mus, S.duty[0], f, sg.next, d * 0.92, 0.13, { vib: true, decay: 0.75 });
+          else if (e.k === 'p2') this.tone(this.mus, S.duty[1], f, sg.next, d * 0.8, 0.065, { decay: 0.5 });
+          else this.tone(this.mus, 'tri', f, sg.next, d * 0.85, 0.3, {});
+        }
+      }
+      if (sg.step % 4 === 0) { const when = sg.next; this.beatCbs.forEach(cb => cb(when, sg.step % (S.bar) === 0)); }
+      sg.next += sp; sg.step++;
+      if (sg.step >= sg.L) { sg.step = 0; sg.loops++; }
     }
-  });
-}
-
-function updateUI() {
-  document.getElementById('score').textContent = score;
-  document.getElementById('length').textContent = snake.length;
-  document.getElementById('speed').textContent = speed;
-}
-
-function getInterval() {
-  return Math.max(60, 150 - (speed - 1) * 12);
-}
-
-function gameLoop() {
-  if (!gameRunning || gamePaused || gameOver) return;
-  step();
-  loopTimer = setTimeout(gameLoop, getInterval());
-}
-
-function startGame() {
-  init();
-  gameRunning = true;
-  document.getElementById('startOverlay').style.display = 'none';
-  document.getElementById('gameOverOverlay').style.display = 'none';
-  document.getElementById('pauseOverlay').style.display = 'none';
-  const btn = document.getElementById('playBtn');
-  btn.textContent = T.stop; btn.className = 'btn btn-stop';
-  draw();
-  if (loopTimer) clearTimeout(loopTimer);
-  loopTimer = setTimeout(gameLoop, getInterval());
-  document.body.focus();
-}
-
-function endGame() {
-  gameOver = true; gameRunning = false;
-  if (loopTimer) clearTimeout(loopTimer);
-  if (score > bestScore) {
-    bestScore = score;
-    try { localStorage.setItem('snake_best', bestScore); } catch(e) {}
-    document.getElementById('best').textContent = bestScore;
   }
-  document.getElementById('finalScore').textContent = T.finalScore(score, snake.length);
-  document.getElementById('gameOverOverlay').style.display = 'flex';
-  const btn = document.getElementById('playBtn');
-  btn.textContent = T.start; btn.className = 'btn btn-play';
+  onBeat(cb) { this.beatCbs.push(cb); }
+  // ── 효과음
+  sfx(name, a = {}) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + 0.005, F = this.fx;
+    const arp = (notes, step, wave = 0.5, vol = 0.16, len) => notes.forEach((n, i) => this.tone(F, wave, midiHz(typeof n === 'number' ? n : noteMidi(n)), t + i * step, len || step * 1.6, vol, { decay: 0.4 }));
+    switch (name) {
+      case 'eat': { const b = 72 + Math.min(12, (a.combo || 0)); arp([b, b + 7], 0.04, 0.25, 0.14); this.tone(F, 'tri', 300, t, 0.05, 0.25, { to: 600, sweep: 0.05, rel: 0.01 }); break; }
+      case 'bonus': arp([84, 88, 91, 96], 0.035, 0.125, 0.08); break;
+      case 'bonusEat': arp([72, 76, 79, 84, 88, 91], 0.04, 0.5, 0.14); this.noise(F, t, 0.2, 0.1, { type: 'highpass', freq: 4000 }); break;
+      case 'bonusGone': arp([79, 74, 70], 0.05, 0.125, 0.06); break;
+      case 'turn': this.tone(F, 0.125, 900, t, 0.012, 0.025, { rel: 0.004 }); break;
+      case 'die': this.noise(F, t, 0.5, 0.35, { type: 'lowpass', freq: 3000, fto: 100 }); this.tone(F, 0.5, 440, t, 0.45, 0.16, { to: 60, sweep: 0.45 }); break;
+      case 'pop': this.tone(F, 0.25, 300 + (a.i || 0) * 18, t, 0.03, 0.05, { rel: 0.01 }); break;
+      case 'exitOpen': arp(['C5', 'E5', 'G5', 'C6', 'E6'], 0.06, 0.5, 0.14, 0.2); break;
+      case 'portal': this.tone(F, 0.25, 300, t, 0.18, 0.1, { to: 1800, sweep: 0.18 }); this.noise(F, t, 0.18, 0.08, { type: 'bandpass', freq: 3000, short: true }); break;
+      case 'slurp': this.tone(F, 0.125, 400 + Math.max(0, 40 - (a.n || 0)) * 25, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'clear': arp(['G5', 'C6', 'E6', 'G6', 'E6', 'G6', 'C7'], 0.07, 0.5, 0.14, 0.25); break;
+      case 'won': arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6', 'G6', 'C7', 'G6', 'C7'], 0.08, 0.5, 0.14, 0.3); break;
+      case 'over': [76, 72, 69, 64, 60, 57, 52, 48].forEach((m, i) => this.tone(F, 0.5, midiHz(m), t + i * 0.11, 0.12, 0.12, { decay: 0.5 })); break;
+      case 'go': this.tone(F, 0.5, 1320, t, 0.12, 0.1, { decay: 0.5 }); break;
+      case 'nib': { if (this.lastNib && t - this.lastNib < 0.035) break; this.lastNib = t; this.tone(F, 0.25, 600 + Math.min(3, a.v || 1) * 150 + Math.random() * 60, t, 0.03, a.big ? 0.07 : 0.04, { rel: 0.01 }); break; }
+      case 'boost': this.noise(F, t, 0.12, 0.05, { type: 'bandpass', freq: 1200, fto: 2400 }); break;
+      case 'kill': arp([67, 74, 79, 86], 0.045, 0.25, 0.14); this.noise(F, t, 0.3, 0.2, { type: 'lowpass', freq: 2000, fto: 200 }); break;
+      case 'gulp': this.tone(F, 0.5, 520, t, 0.22, 0.16 * (a.k ?? 1), { to: 90, sweep: 0.22 }); this.tone(F, 'tri', 160, t + 0.05, 0.25, 0.35 * (a.k ?? 1), { to: 60, sweep: 0.25 }); this.noise(F, t, 0.25, 0.12 * (a.k ?? 1), { type: 'lowpass', freq: 1200, fto: 150 }); break;
+      case 'thud': this.noise(F, t, 0.25, 0.12 * (a.k ?? 1), { type: 'lowpass', freq: 600, fto: 80 }); break;
+      case 'rank': arp([84, 91], 0.06, 0.125, 0.08); break;
+      case 'menu': this.tone(F, 0.25, 1000, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'select': arp([76, 83], 0.05, 0.25, 0.1); break;
+    }
+  }
 }
 
-function togglePlay() {
-  if (!gameRunning && !gameOver) { startGame(); }
-  else if (gameRunning && !gamePaused) {
-    gamePaused = true;
-    if (loopTimer) clearTimeout(loopTimer);
-    document.getElementById('pauseOverlay').style.display = 'flex';
-    const btn = document.getElementById('playBtn');
-    btn.textContent = T.resume; btn.className = 'btn btn-play';
-  } else if (gamePaused) { resumeGame(); }
-  else if (gameOver) { startGame(); }
+// ───────────────────────── 화면 그리기 ─────────────────────────
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  if (k > 0) { r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; } else { r *= 1 + k; g *= 1 + k; b *= 1 + k; }
+  return `rgb(${r | 0},${g | 0},${b | 0})`;
+}
+function rgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+const UI_FONT = "'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif";
+// 무대 색 (미로는 다섯 스테이지마다 바뀐다)
+const THEMES = [
+  { a: '#14261d', b: '#172c22', wall: '#5b7a4a', wallHi: '#9cc27a', name: 'meadow' },
+  { a: '#1c1a2e', b: '#211e36', wall: '#6a5aa8', wallHi: '#a99cf0', name: 'dusk' },
+  { a: '#2a1c14', b: '#302018', wall: '#a86a3a', wallHi: '#f0b070', name: 'desert' },
+  { a: '#10222c', b: '#132834', wall: '#3a7c9c', wallHi: '#7cd0f0', name: 'ice' },
+  { a: '#26121a', b: '#2c151e', wall: '#a03a52', wallHi: '#f07c94', name: 'lava' },
+];
+
+class View {
+  constructor(cv) {
+    this.cv = cv; this.c = cv.getContext('2d');
+    this.parts = []; this.pops = []; this.shake = 0; this.flash = 0; this.cache = {}; this.f = 0;
+    this.opts = { shake: true, fx: true, grid: true, skin: 0 };
+    this.cam = { x: 0, y: 0, z: 1 }; this.feed = []; this.die = null; this.toasts = [];
+  }
+  resize(W, H, dpr, L) { this.W = W; this.H = H; this.dpr = dpr; this.L = L; this.cv.width = Math.round(W * dpr); this.cv.height = Math.round(H * dpr); this.cv.style.width = W + 'px'; this.cv.style.height = H + 'px'; this.cache = {}; }
+  // ── 효과
+  burst(x, y, col, n = 14, sp = 3, life = 40, size = 3) {
+    if (!this.opts.fx) n = Math.ceil(n / 4);
+    for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = sp * (0.3 + Math.random()); this.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: life * (0.6 + Math.random() * 0.6), max: life, col, size: size * (0.6 + Math.random() * 0.8) }); }
+  }
+  pop(x, y, text, col = '#ffffff', big) { this.pops.push({ x, y, text, col, t: 0, big }); }
+  toast(text, col = '#ffffff', life = 120) { this.toasts.push({ text, col, t: 0, life }); }
+  kick(n) { if (this.opts.shake) this.shake = Math.max(this.shake, n); }
+  stepFx(gravity = 0) {
+    for (const p of this.parts) { p.x += p.vx; p.y += p.vy; p.vx *= 0.93; p.vy = p.vy * 0.93 + gravity; p.life--; }
+    this.parts = this.parts.filter(p => p.life > 0);
+    for (const p of this.pops) p.t++; this.pops = this.pops.filter(p => p.t < 60);
+    for (const t of this.toasts) t.t++; this.toasts = this.toasts.filter(t => t.t < t.life);
+    this.shake *= 0.86; if (this.shake < 0.3) this.shake = 0; this.flash *= 0.9;
+  }
+  drawParts(c, k = 1) {
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const p of this.parts) { c.globalAlpha = Math.min(1, p.life / p.max * 1.4); c.fillStyle = p.col; const s = p.size * k * (0.4 + 0.6 * p.life / p.max); c.fillRect(p.x - s / 2, p.y - s / 2, s, s); }
+    c.restore();
+  }
+  text(str, x, y, size, col, o = {}) {
+    const c = this.c; c.font = `${o.w || 800} ${size}px ${UI_FONT}`; c.textAlign = o.al || 'center'; c.textBaseline = o.bl || 'middle';
+    if (o.sh !== false) { c.fillStyle = 'rgba(0,0,0,.55)'; c.fillText(str, x + size * 0.06, y + size * 0.08); }
+    c.fillStyle = col; c.fillText(str, x, y);
+  }
+  begin() {
+    const c = this.c; c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); this.f++;
+    const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0, sy = this.shake ? (Math.random() - 0.5) * this.shake : 0;
+    c.translate(sx, sy); return c;
+  }
+
+  // ════════════════ 격자 (클래식 · 미로) ════════════════
+  gridLayout() {
+    const { W, H } = this, L = this.L || {}, top = L.top ?? 64, bot = L.bot ?? 16;
+    const cs = Math.max(8, Math.floor(Math.min((W - 20) / GW, (H - top - bot - 12) / GH)));
+    const bw = cs * GW, bh = cs * GH;
+    return { cs, ox: Math.round((W - bw) / 2), oy: Math.round(top + (H - top - bot - bh) / 2), bw, bh };
+  }
+  theme(g) { return g.kind === 'maze' ? THEMES[Math.floor((g.stage - 1) / 4) % THEMES.length] : THEMES[0]; }
+  // 바닥과 벽은 미리 그려 둔다
+  boardImage(g, Lg) {
+    const th = this.theme(g), key = 'b' + g.kind + g.stage + Lg.cs + this.opts.grid + (g.wallsOn ? 1 : 0); if (this.cache.key === key) return this.cache.img;
+    const d = this.dpr, cs = Lg.cs, cv = document.createElement('canvas'); cv.width = Math.ceil(Lg.bw * d); cv.height = Math.ceil(Lg.bh * d);
+    const c = cv.getContext('2d'); c.scale(d, d);
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) { c.fillStyle = (x + y) % 2 ? th.a : th.b; c.fillRect(x * cs, y * cs, cs, cs); }
+    if (this.opts.grid) { c.fillStyle = 'rgba(255,255,255,.035)'; for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) c.fillRect(x * cs + cs / 2 - 1, y * cs + cs / 2 - 1, 2, 2); }
+    const W_ = (x, y) => x >= 0 && y >= 0 && x < GW && y < GH && g.walls[y * GW + x];
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      if (!W_(x, y)) continue; const px = x * cs, py = y * cs;
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(px + cs * 0.12, py + cs * 0.18, cs, cs);
+    }
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      if (!W_(x, y)) continue; const px = x * cs, py = y * cs;
+      const gr = c.createLinearGradient(0, py, 0, py + cs); gr.addColorStop(0, shade(th.wall, 0.15)); gr.addColorStop(1, shade(th.wall, -0.25));
+      c.fillStyle = gr; c.fillRect(px, py, cs, cs);
+      // 돌 무늬
+      c.fillStyle = 'rgba(0,0,0,.12)'; if ((x * 7 + y * 3) % 4 === 0) c.fillRect(px + cs * 0.2, py + cs * 0.55, cs * 0.3, cs * 0.12);
+      if (!W_(x, y - 1)) { c.fillStyle = th.wallHi; c.fillRect(px, py, cs, Math.max(2, cs * 0.16)); }
+      if (!W_(x - 1, y)) { c.fillStyle = 'rgba(255,255,255,.12)'; c.fillRect(px, py, Math.max(1, cs * 0.08), cs); }
+      if (!W_(x, y + 1)) { c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(px, py + cs - Math.max(2, cs * 0.14), cs, Math.max(2, cs * 0.14)); }
+      if (!W_(x + 1, y)) { c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(px + cs - Math.max(1, cs * 0.08), py, Math.max(1, cs * 0.08), cs); }
+    }
+    this.cache = { key, img: cv }; return cv;
+  }
+  appleSprite(cs) {
+    const key = 'apple' + cs; if (this.cache[key]) return this.cache[key];
+    const d = this.dpr, S = cs * 1.6, cv = document.createElement('canvas'); cv.width = cv.height = Math.ceil(S * d); const c = cv.getContext('2d'); c.scale(d, d);
+    const cx = S / 2, cy = S / 2 + cs * 0.05, r = cs * 0.4;
+    c.fillStyle = 'rgba(255,60,80,.25)'; c.beginPath(); c.arc(cx, cy, r * 1.5, 0, 7); c.fill();
+    const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r); g.addColorStop(0, '#ff8a8a'); g.addColorStop(0.5, '#f0303c'); g.addColorStop(1, '#a0101e');
+    c.fillStyle = g; c.beginPath(); c.arc(cx - r * 0.18, cy, r * 0.82, 0, 7); c.arc(cx + r * 0.18, cy, r * 0.82, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(cx - r * 0.38, cy - r * 0.3, r * 0.16, r * 0.24, -0.5, 0, 7); c.fill();
+    c.strokeStyle = '#6a3a1a'; c.lineWidth = Math.max(1.5, cs * 0.08); c.lineCap = 'round'; c.beginPath(); c.moveTo(cx, cy - r * 0.7); c.quadraticCurveTo(cx + r * 0.05, cy - r * 1.05, cx + r * 0.2, cy - r * 1.15); c.stroke();
+    c.fillStyle = '#4fd060'; c.beginPath(); c.ellipse(cx + r * 0.42, cy - r * 0.95, r * 0.34, r * 0.16, -0.5, 0, 7); c.fill();
+    return (this.cache[key] = cv);
+  }
+  // 덤 먹이 그림 (쥐 · 딱정벌레 · 별)
+  drawBonus(c, b, x, y, cs) {
+    const f = this.f, r = cs * 0.42;
+    c.save(); c.translate(x, y);
+    const left = b.life / b.max, blink = left < 0.3 && (f >> 3) % 2;
+    c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = Math.max(2, cs * 0.1); c.beginPath(); c.arc(0, 0, r * 1.35, 0, 7); c.stroke();
+    c.strokeStyle = left < 0.3 ? '#ff5d73' : '#ffd23f'; c.beginPath(); c.arc(0, 0, r * 1.35, -Math.PI / 2, -Math.PI / 2 + left * Math.PI * 2); c.stroke();
+    if (blink) { c.restore(); return; }
+    c.rotate(Math.sin(f * 0.15) * 0.15);
+    if (b.kind === 'mouse') {
+      c.fillStyle = '#b8b8c8'; c.beginPath(); c.ellipse(0, r * 0.1, r * 0.75, r * 0.55, 0, 0, 7); c.fill();
+      c.fillStyle = '#d8d8e8'; c.beginPath(); c.arc(-r * 0.45, -r * 0.35, r * 0.3, 0, 7); c.arc(r * 0.45, -r * 0.35, r * 0.3, 0, 7); c.fill();
+      c.fillStyle = '#ff9ab0'; c.beginPath(); c.arc(-r * 0.45, -r * 0.35, r * 0.15, 0, 7); c.arc(r * 0.45, -r * 0.35, r * 0.15, 0, 7); c.fill();
+      c.fillStyle = '#111'; c.beginPath(); c.arc(-r * 0.22, 0, r * 0.1, 0, 7); c.arc(r * 0.22, 0, r * 0.1, 0, 7); c.fill();
+      c.fillStyle = '#ff6f90'; c.beginPath(); c.arc(0, r * 0.25, r * 0.1, 0, 7); c.fill();
+    } else if (b.kind === 'beetle') {
+      c.strokeStyle = '#222'; c.lineWidth = Math.max(1, cs * 0.06);
+      for (const s of [-1, 1]) for (const k of [-0.3, 0.1, 0.5]) { c.beginPath(); c.moveTo(0, r * k); c.lineTo(s * r * 0.95, r * k + r * 0.15 * Math.sin(f * 0.5 + k * 6)); c.stroke(); }
+      const g = c.createRadialGradient(-r * 0.2, -r * 0.2, 1, 0, 0, r * 0.8); g.addColorStop(0, '#7cf0c0'); g.addColorStop(1, '#0a7a5a');
+      c.fillStyle = g; c.beginPath(); c.ellipse(0, r * 0.1, r * 0.6, r * 0.72, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.4)'; c.beginPath(); c.moveTo(0, -r * 0.4); c.lineTo(0, r * 0.8); c.stroke();
+      c.fillStyle = '#222'; c.beginPath(); c.arc(0, -r * 0.6, r * 0.3, 0, 7); c.fill();
+    } else {
+      c.rotate(f * 0.04); c.fillStyle = '#ffd23f'; c.shadowColor = '#ffd23f'; c.shadowBlur = cs * 0.5; c.beginPath();
+      for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * 0.42 : r; c.lineTo(Math.cos(a) * q, Math.sin(a) * q); }
+      c.closePath(); c.fill(); c.shadowBlur = 0; c.fillStyle = '#fff6b0'; c.beginPath(); c.arc(-r * 0.15, -r * 0.15, r * 0.15, 0, 7); c.fill();
+    }
+    c.restore();
+  }
+  // 뱀 선: [머리(칸 사이), 몸 칸들, 꼬리(칸 사이)] — 모퉁이는 칸 가운데를 지나 둥글게 꺾인다
+  snakePoints(g, body, prev, prog, headProg = prog) {
+    const n = body.length, pts = [];
+    const step = (a, b) => { let dx = b[0] - a[0], dy = b[1] - a[1]; if (Math.abs(dx) > 1) dx -= Math.sign(dx) * GW; if (Math.abs(dy) > 1) dy -= Math.sign(dy) * GH; return Math.abs(dx) + Math.abs(dy) > 1 ? null : [dx, dy]; };
+    if (n === 1) { pts.push({ x: body[0][0], y: body[0][1], i: 0 }); return pts; }
+    const d0 = step(body[1], body[0]);
+    if (d0) pts.push({ x: body[1][0] + d0[0] * headProg, y: body[1][1] + d0[1] * headProg, i: 0 });
+    else pts.push({ x: body[0][0], y: body[0][1], i: 0 });
+    for (let i = 1; i < n; i++) pts.push({ x: body[i][0], y: body[i][1], i, jump: i === 1 && !d0 });
+    const pl = prev[prev.length - 1], tl = body[n - 1];
+    if (pl && prev.length >= n && (pl[0] !== tl[0] || pl[1] !== tl[1])) {
+      const d = step(tl, pl); if (d) pts.push({ x: tl[0] + d[0] * (1 - prog), y: tl[1] + d[1] * (1 - prog), i: n - 1 });
+    }
+    return pts;
+  }
+  // 이어진 조각들로 나눈다 (벽 너머로 넘어가면 가장자리 밖까지 늘여 이어 보이게)
+  chains(pts) {
+    const out = []; let cur = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (cur.length) {
+        const q = cur[cur.length - 1]; let dx = p.x - q.x, dy = p.y - q.y;
+        if (p.jump || Math.abs(dx) > 1.5 || Math.abs(dy) > 1.5) {
+          if (Math.abs(dx) > 1.5) dx -= Math.sign(dx) * GW; if (Math.abs(dy) > 1.5) dy -= Math.sign(dy) * GH;
+          const wrap = !p.jump && Math.abs(dx) + Math.abs(dy) <= 1.01;
+          if (wrap) cur.push({ x: q.x + dx, y: q.y + dy, i: p.i, ghost: true });
+          out.push(cur); cur = [];
+          if (wrap) cur.push({ x: p.x - dx, y: p.y - dy, i: q.i, ghost: true });
+        }
+      }
+      cur.push({ x: p.x, y: p.y, i: p.i });
+    }
+    if (cur.length) out.push(cur);
+    return out;
+  }
+  drawSnake(c, g, Lg, body, prev, prog, o = {}) {
+    const cs = Lg.cs, skin = SKINS[o.skin ?? this.opts.skin] || SKINS[0], n = body.length;
+    const pts = this.snakePoints(g, body, prev, prog, o.headProg ?? prog);
+    const P = (p) => [Lg.ox + (p.x + 0.5) * cs, Lg.oy + (p.y + 0.5) * cs];
+    const wOf = i => { const tl = n - 1 - i; return cs * (0.84 * (tl < 4 ? 0.5 + tl * 0.125 : 1)); };
+    const chains = this.chains(pts).filter(ch => ch.length);
+    c.save(); c.beginPath(); c.rect(Lg.ox, Lg.oy, Lg.bw, Lg.bh); c.clip(); c.lineCap = 'round'; c.lineJoin = 'round';
+    const col = i => o.flash ? (o.flash % 2 ? '#ffffff' : '#ff5d73') : skin[0];
+    // 그림자 → 테두리 → 몸 → 무늬 → 윤기
+    for (const pass of [0, 1, 2, 3, 4]) {
+      for (const ch of chains) {
+        if (ch.length === 1) {
+          const [x, y] = P(ch[0]), w = wOf(ch[0].i);
+          if (pass === 0) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.arc(x + cs * 0.08, y + cs * 0.14, w * 0.55, 0, 7); c.fill(); }
+          if (pass === 1) { c.fillStyle = shade(skin[1], -0.35); c.beginPath(); c.arc(x, y, w * 0.56, 0, 7); c.fill(); }
+          if (pass === 2) { c.fillStyle = col(0); c.beginPath(); c.arc(x, y, w * 0.47, 0, 7); c.fill(); }
+          continue;
+        }
+        for (let k = ch.length - 1; k > 0; k--) {
+          const a = ch[k], b = ch[k - 1], i = Math.max(a.i, b.i), [x1, y1] = P(a), [x2, y2] = P(b), w = wOf(i);
+          c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
+          if (pass === 0) { c.save(); c.translate(cs * 0.08, cs * 0.14); c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = w * 1.08; c.stroke(); c.restore(); }
+          else if (pass === 1) { c.strokeStyle = shade(skin[1], -0.35); c.lineWidth = w * 1.1; c.stroke(); }
+          else if (pass === 2) { c.strokeStyle = col(i); c.lineWidth = w * 0.92; c.stroke(); }
+          else if (pass === 3 && !o.flash) {
+            // 등 무늬: 마디마다 마름모 점
+            if (i % 2 === 0) { const mx = (x1 + x2) / 2, my = (y1 + y2) / 2; c.fillStyle = skin[1]; c.beginPath(); c.arc(mx, my, w * 0.2, 0, 7); c.fill(); }
+          } else if (pass === 4) { c.save(); c.translate(-cs * 0.07, -cs * 0.09); c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = w * 0.22; c.stroke(); c.restore(); }
+        }
+      }
+    }
+    // 머리
+    if (!o.noHead && pts.length) {
+      const h = pts[0], [hx, hy] = P(h); let ang;
+      const d = DIRV[g.dir] || [1, 0]; ang = Math.atan2(d[1], d[0]);
+      if (pts.length > 1 && !pts[1].jump) { const q = pts[1]; let dx = h.x - q.x, dy = h.y - q.y; if (Math.abs(dx) > 1.5) dx -= Math.sign(dx) * GW; if (Math.abs(dy) > 1.5) dy -= Math.sign(dy) * GH; if (Math.hypot(dx, dy) > 0.3) ang = Math.atan2(dy, dx); }
+      this.drawHead(c, hx, hy, ang, cs, skin, o);
+    }
+    c.restore();
+  }
+  drawHead(c, x, y, ang, cs, skin, o = {}) {
+    const r = cs * 0.5; c.save(); c.translate(x, y); c.rotate(ang);
+    // 혀 (가끔 날름)
+    const tf = (this.f + (o.seed || 0)) % 150;
+    if (tf < 14 && !o.flash) { const L = r * (0.9 + Math.sin(tf / 14 * Math.PI) * 0.9); c.strokeStyle = '#ff3c55'; c.lineWidth = Math.max(1.2, cs * 0.06); c.lineCap = 'round'; c.beginPath(); c.moveTo(r * 0.7, 0); c.lineTo(r + L * 0.6, 0); c.lineTo(r + L * 0.85, -r * 0.18); c.moveTo(r + L * 0.6, 0); c.lineTo(r + L * 0.85, r * 0.18); c.stroke(); }
+    c.fillStyle = shade(skin[1], -0.35); c.beginPath(); c.ellipse(r * 0.1, 0, r * 1.12, r * 1.02, 0, 0, 7); c.fill();
+    c.fillStyle = o.flash ? (o.flash % 2 ? '#fff' : '#ff5d73') : skin[0]; c.beginPath(); c.ellipse(r * 0.1, 0, r * 1.0, r * 0.9, 0, 0, 7); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.ellipse(r * 0.05, -r * 0.35, r * 0.6, r * 0.25, 0, 0, 7); c.fill();
+    // 눈 (먹이 쪽을 본다)
+    const look = o.look ?? 0, blink = (this.f + (o.seed || 0) * 7) % 220 < 6;
+    for (const s of [-1, 1]) {
+      const ex = r * 0.35, ey = s * r * 0.48;
+      c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(ex, ey, r * 0.34, blink ? r * 0.06 : r * 0.34, 0, 0, 7); c.fill();
+      if (!blink) { const la = look - ang; c.fillStyle = o.dead ? '#000' : '#111'; c.beginPath(); c.arc(ex + Math.cos(la) * r * 0.13, ey + Math.sin(la) * r * 0.13, r * 0.17, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(ex + Math.cos(la) * r * 0.13 - r * 0.05, ey + Math.sin(la) * r * 0.13 - r * 0.06, r * 0.06, 0, 7); c.fill(); }
+    }
+    c.fillStyle = 'rgba(0,0,0,.5)'; c.beginPath(); c.arc(r * 0.95, -r * 0.18, r * 0.06, 0, 7); c.arc(r * 0.95, r * 0.18, r * 0.06, 0, 7); c.fill();
+    c.restore();
+  }
+  drawPortal(c, x, y, cs, col, k = 1) {
+    const f = this.f; c.save(); c.translate(x, y); c.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) { c.strokeStyle = rgba(col, 0.5 - i * 0.13); c.lineWidth = Math.max(2, cs * 0.1); c.beginPath(); c.arc(0, 0, cs * (0.2 + i * 0.13) * k, f * 0.08 * (i % 2 ? -1 : 1) + i, f * 0.08 * (i % 2 ? -1 : 1) + i + 4.4); c.stroke(); }
+    const g = c.createRadialGradient(0, 0, 0, 0, 0, cs * 0.55 * k); g.addColorStop(0, rgba(col, 0.6)); g.addColorStop(1, rgba(col, 0)); c.fillStyle = g; c.beginPath(); c.arc(0, 0, cs * 0.55 * k, 0, 7); c.fill();
+    c.restore();
+  }
+  drawExit(c, g, Lg) {
+    const [ex, ey] = g.exit, cs = Lg.cs, x = Lg.ox + ex * cs, y = Lg.oy + ey * cs;
+    if (!g.exitOpen) {
+      c.fillStyle = '#2a2a38'; c.fillRect(x, y, cs, cs); c.fillStyle = '#8890a8';
+      for (let i = 1; i < 4; i++) c.fillRect(x + i * cs / 4 - cs * 0.05, y + cs * 0.08, cs * 0.1, cs * 0.84);
+      c.fillStyle = '#ffd23f'; c.fillRect(x + cs * 0.35, y + cs * 0.42, cs * 0.3, cs * 0.18);
+    } else {
+      const pul = 1 + Math.sin(this.f * 0.15) * 0.12; this.drawPortal(c, x + cs / 2, y + cs / 2, cs, '#ffd23f', 1.4 * pul);
+      c.fillStyle = 'rgba(255,240,170,.9)'; c.beginPath(); c.arc(x + cs / 2, y + cs / 2, cs * 0.18 * pul, 0, 7); c.fill();
+    }
+  }
+  frameGrid(g, S) {
+    const c = this.begin(), Lg = this.gridLayout(), cs = Lg.cs, th = this.theme(g); this.lastGrid = Lg;
+    const bg = c.createLinearGradient(0, 0, 0, this.H); bg.addColorStop(0, shade(th.a, -0.35)); bg.addColorStop(1, shade(th.a, -0.6)); c.fillStyle = bg; c.fillRect(-20, -20, this.W + 40, this.H + 40);
+    // 판 테두리 빛
+    c.save(); c.shadowColor = rgba(th.wallHi, 0.35); c.shadowBlur = 30; c.fillStyle = th.a; rr(c, Lg.ox - 4, Lg.oy - 4, Lg.bw + 8, Lg.bh + 8, 10); c.fill(); c.restore();
+    c.drawImage(this.boardImage(g, Lg), Lg.ox, Lg.oy, Lg.bw, Lg.bh);
+    if (!g.wallsOn && g.kind === 'classic') { c.strokeStyle = rgba('#4fc3ff', 0.35 + Math.sin(this.f * 0.05) * 0.15); c.setLineDash([cs * 0.4, cs * 0.3]); c.lineWidth = 2; c.strokeRect(Lg.ox - 1, Lg.oy - 1, Lg.bw + 2, Lg.bh + 2); c.setLineDash([]); }
+    const CX = x => Lg.ox + (x + 0.5) * cs, CY = y => Lg.oy + (y + 0.5) * cs;
+    // 포털
+    const pc = ['#3ff0d8', '#ff6fd0', '#c6f24e', '#ff8f3a'];
+    g.portals.forEach((p, i) => { this.drawPortal(c, CX(p.a[0]), CY(p.a[1]), cs, pc[i % 4]); this.drawPortal(c, CX(p.b[0]), CY(p.b[1]), cs, pc[i % 4]); });
+    if (g.exit && g.mode !== 'enter') this.drawExit(c, g, Lg);
+    // 먹이
+    if (g.food) {
+      const age = g.t - g.food.born, sc = Math.min(1, age / 12) * (1 + Math.sin(this.f * 0.12) * 0.06), spr = this.appleSprite(cs), S2 = cs * 1.6 * sc;
+      c.drawImage(spr, CX(g.food.x) - S2 / 2, CY(g.food.y) - S2 / 2 - Math.sin(this.f * 0.08) * cs * 0.05, S2, S2);
+    }
+    if (g.bonus) this.drawBonus(c, g.bonus, CX(g.bonus.x), CY(g.bonus.y), cs);
+    // 뱀
+    const h = g.body[0], look = g.food ? Math.atan2(g.food.y - h[1], g.food.x - h[0]) : (DIRV[g.dir] ? Math.atan2(DIRV[g.dir][1], DIRV[g.dir][0]) : 0);
+    if (g.mode === 'dying' && this.die) {
+      const dt = this.die.t, body = this.die.body, gone = Math.max(0, Math.floor((dt - 26) / 2.2));
+      if (gone < body.length) this.drawSnake(c, g, Lg, body.slice(gone), body.slice(gone), 1, { flash: dt < 26 ? (dt >> 2) + 1 : 0, noHead: gone > 0, dead: true, look });
+    } else if (g.body.length && g.mode !== 'clear' && g.mode !== 'won') this.drawSnake(c, g, Lg, g.body, g.prev, g.prog, { look, headProg: g.mode === 'enter' ? 1 : g.prog, noHead: g.mode === 'enter' });
+    if (g.exit && (g.mode === 'enter' || g.mode === 'clear')) {
+      // 출구 구멍: 몸이 이 안으로 사라진다
+      const ex = CX(g.exit[0]), ey = CY(g.exit[1]); c.fillStyle = '#05070a'; c.beginPath(); c.arc(ex, ey, cs * 0.62, 0, 7); c.fill();
+      this.drawExit(c, g, Lg);
+    }
+    // 효과 (판 좌표)
+    this.drawParts(c, 1);
+    for (const p of this.pops) { const a = 1 - p.t / 60; c.globalAlpha = a; this.text(p.text, p.x, p.y - p.t * 0.6, (p.big ? 22 : 15) * Math.min(1.25, cs / 18 + 0.4), p.col); c.globalAlpha = 1; }
+    this.hudGrid(g, S, Lg);
+  }
+  hudGrid(g, S, Lg) {
+    const c = this.c, T = S.T, top = Math.max(6, Lg.oy - 58), W = this.W;
+    const fs = W < 420 ? 12 : 13, big = W < 420 ? 22 : 26;
+    const cols = [[T.score, String(g.score), '#ffffff'], [T.best, String(Math.max(S.best || 0, g.score)), '#ffd23f']];
+    if (g.kind === 'maze') cols.push([T.stageL, `${g.stage}/${STAGES.length}`, '#4fc3ff'], [T.apples, g.exitOpen ? T.exitShort : `${g.eaten}/${g.need}`, g.exitOpen ? '#ffd23f' : '#ff5d73']);
+    else cols.push([T.length, String(g.body.length + g.grow), '#3ee07a'], [T.speedL, T.speeds[g.speed] + (g.wallsOn ? '' : ' ∞'), '#4fc3ff']);
+    const x0 = Lg.ox, cw = Math.min(Lg.bw, W - 120 - x0 + 16) / cols.length;
+    cols.forEach(([l, v, col], i) => { const x = x0 + i * cw; this.text(l, x, top + 12, fs, 'rgba(220,230,255,.6)', { al: 'left', w: 700, sh: false }); this.text(v, x, top + 34, big, col, { al: 'left', w: 900 }); });
+    if (g.kind === 'maze') { // 목숨
+      for (let i = 0; i < Math.max(0, g.lives); i++) this.heart(c, Lg.ox + Lg.bw - 10 - i * 20, Lg.oy + Lg.bh + 14, 7);
+    }
+    // 가운데 안내
+    const cx = Lg.ox + Lg.bw / 2, cy = Lg.oy + Lg.bh / 2;
+    if (g.mode === 'ready') {
+      const a = 0.6 + Math.sin(this.f * 0.12) * 0.4;
+      if (g.kind === 'maze') this.text(S.fmt(T.stageN, g.stage), cx, cy - 46, 30, '#ffffff');
+      c.globalAlpha = a; this.text(T.readyHint, cx, cy + 40, 15, '#e8f0ff', { w: 700 }); c.globalAlpha = 1;
+    }
+    if (g.mode === 'clear' && g.lastClear) {
+      const k = Math.min(1, g.clearT / 20); c.globalAlpha = k;
+      c.fillStyle = 'rgba(6,10,16,.72)'; rr(c, cx - 140, cy - 70, 280, 140, 16); c.fill();
+      this.text(S.fmt(T.stageClear, g.lastClear.stage), cx, cy - 38, 24, '#ffd23f');
+      this.text(`${T.timeBonus}  +${g.lastClear.timeBonus}`, cx, cy + 2, 15, '#e8f0ff', { w: 700 });
+      this.text(`${T.stageBonus}  +${g.lastClear.stageBonus}`, cx, cy + 28, 15, '#e8f0ff', { w: 700 });
+      c.globalAlpha = 1;
+    }
+    this.drawToasts(cx, Lg.oy + Lg.bh * 0.28);
+  }
+  heart(c, x, y, s) { c.fillStyle = '#ff5d73'; c.beginPath(); c.moveTo(x, y + s * 0.9); c.bezierCurveTo(x - s * 1.4, y - s * 0.1, x - s * 0.6, y - s * 1.1, x, y - s * 0.35); c.bezierCurveTo(x + s * 0.6, y - s * 1.1, x + s * 1.4, y - s * 0.1, x, y + s * 0.9); c.fill(); }
+  drawToasts(cx, y) {
+    const c = this.c;
+    this.toasts.forEach((t, i) => { const a = Math.min(1, t.t / 8, (t.life - t.t) / 20); c.globalAlpha = a; this.text(t.text, cx, y + i * 30 - Math.min(8, t.t) + 8, 20, t.col); c.globalAlpha = 1; });
+  }
+
+  // ════════════════ 아레나 ════════════════
+  hexTile() {
+    if (this.cache.hex) return this.cache.hex;
+    const s = 40, w = s * Math.sqrt(3), cv = document.createElement('canvas'); cv.width = Math.round(w); cv.height = s * 3; const c = cv.getContext('2d');
+    c.fillStyle = '#0b1016'; c.fillRect(0, 0, cv.width, cv.height);
+    const hex = (x, y) => { c.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; c.lineTo(x + Math.cos(a) * s * 0.92, y + Math.sin(a) * s * 0.92); } c.closePath(); };
+    for (const [x, y] of [[0, 0], [w, 0], [w / 2, s * 1.5], [0, s * 3], [w, s * 3]]) {
+      hex(x, y); const g = c.createRadialGradient(x, y - s * 0.3, 2, x, y, s); g.addColorStop(0, '#18222c'); g.addColorStop(1, '#111921'); c.fillStyle = g; c.fill();
+      c.strokeStyle = 'rgba(0,0,0,.5)'; c.lineWidth = 2; c.stroke();
+    }
+    return (this.cache.hex = this.c.createPattern(cv, 'repeat'));
+  }
+  glowSprite(col) {
+    const key = 'g' + col; if (this.cache[key]) return this.cache[key];
+    const S = 64, cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d');
+    const g = c.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2); g.addColorStop(0, '#ffffff'); g.addColorStop(0.18, col); g.addColorStop(0.45, rgba(col, 0.35)); g.addColorStop(1, rgba(col, 0));
+    c.fillStyle = g; c.fillRect(0, 0, S, S); return (this.cache[key] = cv);
+  }
+  ballSprite(col, dark) {
+    const key = 'b' + col + dark; if (this.cache[key]) return this.cache[key];
+    const S = 64, cv = document.createElement('canvas'); cv.width = cv.height = S; const c = cv.getContext('2d');
+    c.fillStyle = shade(dark, -0.45); c.beginPath(); c.arc(S / 2, S / 2, S / 2, 0, 7); c.fill();
+    const g = c.createRadialGradient(S * 0.4, S * 0.36, S * 0.04, S / 2, S / 2, S * 0.46); g.addColorStop(0, shade(col, 0.45)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.3));
+    c.fillStyle = g; c.beginPath(); c.arc(S / 2, S / 2, S * 0.44, 0, 7); c.fill();
+    return (this.cache[key] = cv);
+  }
+  frameArena(a, S) {
+    const c = this.begin(), W = this.W, H = this.H, cam = this.cam;
+    // 카메라: 내 뱀 (시연 때는 가장 큰 뱀)
+    let focus = a.player && (a.player.alive || a.player.fade > 0) ? a.player : null;
+    if (!focus) { if (!this.demoFocus || !this.demoFocus.alive) this.demoFocus = a.leaders(3)[Math.floor(Math.random() * 3)] || a.snakes[0]; focus = this.demoFocus; }
+    if (a.player && !a.player.alive && this.deathSpot) focus = null;
+    const tx = focus ? focus.x : (this.deathSpot ? this.deathSpot[0] : 0), ty = focus ? focus.y : (this.deathSpot ? this.deathSpot[1] : 0);
+    const base = Math.max(0.72, Math.min(1.35, Math.min(W, H) / 600)) * (S.demo ? 0.8 : 1), r = focus ? focus.r : 10;
+    const zt = base / (1 + (r - 7) * 0.035);
+    if (this.camReset) { cam.x = tx; cam.y = ty; cam.z = zt; this.camReset = false; }
+    cam.x += (tx - cam.x) * 0.18; cam.y += (ty - cam.y) * 0.18; cam.z += (zt - cam.z) * 0.04;
+    const z = cam.z, ox = W / 2 - cam.x * z, oy = H / 2 - cam.y * z;
+    const vx0 = cam.x - W / 2 / z - 60, vx1 = cam.x + W / 2 / z + 60, vy0 = cam.y - H / 2 / z - 60, vy1 = cam.y + H / 2 / z + 60;
+    const inView = (x, y, m = 0) => x > vx0 - m && x < vx1 + m && y > vy0 - m && y < vy1 + m;
+    // 바닥
+    c.save(); c.translate(ox, oy); c.scale(z, z);
+    c.fillStyle = '#2a0c12'; c.fillRect(vx0 - 100, vy0 - 100, vx1 - vx0 + 200, vy1 - vy0 + 200);
+    c.save(); c.beginPath(); c.arc(0, 0, AR, 0, 7); c.clip(); c.fillStyle = this.hexTile(); c.fillRect(vx0 - 100, vy0 - 100, vx1 - vx0 + 200, vy1 - vy0 + 200); c.restore();
+    // 경기장 끝 (붉은 빛)
+    c.strokeStyle = rgba('#ff3c55', 0.55 + Math.sin(this.f * 0.08) * 0.2); c.lineWidth = 10; c.beginPath(); c.arc(0, 0, AR, 0, 7); c.stroke();
+    c.strokeStyle = rgba('#ff3c55', 0.15); c.lineWidth = 60; c.beginPath(); c.arc(0, 0, AR + 30, 0, 7); c.stroke();
+    // 먹이
+    c.globalCompositeOperation = 'lighter';
+    for (const f of a.food) {
+      if (f.gone || !inView(f.x, f.y)) continue;
+      const pul = 1 + Math.sin(this.f * 0.1 + f.ph) * 0.18, R = f.r * 2.4 * pul;
+      c.drawImage(this.glowSprite(f.c), f.x - R, f.y - R, R * 2, R * 2);
+    }
+    c.globalCompositeOperation = 'source-over';
+    // 뱀 (작은 것부터 → 큰 뱀이 위로)
+    const list = a.snakes.slice().sort((p, q) => p.mass - q.mass), S2 = { ...S, pl: a.player, leader: a.leaders(1)[0] };
+    for (const s of list) {
+      if (!s.pts.some((p, i) => i % 6 === 0 && inView(p[0], p[1], s.r * 2))) continue;
+      this.drawWorm(c, s, inView, z, S2);
+    }
+    // 입자 (월드 좌표)
+    this.drawParts(c, 1 / z);
+    c.restore();
+    for (const p of this.pops) { const al = 1 - p.t / 60; c.globalAlpha = al; this.text(p.text, ox + p.x * z, oy + p.y * z - p.t * 0.7, p.big ? 22 : 15, p.col); c.globalAlpha = 1; }
+    // 가장자리 어둡게
+    const vg = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.55)'); c.fillStyle = vg; c.fillRect(0, 0, W, H);
+    if (!S.demo) this.hudArena(a, S);
+    if (S.joy) { const j = S.joy; c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 2; c.beginPath(); c.arc(j.x, j.y, 46, 0, 7); c.stroke(); c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.arc(j.x + j.dx, j.y + j.dy, 20, 0, 7); c.fill(); }
+  }
+  drawWorm(c, s, inView, z, S) {
+    const sk = SKINS[s.skin] || SKINS[0], P = s.pts, n = P.length, al = s.alive ? 1 : Math.max(0, s.fade / 36);
+    c.globalAlpha = al;
+    // 달릴 때 빛
+    if (s.boost && s.alive) {
+      c.globalCompositeOperation = 'lighter'; const gs = this.glowSprite(sk[0]);
+      for (let i = n - 1; i >= 0; i -= 2) { const p = P[i]; if (!inView(p[0], p[1], 40)) continue; const R = s.r * 2.1 * (1 + Math.sin(this.f * 0.4 + i * 0.5) * 0.12); c.globalAlpha = al * 0.55; c.drawImage(gs, p[0] - R, p[1] - R, R * 2, R * 2); }
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = al;
+    }
+    const b0 = this.ballSprite(sk[0], sk[1]), b1 = this.ballSprite(sk[1], sk[1]);
+    const grow = s.alive ? 1 : 1 + (36 - s.fade) / 36 * 0.6;
+    // 꼬리 끝 마디 색: 초록 = 내가 잡아먹을 수 있음, 빨강 = 못 먹음(물면 내가 죽음), 노랑 = 내 꼬리
+    const pl = S.pl, tcol = !s.alive || !pl || !pl.alive || S.demo ? null : s === pl ? '#ffd23f' : pl.mass >= s.mass * EAT_RATIO ? '#3ee07a' : '#ff3c55';
+    if (tcol) {
+      c.globalCompositeOperation = 'lighter'; const gs = this.glowSprite(tcol), pul = 1 + Math.sin(this.f * 0.2) * 0.2;
+      for (let i = Math.max(0, n - TAIL_N); i < n; i++) { const p = P[i], R = s.r * 1.9 * pul; c.globalAlpha = al * 0.7; c.drawImage(gs, p[0] - R, p[1] - R, R * 2, R * 2); }
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = al;
+    }
+    const bt = tcol ? this.ballSprite(tcol, tcol) : null;
+    for (let i = n - 1; i >= 0; i--) {
+      const p = P[i]; if (!inView(p[0], p[1], s.r * 2)) continue;
+      const tl = n - 1 - i, r = s.r * grow * (tl < 6 ? 0.6 + tl * 0.066 : 1);
+      const spr = bt && tl < TAIL_N ? bt : Math.floor(i / 3) % 3 === 2 ? b1 : b0;
+      c.drawImage(spr, p[0] - r, p[1] - r, r * 2, r * 2);
+    }
+    // 머리
+    const look = s.player ? s.tang : s.ang;
+    const fakeCs = s.r * 2 / 0.92;
+    // 머리 테두리: 정면으로 부딪히면 어떻게 되나 (초록 = 내가 먹음, 빨강 = 내가 먹힘, 노랑 = 둘 다 죽음)
+    if (pl && pl.alive && s !== pl && s.alive && !S.demo) {
+      const hc = pl.mass >= s.mass * EAT_RATIO ? '#3ee07a' : s.mass >= pl.mass * EAT_RATIO ? '#ff3c55' : '#ffd23f';
+      c.strokeStyle = rgba(hc, 0.75); c.lineWidth = Math.max(1.5, 2.2 / z); c.beginPath(); c.arc(s.x + Math.cos(s.ang) * s.r * 0.1, s.y + Math.sin(s.ang) * s.r * 0.1, s.r * 1.45, 0, 7); c.stroke();
+    }
+    c.save(); this.f2 = this.f; this.drawHead(c, s.x, s.y, s.ang, fakeCs, sk, { look, seed: s.id * 13, dead: !s.alive }); c.restore();
+    if (S.leader === s && s.alive) this.crown(c, s.x, s.y - s.r * 1.9, s.r * 0.9);
+    // 이름
+    if (!s.player && s.alive && z > 0.45 && !S.demo) { c.font = `700 ${Math.round(12 / z)}px ${UI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(255,255,255,.55)'; c.fillText(s.name, s.x, s.y + s.r + 8 / z); }
+    c.globalAlpha = 1;
+  }
+  crown(c, x, y, k) {
+    c.save(); c.translate(x, y + Math.sin(this.f * 0.08) * k * 0.15); c.fillStyle = '#ffd23f'; c.strokeStyle = '#a06a00'; c.lineWidth = k * 0.12;
+    c.beginPath(); c.moveTo(-k, k * 0.5); c.lineTo(-k, -k * 0.3); c.lineTo(-k * 0.5, k * 0.1); c.lineTo(0, -k * 0.6); c.lineTo(k * 0.5, k * 0.1); c.lineTo(k, -k * 0.3); c.lineTo(k, k * 0.5); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#ff5d73'; c.beginPath(); c.arc(0, k * 0.15, k * 0.16, 0, 7); c.fill(); c.restore();
+  }
+  hudArena(a, S) {
+    const c = this.c, W = this.W, H = this.H, T = S.T, pl = a.player, small = W < 520;
+    const mass = pl ? Math.floor(Math.max(pl.mass, 0) * 10) : 0;
+    this.text(T.length, 16, 22, 12, 'rgba(220,230,255,.6)', { al: 'left', w: 700, sh: false });
+    this.text(String(mass), 16, 48, small ? 26 : 30, '#ffffff', { al: 'left', w: 900 });
+    if (pl && pl.alive) {
+      const rank = a.rankOf(pl), tot = a.snakes.filter(s => s.alive).length;
+      this.text(`${T.rank} ${rank} / ${tot}`, 16, 78, 13, '#ffd23f', { al: 'left', w: 700 });
+      this.text(`${T.ate} ${a.stats.eats} · ${T.kills} ${a.stats.kills}`, 16, 98, 13, '#ff8f9f', { al: 'left', w: 700 });
+    }
+    // 남은 시간
+    if (pl) {
+      const left = Math.max(0, Math.ceil((a.roundT - a.stats.time) / 60)), hurry = left <= 30 && pl.alive;
+      if (!hurry || (this.f >> 4) % 2 || left <= 10) {
+        this.text(T.timeLeft, W / 2, 20, 11, 'rgba(220,230,255,.6)', { w: 700, sh: false });
+        this.text(`${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`, W / 2, 44, small ? 24 : 28, hurry ? '#ff5d73' : '#ffffff', { w: 900 });
+      }
+    }
+    // 순위표
+    const L = a.leaders(small ? 3 : 5), lx = W - 14, ly = 64;
+    c.fillStyle = 'rgba(6,10,16,.5)'; rr(c, lx - (small ? 148 : 178), ly - 6, small ? 148 : 178, 24 + L.length * 20, 10); c.fill();
+    this.text(T.leaders, lx - (small ? 138 : 168), ly + 6, 12, 'rgba(220,230,255,.6)', { al: 'left', w: 800, sh: false });
+    L.forEach((s, i) => {
+      const y = ly + 26 + i * 20, me = s.player, col = me ? '#ffd23f' : '#e8f0ff';
+      this.text(`${i + 1}. ${me ? T.you : s.name}`, lx - (small ? 138 : 168), y, 13, col, { al: 'left', w: me ? 900 : 600, sh: false });
+      this.text(String(Math.floor(s.mass * 10)), lx - 10, y, 13, col, { al: 'right', w: 700, sh: false });
+    });
+    // 작은 지도
+    const mr = small ? 44 : 58, mx = W - mr - 14, my = H - mr - 14 - (S.ctrlH || 0);
+    c.fillStyle = 'rgba(6,10,16,.55)'; c.beginPath(); c.arc(mx, my, mr, 0, 7); c.fill(); c.strokeStyle = 'rgba(255,60,85,.5)'; c.lineWidth = 1.5; c.stroke();
+    for (const s of a.leaders(4)) if (!s.player) { c.fillStyle = rgba(SKINS[s.skin][0], 0.8); c.beginPath(); c.arc(mx + s.x / AR * mr, my + s.y / AR * mr, 2.5, 0, 7); c.fill(); }
+    if (pl && pl.alive) { c.fillStyle = '#ffffff'; c.beginPath(); c.arc(mx + pl.x / AR * mr, my + pl.y / AR * mr, 3.5, 0, 7); c.fill(); }
+    // 쓰러뜨린 소식
+    this.feed.forEach((m, i) => { const al = Math.min(1, (m.until - this.f) / 30); c.globalAlpha = Math.max(0, al); this.text(m.text, 16, H - 24 - (S.ctrlH || 0) - i * 22, 13, m.col, { al: 'left', w: 700 }); c.globalAlpha = 1; });
+    this.feed = this.feed.filter(m => m.until > this.f);
+    this.drawToasts(W / 2, H * 0.3);
+  }
+  addFeed(text, col) { this.feed.unshift({ text, col, until: this.f + 240 }); this.feed.length = Math.min(this.feed.length, 4); }
 }
 
-function resumeGame() {
-  gamePaused = false;
-  document.getElementById('pauseOverlay').style.display = 'none';
-  const btn = document.getElementById('playBtn');
-  btn.textContent = T.stop; btn.className = 'btn btn-stop';
-  loopTimer = setTimeout(gameLoop, getInterval());
-  document.body.focus();
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+// 서버가 const LANG 에 사용자 언어를 넣는다. 없는 언어는 영어로.
+const TX = {
+  ko: {
+    title: '뱀 게임', tag: '클래식 · 미로 · 아레나',
+    modes: { classic: ['클래식', '사과를 먹고 길어져라. 내 몸에 부딪히면 끝'], maze: ['미로 모험', '스테이지 20개. 사과를 다 모으면 출구가 열린다'], arena: ['아레나', '5분 동안 먹고 사냥해서 1위를 노려라'] },
+    start: '시작', back: '뒤로', cont: '이어하기 · 스테이지 {n}', fromStart: '처음부터',
+    walls: '가장자리', wallsOn: '벽', wallsOff: '통과', speed: '속도', speeds: ['느림', '보통', '빠름', '아주 빠름'],
+    settings: '설정', records: '기록', help: '조작법', done: '확인',
+    pause: '일시정지', resume: '계속하기', restart: '다시 시작', toMenu: '메뉴로', again: '다시 하기', menu: '메뉴', newRec: '★ 새 기록 ★', none: '아직 기록이 없습니다',
+    score: '점수', best: '최고', length: '길이', speedL: '속도', stageL: '스테이지', apples: '사과', exitShort: '출구!',
+    stageN: '스테이지 {n}', readyHint: '방향키를 누르면 출발', readyTouch: '화면을 밀면 출발', stageClear: '스테이지 {n} 통과!', timeBonus: '시간 보너스', stageBonus: '스테이지 보너스',
+    exitOpen: '출구가 열렸다!', oneMore: '한 번 더!', over: '게임 오버', won: '모든 스테이지 정복!', full: '판을 가득 채웠다!', bonusMsg: '보너스 먹이!',
+    ate: "잡아먹음", timeLeft: "남은 시간", roundOver: "시간 종료!", placeN: "{n}위", ofN: "{n}마리 중", youAte: "{n} 잡아먹음!", eatenBy: "{n}에게 잡아먹혔다", feedEat: "{a} ⟵ {b}", finalRank: "최종 순위",
+    rank: '순위', kills: '쓰러뜨림', leaders: '순위표', you: '나', killedBy: '{n}에게 당했다', crashed: '경기장 끝에 부딪혔다', youKilled: '{n} 쓰러뜨림!', feed: '{a} ▸ {b}',
+    finalLen: '최종 길이', maxLen: '최대 길이', bestRank: '최고 순위', time: '시간', eaten: '먹은 사과', reached: '도달한 스테이지', bonusN: '보너스 먹이',
+    music: '음악', musicNames: { auto: '모드별 자동', A: '카이로의 거리', B: '사과 밭', C: '네온 아레나', off: '끔' },
+    mv: '음악 볼륨', sv: '효과음 볼륨', shake: '화면 흔들림', fx: '효과 입자', grid: '바닥 점', skin: '뱀 색', dpad: '방향 단추', on: '켬', off: '끔',
+    keys: [['← ↑ → ↓ / WASD', '방향 바꾸기 (클래식 · 미로)'], ['마우스 · 방향키', '방향 (아레나)'], ['클릭 · Space', '빨리 달리기 (아레나, 몸이 줄어든다)'], ['화면 밀기', '방향 (휴대폰, 클래식 · 미로)'], ['화면 끌기', '방향 (휴대폰, 아레나)'], ['Esc / P', '일시정지'], ['M', '소리 끄기·켜기']],
+    tips: ['클래식: 사과를 먹을수록 빨라진다. 덤 먹이는 빨리 먹을수록 점수가 크다', '미로: 포털로 들어가면 같은 색 포털로 나온다', "아레나: 나보다 작은 뱀의 꼬리 끝(초록)이나 머리를 물면 통째로 잡아먹는다. 빨간 꼬리는 물면 내가 죽고, 몸통에 머리가 닿아도 죽는다. 노란 꼬리는 내 약점"],
+  },
+  en: {
+    title: 'Snake', tag: 'CLASSIC · MAZE · ARENA',
+    modes: { classic: ['Classic', 'Eat apples and grow. Hit yourself and it is over'], maze: ['Maze Quest', '20 stages. Collect every apple to open the exit'], arena: ['Arena', 'Eat and hunt for 5 minutes. Aim for #1'] },
+    start: 'Start', back: 'Back', cont: 'Continue · Stage {n}', fromStart: 'From stage 1',
+    walls: 'Edges', wallsOn: 'Walls', wallsOff: 'Wrap', speed: 'Speed', speeds: ['Slow', 'Normal', 'Fast', 'Very fast'],
+    settings: 'Settings', records: 'Records', help: 'Controls', done: 'Done',
+    pause: 'Paused', resume: 'Resume', restart: 'Restart', toMenu: 'Menu', again: 'Play Again', menu: 'Menu', newRec: '★ NEW RECORD ★', none: 'No records yet',
+    score: 'SCORE', best: 'BEST', length: 'LENGTH', speedL: 'SPEED', stageL: 'STAGE', apples: 'APPLES', exitShort: 'EXIT!',
+    stageN: 'Stage {n}', readyHint: 'Press an arrow key to go', readyTouch: 'Swipe to go', stageClear: 'Stage {n} clear!', timeBonus: 'Time bonus', stageBonus: 'Stage bonus',
+    exitOpen: 'The exit is open!', oneMore: 'Try again!', over: 'Game Over', won: 'Every stage conquered!', full: 'You filled the board!', bonusMsg: 'Bonus snack!',
+    ate: "Eaten", timeLeft: "TIME LEFT", roundOver: "Time up!", placeN: "#{n}", ofN: "of {n} snakes", youAte: "Ate {n}!", eatenBy: "Eaten by {n}", feedEat: "{a} ⟵ {b}", finalRank: "Final rank",
+    rank: 'Rank', kills: 'Kills', leaders: 'Leaderboard', you: 'You', killedBy: 'Taken down by {n}', crashed: 'Hit the arena edge', youKilled: '{n} down!', feed: '{a} ▸ {b}',
+    finalLen: 'Final length', maxLen: 'Max length', bestRank: 'Best rank', time: 'Time', eaten: 'Apples eaten', reached: 'Stage reached', bonusN: 'Bonus snacks',
+    music: 'Music', musicNames: { auto: 'Auto (per mode)', A: 'Streets of Cairo', B: 'Apple Orchard', C: 'Neon Arena', off: 'Off' },
+    mv: 'Music volume', sv: 'Sound volume', shake: 'Screen shake', fx: 'Particles', grid: 'Floor dots', skin: 'Snake color', dpad: 'Arrow buttons', on: 'On', off: 'Off',
+    keys: [['← ↑ → ↓ / WASD', 'Turn (Classic · Maze)'], ['Mouse · Arrows', 'Steer (Arena)'], ['Click · Space', 'Boost (Arena, costs length)'], ['Swipe', 'Turn (phone, Classic · Maze)'], ['Drag', 'Steer (phone, Arena)'], ['Esc / P', 'Pause'], ['M', 'Mute']],
+    tips: ['Classic: you speed up as you eat. Bonus snacks are worth more the faster you get them', 'Maze: enter a portal and you come out of the one with the same color', "Arena: bite the tail tip (green) or head of a smaller snake to swallow it whole. Biting a red tail kills you, and so does hitting any body. The yellow tail is your weak spot"],
+  },
+  ja: {
+    title: 'スネーク', tag: 'クラシック · 迷路 · アリーナ',
+    modes: { classic: ['クラシック', 'リンゴを食べて伸びよう。自分の体にぶつかったら終わり'], maze: ['迷路アドベンチャー', '全20ステージ。リンゴを全部集めると出口が開く'], arena: ['アリーナ', '5分間食べて狩って1位を目指せ'] },
+    start: 'スタート', back: '戻る', cont: '続きから · ステージ {n}', fromStart: '最初から',
+    walls: '端', wallsOn: '壁', wallsOff: '通り抜け', speed: 'スピード', speeds: ['ゆっくり', 'ふつう', '速い', 'とても速い'],
+    settings: '設定', records: '記録', help: '操作方法', done: 'OK',
+    pause: '一時停止', resume: '再開', restart: 'やり直す', toMenu: 'メニューへ', again: 'もう一度', menu: 'メニュー', newRec: '★ 新記録 ★', none: 'まだ記録がありません',
+    score: 'スコア', best: 'ベスト', length: '長さ', speedL: 'スピード', stageL: 'ステージ', apples: 'リンゴ', exitShort: '出口!',
+    stageN: 'ステージ {n}', readyHint: '矢印キーでスタート', readyTouch: 'スワイプでスタート', stageClear: 'ステージ {n} クリア!', timeBonus: 'タイムボーナス', stageBonus: 'ステージボーナス',
+    exitOpen: '出口が開いた!', oneMore: 'もう一回!', over: 'ゲームオーバー', won: '全ステージ制覇!', full: '盤面を埋め尽くした!', bonusMsg: 'ボーナスのエサ!',
+    ate: "丸のみ", timeLeft: "残り時間", roundOver: "タイムアップ!", placeN: "{n}位", ofN: "{n}匹中", youAte: "{n} を丸のみ!", eatenBy: "{n} に丸のみされた", feedEat: "{a} ⟵ {b}", finalRank: "最終順位",
+    rank: '順位', kills: '撃破', leaders: 'ランキング', you: 'あなた', killedBy: '{n} にやられた', crashed: 'アリーナの端にぶつかった', youKilled: '{n} を撃破!', feed: '{a} ▸ {b}',
+    finalLen: '最終の長さ', maxLen: '最大の長さ', bestRank: '最高順位', time: '時間', eaten: '食べたリンゴ', reached: '到達ステージ', bonusN: 'ボーナスのエサ',
+    music: '音楽', musicNames: { auto: 'モードごとに自動', A: 'カイロの通り', B: 'リンゴ畑', C: 'ネオンアリーナ', off: 'オフ' },
+    mv: '音楽の音量', sv: '効果音の音量', shake: '画面の揺れ', fx: 'パーティクル', grid: '床の点', skin: 'ヘビの色', dpad: '方向ボタン', on: 'オン', off: 'オフ',
+    keys: [['← ↑ → ↓ / WASD', '向きを変える (クラシック · 迷路)'], ['マウス · 矢印キー', '向き (アリーナ)'], ['クリック · Space', 'ダッシュ (アリーナ、体が縮む)'], ['スワイプ', '向き (スマホ、クラシック · 迷路)'], ['ドラッグ', '向き (スマホ、アリーナ)'], ['Esc / P', '一時停止'], ['M', '消音']],
+    tips: ['クラシック: 食べるほど速くなる。ボーナスのエサは早く食べるほど高得点', '迷路: ポータルに入ると同じ色のポータルから出る', "アリーナ: 自分より小さいヘビのしっぽの先(緑)か頭にかみつくと丸のみできる。赤いしっぽにかみつくと自分が死に、胴体に頭が当たっても死ぬ。黄色いしっぽは自分の弱点"],
+  },
+  zh: {
+    title: '贪吃蛇', tag: '经典 · 迷宫 · 竞技场',
+    modes: { classic: ['经典', '吃苹果变长，撞到自己就结束'], maze: ['迷宫冒险', '共20关，吃完苹果出口就会打开'], arena: ['竞技场', '5 分钟内吃食物、捕猎，争夺第一'] },
+    start: '开始', back: '返回', cont: '继续 · 第 {n} 关', fromStart: '从头开始',
+    walls: '边缘', wallsOn: '墙', wallsOff: '穿越', speed: '速度', speeds: ['慢', '普通', '快', '极快'],
+    settings: '设置', records: '记录', help: '操作说明', done: '确定',
+    pause: '暂停', resume: '继续', restart: '重新开始', toMenu: '返回菜单', again: '再玩一次', menu: '菜单', newRec: '★ 新纪录 ★', none: '还没有记录',
+    score: '分数', best: '最高', length: '长度', speedL: '速度', stageL: '关卡', apples: '苹果', exitShort: '出口!',
+    stageN: '第 {n} 关', readyHint: '按方向键出发', readyTouch: '滑动屏幕出发', stageClear: '第 {n} 关通过!', timeBonus: '时间奖励', stageBonus: '关卡奖励',
+    exitOpen: '出口打开了!', oneMore: '再来一次!', over: '游戏结束', won: '全部关卡通关!', full: '填满了整个棋盘!', bonusMsg: '奖励食物!',
+    ate: "吞掉", timeLeft: "剩余时间", roundOver: "时间到!", placeN: "第 {n} 名", ofN: "共 {n} 条蛇", youAte: "吞掉了 {n}!", eatenBy: "被 {n} 吞掉了", feedEat: "{a} ⟵ {b}", finalRank: "最终排名",
+    rank: '排名', kills: '击败', leaders: '排行榜', you: '我', killedBy: '被 {n} 击败', crashed: '撞到了竞技场边缘', youKilled: '击败 {n}!', feed: '{a} ▸ {b}',
+    finalLen: '最终长度', maxLen: '最大长度', bestRank: '最高排名', time: '时间', eaten: '吃掉的苹果', reached: '到达关卡', bonusN: '奖励食物',
+    music: '音乐', musicNames: { auto: '按模式自动', A: '开罗街头', B: '苹果园', C: '霓虹竞技场', off: '关' },
+    mv: '音乐音量', sv: '音效音量', shake: '屏幕震动', fx: '粒子特效', grid: '地面圆点', skin: '蛇的颜色', dpad: '方向按钮', on: '开', off: '关',
+    keys: [['← ↑ → ↓ / WASD', '转向 (经典 · 迷宫)'], ['鼠标 · 方向键', '方向 (竞技场)'], ['点击 · Space', '加速 (竞技场，身体会变短)'], ['滑动', '转向 (手机，经典 · 迷宫)'], ['拖动', '方向 (手机，竞技场)'], ['Esc / P', '暂停'], ['M', '静音']],
+    tips: ['经典：吃得越多越快。奖励食物越早吃分越高', '迷宫：进入传送门会从同色的传送门出来', "竞技场：咬住比你小的蛇的尾尖(绿色)或头就能整条吞掉。咬红色尾巴你会死，头撞到身体也会死。黄色尾巴是你的弱点"],
+  },
+  'zh-TW': {
+    title: '貪食蛇', tag: '經典 · 迷宮 · 競技場',
+    modes: { classic: ['經典', '吃蘋果變長，撞到自己就結束'], maze: ['迷宮冒險', '共20關，吃完蘋果出口就會打開'], arena: ['競技場', '5 分鐘內吃食物、狩獵，爭奪第一'] },
+    start: '開始', back: '返回', cont: '繼續 · 第 {n} 關', fromStart: '從頭開始',
+    walls: '邊緣', wallsOn: '牆', wallsOff: '穿越', speed: '速度', speeds: ['慢', '普通', '快', '極快'],
+    settings: '設定', records: '紀錄', help: '操作說明', done: '確定',
+    pause: '暫停', resume: '繼續', restart: '重新開始', toMenu: '回到選單', again: '再玩一次', menu: '選單', newRec: '★ 新紀錄 ★', none: '還沒有紀錄',
+    score: '分數', best: '最高', length: '長度', speedL: '速度', stageL: '關卡', apples: '蘋果', exitShort: '出口!',
+    stageN: '第 {n} 關', readyHint: '按方向鍵出發', readyTouch: '滑動螢幕出發', stageClear: '第 {n} 關通過!', timeBonus: '時間獎勵', stageBonus: '關卡獎勵',
+    exitOpen: '出口打開了!', oneMore: '再來一次!', over: '遊戲結束', won: '全部關卡破關!', full: '填滿了整個棋盤!', bonusMsg: '獎勵食物!',
+    ate: "吞掉", timeLeft: "剩餘時間", roundOver: "時間到!", placeN: "第 {n} 名", ofN: "共 {n} 條蛇", youAte: "吞掉了 {n}!", eatenBy: "被 {n} 吞掉了", feedEat: "{a} ⟵ {b}", finalRank: "最終排名",
+    rank: '排名', kills: '擊敗', leaders: '排行榜', you: '我', killedBy: '被 {n} 擊敗', crashed: '撞到了競技場邊緣', youKilled: '擊敗 {n}!', feed: '{a} ▸ {b}',
+    finalLen: '最終長度', maxLen: '最大長度', bestRank: '最高排名', time: '時間', eaten: '吃掉的蘋果', reached: '到達關卡', bonusN: '獎勵食物',
+    music: '音樂', musicNames: { auto: '依模式自動', A: '開羅街頭', B: '蘋果園', C: '霓虹競技場', off: '關' },
+    mv: '音樂音量', sv: '音效音量', shake: '畫面震動', fx: '粒子特效', grid: '地面圓點', skin: '蛇的顏色', dpad: '方向按鈕', on: '開', off: '關',
+    keys: [['← ↑ → ↓ / WASD', '轉向 (經典 · 迷宮)'], ['滑鼠 · 方向鍵', '方向 (競技場)'], ['點擊 · Space', '加速 (競技場，身體會變短)'], ['滑動', '轉向 (手機，經典 · 迷宮)'], ['拖曳', '方向 (手機，競技場)'], ['Esc / P', '暫停'], ['M', '靜音']],
+    tips: ['經典：吃得越多越快。獎勵食物越早吃分數越高', '迷宮：進入傳送門會從同色的傳送門出來', "競技場：咬住比你小的蛇的尾尖(綠色)或頭就能整條吞掉。咬紅色尾巴你會死，頭撞到身體也會死。黃色尾巴是你的弱點"],
+  },
+  es: {
+    title: 'Serpiente', tag: 'CLÁSICO · LABERINTO · ARENA',
+    modes: { classic: ['Clásico', 'Come manzanas y crece. Si chocas contigo, se acabó'], maze: ['Aventura laberinto', '20 niveles. Reúne todas las manzanas para abrir la salida'], arena: ['Arena', 'Come y caza durante 5 minutos. Busca el primer puesto'] },
+    start: 'Empezar', back: 'Atrás', cont: 'Continuar · Nivel {n}', fromStart: 'Desde el nivel 1',
+    walls: 'Bordes', wallsOn: 'Muros', wallsOff: 'Atravesar', speed: 'Velocidad', speeds: ['Lenta', 'Normal', 'Rápida', 'Muy rápida'],
+    settings: 'Ajustes', records: 'Récords', help: 'Controles', done: 'Listo',
+    pause: 'Pausa', resume: 'Continuar', restart: 'Reiniciar', toMenu: 'Menú', again: 'Jugar otra vez', menu: 'Menú', newRec: '★ NUEVO RÉCORD ★', none: 'Aún no hay récords',
+    score: 'PUNTOS', best: 'MEJOR', length: 'LARGO', speedL: 'VELOCIDAD', stageL: 'NIVEL', apples: 'MANZANAS', exitShort: '¡SALIDA!',
+    stageN: 'Nivel {n}', readyHint: 'Pulsa una flecha para salir', readyTouch: 'Desliza para salir', stageClear: '¡Nivel {n} superado!', timeBonus: 'Bono de tiempo', stageBonus: 'Bono de nivel',
+    exitOpen: '¡La salida está abierta!', oneMore: '¡Otra vez!', over: 'Fin del juego', won: '¡Todos los niveles conquistados!', full: '¡Llenaste el tablero!', bonusMsg: '¡Bocado extra!',
+    ate: "Tragadas", timeLeft: "TIEMPO", roundOver: "¡Tiempo!", placeN: "Puesto {n}", ofN: "de {n} serpientes", youAte: "¡Te tragaste a {n}!", eatenBy: "Te tragó {n}", feedEat: "{a} ⟵ {b}", finalRank: "Puesto final",
+    rank: 'Puesto', kills: 'Derribos', leaders: 'Clasificación', you: 'Tú', killedBy: 'Te derribó {n}', crashed: 'Chocaste con el borde', youKilled: '¡{n} derribado!', feed: '{a} ▸ {b}',
+    finalLen: 'Largo final', maxLen: 'Largo máximo', bestRank: 'Mejor puesto', time: 'Tiempo', eaten: 'Manzanas comidas', reached: 'Nivel alcanzado', bonusN: 'Bocados extra',
+    music: 'Música', musicNames: { auto: 'Automática por modo', A: 'Calles de El Cairo', B: 'Huerto de manzanas', C: 'Arena de neón', off: 'No' },
+    mv: 'Volumen de música', sv: 'Volumen de efectos', shake: 'Temblor de pantalla', fx: 'Partículas', grid: 'Puntos del suelo', skin: 'Color de serpiente', dpad: 'Botones de dirección', on: 'Sí', off: 'No',
+    keys: [['← ↑ → ↓ / WASD', 'Girar (Clásico · Laberinto)'], ['Ratón · Flechas', 'Dirigir (Arena)'], ['Clic · Espacio', 'Acelerar (Arena, cuesta largo)'], ['Deslizar', 'Girar (móvil, Clásico · Laberinto)'], ['Arrastrar', 'Dirigir (móvil, Arena)'], ['Esc / P', 'Pausa'], ['M', 'Silenciar']],
+    tips: ['Clásico: vas más rápido cuanto más comes. Los bocados extra valen más si los comes pronto', 'Laberinto: entra en un portal y saldrás por el del mismo color', "Arena: muerde la punta de la cola (verde) o la cabeza de una serpiente más pequeña para tragarla entera. Morder una cola roja te mata, y chocar con un cuerpo también. La cola amarilla es tu punto débil"],
+  },
+  fr: {
+    title: 'Serpent', tag: 'CLASSIQUE · LABYRINTHE · ARÈNE',
+    modes: { classic: ['Classique', 'Mangez des pommes et grandissez. Touchez-vous et c’est fini'], maze: ['Aventure labyrinthe', '20 niveaux. Ramassez toutes les pommes pour ouvrir la sortie'], arena: ['Arène', 'Mangez et chassez pendant 5 minutes. Visez la 1re place'] },
+    start: 'Jouer', back: 'Retour', cont: 'Continuer · Niveau {n}', fromStart: 'Depuis le niveau 1',
+    walls: 'Bords', wallsOn: 'Murs', wallsOff: 'Traverser', speed: 'Vitesse', speeds: ['Lente', 'Normale', 'Rapide', 'Très rapide'],
+    settings: 'Réglages', records: 'Records', help: 'Commandes', done: 'OK',
+    pause: 'Pause', resume: 'Reprendre', restart: 'Recommencer', toMenu: 'Menu', again: 'Rejouer', menu: 'Menu', newRec: '★ NOUVEAU RECORD ★', none: 'Pas encore de record',
+    score: 'SCORE', best: 'RECORD', length: 'LONGUEUR', speedL: 'VITESSE', stageL: 'NIVEAU', apples: 'POMMES', exitShort: 'SORTIE !',
+    stageN: 'Niveau {n}', readyHint: 'Appuyez sur une flèche pour partir', readyTouch: 'Glissez pour partir', stageClear: 'Niveau {n} réussi !', timeBonus: 'Bonus de temps', stageBonus: 'Bonus de niveau',
+    exitOpen: 'La sortie est ouverte !', oneMore: 'Encore une fois !', over: 'Partie terminée', won: 'Tous les niveaux conquis !', full: 'Vous avez rempli le plateau !', bonusMsg: 'Friandise bonus !',
+    ate: "Avalés", timeLeft: "TEMPS", roundOver: "Temps écoulé !", placeN: "{n}e", ofN: "sur {n} serpents", youAte: "{n} avalé !", eatenBy: "Avalé par {n}", feedEat: "{a} ⟵ {b}", finalRank: "Rang final",
+    rank: 'Rang', kills: 'Éliminations', leaders: 'Classement', you: 'Vous', killedBy: 'Éliminé par {n}', crashed: 'Vous avez heurté le bord', youKilled: '{n} éliminé !', feed: '{a} ▸ {b}',
+    finalLen: 'Longueur finale', maxLen: 'Longueur max', bestRank: 'Meilleur rang', time: 'Temps', eaten: 'Pommes mangées', reached: 'Niveau atteint', bonusN: 'Friandises bonus',
+    music: 'Musique', musicNames: { auto: 'Auto selon le mode', A: 'Les rues du Caire', B: 'Le verger', C: 'Arène néon', off: 'Non' },
+    mv: 'Volume musique', sv: 'Volume effets', shake: 'Secousses', fx: 'Particules', grid: 'Points au sol', skin: 'Couleur du serpent', dpad: 'Boutons de direction', on: 'Oui', off: 'Non',
+    keys: [['← ↑ → ↓ / WASD', 'Tourner (Classique · Labyrinthe)'], ['Souris · Flèches', 'Diriger (Arène)'], ['Clic · Espace', 'Accélérer (Arène, coûte de la longueur)'], ['Glisser', 'Tourner (mobile, Classique · Labyrinthe)'], ['Faire glisser', 'Diriger (mobile, Arène)'], ['Échap / P', 'Pause'], ['M', 'Couper le son']],
+    tips: ['Classique : plus vous mangez, plus vous allez vite. Les friandises rapportent plus si vous les attrapez vite', 'Labyrinthe : entrez dans un portail et ressortez par celui de même couleur', "Arène : mordez le bout de la queue (vert) ou la tête d’un serpent plus petit pour l’avaler entier. Mordre une queue rouge vous tue, tout comme heurter un corps. La queue jaune est votre point faible"],
+  },
+  de: {
+    title: 'Snake', tag: 'KLASSISCH · LABYRINTH · ARENA',
+    modes: { classic: ['Klassisch', 'Iss Äpfel und wachse. Triffst du dich selbst, ist Schluss'], maze: ['Labyrinth-Abenteuer', '20 Level. Sammle alle Äpfel, dann öffnet sich der Ausgang'], arena: ['Arena', '5 Minuten fressen und jagen. Ziel: Platz 1'] },
+    start: 'Start', back: 'Zurück', cont: 'Weiter · Level {n}', fromStart: 'Ab Level 1',
+    walls: 'Ränder', wallsOn: 'Wände', wallsOff: 'Durchgehen', speed: 'Tempo', speeds: ['Langsam', 'Normal', 'Schnell', 'Sehr schnell'],
+    settings: 'Einstellungen', records: 'Rekorde', help: 'Steuerung', done: 'Fertig',
+    pause: 'Pause', resume: 'Weiter', restart: 'Neu starten', toMenu: 'Menü', again: 'Nochmal', menu: 'Menü', newRec: '★ NEUER REKORD ★', none: 'Noch keine Rekorde',
+    score: 'PUNKTE', best: 'BESTWERT', length: 'LÄNGE', speedL: 'TEMPO', stageL: 'LEVEL', apples: 'ÄPFEL', exitShort: 'AUSGANG!',
+    stageN: 'Level {n}', readyHint: 'Pfeiltaste drücken zum Losfahren', readyTouch: 'Wischen zum Losfahren', stageClear: 'Level {n} geschafft!', timeBonus: 'Zeitbonus', stageBonus: 'Levelbonus',
+    exitOpen: 'Der Ausgang ist offen!', oneMore: 'Noch einmal!', over: 'Spiel vorbei', won: 'Alle Level erobert!', full: 'Du hast das Feld gefüllt!', bonusMsg: 'Bonus-Happen!',
+    ate: "Verschlungen", timeLeft: "RESTZEIT", roundOver: "Zeit um!", placeN: "Platz {n}", ofN: "von {n} Schlangen", youAte: "{n} verschlungen!", eatenBy: "Von {n} verschlungen", feedEat: "{a} ⟵ {b}", finalRank: "Endplatz",
+    rank: 'Platz', kills: 'Siege', leaders: 'Bestenliste', you: 'Du', killedBy: 'Besiegt von {n}', crashed: 'Gegen den Rand geprallt', youKilled: '{n} besiegt!', feed: '{a} ▸ {b}',
+    finalLen: 'Endlänge', maxLen: 'Maximale Länge', bestRank: 'Bester Platz', time: 'Zeit', eaten: 'Gegessene Äpfel', reached: 'Erreichtes Level', bonusN: 'Bonus-Happen',
+    music: 'Musik', musicNames: { auto: 'Automatisch je Modus', A: 'Straßen von Kairo', B: 'Apfelgarten', C: 'Neon-Arena', off: 'Aus' },
+    mv: 'Musiklautstärke', sv: 'Effektlautstärke', shake: 'Bildschirmwackeln', fx: 'Partikel', grid: 'Bodenpunkte', skin: 'Schlangenfarbe', dpad: 'Richtungstasten', on: 'An', off: 'Aus',
+    keys: [['← ↑ → ↓ / WASD', 'Abbiegen (Klassisch · Labyrinth)'], ['Maus · Pfeiltasten', 'Lenken (Arena)'], ['Klick · Leertaste', 'Boost (Arena, kostet Länge)'], ['Wischen', 'Abbiegen (Handy, Klassisch · Labyrinth)'], ['Ziehen', 'Lenken (Handy, Arena)'], ['Esc / P', 'Pause'], ['M', 'Ton aus']],
+    tips: ['Klassisch: Je mehr du isst, desto schneller wirst du. Bonus-Happen bringen mehr, je früher du sie erwischst', 'Labyrinth: Gehst du in ein Portal, kommst du aus dem gleichfarbigen wieder heraus', "Arena: Beiß die Schwanzspitze (grün) oder den Kopf einer kleineren Schlange, um sie ganz zu verschlingen. Ein roter Schwanz ist tödlich für dich, ebenso jeder Körper. Der gelbe Schwanz ist deine Schwachstelle"],
+  },
+  pt: {
+    title: 'Cobrinha', tag: 'CLÁSSICO · LABIRINTO · ARENA',
+    modes: { classic: ['Clássico', 'Coma maçãs e cresça. Bateu em si mesmo, acabou'], maze: ['Aventura no labirinto', '20 fases. Pegue todas as maçãs para abrir a saída'], arena: ['Arena', 'Coma e cace por 5 minutos. Busque o 1º lugar'] },
+    start: 'Jogar', back: 'Voltar', cont: 'Continuar · Fase {n}', fromStart: 'Desde a fase 1',
+    walls: 'Bordas', wallsOn: 'Paredes', wallsOff: 'Atravessar', speed: 'Velocidade', speeds: ['Lenta', 'Normal', 'Rápida', 'Muito rápida'],
+    settings: 'Configurações', records: 'Recordes', help: 'Controles', done: 'OK',
+    pause: 'Pausado', resume: 'Continuar', restart: 'Reiniciar', toMenu: 'Menu', again: 'Jogar de novo', menu: 'Menu', newRec: '★ NOVO RECORDE ★', none: 'Ainda não há recordes',
+    score: 'PONTOS', best: 'MELHOR', length: 'TAMANHO', speedL: 'VELOCIDADE', stageL: 'FASE', apples: 'MAÇÃS', exitShort: 'SAÍDA!',
+    stageN: 'Fase {n}', readyHint: 'Aperte uma seta para sair', readyTouch: 'Deslize para sair', stageClear: 'Fase {n} concluída!', timeBonus: 'Bônus de tempo', stageBonus: 'Bônus da fase',
+    exitOpen: 'A saída abriu!', oneMore: 'Mais uma vez!', over: 'Fim de jogo', won: 'Todas as fases conquistadas!', full: 'Você encheu o tabuleiro!', bonusMsg: 'Petisco bônus!',
+    ate: "Engolidas", timeLeft: "TEMPO", roundOver: "Tempo esgotado!", placeN: "{n}º", ofN: "de {n} cobras", youAte: "Engoliu {n}!", eatenBy: "Engolido por {n}", feedEat: "{a} ⟵ {b}", finalRank: "Posição final",
+    rank: 'Posição', kills: 'Abates', leaders: 'Ranking', you: 'Você', killedBy: 'Abatido por {n}', crashed: 'Bateu na borda da arena', youKilled: '{n} abatido!', feed: '{a} ▸ {b}',
+    finalLen: 'Tamanho final', maxLen: 'Tamanho máximo', bestRank: 'Melhor posição', time: 'Tempo', eaten: 'Maçãs comidas', reached: 'Fase alcançada', bonusN: 'Petiscos bônus',
+    music: 'Música', musicNames: { auto: 'Automática por modo', A: 'Ruas do Cairo', B: 'Pomar de maçãs', C: 'Arena neon', off: 'Desligada' },
+    mv: 'Volume da música', sv: 'Volume dos efeitos', shake: 'Tremor de tela', fx: 'Partículas', grid: 'Pontos no chão', skin: 'Cor da cobra', dpad: 'Botões de direção', on: 'Ligado', off: 'Desligado',
+    keys: [['← ↑ → ↓ / WASD', 'Virar (Clássico · Labirinto)'], ['Mouse · Setas', 'Direção (Arena)'], ['Clique · Espaço', 'Acelerar (Arena, custa tamanho)'], ['Deslizar', 'Virar (celular, Clássico · Labirinto)'], ['Arrastar', 'Direção (celular, Arena)'], ['Esc / P', 'Pausar'], ['M', 'Silenciar']],
+    tips: ['Clássico: quanto mais você come, mais rápido fica. Petiscos bônus valem mais se pegos logo', 'Labirinto: entre num portal e saia pelo da mesma cor', "Arena: morda a ponta da cauda (verde) ou a cabeça de uma cobra menor para engoli-la inteira. Morder uma cauda vermelha mata você, assim como bater num corpo. A cauda amarela é o seu ponto fraco"],
+  },
+  ru: {
+    title: 'Змейка', tag: 'КЛАССИКА · ЛАБИРИНТ · АРЕНА',
+    modes: { classic: ['Классика', 'Ешь яблоки и расти. Врежешься в себя — конец'], maze: ['Лабиринт', '20 уровней. Собери все яблоки, и откроется выход'], arena: ['Арена', '5 минут ешь и охоться. Стань первым'] },
+    start: 'Начать', back: 'Назад', cont: 'Продолжить · уровень {n}', fromStart: 'С первого уровня',
+    walls: 'Края', wallsOn: 'Стены', wallsOff: 'Сквозь', speed: 'Скорость', speeds: ['Медленно', 'Обычно', 'Быстро', 'Очень быстро'],
+    settings: 'Настройки', records: 'Рекорды', help: 'Управление', done: 'Готово',
+    pause: 'Пауза', resume: 'Продолжить', restart: 'Заново', toMenu: 'В меню', again: 'Ещё раз', menu: 'Меню', newRec: '★ НОВЫЙ РЕКОРД ★', none: 'Рекордов пока нет',
+    score: 'ОЧКИ', best: 'РЕКОРД', length: 'ДЛИНА', speedL: 'СКОРОСТЬ', stageL: 'УРОВЕНЬ', apples: 'ЯБЛОКИ', exitShort: 'ВЫХОД!',
+    stageN: 'Уровень {n}', readyHint: 'Нажми стрелку, чтобы начать', readyTouch: 'Проведи по экрану, чтобы начать', stageClear: 'Уровень {n} пройден!', timeBonus: 'Бонус за время', stageBonus: 'Бонус за уровень',
+    exitOpen: 'Выход открыт!', oneMore: 'Ещё попытка!', over: 'Игра окончена', won: 'Все уровни пройдены!', full: 'Ты заполнил всё поле!', bonusMsg: 'Бонусная еда!',
+    ate: "Проглочено", timeLeft: "ОСТАЛОСЬ", roundOver: "Время вышло!", placeN: "{n}-е место", ofN: "из {n} змей", youAte: "{n} проглочен!", eatenBy: "Тебя проглотил {n}", feedEat: "{a} ⟵ {b}", finalRank: "Итоговое место",
+    rank: 'Место', kills: 'Победы', leaders: 'Лидеры', you: 'Ты', killedBy: 'Тебя победил {n}', crashed: 'Врезался в край арены', youKilled: '{n} повержен!', feed: '{a} ▸ {b}',
+    finalLen: 'Итоговая длина', maxLen: 'Макс. длина', bestRank: 'Лучшее место', time: 'Время', eaten: 'Съедено яблок', reached: 'Пройдено до уровня', bonusN: 'Бонусная еда',
+    music: 'Музыка', musicNames: { auto: 'Авто по режиму', A: 'Улицы Каира', B: 'Яблоневый сад', C: 'Неоновая арена', off: 'Выкл' },
+    mv: 'Громкость музыки', sv: 'Громкость эффектов', shake: 'Тряска экрана', fx: 'Частицы', grid: 'Точки на полу', skin: 'Цвет змейки', dpad: 'Кнопки направления', on: 'Вкл', off: 'Выкл',
+    keys: [['← ↑ → ↓ / WASD', 'Поворот (классика · лабиринт)'], ['Мышь · стрелки', 'Направление (арена)'], ['Клик · пробел', 'Ускорение (арена, уменьшает длину)'], ['Свайп', 'Поворот (телефон, классика · лабиринт)'], ['Перетаскивание', 'Направление (телефон, арена)'], ['Esc / P', 'Пауза'], ['M', 'Звук']],
+    tips: ['Классика: чем больше ешь, тем быстрее ползёшь. Бонусная еда даёт больше очков, если съесть её сразу', 'Лабиринт: войди в портал и выйдешь из портала того же цвета', "Арена: укуси кончик хвоста (зелёный) или голову змеи поменьше — и проглотишь её целиком. Укусишь красный хвост — погибнешь, как и при ударе о тело. Жёлтый хвост — твоё слабое место"],
+  },
+  vi: {
+    title: 'Rắn săn mồi', tag: 'CỔ ĐIỂN · MÊ CUNG · ĐẤU TRƯỜNG',
+    modes: { classic: ['Cổ điển', 'Ăn táo để dài ra. Đâm vào chính mình là thua'], maze: ['Phiêu lưu mê cung', '20 màn. Ăn hết táo để mở cửa ra'], arena: ['Đấu trường', 'Ăn và săn mồi trong 5 phút. Giành hạng 1'] },
+    start: 'Bắt đầu', back: 'Quay lại', cont: 'Chơi tiếp · Màn {n}', fromStart: 'Từ màn 1',
+    walls: 'Mép bàn', wallsOn: 'Tường', wallsOff: 'Đi xuyên', speed: 'Tốc độ', speeds: ['Chậm', 'Vừa', 'Nhanh', 'Rất nhanh'],
+    settings: 'Cài đặt', records: 'Kỷ lục', help: 'Điều khiển', done: 'Xong',
+    pause: 'Tạm dừng', resume: 'Tiếp tục', restart: 'Chơi lại', toMenu: 'Về menu', again: 'Chơi lại', menu: 'Menu', newRec: '★ KỶ LỤC MỚI ★', none: 'Chưa có kỷ lục',
+    score: 'ĐIỂM', best: 'CAO NHẤT', length: 'ĐỘ DÀI', speedL: 'TỐC ĐỘ', stageL: 'MÀN', apples: 'TÁO', exitShort: 'CỬA RA!',
+    stageN: 'Màn {n}', readyHint: 'Nhấn phím mũi tên để đi', readyTouch: 'Vuốt để đi', stageClear: 'Qua màn {n}!', timeBonus: 'Thưởng thời gian', stageBonus: 'Thưởng màn chơi',
+    exitOpen: 'Cửa ra đã mở!', oneMore: 'Thử lại nào!', over: 'Hết trò', won: 'Đã chinh phục mọi màn!', full: 'Bạn đã lấp đầy bàn!', bonusMsg: 'Mồi thưởng!',
+    ate: "Nuốt", timeLeft: "CÒN LẠI", roundOver: "Hết giờ!", placeN: "Hạng {n}", ofN: "trong {n} con rắn", youAte: "Nuốt {n}!", eatenBy: "Bị {n} nuốt", feedEat: "{a} ⟵ {b}", finalRank: "Hạng cuối",
+    rank: 'Hạng', kills: 'Hạ gục', leaders: 'Bảng xếp hạng', you: 'Bạn', killedBy: 'Bị {n} hạ gục', crashed: 'Đâm vào mép đấu trường', youKilled: 'Hạ gục {n}!', feed: '{a} ▸ {b}',
+    finalLen: 'Độ dài cuối', maxLen: 'Độ dài lớn nhất', bestRank: 'Hạng cao nhất', time: 'Thời gian', eaten: 'Táo đã ăn', reached: 'Màn đạt tới', bonusN: 'Mồi thưởng',
+    music: 'Nhạc', musicNames: { auto: 'Tự động theo chế độ', A: 'Phố Cairo', B: 'Vườn táo', C: 'Đấu trường neon', off: 'Tắt' },
+    mv: 'Âm lượng nhạc', sv: 'Âm lượng hiệu ứng', shake: 'Rung màn hình', fx: 'Hạt hiệu ứng', grid: 'Chấm trên nền', skin: 'Màu rắn', dpad: 'Nút hướng', on: 'Bật', off: 'Tắt',
+    keys: [['← ↑ → ↓ / WASD', 'Rẽ (Cổ điển · Mê cung)'], ['Chuột · Mũi tên', 'Hướng đi (Đấu trường)'], ['Nhấp · Space', 'Tăng tốc (Đấu trường, tốn độ dài)'], ['Vuốt', 'Rẽ (điện thoại, Cổ điển · Mê cung)'], ['Kéo', 'Hướng đi (điện thoại, Đấu trường)'], ['Esc / P', 'Tạm dừng'], ['M', 'Tắt tiếng']],
+    tips: ['Cổ điển: càng ăn càng nhanh. Mồi thưởng ăn càng sớm càng nhiều điểm', 'Mê cung: vào cổng dịch chuyển sẽ ra ở cổng cùng màu', "Đấu trường: cắn chóp đuôi (xanh lá) hoặc đầu của rắn nhỏ hơn để nuốt trọn. Cắn đuôi đỏ là bạn chết, đâm vào thân cũng chết. Đuôi vàng là điểm yếu của bạn"],
+  },
+};
+
+// ───────────────────────── 메뉴·흐름·조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const coarse = matchMedia('(pointer: coarse)').matches;
+const SKIN_CHOICES = [0, 3, 4, 2, 7, 9];
+const DEF = { music: 'auto', mv: 0.5, sv: 0.7, shake: true, fx: true, grid: true, skin: 0, dpad: true, walls: true, speed: 1, muted: false, mazeMax: 1 };
+let SET = { ...DEF }, BEST = { classic: [], maze: [], arena: [] };
+try { const d = JSON.parse(localStorage.getItem('wiiiv-snake') || '{}'); SET = { ...DEF, ...(d.set || {}) }; BEST = { ...BEST, ...(d.best || {}) }; } catch { /* 저장소 없이도 동작 */ }
+const save = () => { try { localStorage.setItem('wiiiv-snake', JSON.stringify({ set: SET, best: BEST })); } catch { /* 무시 */ } };
+
+const chip = new Chip(); chip.setVol(SET.mv, SET.sv); chip.muted = SET.muted;
+const view = new View($('cv'));
+const applyOpts = () => { view.opts = { shake: SET.shake, fx: SET.fx, grid: SET.grid, skin: SET.skin }; view.cache = {}; };
+applyOpts();
+let game = null, mode = null, phase = 'menu', demo = new Arena({ demo: true, bots: 12, seed: 7 }), acc = 0, last = performance.now();
+let touchMode = false, combo = 0, lastEatT = -999, resultT = 0, lastRank = 99, joy = null;
+const ICON = {
+  on: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>',
+  off: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+};
+
+// ── 화면 배치
+function fitLogo() {
+  const el = $('logo'); if (!el || $('menu').hidden) return;
+  el.style.fontSize = ''; let fs = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollWidth > el.clientWidth + 1 && fs > 14) { fs -= 1; el.style.fontSize = fs + 'px'; }
+}
+function layout() {
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  touchMode = coarse || W < 560;
+  const tb = Math.round(Math.max(46, Math.min(64, Math.min(W / 7, H / 12))));
+  document.documentElement.style.setProperty('--tb', tb + 'px');
+  const playing = phase === 'play' && game;
+  const pad = playing && touchMode && SET.dpad && mode !== 'arena';
+  $('touch').classList.toggle('show', !!pad);
+  $('boost').classList.toggle('show', !!(playing && touchMode && mode === 'arena'));
+  const portrait = H > W * 1.15;
+  const bot = pad && portrait ? tb * 3 + 34 : 12;
+  if (pad && !portrait) { $('touch').style.justifyContent = 'flex-end'; } else $('touch').style.justifyContent = 'center';
+  view.resize(W, H, dpr, { top: 66, bot });
+  fitLogo();
+}
+addEventListener('resize', layout);
+
+// ── 음악
+function songFor(m) { if (SET.music === 'off') return null; if (SET.music !== 'auto') return SET.music; return m === 'maze' ? 'A' : m === 'arena' ? 'C' : 'B'; }
+function startMusic() { const s = songFor(mode); chip.tempo = 1; if (s) chip.play(s); else chip.stop(); }
+
+// ── 게임 시작·끝
+function showOnly(id) { for (const k of ['menu', 'classicOpt', 'mazeOpt', 'settings', 'records', 'help', 'pause', 'result']) $(k).hidden = k !== id; layout(); }
+function startGame(m, o = {}) {
+  chip.init(); mode = m; combo = 0; resultT = 0; lastRank = 99; joy = null;
+  view.parts = []; view.pops = []; view.toasts = []; view.feed = []; view.die = null; view.deathSpot = null; view.camReset = true;
+  if (m === 'arena') { game = new Arena({ name: T.you, skin: SET.skin }); game.input.ang = 0; }
+  else game = new Grid({ kind: m, speed: SET.speed, walls: SET.walls, stage: o.stage || 1 });
+  game.startedAt = performance.now(); phase = 'play'; showOnly(null); startMusic(); chip.sfx('select');
+  lastStart = { m, o };
+}
+let lastStart = null;
+function restart() { if (lastStart) startGame(lastStart.m, lastStart.o); }
+function toMenu() { phase = 'menu'; game = null; chip.stop(); view.parts = []; view.toasts = []; view.pops = []; showOnly('menu'); }
+function pauseGame(p) {
+  if (!game) return;
+  if (p && phase === 'play') { phase = 'pause'; chip.pause(true); showOnly('pause'); if (mode === 'arena') game.input.boost = false; }
+  else if (!p && phase === 'pause') { phase = 'play'; chip.pause(false); showOnly(null); last = performance.now(); }
+}
+function finish() {
+  phase = 'result'; chip.stop(); const g = game, rows = [];
+  let score, rec, title, sub = '';
+  const sec = mode === 'arena' ? g.stats.time / 60 : g.t / 60, tstr = `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  const date = new Date().toISOString().slice(0, 10);
+  if (mode === 'arena') {
+    const pl = g.player, fin = Math.floor(pl.mass * 10), mx = Math.floor(g.stats.maxMass * 10);
+    const rank = g.roundEnd ? g.finalRank : g.deathRank || g.rankOf(pl), alive = g.snakes.filter(o => o.alive).length + (pl.alive ? 0 : 1);
+    if (g.roundEnd) { score = fmt(T.placeN, rank); title = T.roundOver; sub = fmt(T.ofN, alive); }
+    else { score = mx; title = g.killer ? fmt(g.eatenBy ? T.eatenBy : T.killedBy, { n: g.killer }) : T.crashed; sub = T.maxLen; }
+    rows.push([T.finalRank, g.roundEnd ? fmt(T.placeN, rank) : '-'], [T.maxLen, mx], [T.finalLen, fin], [T.ate, g.stats.eats], [T.kills, g.stats.kills], [T.bestRank, g.stats.bestRank < 99 ? fmt(T.placeN, g.stats.bestRank) : '-'], [T.time, tstr]);
+    // 기록: 끝까지 살아남은 판이 먼저, 그다음 순위, 그다음 최대 길이
+    rec = { score: mx, rank: g.roundEnd ? rank : 99, info: `${g.roundEnd ? fmt(T.placeN, rank) : '-'} · ${T.ate} ${g.stats.eats}`, date };
+  } else {
+    score = g.score; title = g.mode === 'won' ? (g.kind === 'maze' ? T.won : T.full) : T.over; sub = T.score;
+    if (g.kind === 'maze') { rows.push([T.reached, `${g.stage} / ${STAGES.length}`], [T.eaten, g.eatenTotal], [T.bonusN, g.bonusTotal], [T.time, tstr]); rec = { score, info: `${T.stageL} ${g.stage}`, date }; }
+    else { rows.push([T.length, g.body.length], [T.eaten, g.eatenTotal], [T.bonusN, g.bonusTotal], [T.speedL, T.speeds[g.speed] + (g.wallsOn ? '' : ' · ' + T.wallsOff)], [T.time, tstr]); rec = { score, info: `${T.speeds[g.speed]}${g.wallsOn ? '' : ' · ' + T.wallsOff}`, date }; }
+  }
+  const list = BEST[mode]; list.push(rec); list.sort((a, b) => mode === 'arena' ? ((a.rank ?? 99) - (b.rank ?? 99)) || b.score - a.score : b.score - a.score); list.splice(5); save();
+  $('resTitle').textContent = title; $('resScore').textContent = score; $('resSub').textContent = sub;
+  $('resNew').hidden = !(list[0] === rec && (rec.score > 0)); $('resNew').textContent = T.newRec;
+  $('resGrid').innerHTML = ''; for (const [k, v] of rows) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; $('resGrid').append(a, b); }
+  showOnly('result'); setTimeout(() => $('bAgain').focus(), 50);
 }
 
-document.addEventListener('keydown', e => {
-  if (!gameRunning || gameOver) return;
-  if (e.key === 'p' || e.key === 'P') { togglePlay(); return; }
-  if (gamePaused) return;
-  switch (e.key) {
-    case 'ArrowUp': if (dir.y !== 1) nextDir = {x: 0, y: -1}; break;
-    case 'ArrowDown': if (dir.y !== -1) nextDir = {x: 0, y: 1}; break;
-    case 'ArrowLeft': if (dir.x !== 1) nextDir = {x: -1, y: 0}; break;
-    case 'ArrowRight': if (dir.x !== -1) nextDir = {x: 1, y: 0}; break;
+// ── 사건 → 소리·효과 (격자)
+function cellXY(x, y) { const L = view.lastGrid || view.gridLayout(); return [L.ox + (x + 0.5) * L.cs, L.oy + (y + 0.5) * L.cs, L.cs]; }
+function handleGrid(ev) {
+  const g = game;
+  switch (ev.type) {
+    case 'go': chip.sfx('go'); break;
+    case 'eat': {
+      combo = g.t - lastEatT < 150 ? combo + 1 : 0; lastEatT = g.t;
+      const [x, y, cs] = cellXY(ev.x, ev.y); chip.sfx('eat', { combo });
+      view.burst(x, y, '#ff5d73', 16, cs * 0.18, 34, cs * 0.22); view.burst(x, y, '#ffd23f', 6, cs * 0.12, 26, cs * 0.18); view.pop(x, y - cs * 0.6, '+' + ev.pts, '#ffffff'); view.kick(3);
+      if (g.kind === 'classic') chip.tempo = Math.min(1.35, 1 + (SPEEDS[g.speed] / g.interval - 1) * 0.6);
+      break;
+    }
+    case 'bonus': chip.sfx('bonus'); { const [x, y, cs] = cellXY(ev.x, ev.y); view.burst(x, y, '#ffd23f', 10, cs * 0.1, 30, cs * 0.15); } break;
+    case 'bonusEat': { const [x, y, cs] = cellXY(ev.x, ev.y); chip.sfx('bonusEat'); view.burst(x, y, '#ffd23f', 30, cs * 0.25, 44, cs * 0.25); view.pop(x, y - cs * 0.6, '+' + ev.pts, '#ffd23f', true); view.kick(6); break; }
+    case 'bonusGone': chip.sfx('bonusGone'); break;
+    case 'portal': { chip.sfx('portal'); for (const p of [ev.from, ev.to]) { const [x, y, cs] = cellXY(p[0], p[1]); view.burst(x, y, '#3ff0d8', 12, cs * 0.15, 26, cs * 0.15); } break; }
+    case 'die': chip.sfx('die'); view.kick(16); view.die = { body: ev.body, t: 0, gone: 0 }; { const [x, y, cs] = cellXY(ev.x, ev.y); view.burst(x, y, '#ffffff', 20, cs * 0.25, 30, cs * 0.2); } chip.stop(); break;
+    case 'retry': view.die = null; view.toast(T.oneMore, '#ffd23f', 90); startMusic(); break;
+    case 'exitOpen': { chip.sfx('exitOpen'); view.toast(T.exitOpen, '#ffd23f', 150); const [x, y, cs] = cellXY(ev.x, ev.y); view.burst(x, y, '#ffd23f', 30, cs * 0.3, 50, cs * 0.25); break; }
+    case 'enter': chip.sfx('portal'); break;
+    case 'slurp': chip.sfx('slurp', ev); { const [x, y, cs] = cellXY(g.exit[0], g.exit[1]); view.burst(x, y, SKINS[SET.skin][0], 3, cs * 0.12, 20, cs * 0.15); } break;
+    case 'clear': chip.sfx('clear'); SET.mazeMax = Math.max(SET.mazeMax, Math.min(STAGES.length, ev.stage + 1)); save(); break;
+    case 'stage': view.cache = {}; view.toasts = []; break;
+    case 'over': chip.sfx('over'); resultT = 70; break;
+    case 'won': chip.sfx('won'); resultT = 110; break;
+  }
+}
+// 죽을 때 꼬리까지 하나씩 터진다
+function stepDie() {
+  const d = view.die; if (!d || !game || game.mode !== 'dying') return;
+  d.t++; const gone = Math.max(0, Math.floor((d.t - 26) / 2.2));
+  while (d.gone < Math.min(gone, d.body.length)) {
+    const c = d.body[d.gone], [x, y, cs] = cellXY(c[0], c[1]); d.gone++;
+    view.burst(x, y, d.gone % 2 ? SKINS[SET.skin][0] : SKINS[SET.skin][1], 8, cs * 0.2, 30, cs * 0.22); if (d.gone % 2) chip.sfx('pop', { i: d.gone });
+  }
+}
+// ── 사건 → 소리·효과 (아레나)
+function handleArena(ev) {
+  const g = game, pl = g.player;
+  switch (ev.type) {
+    case 'eat': chip.sfx('nib', ev); break;
+    case 'roundEnd': chip.stop(); chip.sfx(ev.rank === 1 ? 'won' : 'clear'); view.toast(T.roundOver, '#ffd23f', 140); resultT = 130; break;
+    case 'death': {
+      const near = pl && Math.hypot(ev.x - view.cam.x, ev.y - view.cam.y) < 900;
+      if (near) view.burst(ev.x, ev.y, ev.col, ev.player ? 40 : 24, 5, 50, 5);
+      if (ev.player) {
+        chip.sfx('die'); view.kick(18); view.deathSpot = [ev.x, ev.y]; g.killer = ev.by; g.eatenBy = ev.eaten; resultT = 150; chip.stop();
+        g.deathRank = 1 + g.snakes.filter(o => o.alive && o.mass > ev.mass).length;
+        view.toast(ev.by ? fmt(ev.eaten ? T.eatenBy : T.killedBy, { n: ev.by }) : T.crashed, '#ff5d73', 150);
+      } else if (ev.byPlayer) {
+        chip.sfx(ev.eaten ? 'gulp' : 'kill'); view.kick(ev.eaten ? 12 : 8); view.toast(fmt(ev.eaten ? T.youAte : T.youKilled, { n: ev.name }), ev.eaten ? '#3ee07a' : '#ffd23f', 110);
+        if (ev.eaten) view.pop(view.W / 2, view.H / 2 - 40, '+' + Math.floor(ev.mass * 5), '#3ee07a', true);
+      } else if (near) chip.sfx(ev.eaten ? 'gulp' : 'thud', { k: Math.min(1.5, ev.mass / 80) });
+      if (ev.by && !ev.player) view.addFeed(fmt(ev.eaten ? T.feedEat : T.feed, { a: ev.byPlayer ? T.you : ev.by, b: ev.name }), ev.byPlayer ? '#ffd23f' : 'rgba(220,235,255,.75)');
+      break;
+    }
+  }
+}
+// 컴퓨터가 메뉴 뒤에서 아레나를 보여 준다
+function demoStep() { demo.step(); demo.events.length = 0; if (demo.t > 60 * 240) demo = new Arena({ demo: true, bots: 12, seed: (Math.random() * 1e9) | 0 }); }
+
+// ── 키보드
+const DKEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+const held = new Set();
+function arenaKeys() { if (!game || mode !== 'arena' || !held.size) return; let x = 0, y = 0; for (const d of held) { x += DIRV[d][0]; y += DIRV[d][1]; } if (x || y) game.input.ang = Math.atan2(y, x); }
+addEventListener('keydown', e => {
+  chip.init();
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
+  if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { e.preventDefault(); if (phase === 'pause') pauseGame(false); else if (phase === 'play') pauseGame(true); return; }
+  if (phase === 'result' && (e.key === 'Enter' || e.key === ' ') && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); restart(); return; }
+  if (!game || phase !== 'play') return;
+  const d = DKEY[e.key];
+  if (mode === 'arena') {
+    if (d) { e.preventDefault(); held.add(d); arenaKeys(); mouseMode = false; }
+    if (e.key === ' ' || e.key === 'Shift') { e.preventDefault(); game.input.boost = true; }
+    return;
+  }
+  if (d) { e.preventDefault(); game.turn(d); }
+});
+addEventListener('keyup', e => {
+  const d = DKEY[e.key]; if (d) { held.delete(d); arenaKeys(); }
+  if (game && mode === 'arena' && (e.key === ' ' || e.key === 'Shift')) game.input.boost = false;
+});
+addEventListener('blur', () => { held.clear(); pauseGame(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(true); });
+
+// ── 마우스·터치
+let mouseMode = false, swipe = null;
+const cv = $('cv');
+cv.addEventListener('pointerdown', e => {
+  chip.init(); if (!game || phase !== 'play') return;
+  if (mode === 'arena') {
+    if (e.pointerType === 'mouse') { mouseMode = true; aimMouse(e); if (e.button === 0 || e.button === 2) game.input.boost = true; }
+    else { joy = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 }; }
+  } else { swipe = { id: e.pointerId, x: e.clientX, y: e.clientY }; if (game.mode === 'ready' && e.pointerType === 'mouse') { /* 마우스는 방향키로 */ } }
+  try { cv.setPointerCapture(e.pointerId); } catch { /* 무시 */ }
+});
+function aimMouse(e) { if (!game || mode !== 'arena') return; game.input.ang = Math.atan2(e.clientY - view.H / 2, e.clientX - view.W / 2); }
+cv.addEventListener('pointermove', e => {
+  if (!game || phase !== 'play') return;
+  if (mode === 'arena') {
+    if (joy && joy.id === e.pointerId) { let dx = e.clientX - joy.x, dy = e.clientY - joy.y; const L = Math.hypot(dx, dy); if (L > 46) { dx *= 46 / L; dy *= 46 / L; } joy.dx = dx; joy.dy = dy; if (L > 6) game.input.ang = Math.atan2(dy, dx); }
+    else if (e.pointerType === 'mouse' && mouseMode) aimMouse(e);
+    else if (e.pointerType === 'mouse') { mouseMode = true; aimMouse(e); }
+    return;
+  }
+  if (swipe && swipe.id === e.pointerId) {
+    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, th = Math.max(16, Math.min(view.W, view.H) * 0.035);
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > th) { game.turn(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); swipe.x = e.clientX; swipe.y = e.clientY; }
   }
 });
+const endPtr = e => { if (joy && joy.id === e.pointerId) joy = null; if (swipe && swipe.id === e.pointerId) swipe = null; if (game && mode === 'arena' && e.pointerType === 'mouse') game.input.boost = false; };
+cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
+cv.addEventListener('contextmenu', e => e.preventDefault());
+document.querySelectorAll('#touch .tb').forEach(b => {
+  b.addEventListener('pointerdown', e => { e.preventDefault(); chip.init(); b.classList.add('on'); if (game && phase === 'play' && mode !== 'arena') game.turn(b.dataset.d); });
+  const up = () => b.classList.remove('on'); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+});
+{ const b = $('boost');
+  b.addEventListener('pointerdown', e => { e.preventDefault(); chip.init(); b.classList.add('on'); if (game && mode === 'arena') game.input.boost = true; try { b.setPointerCapture(e.pointerId); } catch { /* 무시 */ } });
+  const up = () => { b.classList.remove('on'); if (game && mode === 'arena') game.input.boost = false; };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up); }
 
-init();
-draw();
+// ── 반복
+function loop(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now; acc += dt; let steps = 0;
+  while (acc >= 1 / 60 && steps < 5) {
+    acc -= 1 / 60; steps++;
+    if (phase === 'menu' || !game) demoStep();
+    else if (phase === 'play' || phase === 'result') {
+      if (phase === 'play' || mode === 'arena') {
+        game.step();
+        const evs = game.events.splice(0);
+        if (phase === 'play') { if (mode === 'arena') evs.forEach(handleArena); else { evs.forEach(handleGrid); stepDie(); } }
+      }
+      if (phase === 'play' && mode === 'arena') {
+        const pl = game.player;
+        if (pl.alive && pl.boost && game.t % 9 === 0) chip.sfx('boost');
+        if (pl.alive && game.t % 30 === 0) { const r = game.rankOf(pl); if (r === 1 && lastRank > 1) chip.sfx('rank'); lastRank = r; }
+      }
+      view.stepFx(0);
+      if (resultT && phase === 'play' && --resultT === 0) finish();
+    }
+  }
+  if (acc > 0.2) acc = 0;
+  if (phase === 'menu' || !game) { view.stepFx(0); view.frameArena(demo, { T, demo: true }); }
+  else if (mode === 'arena') view.frameArena(game, { T, joy, ctrlH: touchMode ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tb')) || 56) * 1.4 + 20 : 0 });
+  else view.frameGrid(game, { T, best: (BEST[mode][0] || {}).score || 0, fmt });
+  requestAnimationFrame(loop);
+}
+
+// ── 메뉴 만들기
+function toggleMute() { SET.muted = !SET.muted; chip.setMuted(SET.muted); $('bMute').innerHTML = SET.muted ? ICON.off : ICON.on; save(); }
+function chipsRow(parent, label, opts, cur, onPick, dot) {
+  const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips';
+  for (const [v, txt, col] of opts) {
+    const b = document.createElement('button'); b.className = 'chip' + (dot ? ' dot' : '') + (cur === v ? ' on' : ''); if (dot) { b.style.background = col; b.title = txt; b.setAttribute('aria-label', txt); } else b.textContent = txt;
+    b.onclick = () => { chip.init(); chip.sfx('menu'); onPick(v); c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); }; c.appendChild(b);
+  }
+  r.append(s, c); parent.appendChild(r);
+}
+function slider(parent, label, val, on) {
+  const r = document.createElement('label'); r.className = 'sl'; const s = document.createElement('span'); s.textContent = label; const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = val;
+  i.oninput = () => on(+i.value); r.append(s, i); parent.appendChild(r); return i;
+}
+function buildSettings() {
+  $('tSettings').textContent = T.settings; const B = $('setBody'); B.innerHTML = '';
+  chipsRow(B, T.music, ['auto', 'A', 'B', 'C', 'off'].map(k => [k, T.musicNames[k]]), SET.music, v => { SET.music = v; save(); if (game && phase !== 'menu') { const s = songFor(mode); if (s) chip.play(s); else chip.stop(); if (phase === 'pause') chip.pause(true); } });
+  slider(B, T.mv, SET.mv, v => { SET.mv = v; chip.setVol(v, null); save(); });
+  const sv = slider(B, T.sv, SET.sv, v => { SET.sv = v; chip.setVol(null, v); save(); }); sv.onchange = () => { chip.init(); chip.sfx('eat'); };
+  chipsRow(B, T.skin, SKIN_CHOICES.map(i => [i, T.skin, SKINS[i][0]]), SET.skin, v => { SET.skin = v; applyOpts(); save(); }, true);
+  for (const k of ['shake', 'fx', 'grid'].concat(coarse || innerWidth < 560 ? ['dpad'] : [])) chipsRow(B, T[k], [[true, T.on], [false, T.off]], SET[k], v => { SET[k] = v; applyOpts(); save(); layout(); });
+}
+let recTab = 'classic';
+function buildRecords() {
+  $('tRecords').textContent = T.records; const tabs = $('recTabs'); tabs.innerHTML = '';
+  for (const m of ['classic', 'maze', 'arena']) { const b = document.createElement('button'); b.className = 'chip' + (recTab === m ? ' on' : ''); b.textContent = T.modes[m][0]; b.onclick = () => { recTab = m; buildRecords(); }; tabs.appendChild(b); }
+  const tb = $('recTable'); tb.innerHTML = ''; const list = BEST[recTab];
+  if (!list.length) { const td = tb.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#8fb8a0'; td.style.fontWeight = '400'; return; }
+  list.forEach((r, i) => { const tr = tb.insertRow(); tr.insertCell().textContent = i + 1; tr.insertCell().textContent = r.score; tr.insertCell().textContent = `${r.info} · ${r.date}`; });
+}
+function buildClassic() {
+  $('tClassic').textContent = T.modes.classic[0]; const B = $('classicBody'); B.innerHTML = '';
+  const d = document.createElement('div'); d.className = 'sub'; d.textContent = T.modes.classic[1]; B.appendChild(d);
+  chipsRow(B, T.walls, [[true, T.wallsOn], [false, T.wallsOff]], SET.walls, v => { SET.walls = v; save(); });
+  chipsRow(B, T.speed, T.speeds.map((s, i) => [i, s]), SET.speed, v => { SET.speed = v; save(); });
+}
+function build() {
+  $('pageTitle').textContent = T.title; $('logo').textContent = T.title; $('tTag').textContent = T.tag;
+  for (const [id, m] of [['mClassic', 'classic'], ['mMaze', 'maze'], ['mArena', 'arena']]) { const b = $(id); b.querySelector('b').textContent = T.modes[m][0]; b.querySelector('small').textContent = T.modes[m][1]; }
+  $('mClassic').onclick = () => { chip.init(); chip.sfx('menu'); buildClassic(); showOnly('classicOpt'); setTimeout(() => $('bClassicGo').focus(), 30); };
+  $('mMaze').onclick = () => {
+    chip.init(); chip.sfx('menu');
+    if (SET.mazeMax <= 1) { startGame('maze', { stage: 1 }); return; }
+    $('tMaze').textContent = T.modes.maze[0]; $('mazeSub').textContent = T.modes.maze[1];
+    $('bMazeCont').textContent = fmt(T.cont, SET.mazeMax); $('bMazeNew').textContent = T.fromStart; showOnly('mazeOpt'); setTimeout(() => $('bMazeCont').focus(), 30);
+  };
+  $('mArena').onclick = () => startGame('arena');
+  $('bClassicBack').textContent = T.back; $('bClassicBack').onclick = () => showOnly('menu');
+  $('bClassicGo').textContent = T.start; $('bClassicGo').onclick = () => startGame('classic');
+  $('bMazeBack').textContent = T.back; $('bMazeBack').onclick = () => showOnly('menu');
+  $('bMazeCont').onclick = () => startGame('maze', { stage: SET.mazeMax }); $('bMazeNew').onclick = () => startGame('maze', { stage: 1 });
+  $('bSettings').textContent = T.settings; $('bRecords').textContent = T.records; $('bHelp').textContent = T.help;
+  $('bSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bRecords').onclick = () => { buildRecords(); showOnly('records'); };
+  $('bHelp').onclick = () => {
+    $('tHelp').textContent = T.help; $('helpKeys').innerHTML = ''; $('helpTips').innerHTML = '';
+    for (const [k, v] of T.keys) { const a = document.createElement('kbd'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; $('helpKeys').append(a, b); }
+    for (const t of T.tips) { const d = document.createElement('div'); d.textContent = t; $('helpTips').appendChild(d); }
+    showOnly('help');
+  };
+  for (const id of ['bSetDone', 'bRecDone', 'bHelpDone']) { $(id).textContent = T.done; $(id).onclick = () => showOnly(phase === 'pause' ? 'pause' : 'menu'); }
+  $('tPause').textContent = T.pause; $('bResume').textContent = T.resume; $('bRestart').textContent = T.restart; $('bToMenu').textContent = T.toMenu; $('bPSettings').textContent = T.settings;
+  $('bResume').onclick = () => pauseGame(false); $('bRestart').onclick = restart; $('bToMenu').onclick = toMenu; $('bPSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bAgain').textContent = T.again; $('bResMenu').textContent = T.menu; $('bAgain').onclick = restart; $('bResMenu').onclick = toMenu;
+  $('bMute').innerHTML = SET.muted ? ICON.off : ICON.on; $('bPause').innerHTML = ICON.pause;
+  $('bMute').onclick = () => { chip.init(); toggleMute(); };
+  $('bPause').onclick = () => { chip.init(); if (phase === 'pause') pauseGame(false); else pauseGame(true); };
+  $('boost').textContent = 'BOOST';
+}
+// 준비 화면 안내는 휴대폰이면 '밀어서'
+if (coarse) T.readyHint = T.readyTouch;
+build(); showOnly('menu');
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLogo);
+addEventListener('pointerdown', () => chip.init(), { capture: true, once: true });
+requestAnimationFrame(t => { last = t; loop(t); });
 document.body.focus();
+window.__sn = { get game() { return game; }, get phase() { return phase; }, get mode() { return mode; }, get demo() { return demo; }, start: startGame, toMenu, pause: pauseGame, chip, view, T };
+
 </script>
 </body>
 </html>
