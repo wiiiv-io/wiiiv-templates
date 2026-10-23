@@ -2,382 +2,986 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>만델브로 프랙탈</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title id="pageTitle">만델브로 탐험</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0d0d1a; color: #fff; font-family: -apple-system, 'Segoe UI', sans-serif;
-  display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none;
-}
-.toolbar {
-  display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: #12121f;
-  border-bottom: 1px solid #222; flex-wrap: wrap; flex-shrink: 0;
-}
-.toolbar button {
-  background: #1e1e2e; border: 1px solid #333; color: #fff; padding: 3px 10px;
-  border-radius: 5px; cursor: pointer; font-size: 11px; transition: all 0.15s;
-}
-.toolbar button:hover { border-color: #7c5cfc; background: #2a2a4a; }
-.toolbar button.active { background: #7c5cfc; border-color: #7c5cfc; }
-.group { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #aaa; }
-.group input[type="range"] { width: 80px; accent-color: #7c5cfc; height: 3px; cursor: pointer; }
-.group .val { color: #c4b5fd; min-width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
-.palettes { display: flex; gap: 3px; }
-.info {
-  font-size: 10px; color: #555; margin-left: auto; font-variant-numeric: tabular-nums;
-  display: flex; gap: 8px;
-}
-.info span { white-space: nowrap; }
-.progress-bar {
-  position: absolute; top: 0; left: 0; height: 2px; background: #7c5cfc;
-  transition: width 0.1s; z-index: 10;
-}
-.canvas-wrap { flex: 1; position: relative; overflow: hidden; }
-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
-.coords {
-  position: absolute; bottom: 6px; left: 8px; font-size: 10px; color: rgba(255,255,255,0.4);
-  font-variant-numeric: tabular-nums; pointer-events: none;
-}
-.selection-rect {
-  position: absolute; border: 1.5px dashed rgba(124,92,252,0.9);
-  background: rgba(124,92,252,0.08); pointer-events: none; display: none;
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+:root { --bg: #05060a; --glass: rgba(14, 16, 26, .78); --glass2: rgba(24, 27, 42, .9); --line: rgba(255,255,255,.1); --text: #eef0f8; --sub: #9aa0b8; --acc: #7fe3ff; --acc2: #c58bff; color-scheme: dark; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'PingFang SC', system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; }
+button, input, textarea { font: inherit; color: inherit; }
+svg { display: block; }
+* { scrollbar-color: #3a3e55 transparent; }
+#top { display: flex; align-items: center; gap: 5px; padding: 6px 8px; background: #0b0d14; border-bottom: 1px solid #000; overflow-x: auto; scrollbar-width: none; flex: none; z-index: 5; }
+#top::-webkit-scrollbar { display: none; }
+.brand { display: flex; align-items: center; gap: 7px; font-weight: 800; letter-spacing: .02em; margin-right: 6px; white-space: nowrap; background: linear-gradient(90deg, #7fe3ff, #c58bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.brand svg { width: 22px; height: 22px; color: #9fd9ff; }
+.ib { height: 32px; min-width: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.04); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; flex: none; }
+.ib svg { width: 18px; height: 18px; }
+.ib:hover { background: rgba(255,255,255,.1); } .ib:disabled { opacity: .3; cursor: default; }
+.ib.on { background: linear-gradient(160deg, rgba(127,227,255,.3), rgba(197,139,255,.25)); border-color: rgba(127,227,255,.6); }
+.sep { width: 1px; height: 22px; background: var(--line); flex: none; margin: 0 2px; }
+.spacer { flex: 1; }
+#main { flex: 1; display: flex; min-height: 0; position: relative; }
+#stage { flex: 1; position: relative; overflow: hidden; touch-action: none; cursor: grab; min-width: 0; }
+#stage:active { cursor: grabbing; }
+#cv, #ov { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#prog { position: absolute; top: 0; left: 0; height: 2px; width: 0; background: linear-gradient(90deg, #7fe3ff, #c58bff); z-index: 3; transition: width .15s; pointer-events: none; }
+#hud { position: absolute; left: 10px; bottom: 10px; background: var(--glass); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font: 11.5px ui-monospace, 'SF Mono', Consolas, monospace; color: #c9cee6; pointer-events: none; max-width: calc(100% - 20px); line-height: 1.55; }
+#hud b { color: #fff; font-size: 15px; letter-spacing: .02em; }
+#hud .m { color: var(--sub); font-family: inherit; font-size: 11px; }
+#hud .c { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: min(560px, calc(100vw - 60px)); }
+#hudPt { color: #7f88aa; }
+#jbox { position: absolute; right: 10px; bottom: 10px; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 6px; cursor: pointer; backdrop-filter: blur(8px); }
+#jbox canvas { width: 200px; height: 150px; border-radius: 8px; display: block; }
+#jbox div { font: 10.5px ui-monospace, monospace; color: var(--sub); margin-top: 4px; display: flex; justify-content: space-between; gap: 8px; }
+#movieBar { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 7px 10px 7px 14px; display: flex; align-items: center; gap: 12px; backdrop-filter: blur(8px); min-width: 240px; z-index: 4; }
+#movieBar .pb { flex: 1; height: 4px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; } #movieProg { height: 100%; width: 0; background: linear-gradient(90deg, #7fe3ff, #c58bff); }
+#movieMsg { font: 12px ui-monospace, monospace; color: #dfe4ff; min-width: 120px; }
+/* 오른쪽 판 */
+#side { width: 300px; background: #0b0d14; border-left: 1px solid #000; display: flex; flex-direction: column; flex: none; min-height: 0; }
+#side.closed { display: none; }
+.tabs { display: flex; gap: 2px; padding: 6px; border-bottom: 1px solid var(--line); flex: none; }
+.tab { flex: 1; padding: 6px 4px; border-radius: 7px; border: none; background: transparent; color: var(--sub); cursor: pointer; white-space: nowrap; font-size: 12.5px; }
+.tab.on { background: rgba(127,227,255,.14); color: #fff; }
+.body { flex: 1; overflow-y: auto; padding: 10px 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.body h5 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); margin-top: 6px; }
+.pals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.pal { height: 26px; border-radius: 6px; border: 2px solid transparent; cursor: pointer; }
+.pal.on { border-color: #fff; box-shadow: 0 0 0 1px #000 inset; }
+.row { display: grid; grid-template-columns: max-content 1fr 52px; align-items: center; gap: 8px; font-size: 12px; color: var(--sub); }
+.row input { width: 100%; accent-color: #7fe3ff; }
+.row output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.04); cursor: pointer; font-size: 12px; }
+.chip.on { background: rgba(127,227,255,.2); border-color: rgba(127,227,255,.7); color: #fff; }
+.btn { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.btn svg { width: 15px; height: 15px; }
+.btn:hover { background: rgba(255,255,255,.12); }
+.btn.pri { background: linear-gradient(160deg, #3fb8e0, #8a5cff); border-color: transparent; color: #fff; font-weight: 700; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.note { font-size: 11.5px; color: #7f86a2; line-height: 1.55; }
+.learn { font-size: 12.5px; color: #c6cbe0; line-height: 1.65; }
+.jin { display: flex; gap: 6px; align-items: center; }
+.jin input { width: 100%; min-width: 0; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; font: 12px ui-monospace, monospace; user-select: text; }
+.jrow { display: flex; flex-direction: column; gap: 6px; }
+.places { display: flex; flex-direction: column; gap: 5px; }
+.place { display: flex; align-items: center; gap: 10px; text-align: left; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255,255,255,.03); cursor: pointer; flex-direction: row; }
+.place:hover { background: rgba(127,227,255,.08); }
+.place b { display: block; font-size: 12.5px; }
+.place small { color: var(--sub); font-size: 11px; font-family: ui-monospace, monospace; }
+.place img { width: 54px; height: 36px; border-radius: 5px; object-fit: cover; flex: none; }
+.place span { flex: 1; min-width: 0; }
+.place .x { margin-left: auto; border: none; background: transparent; color: var(--sub); cursor: pointer; padding: 4px 6px; }
+.cyc .btn { width: 100%; justify-content: center; }
+/* 대화 상자 */
+.ovl { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.dlg { background: #121522; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; width: min(440px, 100%); max-height: 100%; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,.7); display: flex; flex-direction: column; gap: 10px; }
+.dlg h3 { font-size: 17px; }
+.dlg h5 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); }
+.dlg textarea { width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: 12px ui-monospace, monospace; resize: vertical; user-select: text; }
+.mopts { display: flex; flex-direction: column; gap: 6px; }
+.opt { text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.03); cursor: pointer; }
+.opt.on { border-color: rgba(127,227,255,.7); background: rgba(127,227,255,.1); }
+.opt b { display: block; } .opt small { color: var(--sub); font-size: 11.5px; }
+.foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; flex-wrap: wrap; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12.5px; color: var(--sub); }
+.keys kbd { font: 700 11.5px ui-monospace, monospace; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 7px; color: var(--text); justify-self: start; white-space: nowrap; }
+.toast { position: fixed; left: 50%; top: 58px; transform: translateX(-50%); z-index: 70; background: rgba(18,21,34,.95); border: 1px solid var(--line); padding: 8px 15px; border-radius: 10px; font-weight: 600; pointer-events: none; animation: toast 2s ease forwards; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.busy { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 80; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font-weight: 700; }
+.busy .bar { width: 260px; height: 6px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; } .busy .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #7fe3ff, #c58bff); transition: width .2s; }
+@media (max-width: 760px) {
+  #side { position: absolute; left: 0; right: 0; bottom: 0; width: auto; height: 58%; border-left: none; border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; z-index: 10; box-shadow: 0 -20px 50px rgba(0,0,0,.6); }
+  .hide-s { display: none; }
+  #jbox canvas { width: 140px; height: 105px; }
+  #hud { font-size: 10.5px; padding: 6px 9px; } #hud b { font-size: 13px; }
+  .ib { height: 30px; min-width: 30px; padding: 0 6px; }
 }
 </style>
 </head>
-<body>
-<div class="toolbar">
-  <button id="resetBtn" onclick="resetView()"></button>
-  <div class="group">
-    <span id="iterLabel"></span>
-    <input type="range" id="iterSlider" min="50" max="1000" value="200" step="10" oninput="setIter(this.value)">
-    <span class="val" id="iterVal">200</span>
+<body tabindex="0">
+<div id="top"></div>
+<div id="main">
+  <div id="stage">
+    <canvas id="cv"></canvas><canvas id="ov"></canvas><div id="prog"></div>
+    <div id="hud"><div><b id="hudZoom">×1</b> <span class="m" id="hudMode"></span></div><div class="c">Re <span id="hudRe"></span></div><div class="c">Im <span id="hudIm"></span></div><div class="m">it <span id="hudIt"></span> <span id="hudJ" hidden></span></div><div id="hudPt"></div></div>
+    <div id="jbox" hidden><canvas id="jprev" width="200" height="150"></canvas><div><span id="jprevC"></span><span id="jprevT"></span></div></div>
+    <div id="movieBar" hidden><span id="movieMsg"></span><div class="pb"><div id="movieProg"></div></div><button class="ib" id="movieStop">■</button></div>
   </div>
-  <div class="palettes">
-    <button class="active" id="pal0" onclick="setPalette(0,this)"></button>
-    <button id="pal1" onclick="setPalette(1,this)"></button>
-    <button id="pal2" onclick="setPalette(2,this)"></button>
-    <button id="pal3" onclick="setPalette(3,this)"></button>
-    <button id="pal4" onclick="setPalette(4,this)"></button>
-  </div>
-  <div class="info">
-    <span><span id="zoomLabel"></span> <span id="zoomInfo">1x</span></span>
-    <span><span id="centerLabel"></span> <span id="centerInfo">-0.5, 0</span></span>
-  </div>
+  <div id="side"></div>
 </div>
-<div class="canvas-wrap">
-  <div class="progress-bar" id="progressBar"></div>
-  <canvas id="canvas"></canvas>
-  <div class="selection-rect" id="selRect"></div>
-  <div class="coords" id="coords"></div>
-</div>
-
 <script>
-const LANG = 'ko';
-const T = {
-  ko: {
-    title: '만델브로 프랙탈',
-    reset: '초기화', iterations: '반복',
-    rainbow: '무지개', fire: '불꽃', ice: '얼음', bw: '흑백', neon: '네온',
-    zoom: '줌:', center: '중심:'
-  },
-  en: {
-    title: 'Mandelbrot Fractal',
-    reset: 'Reset', iterations: 'Iterations',
-    rainbow: 'Rainbow', fire: 'Fire', ice: 'Ice', bw: 'B&W', neon: 'Neon',
-    zoom: 'Zoom:', center: 'Center:'
+const WORKER_SRC = "// \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \uacc4\uc0b0 \uc77c\uafbc (Web Worker \uc548\uc5d0\uc11c \ub3c8\ub2e4) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// \ubc1b\ub294 \uc77c:\n//   ref  : \uae30\uc900\uc810 \uada4\ub3c4\ub97c \uace0\uc815\uc18c\uc218\uc810(BigInt)\uc73c\ub85c \uc815\ubc00 \uacc4\uc0b0 \u2192 double \ubc30\uc5f4\ub85c \ub3cc\ub824\uc90c\n//   setref: \uae30\uc900 \uada4\ub3c4 \ubc1b\uc544 \ub450\uae30\n//   rows : \ud654\uba74 \uba87 \uc904 \uacc4\uc0b0 (\uc77c\ubc18 \u00b7 \uc12d\ub3d9 \u00b7 \uc904\ub9ac\uc544)\n// \ub3cc\ub824\uc8fc\ub294 \uac12 (\ud654\uc18c\ub9c8\ub2e4): it = \ubd80\ub4dc\ub7ec\uc6b4 \ubc18\ubcf5 \uc218 (-1 = \uc548\ucabd), ang = \ubc95\uc120 \ubc29\ud5a5(\uc870\uba85), de = \uacbd\uacc4\uae4c\uc9c0 \uac70\ub9ac(\ud654\uc18c \ub2e8\uc704)\nlet REF = null;\nconst BAIL = 65536;          // |z|^2 > 256^2 \uc774\uba74 \ud0c8\ucd9c (\ubd80\ub4dc\ub7ec\uc6b4 \uc0c9\uc774 \ub9e4\ub044\ub7fd\uac8c)\nconst LOG2 = Math.log(2);\nfunction bigToD(z, F, P) { return F <= 1000 ? Number(z) * P : Number(z >> BigInt(F - 1000)) * P; }\nfunction refOrbit(msg) {\n  const F = msg.F, Fb = BigInt(F), F1 = BigInt(F - 1), cx = BigInt(msg.cx), cy = BigInt(msg.cy), N = msg.maxIter;\n  const P = F <= 1000 ? Math.pow(2, -F) : Math.pow(2, -1000);\n  const zr = new Float64Array(N + 2), zi = new Float64Array(N + 2);\n  let a = 0n, b = 0n, n = 0, t0 = Date.now();\n  for (; n <= N; n++) {\n    const ar = bigToD(a, F, P), ai = bigToD(b, F, P); zr[n] = ar; zi[n] = ai;\n    if (ar * ar + ai * ai > 1e8) break;          // \ud0c8\ucd9c\ud55c \uac12\uc740 \ub123\uc9c0 \uc54a\ub294\ub2e4 (\uc720\ud6a8\ud55c \uc55e\ubd80\ubd84\ub9cc)\n    const a2 = (a * a) >> Fb, b2 = (b * b) >> Fb, ab = (a * b) >> F1;\n    a = a2 - b2 + cx; b = ab + cy;\n    if ((n & 4095) === 0 && Date.now() - t0 > 250) { t0 = Date.now(); self.postMessage({ type: 'refprog', id: msg.id, n, N }); }\n  }\n  const len = Math.max(1, Math.min(n, N + 1));\n  return { zr: zr.slice(0, len), zi: zi.slice(0, len), len };\n}\nfunction rows(m) {\n  const { W, y0, y1, maxIter, light } = m, dx = m.dx, nPx = W * (y1 - y0);\n  const it = new Float32Array(nPx), ang = new Float32Array(nPx), de = new Float32Array(nPx);\n  const mode = m.mode, f = m.formula;\n  const pw = f === 'multi3' ? 3 : 2, lpw = Math.log(pw);\n  for (let py = y0; py < y1; py++) {\n    for (let px = 0; px < W; px++) {\n      const k = (py - y0) * W + px;\n      let n = 0, zr = 0, zi = 0, dr = 0, di = 0, fr = 0, fi = 0, mag = 0, esc = false;\n      if (mode === 'perturb') {\n        // \uc12d\ub3d9: \uae30\uc900 \uada4\ub3c4 Z \uc640\uc758 \ucc28\uc774 z \ub9cc double \ub85c. \ub9ac\ubca0\uc774\uc2f1\uc73c\ub85c \ud654\uba74 \uae68\uc9d0\uc744 \ub9c9\ub294\ub2e4.\n        const Zr = REF.zr, Zi = REF.zi, len = REF.len, dcr = m.ox + px * dx, dci = m.oy - py * dx; let r = 0;\n        let sr = 1e9, si = 1e9, per = 0, perLen = 16, mr = 1, mi = 0;   // \uc8fc\uae30 \uac80\ucd9c: \uac19\uc740 \uac12\uc744 \ub418\ud480\uc774\ud558\uace0, \uadf8 \uc8fc\uae30\uac00 \ub04c\uc5b4\ub2f9\uae30\ub294(\uc2b9\uc218 < 1) \uacbd\uc6b0\ub9cc \uc548\ucabd\n        while (n < maxIter) {\n          if (r >= len - 1) { zr += Zr[r]; zi += Zi[r]; r = 0; }     // \uae30\uc900 \uada4\ub3c4 \ub05d: \uc804\uccb4 \uac12\uc73c\ub85c \uac08\uc544\ud0c0\uace0 \ucc98\uc74c\ubd80\ud130\n          const Ar = Zr[r], Ai = Zi[r];\n          { const gr = 2 * (Ar + zr), gi = 2 * (Ai + zi), t = mr * gr - mi * gi; mi = mr * gi + mi * gr; mr = t; }\n          if (light) { const gr = Ar + zr, gi = Ai + zi, ndr = 2 * (gr * dr - gi * di) + 1; di = 2 * (gr * di + gi * dr); dr = ndr; }\n          const nzr = 2 * (Ar * zr - Ai * zi) + zr * zr - zi * zi + dcr; zi = 2 * (Ar * zi + Ai * zr) + 2 * zr * zi + dci; zr = nzr;\n          r++; n++;\n          fr = Zr[r] + zr; fi = Zi[r] + zi; mag = fr * fr + fi * fi;\n          if (mag > BAIL) { esc = true; break; }\n          if (mag < zr * zr + zi * zi) { zr = fr; zi = fi; r = 0; }\n          const er = fr - sr, ei = fi - si; if (er * er + ei * ei < 1e-26 * (1 + mag) && mr * mr + mi * mi < 1) break;\n          if (++per === perLen) { per = 0; perLen = perLen * 3 >> 1; sr = fr; si = fi; mr = 1; mi = 0; }\n          if (mr * mr + mi * mi > 1e100) { mr = 1e50; mi = 0; }\n        }\n      } else {\n        const cr0 = m.ox + px * dx, ci0 = m.oy - py * dx;\n        let cr = cr0, ci = ci0;\n        if (mode === 'julia') { zr = cr0; zi = ci0; cr = m.jr; ci = m.ji; dr = 1; }\n        else if (f === 'ship') ci = -ci0;          // \ubc30\uac00 \ub611\ubc14\ub85c \uc11c \ubcf4\uc774\uac8c\n        // \ud070 \ubab8\ud1b5\u00b7\uccab \uc6d0\ud310\uc740 \ubc14\ub85c \uc548\ucabd\uc73c\ub85c (\ub9cc\ub378\ube0c\ub85c\ub9cc)\n        if (mode !== 'julia' && f === 'mandel') {\n          const q = (cr - 0.25) * (cr - 0.25) + ci * ci;\n          if (q * (q + (cr - 0.25)) <= 0.25 * ci * ci || (cr + 1) * (cr + 1) + ci * ci <= 0.0625) { it[k] = -1; continue; }\n        }\n        let sr = 0, si = 0, per = 0, perLen = 8, mr = 1, mi = 0;   // \uc8fc\uae30 \uac80\ucd9c (\ub04c\uc5b4\ub2f9\uae30\ub294 \uc8fc\uae30\ub9cc \uc548\ucabd)\n        while (n < maxIter) {\n          if (light && (f === 'mandel')) { const ndr = 2 * (zr * dr - zi * di) + (mode === 'julia' ? 0 : 1); di = 2 * (zr * di + zi * dr); dr = ndr; }\n          let nzr, nzi;\n          if (f === 'ship') { const ar = Math.abs(zr), ai = Math.abs(zi); nzr = ar * ar - ai * ai + cr; nzi = 2 * ar * ai + ci; }\n          else if (f === 'tricorn') { nzr = zr * zr - zi * zi + cr; nzi = -2 * zr * zi + ci; }\n          else if (f === 'multi3') { const r2 = zr * zr, i2 = zi * zi; nzr = zr * (r2 - 3 * i2) + cr; nzi = zi * (3 * r2 - i2) + ci; }\n          else { nzr = zr * zr - zi * zi + cr; nzi = 2 * zr * zi + ci; }\n          if (f === 'mandel') { const gr = 2 * zr, gi = 2 * zi, t = mr * gr - mi * gi; mi = mr * gi + mi * gr; mr = t; if (mr * mr + mi * mi > 1e100) { mr = 1e50; mi = 0; } }\n          zr = nzr; zi = nzi; n++;\n          mag = zr * zr + zi * zi; if (mag > BAIL) { esc = true; break; }\n          if (Math.abs(zr - sr) < 1e-14 && Math.abs(zi - si) < 1e-14 && (f !== 'mandel' || mr * mr + mi * mi < 1)) break;\n          if (++per === perLen) { per = 0; perLen *= 2; sr = zr; si = zi; mr = 1; mi = 0; }\n        }\n        fr = zr; fi = zi;\n      }\n      if (!esc) { it[k] = -1; continue; }\n      const lz = 0.5 * Math.log(mag);                     // ln|z|\n      it[k] = n + 1 - Math.log(lz / LOG2) / lpw;\n      if (light && (mode === 'perturb' || f === 'mandel')) {\n        // \ubc95\uc120: u = z / dz  (\ubcf5\uc18c \ub098\ub217\uc148), \uac70\ub9ac: |z| ln|z| / |dz|\n        const dd = dr * dr + di * di, ur = (fr * dr + fi * di) / dd, ui = (fi * dr - fr * di) / dd;\n        ang[k] = Math.atan2(ui, ur); de[k] = Math.sqrt(mag) * lz / Math.sqrt(dd) / dx;\n      } else { ang[k] = NaN; de[k] = 1e9; }\n    }\n  }\n  return { it, ang, de };\n}\nself.onmessage = e => {\n  const m = e.data;\n  if (m.type === 'ref') { const r = refOrbit(m); self.postMessage({ type: 'ref', id: m.id, zr: r.zr, zi: r.zi, len: r.len }, [r.zr.buffer, r.zi.buffer]); return; }\n  if (m.type === 'setref') { REF = { id: m.id, zr: m.zr, zi: m.zi, len: m.len }; return; }\n  if (m.type === 'rows') {\n    if (m.mode === 'perturb' && (!REF || REF.id !== m.refId)) { self.postMessage({ type: 'rows', job: m.job, y0: m.y0, y1: m.y1, missingRef: true }); return; }\n    const r = rows(m); self.postMessage({ type: 'rows', job: m.job, pass: m.pass, y0: m.y0, y1: m.y1, it: r.it, ang: r.ang, de: r.de }, [r.it.buffer, r.ang.buffer, r.de.buffer]);\n  }\n};\n";
+// ───────────────────────── 고정소수점 큰 수 (깊은 확대의 중심 좌표) ─────────────────────────
+// 값 = big / 2^F.  F 는 확대가 깊어질수록 늘린다.
+const F64 = new Float64Array(1), U64 = new BigUint64Array(F64.buffer);
+// double 을 정확히 정수·지수로 나눈다: x = m · 2^e  (m 은 53비트 정수)
+function frexpBig(x) {
+  if (x === 0 || !isFinite(x)) return [0n, 0];
+  F64[0] = x; const bits = U64[0], sign = bits >> 63n ? -1n : 1n, ex = Number((bits >> 52n) & 0x7ffn), frac = bits & 0xfffffffffffffn;
+  if (ex === 0) return [sign * frac, -1074];
+  return [sign * (frac | 0x10000000000000n), ex - 1075];
+}
+// double → 고정소수점 (F 비트)
+function dToFix(x, F) { const [m, e] = frexpBig(x); const s = e + F; return s >= 0 ? m << BigInt(s) : m >> BigInt(-s); }
+// m · 2^e (지수가 아주 작거나 커도 중간에 0·무한으로 새지 않게 나눠 곱한다)
+function ldexp(m, e) { let v = m; while (e > 1000) { v *= Math.pow(2, 1000); e -= 1000; } while (e < -1000) { v *= Math.pow(2, -1000); e += 1000; } return v * Math.pow(2, e); }
+// 고정소수점 → double
+function fixToD(b, F) {
+  if (b === 0n) return 0; const neg = b < 0n, a = neg ? -b : b, sh = Math.max(0, a.toString(2).length - 60);
+  const v = ldexp(Number(a >> BigInt(sh)), sh - F); return neg ? -v : v;
+}
+// F 를 바꾼다 (정밀도 올리기·내리기)
+const refix = (b, F0, F1) => (F1 >= F0 ? b << BigInt(F1 - F0) : b >> BigInt(F0 - F1));
+// 십진 문자열 ↔ 고정소수점
+function fixToDec(b, F, digits) {
+  const neg = b < 0n, a = neg ? -b : b, ip = a >> BigInt(F), fr = a - (ip << BigInt(F));
+  const scaled = (fr * 10n ** BigInt(digits) + (1n << BigInt(F - 1))) >> BigInt(F);
+  let fs = scaled.toString().padStart(digits, '0'); let ipx = ip;
+  if (fs.length > digits) { ipx += 1n; fs = fs.slice(1); }
+  return (neg ? '-' : '') + ipx.toString() + (digits ? '.' + fs : '');
+}
+function decToFix(str, F) {
+  const s = String(str).trim(); const m = /^([+-])?(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(s); if (!m) return null;
+  const neg = m[1] === '-', ip = m[2] || '0', fp = m[3] || '', ex = +(m[4] || 0);
+  let digits = BigInt(ip + fp), scale = fp.length - ex;   // 값 = digits · 10^-scale
+  let v; if (scale >= 0) v = (digits << BigInt(F)) / 10n ** BigInt(scale); else v = (digits * 10n ** BigInt(-scale)) << BigInt(F);
+  return neg ? -v : v;
+}
+// 확대에 필요한 비트 수: 화소 크기보다 훨씬 작게
+const fracBitsFor = scale => Math.max(64, Math.ceil(-Math.log2(scale)) + 72);
+
+// ───────────────────────── 팔레트 (색 띠) ─────────────────────────
+// [위치 0~1, [r,g,b]] … 띠는 끝에서 처음으로 이어진다
+const PALETTES = {
+  classic: [[0, [0, 7, 100]], [0.16, [32, 107, 203]], [0.42, [237, 255, 255]], [0.6425, [255, 170, 0]], [0.8575, [0, 2, 0]]],
+  sunset: [[0, [18, 4, 40]], [0.2, [110, 20, 90]], [0.42, [240, 80, 60]], [0.6, [255, 190, 90]], [0.75, [255, 248, 220]], [0.88, [70, 30, 90]]],
+  fire: [[0, [0, 0, 0]], [0.25, [120, 10, 0]], [0.5, [240, 80, 0]], [0.7, [255, 200, 40]], [0.85, [255, 255, 210]]],
+  ice: [[0, [2, 6, 30]], [0.3, [20, 70, 160]], [0.55, [120, 200, 255]], [0.75, [235, 250, 255]], [0.9, [60, 120, 200]]],
+  ocean: [[0, [0, 20, 30]], [0.25, [0, 80, 110]], [0.5, [20, 170, 170]], [0.7, [200, 240, 220]], [0.85, [10, 60, 90]]],
+  aurora: [[0, [5, 5, 25]], [0.2, [20, 120, 90]], [0.4, [120, 255, 160]], [0.55, [40, 160, 220]], [0.75, [160, 60, 220]], [0.9, [20, 10, 60]]],
+  neon: [[0, [10, 0, 20]], [0.2, [255, 0, 160]], [0.4, [40, 0, 80]], [0.6, [0, 230, 255]], [0.8, [10, 20, 60]]],
+  gold: [[0, [20, 10, 0]], [0.3, [130, 80, 10]], [0.55, [250, 210, 110]], [0.7, [255, 250, 220]], [0.85, [90, 50, 10]]],
+  copper: [[0, [10, 4, 2]], [0.3, [150, 70, 40]], [0.55, [240, 170, 120]], [0.75, [90, 160, 150]], [0.9, [30, 20, 15]]],
+  forest: [[0, [5, 15, 5]], [0.25, [40, 90, 30]], [0.5, [170, 200, 80]], [0.7, [250, 240, 190]], [0.85, [90, 60, 30]]],
+  lava: [[0, [0, 0, 0]], [0.15, [80, 0, 30]], [0.35, [220, 30, 30]], [0.5, [255, 140, 0]], [0.6, [255, 255, 120]], [0.8, [60, 0, 60]]],
+  candy: [[0, [255, 120, 180]], [0.25, [255, 230, 120]], [0.5, [120, 230, 200]], [0.75, [150, 140, 255]]],
+  midnight: [[0, [0, 0, 0]], [0.3, [30, 30, 90]], [0.55, [120, 110, 220]], [0.7, [230, 230, 255]], [0.85, [60, 40, 120]]],
+  viridis: [[0, [68, 1, 84]], [0.25, [59, 82, 139]], [0.5, [33, 145, 140]], [0.75, [94, 201, 98]], [0.92, [253, 231, 37]]],
+  rainbow: null,
+  mono: [[0, [0, 0, 0]], [0.5, [255, 255, 255]]],
+};
+const PALETTE_ORDER = Object.keys(PALETTES);
+const LUT_N = 2048;
+function buildLut(name) {
+  const lut = new Uint8Array(LUT_N * 3), st = PALETTES[name];
+  for (let i = 0; i < LUT_N; i++) {
+    const t = i / LUT_N; let c;
+    if (!st) { const h = t * 6, x = 1 - Math.abs((h % 2) - 1), seg = Math.floor(h); const rgb = [[1, x, 0], [x, 1, 0], [0, 1, x], [0, x, 1], [x, 0, 1], [1, 0, x]][seg % 6]; c = rgb.map(v => 40 + v * 215); }
+    else {
+      let a = st[st.length - 1], b = st[0], ta = a[0] - 1, tb = b[0];
+      for (let k = 0; k < st.length; k++) { if (st[k][0] <= t) { a = st[k]; ta = st[k][0]; b = st[(k + 1) % st.length]; tb = k + 1 < st.length ? st[k + 1][0] : 1 + st[0][0]; } }
+      let u = (t - ta) / (tb - ta || 1); u = u * u * (3 - 2 * u);            // 부드럽게 이어지게
+      c = [0, 1, 2].map(j => a[1][j] + (b[1][j] - a[1][j]) * u);
+    }
+    lut[i * 3] = c[0]; lut[i * 3 + 1] = c[1]; lut[i * 3 + 2] = c[2];
   }
-}[LANG];
+  return lut;
+}
+// 견본 그림 (CSS 그라디언트)
+function paletteCss(name) { const lut = buildLut(name), s = []; for (let i = 0; i <= 8; i++) { const k = Math.min(LUT_N - 1, Math.floor(i / 8 * LUT_N)) * 3; s.push(`rgb(${lut[k]},${lut[k + 1]},${lut[k + 2]}) ${i * 12.5}%`); } return `linear-gradient(90deg, ${s.join(',')})`; }
 
-document.title=T.title;
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+const TX = {
+  ko: { title: '만델브로 탐험', tooDeep: '이 앱이 갈 수 있는 가장 깊은 곳입니다 (10^290 배)', tooDeepFlat: '이 공식은 10^13 배까지 확대할 수 있습니다', refCalc: '기준점 정밀 계산 {p}%', modeJulia: '줄리아 집합',
+    formulas: { mandel: '만델브로', ship: '버닝십', tricorn: '트라이콘', multi3: '멀티브로 z³' }, modeDeep: '깊은 확대 · {b}비트', modeFast: '빠른 계산',
+    home: '처음 모습', back: '뒤로', forward: '앞으로', zoomOut: '축소', zoomIn: '확대', movie: '확대 영상', movieShort: '영상', juliaPreview: '줄리아 미리보기', orbit: '궤도 보기', savePng: '그림 저장', panel: '설정 판', help: '도움말',
+    tabColor: '색', tabCalc: '계산', tabPlaces: '장소', tabLearn: '알아보기', palette: '팔레트',
+    palNames: { classic: '고전', sunset: '노을', fire: '불꽃', ice: '얼음', ocean: '바다', aurora: '오로라', neon: '네온', gold: '황금', copper: '구리', forest: '숲', lava: '용암', candy: '사탕', midnight: '한밤', viridis: '비리디스', rainbow: '무지개', mono: '흑백' },
+    density: '색 간격', offset: '색 위치', mapping: '색 배치', mapLog: '로그', mapLin: '고르게', colorCycle: '색 흘리기', cycleSpeed: '흐름 빠르기', lighting: '입체 조명', on: '켜기', off: '끄기', lightAngle: '빛 방향', lightStrength: '빛 세기', edges: '윤곽선', inside: '안쪽 색', inBlack: '검정', inWhite: '흰색', inNavy: '남색',
+    formula: '공식', juliaSet: '줄리아 집합 (c 값)', juliaUpdate: '이 c 로 다시 그리기', juliaOpen: '줄리아 집합 열기', backToMandel: '만델브로로 돌아가기', juliaHint: '위 막대의 줄리아 미리보기를 켜고 만델브로 위를 움직이면 그 자리의 줄리아 집합이 보입니다. 미리보기를 누르면 열립니다.',
+    iterations: '반복 횟수', iterAuto: '깊이 따라 자동', iterManual: '직접', iterMul: '자동 배율', iterCount: '횟수', quality: '화질', qFast: '빠르게', qNormal: '보통', qSharp: '선명하게',
+    deepNote: '10^13 배보다 깊어지면 섭동 계산으로 바뀝니다. 기준점 하나를 수백 자리 정밀도로 계산하고, 나머지 화소는 그 차이만 계산합니다.\n깊을수록 반복이 많아져 시간이 더 걸립니다.',
+    famous: '유명한 장소', myPlaces: '내 장소', saveHere: '여기 저장', copyLoc: '위치 복사', pasteLoc: '위치 붙여 넣기', delete: '지우기', noMine: '마음에 드는 곳에서 \'여기 저장\'을 누르세요.', placeN: '장소 {n}', saved: '저장했습니다',
+    placeNames: { whole: '전체 모습', seahorse: '해마 골짜기', elephant: '코끼리 골짜기', triple: '세 갈래 나선 골짜기', scepter: '왕홀 골짜기', spike: '가지 끝의 작은 만델브로', goldMini: '해마 속 작은 만델브로', goldSpiral: '황금 나선', deepMini: '10^15 배 속 작은 만델브로', deep50: '끝없는 나선 · 10^50 배', deep120: '끝없는 나선 · 10^120 배', deep250: '바닥 근처 · 10^250 배', rabbit: '더우디 토끼', siegel: '지겔 원판', spiralJ: '나선 줄리아', dragon: '용 줄리아', dendrite: '수지상 줄리아', ship: '불타는 배', tricorn: '트라이콘', multibrot: '멀티브로 z³' },
+    learn: [['만델브로 집합이란', '복소수 c 를 하나 고르고 z 를 0 에서 시작해 z ← z² + c 를 되풀이합니다. z 가 끝까지 커지지 않으면 c 는 집합 안(검은 부분)이고, 커져 버리면 밖입니다. 이 단순한 규칙이 끝없이 복잡한 경계를 만듭니다.'],
+      ['색은 무엇을 뜻하나', '밖의 점이 얼마나 빨리 커지는지(반복 횟수)를 색으로 칠했습니다. 경계에 가까울수록 오래 버티므로 색이 촘촘하게 바뀝니다. 입체 조명은 이 값의 기울기로 빛과 그림자를 만든 것입니다.'],
+      ['얼마나 깊이 갈 수 있나', '보통 컴퓨터 숫자(double)로는 10^13 배쯤에서 그림이 깨집니다. 이 앱은 기준점 하나만 수백 자리로 정밀 계산하고 나머지는 그 차이만 계산하는 섭동 이론으로 10^290 배까지 들어갑니다. 우주의 크기와 원자의 크기 비율도 10^40 정도입니다.'],
+      ['작은 만델브로와 나선', '아무리 확대해도 전체와 닮은 작은 만델브로가 계속 나타납니다. 궤도가 결국 주기적으로 도는 미시우레비치 점으로 들어가면 같은 나선이 끝없이 되풀이됩니다. 장소의 깊은 나선들이 그런 점입니다.'],
+      ['줄리아 집합', '이번에는 c 를 고정하고 시작점 z 를 바꿉니다. 만델브로 집합은 모든 줄리아 집합의 지도와 같아서, 만델브로 안쪽의 c 는 이어진 줄리아 집합을, 바깥의 c 는 먼지처럼 흩어진 줄리아 집합을 만듭니다.']],
+    credits: '모든 그림은 이 앱이 직접 계산합니다. 깊은 확대는 섭동 이론(perturbation)과 리베이싱 기법을 씁니다.', copied: '복사했습니다', cancel: '취소', go: '가기', badLoc: '위치 글을 읽을 수 없습니다', ok: '확인',
+    keys: [['끌기', '옮기기'], ['휠 · 두 손가락', '확대 · 축소'], ['두 번 누르기', '4배 확대 (Alt: 축소)'], ['Shift + 끌기', '상자 확대'], ['+ · −', '확대 · 축소'], ['방향키', '옮기기'], ['Home · Backspace', '처음 모습 · 뒤로'], ['J', '줄리아 미리보기'], ['O', '궤도 보기'], ['P', '다음 팔레트'], ['C', '색 흘리기'], ['M', '확대 영상'], ['S', '그림 저장'], ['Esc', '영상 멈춤']],
+    movieFly: '여기까지 날아가기', movieFlyD: '전체 모습에서 지금 보는 곳({z})까지 부드럽게 확대합니다', movieDive: '자동 잠수', movieDiveD: '가장 복잡한 곳을 골라 끝없이 깊이 들어갑니다', speed: '빠르기', slow: '느리게', normal: '보통', fast: '빠르게', movieNote: '앞 장면을 계산하는 동안 잠시 멈출 수 있습니다. 화면을 누르면 그 자리에서 멈춥니다.', start: '시작', computing: '다음 장면 계산 중…',
+    sizes: { screen: '화면 2배', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: '정사각형' }, antialias: '계단 없애기 (2×2)', exportNote: '깊은 곳은 큰 그림일수록 오래 걸립니다. 계단 없애기는 QHD 까지 쓸 수 있습니다.', save: '저장', rendering: '그림을 계산하는 중…', savedPng: '그림을 저장했습니다', juliaClick: '눌러서 열기' },
+  en: { title: 'Mandelbrot Explorer', tooDeep: 'This is as deep as the app can go (10^290×)', tooDeepFlat: 'This formula zooms up to 10^13×', refCalc: 'Reference orbit {p}%', modeJulia: 'Julia set',
+    formulas: { mandel: 'Mandelbrot', ship: 'Burning Ship', tricorn: 'Tricorn', multi3: 'Multibrot z³' }, modeDeep: 'deep zoom · {b} bits', modeFast: 'fast',
+    home: 'Home view', back: 'Back', forward: 'Forward', zoomOut: 'Zoom out', zoomIn: 'Zoom in', movie: 'Zoom movie', movieShort: 'Movie', juliaPreview: 'Julia preview', orbit: 'Show orbit', savePng: 'Save image', panel: 'Settings', help: 'Help',
+    tabColor: 'Color', tabCalc: 'Compute', tabPlaces: 'Places', tabLearn: 'Learn', palette: 'Palette',
+    palNames: { classic: 'Classic', sunset: 'Sunset', fire: 'Fire', ice: 'Ice', ocean: 'Ocean', aurora: 'Aurora', neon: 'Neon', gold: 'Gold', copper: 'Copper', forest: 'Forest', lava: 'Lava', candy: 'Candy', midnight: 'Midnight', viridis: 'Viridis', rainbow: 'Rainbow', mono: 'Mono' },
+    density: 'Density', offset: 'Offset', mapping: 'Mapping', mapLog: 'Log', mapLin: 'Linear', colorCycle: 'Color cycling', cycleSpeed: 'Cycle speed', lighting: '3D lighting', on: 'On', off: 'Off', lightAngle: 'Light angle', lightStrength: 'Light strength', edges: 'Outline', inside: 'Inside color', inBlack: 'Black', inWhite: 'White', inNavy: 'Navy',
+    formula: 'Formula', juliaSet: 'Julia set (c value)', juliaUpdate: 'Redraw with this c', juliaOpen: 'Open Julia set', backToMandel: 'Back to Mandelbrot', juliaHint: 'Turn on Julia preview in the top bar and move over the Mandelbrot set to see the Julia set for that point. Click the preview to open it.',
+    iterations: 'Iterations', iterAuto: 'Auto by depth', iterManual: 'Manual', iterMul: 'Auto factor', iterCount: 'Count', quality: 'Quality', qFast: 'Fast', qNormal: 'Normal', qSharp: 'Sharp',
+    deepNote: 'Beyond 10^13× the app switches to perturbation: one reference point is computed with hundreds of digits, every other pixel only as a small difference from it.\nDeeper views need more iterations and take longer.',
+    famous: 'Famous places', myPlaces: 'My places', saveHere: 'Save here', copyLoc: 'Copy location', pasteLoc: 'Paste location', delete: 'Delete', noMine: 'Press \'Save here\' wherever you like the view.', placeN: 'Place {n}', saved: 'Saved',
+    placeNames: { whole: 'The whole set', seahorse: 'Seahorse Valley', elephant: 'Elephant Valley', triple: 'Triple Spiral Valley', scepter: 'Scepter Valley', spike: 'Mini set on the spike', goldMini: 'Mini set in Seahorse Valley', goldSpiral: 'Golden spiral', deepMini: 'Mini set at 10^15', deep50: 'Endless spiral · 10^50', deep120: 'Endless spiral · 10^120', deep250: 'Near the floor · 10^250', rabbit: 'Douady rabbit', siegel: 'Siegel disk', spiralJ: 'Spiral Julia', dragon: 'Dragon Julia', dendrite: 'Dendrite Julia', ship: 'The Burning Ship', tricorn: 'Tricorn', multibrot: 'Multibrot z³' },
+    learn: [['What is the Mandelbrot set?', 'Pick a complex number c, start z at 0 and repeat z ← z² + c. If z stays bounded forever, c is in the set (the black part); if it blows up, c is outside. This tiny rule creates an infinitely intricate boundary.'],
+      ['What do the colors mean?', 'Points outside are colored by how quickly they escape (the iteration count). Near the boundary they hold out longer, so colors change faster. 3D lighting is made from the slope of that value.'],
+      ['How deep can it go?', 'Ordinary computer numbers (doubles) break down around 10^13×. This app computes one reference point with hundreds of digits and every other pixel as a tiny difference from it (perturbation theory), reaching 10^290×. The universe is only about 10^40 times larger than an atom.'],
+      ['Mini sets and spirals', 'However far you zoom, smaller copies of the whole set keep appearing. Zooming into a Misiurewicz point, whose orbit becomes periodic, repeats the same spiral forever. The deep spirals in Places are such points.'],
+      ['Julia sets', 'Here c is fixed and the starting point z varies. The Mandelbrot set is a map of all Julia sets: c inside gives a connected Julia set, c outside gives one scattered like dust.']],
+    credits: 'Every image is computed by this app. Deep zoom uses perturbation theory with rebasing.', copied: 'Copied', cancel: 'Cancel', go: 'Go', badLoc: 'Could not read that location', ok: 'OK',
+    keys: [['Drag', 'Pan'], ['Wheel · two fingers', 'Zoom'], ['Double-tap', 'Zoom in 4× (Alt: out)'], ['Shift + drag', 'Box zoom'], ['+ · −', 'Zoom in · out'], ['Arrows', 'Pan'], ['Home · Backspace', 'Home view · back'], ['J', 'Julia preview'], ['O', 'Show orbit'], ['P', 'Next palette'], ['C', 'Color cycling'], ['M', 'Zoom movie'], ['S', 'Save image'], ['Esc', 'Stop movie']],
+    movieFly: 'Fly here', movieFlyD: 'Smoothly zoom from the whole set to this view ({z})', movieDive: 'Auto dive', movieDiveD: 'Keeps picking the most intricate spot and dives forever', speed: 'Speed', slow: 'Slow', normal: 'Normal', fast: 'Fast', movieNote: 'It may pause while the next frame is computed. Tap the screen to stop right there.', start: 'Start', computing: 'Computing next frame…',
+    sizes: { screen: '2× screen', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Square' }, antialias: 'Anti-aliasing (2×2)', exportNote: 'Deep views take longer at larger sizes. Anti-aliasing is available up to QHD.', save: 'Save', rendering: 'Rendering image…', savedPng: 'Image saved', juliaClick: 'tap to open' },
+};
+// 나머지 언어: 영어 위에 덮어 쓴다
+const TX_PART = {
+  ja: { title: 'マンデルブロ探検', tooDeep: 'このアプリで行ける一番深い所です (10^290 倍)', tooDeepFlat: 'この式は 10^13 倍まで拡大できます', refCalc: '基準点を精密計算中 {p}%', modeJulia: 'ジュリア集合', formulas: { mandel: 'マンデルブロ', ship: 'バーニングシップ', tricorn: 'トライコーン', multibrot: 'マルチブロ z³', multi3: 'マルチブロ z³' }, modeDeep: '深い拡大 · {b}ビット', modeFast: '高速計算',
+    home: '最初の姿', back: '戻る', forward: '進む', zoomOut: '縮小', zoomIn: '拡大', movie: 'ズーム動画', movieShort: '動画', juliaPreview: 'ジュリア プレビュー', orbit: '軌道を表示', savePng: '画像を保存', panel: '設定パネル', help: 'ヘルプ', tabColor: '色', tabCalc: '計算', tabPlaces: '名所', tabLearn: '解説', palette: 'パレット',
+    palNames: { classic: 'クラシック', sunset: '夕焼け', fire: '炎', ice: '氷', ocean: '海', aurora: 'オーロラ', neon: 'ネオン', gold: '黄金', copper: '銅', forest: '森', lava: '溶岩', candy: 'キャンディ', midnight: '真夜中', viridis: 'ビリディス', rainbow: '虹', mono: '白黒' },
+    density: '色の間隔', offset: '色の位置', mapping: '色の配置', mapLog: '対数', mapLin: '均等', colorCycle: '色を流す', cycleSpeed: '流れる速さ', lighting: '立体照明', on: 'オン', off: 'オフ', lightAngle: '光の向き', lightStrength: '光の強さ', edges: '輪郭線', inside: '内側の色', inBlack: '黒', inWhite: '白', inNavy: '紺',
+    formula: '式', juliaSet: 'ジュリア集合 (c の値)', juliaUpdate: 'この c で描き直す', juliaOpen: 'ジュリア集合を開く', backToMandel: 'マンデルブロに戻る', juliaHint: '上のバーでジュリア プレビューをオンにしてマンデルブロ集合の上を動かすと、その点のジュリア集合が見えます。プレビューを押すと開きます。',
+    iterations: '反復回数', iterAuto: '深さに合わせて自動', iterManual: '手動', iterMul: '自動の倍率', iterCount: '回数', quality: '画質', qFast: '速く', qNormal: '標準', qSharp: '鮮明に',
+    deepNote: '10^13 倍より深いと摂動計算に切り替わります。基準点を一つだけ数百桁で計算し、ほかの画素はその差だけを計算します。\n深いほど反復が増えて時間がかかります。',
+    famous: '有名な場所', myPlaces: 'マイ スポット', saveHere: 'ここを保存', copyLoc: '位置をコピー', pasteLoc: '位置を貼り付け', delete: '削除', noMine: '気に入った所で「ここを保存」を押してください。', placeN: 'スポット {n}', saved: '保存しました',
+    placeNames: { whole: '全体の姿', seahorse: 'タツノオトシゴの谷', elephant: 'ゾウの谷', triple: '三重らせんの谷', scepter: '王笏の谷', spike: '枝先の小さなマンデルブロ', goldMini: '谷の中の小さなマンデルブロ', goldSpiral: '黄金のらせん', deepMini: '10^15 倍の小さなマンデルブロ', deep50: '終わらないらせん · 10^50 倍', deep120: '終わらないらせん · 10^120 倍', deep250: '底の近く · 10^250 倍', rabbit: 'ドゥアディのウサギ', siegel: 'ジーゲル円板', spiralJ: 'らせんジュリア', dragon: '竜のジュリア', dendrite: '樹枝状ジュリア', ship: '燃える船', tricorn: 'トライコーン', multibrot: 'マルチブロ z³' },
+    learn: [['マンデルブロ集合とは', '複素数 c を選び、z を 0 から始めて z ← z² + c を繰り返します。z がいつまでも大きくならなければ c は集合の中 (黒い部分)、大きくなれば外です。この単純な規則が果てしなく複雑な境界を生みます。'], ['色の意味', '外の点がどれだけ速く大きくなるか (反復回数) を色で塗っています。境界に近いほど長く持ちこたえるので色が細かく変わります。立体照明はこの値の傾きから光と影を作ったものです。'], ['どこまで深く行けるか', '普通のコンピューターの数 (double) では 10^13 倍あたりで絵が崩れます。このアプリは基準点を一つだけ数百桁で計算し、ほかはその差だけを計算する摂動論で 10^290 倍まで潜ります。宇宙と原子の大きさの比でも 10^40 ほどです。'], ['小さなマンデルブロとらせん', 'どれだけ拡大しても全体に似た小さなマンデルブロが現れ続けます。軌道が最後に周期的になるミシュレヴィチ点に向かうと、同じらせんが終わりなく繰り返されます。名所の深いらせんがその点です。'], ['ジュリア集合', '今度は c を固定して始点 z を変えます。マンデルブロ集合はすべてのジュリア集合の地図のようなもので、内側の c はつながったジュリア集合を、外側の c はちりのように散らばったジュリア集合を作ります。']],
+    credits: 'すべての絵はこのアプリが自分で計算しています。深い拡大には摂動論とリベース法を使います。', copied: 'コピーしました', cancel: 'キャンセル', go: '移動', badLoc: '位置の文字列を読めません', ok: 'OK',
+    keys: [['ドラッグ', '移動'], ['ホイール · 2本指', '拡大 · 縮小'], ['ダブルタップ', '4 倍に拡大 (Alt: 縮小)'], ['Shift + ドラッグ', '範囲を拡大'], ['+ · −', '拡大 · 縮小'], ['矢印', '移動'], ['Home · Backspace', '最初の姿 · 戻る'], ['J', 'ジュリア プレビュー'], ['O', '軌道を表示'], ['P', '次のパレット'], ['C', '色を流す'], ['M', 'ズーム動画'], ['S', '画像を保存'], ['Esc', '動画を止める']],
+    movieFly: 'ここまで飛ぶ', movieFlyD: '全体から今見ている所 ({z}) までなめらかに拡大します', movieDive: '自動ダイブ', movieDiveD: '一番入り組んだ所を選び続けて果てしなく潜ります', speed: '速さ', slow: 'ゆっくり', normal: '標準', fast: '速く', movieNote: '次の場面を計算する間は少し止まることがあります。画面を押すとその場で止まります。', start: '開始', computing: '次の場面を計算中…',
+    sizes: { screen: '画面の 2 倍', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: '正方形' }, antialias: 'ジャギー除去 (2×2)', exportNote: '深い所ほど大きな画像は時間がかかります。ジャギー除去は QHD まで使えます。', save: '保存', rendering: '画像を計算中…', savedPng: '画像を保存しました', juliaClick: '押して開く' },
+  zh: { title: '曼德布罗探险', tooDeep: '这是本应用能到达的最深处 (10^290 倍)', tooDeepFlat: '此公式最多放大 10^13 倍', refCalc: '正在精确计算参考点 {p}%', modeJulia: '朱利亚集', formulas: { mandel: '曼德布罗', ship: '燃烧船', tricorn: '三角', multi3: '多重曼德布罗 z³' }, modeDeep: '深度放大 · {b} 位', modeFast: '快速计算',
+    home: '初始视图', back: '后退', forward: '前进', zoomOut: '缩小', zoomIn: '放大', movie: '缩放动画', movieShort: '动画', juliaPreview: '朱利亚预览', orbit: '显示轨道', savePng: '保存图片', panel: '设置面板', help: '帮助', tabColor: '颜色', tabCalc: '计算', tabPlaces: '名胜', tabLearn: '了解', palette: '调色板',
+    palNames: { classic: '经典', sunset: '晚霞', fire: '火焰', ice: '冰', ocean: '海洋', aurora: '极光', neon: '霓虹', gold: '黄金', copper: '铜', forest: '森林', lava: '熔岩', candy: '糖果', midnight: '午夜', viridis: '翠绿', rainbow: '彩虹', mono: '黑白' },
+    density: '色彩间隔', offset: '色彩位置', mapping: '色彩分布', mapLog: '对数', mapLin: '均匀', colorCycle: '色彩流动', cycleSpeed: '流动速度', lighting: '立体光照', on: '开', off: '关', lightAngle: '光照方向', lightStrength: '光照强度', edges: '轮廓线', inside: '内部颜色', inBlack: '黑', inWhite: '白', inNavy: '藏青',
+    formula: '公式', juliaSet: '朱利亚集 (c 值)', juliaUpdate: '用此 c 重绘', juliaOpen: '打开朱利亚集', backToMandel: '返回曼德布罗', juliaHint: '在上方栏打开朱利亚预览，在曼德布罗集上移动即可看到该点的朱利亚集。点击预览即可打开。',
+    iterations: '迭代次数', iterAuto: '随深度自动', iterManual: '手动', iterMul: '自动倍率', iterCount: '次数', quality: '画质', qFast: '快速', qNormal: '标准', qSharp: '清晰',
+    deepNote: '超过 10^13 倍会切换到微扰计算：只用数百位精度计算一个参考点，其余像素只计算与它的差。\n越深迭代越多，耗时越长。',
+    famous: '著名地点', myPlaces: '我的地点', saveHere: '保存此处', copyLoc: '复制位置', pasteLoc: '粘贴位置', delete: '删除', noMine: '在喜欢的地方按“保存此处”。', placeN: '地点 {n}', saved: '已保存',
+    placeNames: { whole: '全貌', seahorse: '海马谷', elephant: '大象谷', triple: '三重螺旋谷', scepter: '权杖谷', spike: '尖端的小曼德布罗', goldMini: '海马谷里的小曼德布罗', goldSpiral: '黄金螺旋', deepMini: '10^15 倍处的小曼德布罗', deep50: '无尽螺旋 · 10^50 倍', deep120: '无尽螺旋 · 10^120 倍', deep250: '接近底部 · 10^250 倍', rabbit: '杜阿迪兔子', siegel: '西格尔圆盘', spiralJ: '螺旋朱利亚', dragon: '龙形朱利亚', dendrite: '树枝朱利亚', ship: '燃烧的船', tricorn: '三角', multibrot: '多重曼德布罗 z³' },
+    learn: [['什么是曼德布罗集', '选一个复数 c，让 z 从 0 开始反复做 z ← z² + c。如果 z 永远不会变大，c 就在集合内 (黑色部分)；如果发散，c 就在外面。这条简单规则造出了无穷复杂的边界。'], ['颜色表示什么', '外部的点按发散快慢 (迭代次数) 上色。越靠近边界坚持得越久，颜色变化越密。立体光照是用这个值的坡度做出的光影。'], ['能放大多深', '普通计算机数字 (double) 在 10^13 倍左右就会失真。本应用只用数百位精度算一个参考点，其余像素只算与它的差 (微扰理论)，可放大到 10^290 倍。宇宙与原子的大小之比也只有约 10^40。'], ['小曼德布罗与螺旋', '无论放大多少，都会不断出现与整体相似的小曼德布罗。放大到轨道最终变成周期的米修列维奇点，就会看到同一螺旋无尽重复。名胜中的深处螺旋就是这样的点。'], ['朱利亚集', '这次固定 c，改变起点 z。曼德布罗集就像所有朱利亚集的地图：内部的 c 给出连通的朱利亚集，外部的 c 给出像尘埃一样散开的朱利亚集。']],
+    credits: '所有图像都由本应用亲自计算。深度放大使用微扰理论和重定基准方法。', copied: '已复制', cancel: '取消', go: '前往', badLoc: '无法读取位置文本', ok: '确定',
+    keys: [['拖动', '移动'], ['滚轮 · 双指', '缩放'], ['双击', '放大 4 倍 (Alt: 缩小)'], ['Shift + 拖动', '框选放大'], ['+ · −', '放大 · 缩小'], ['方向键', '移动'], ['Home · Backspace', '初始视图 · 后退'], ['J', '朱利亚预览'], ['O', '显示轨道'], ['P', '下一个调色板'], ['C', '色彩流动'], ['M', '缩放动画'], ['S', '保存图片'], ['Esc', '停止动画']],
+    movieFly: '飞到这里', movieFlyD: '从全貌平滑放大到当前位置 ({z})', movieDive: '自动下潜', movieDiveD: '不断选择最复杂的地方无限下潜', speed: '速度', slow: '慢', normal: '标准', fast: '快', movieNote: '计算下一画面时可能稍有停顿。点击屏幕即可在原地停止。', start: '开始', computing: '正在计算下一画面…',
+    sizes: { screen: '屏幕 2 倍', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: '正方形' }, antialias: '抗锯齿 (2×2)', exportNote: '越深、越大的图片耗时越长。抗锯齿最高可用于 QHD。', save: '保存', rendering: '正在计算图片…', savedPng: '已保存图片', juliaClick: '点击打开' },
+};
+TX_PART['zh-TW'] = Object.assign({}, TX_PART.zh, { title: '曼德布羅探險', tooDeep: '這是本應用能到達的最深處 (10^290 倍)', tooDeepFlat: '此公式最多放大 10^13 倍', refCalc: '正在精確計算參考點 {p}%', modeJulia: '朱利亞集', formulas: { mandel: '曼德布羅', ship: '燃燒船', tricorn: '三角', multi3: '多重曼德布羅 z³' }, modeDeep: '深度放大 · {b} 位元', modeFast: '快速計算',
+  home: '初始畫面', back: '上一步', forward: '下一步', zoomOut: '縮小', zoomIn: '放大', movie: '縮放動畫', movieShort: '動畫', juliaPreview: '朱利亞預覽', orbit: '顯示軌道', savePng: '儲存圖片', panel: '設定面板', help: '說明', tabColor: '顏色', tabCalc: '計算', tabPlaces: '名勝', tabLearn: '認識', palette: '調色盤',
+  palNames: { classic: '經典', sunset: '晚霞', fire: '火焰', ice: '冰', ocean: '海洋', aurora: '極光', neon: '霓虹', gold: '黃金', copper: '銅', forest: '森林', lava: '熔岩', candy: '糖果', midnight: '午夜', viridis: '翠綠', rainbow: '彩虹', mono: '黑白' },
+  density: '色彩間隔', offset: '色彩位置', mapping: '色彩分佈', mapLog: '對數', mapLin: '均勻', colorCycle: '色彩流動', cycleSpeed: '流動速度', lighting: '立體光照', lightAngle: '光照方向', lightStrength: '光照強度', edges: '輪廓線', inside: '內部顏色', inNavy: '深藍',
+  juliaSet: '朱利亞集 (c 值)', juliaUpdate: '用此 c 重繪', juliaOpen: '開啟朱利亞集', backToMandel: '返回曼德布羅', juliaHint: '在上方列開啟朱利亞預覽，在曼德布羅集上移動即可看到該點的朱利亞集。點擊預覽即可開啟。',
+  iterations: '迭代次數', iterAuto: '隨深度自動', iterManual: '手動', iterMul: '自動倍率', iterCount: '次數', quality: '畫質', qNormal: '標準', qSharp: '清晰',
+  deepNote: '超過 10^13 倍會切換到微擾計算：只用數百位精度計算一個參考點，其餘像素只計算與它的差。\n越深迭代越多，耗時越長。',
+  famous: '著名地點', myPlaces: '我的地點', saveHere: '儲存此處', copyLoc: '複製位置', pasteLoc: '貼上位置', delete: '刪除', noMine: '在喜歡的地方按「儲存此處」。', placeN: '地點 {n}', saved: '已儲存',
+  placeNames: { whole: '全貌', seahorse: '海馬谷', elephant: '大象谷', triple: '三重螺旋谷', scepter: '權杖谷', spike: '尖端的小曼德布羅', goldMini: '海馬谷裡的小曼德布羅', goldSpiral: '黃金螺旋', deepMini: '10^15 倍處的小曼德布羅', deep50: '無盡螺旋 · 10^50 倍', deep120: '無盡螺旋 · 10^120 倍', deep250: '接近底部 · 10^250 倍', rabbit: '杜阿迪兔子', siegel: '西格爾圓盤', spiralJ: '螺旋朱利亞', dragon: '龍形朱利亞', dendrite: '樹枝朱利亞', ship: '燃燒的船', tricorn: '三角', multibrot: '多重曼德布羅 z³' },
+  learn: [['什麼是曼德布羅集', '選一個複數 c，讓 z 從 0 開始反覆做 z ← z² + c。如果 z 永遠不會變大，c 就在集合內 (黑色部分)；如果發散，c 就在外面。這條簡單規則造出了無窮複雜的邊界。'], ['顏色代表什麼', '外部的點依發散快慢 (迭代次數) 上色。越靠近邊界撐得越久，顏色變化越密。立體光照是用這個值的坡度做出的光影。'], ['能放大多深', '一般電腦數字 (double) 在 10^13 倍左右就會失真。本應用只用數百位精度算一個參考點，其餘像素只算與它的差 (微擾理論)，可放大到 10^290 倍。宇宙與原子的大小比也只有約 10^40。'], ['小曼德布羅與螺旋', '無論放大多少，都會不斷出現與整體相似的小曼德布羅。放大到軌道最終變成週期的米修列維奇點，就會看到同一螺旋無盡重複。名勝中的深處螺旋就是這樣的點。'], ['朱利亞集', '這次固定 c，改變起點 z。曼德布羅集就像所有朱利亞集的地圖：內部的 c 給出連通的朱利亞集，外部的 c 給出像塵埃一樣散開的朱利亞集。']],
+  credits: '所有圖像都由本應用親自計算。深度放大使用微擾理論和重定基準方法。', copied: '已複製', go: '前往', badLoc: '無法讀取位置文字',
+  keys: [['拖曳', '移動'], ['滾輪 · 雙指', '縮放'], ['點兩下', '放大 4 倍 (Alt: 縮小)'], ['Shift + 拖曳', '框選放大'], ['+ · −', '放大 · 縮小'], ['方向鍵', '移動'], ['Home · Backspace', '初始畫面 · 上一步'], ['J', '朱利亞預覽'], ['O', '顯示軌道'], ['P', '下一個調色盤'], ['C', '色彩流動'], ['M', '縮放動畫'], ['S', '儲存圖片'], ['Esc', '停止動畫']],
+  movieFly: '飛到這裡', movieFlyD: '從全貌平滑放大到目前位置 ({z})', movieDive: '自動下潛', movieDiveD: '不斷挑選最複雜的地方無限下潛', speed: '速度', movieNote: '計算下一個畫面時可能稍有停頓。點擊畫面即可原地停止。', start: '開始', computing: '正在計算下一個畫面…',
+  sizes: { screen: '螢幕 2 倍', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: '正方形' }, antialias: '反鋸齒 (2×2)', exportNote: '越深、越大的圖片耗時越長。反鋸齒最高可用於 QHD。', save: '儲存', rendering: '正在計算圖片…', savedPng: '已儲存圖片', juliaClick: '點擊開啟' });
+Object.assign(TX_PART, {
+  es: { title: 'Explorador de Mandelbrot', tooDeep: 'Es lo más hondo que puede llegar la app (10^290×)', tooDeepFlat: 'Esta fórmula amplía hasta 10^13×', refCalc: 'Órbita de referencia {p}%', modeJulia: 'Conjunto de Julia', formulas: { mandel: 'Mandelbrot', ship: 'Burning Ship', tricorn: 'Tricornio', multi3: 'Multibrot z³' }, modeDeep: 'zoom profundo · {b} bits', modeFast: 'rápido',
+    home: 'Vista inicial', back: 'Atrás', forward: 'Adelante', zoomOut: 'Alejar', zoomIn: 'Acercar', movie: 'Vídeo de zoom', movieShort: 'Vídeo', juliaPreview: 'Vista previa de Julia', orbit: 'Ver órbita', savePng: 'Guardar imagen', panel: 'Ajustes', help: 'Ayuda', tabColor: 'Color', tabCalc: 'Cálculo', tabPlaces: 'Lugares', tabLearn: 'Aprender', palette: 'Paleta',
+    palNames: { classic: 'Clásica', sunset: 'Atardecer', fire: 'Fuego', ice: 'Hielo', ocean: 'Océano', aurora: 'Aurora', neon: 'Neón', gold: 'Oro', copper: 'Cobre', forest: 'Bosque', lava: 'Lava', candy: 'Caramelo', midnight: 'Medianoche', viridis: 'Viridis', rainbow: 'Arcoíris', mono: 'B/N' },
+    density: 'Densidad', offset: 'Desplazamiento', mapping: 'Reparto', mapLog: 'Log', mapLin: 'Lineal', colorCycle: 'Colores en movimiento', cycleSpeed: 'Velocidad', lighting: 'Luz 3D', on: 'Sí', off: 'No', lightAngle: 'Ángulo de luz', lightStrength: 'Intensidad', edges: 'Contorno', inside: 'Color interior', inBlack: 'Negro', inWhite: 'Blanco', inNavy: 'Marino',
+    formula: 'Fórmula', juliaSet: 'Conjunto de Julia (valor c)', juliaUpdate: 'Redibujar con esta c', juliaOpen: 'Abrir conjunto de Julia', backToMandel: 'Volver a Mandelbrot', juliaHint: 'Activa la vista previa de Julia arriba y mueve el puntero sobre Mandelbrot para ver el conjunto de Julia de ese punto. Pulsa la vista previa para abrirlo.',
+    iterations: 'Iteraciones', iterAuto: 'Automático según profundidad', iterManual: 'Manual', iterMul: 'Factor', iterCount: 'Número', quality: 'Calidad', qFast: 'Rápida', qNormal: 'Normal', qSharp: 'Nítida',
+    deepNote: 'Más allá de 10^13× la app usa perturbación: calcula un punto de referencia con cientos de dígitos y el resto de píxeles solo como diferencia.\nCuanto más hondo, más iteraciones y más tiempo.',
+    famous: 'Lugares famosos', myPlaces: 'Mis lugares', saveHere: 'Guardar aquí', copyLoc: 'Copiar ubicación', pasteLoc: 'Pegar ubicación', delete: 'Borrar', noMine: 'Pulsa «Guardar aquí» donde te guste la vista.', placeN: 'Lugar {n}', saved: 'Guardado',
+    placeNames: { whole: 'El conjunto entero', seahorse: 'Valle de los caballitos de mar', elephant: 'Valle de los elefantes', triple: 'Valle de la triple espiral', scepter: 'Valle del cetro', spike: 'Minibrot en la antena', goldMini: 'Minibrot en el valle', goldSpiral: 'Espiral dorada', deepMini: 'Minibrot a 10^15', deep50: 'Espiral sin fin · 10^50', deep120: 'Espiral sin fin · 10^120', deep250: 'Cerca del fondo · 10^250', rabbit: 'Conejo de Douady', siegel: 'Disco de Siegel', spiralJ: 'Julia en espiral', dragon: 'Julia dragón', dendrite: 'Julia dendrita', ship: 'El barco en llamas', tricorn: 'Tricornio', multibrot: 'Multibrot z³' },
+    learn: [['¿Qué es el conjunto de Mandelbrot?', 'Elige un número complejo c, empieza con z = 0 y repite z ← z² + c. Si z nunca crece sin límite, c está en el conjunto (la parte negra); si se dispara, está fuera. Esta regla mínima crea un borde infinitamente complejo.'], ['¿Qué significan los colores?', 'Los puntos de fuera se colorean según lo rápido que escapan (número de iteraciones). Cerca del borde aguantan más, así que el color cambia más deprisa. La luz 3D sale de la pendiente de ese valor.'], ['¿Hasta dónde se puede bajar?', 'Los números normales del ordenador (double) fallan hacia 10^13×. La app calcula un solo punto de referencia con cientos de dígitos y el resto como diferencias diminutas (teoría de perturbaciones), hasta 10^290×. El universo apenas es 10^40 veces mayor que un átomo.'], ['Minibrots y espirales', 'Por mucho que amplíes, siguen apareciendo copias pequeñas del conjunto. Al acercarte a un punto de Misiurewicz, cuya órbita acaba siendo periódica, la misma espiral se repite sin fin. Las espirales profundas de Lugares son esos puntos.'], ['Conjuntos de Julia', 'Aquí c queda fija y cambia el punto de partida z. Mandelbrot es un mapa de todos los conjuntos de Julia: una c de dentro da un Julia conexo; una de fuera, uno disperso como polvo.']],
+    credits: 'Todas las imágenes las calcula esta app. El zoom profundo usa teoría de perturbaciones con rebase.', copied: 'Copiado', cancel: 'Cancelar', go: 'Ir', badLoc: 'No se pudo leer esa ubicación', ok: 'OK',
+    keys: [['Arrastrar', 'Mover'], ['Rueda · dos dedos', 'Zoom'], ['Doble toque', 'Acercar 4× (Alt: alejar)'], ['Shift + arrastrar', 'Zoom de recuadro'], ['+ · −', 'Acercar · alejar'], ['Flechas', 'Mover'], ['Inicio · Retroceso', 'Vista inicial · atrás'], ['J', 'Vista previa de Julia'], ['O', 'Ver órbita'], ['P', 'Siguiente paleta'], ['C', 'Colores en movimiento'], ['M', 'Vídeo de zoom'], ['S', 'Guardar imagen'], ['Esc', 'Parar vídeo']],
+    movieFly: 'Volar hasta aquí', movieFlyD: 'Amplía suavemente desde el conjunto entero hasta esta vista ({z})', movieDive: 'Inmersión automática', movieDiveD: 'Elige una y otra vez el punto más intrincado y baja sin fin', speed: 'Velocidad', slow: 'Lenta', normal: 'Normal', fast: 'Rápida', movieNote: 'Puede pausarse mientras calcula el siguiente fotograma. Toca la pantalla para parar ahí.', start: 'Empezar', computing: 'Calculando fotograma…',
+    sizes: { screen: '2× pantalla', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Cuadrada' }, antialias: 'Suavizado (2×2)', exportNote: 'Las vistas profundas tardan más en tamaños grandes. El suavizado llega hasta QHD.', save: 'Guardar', rendering: 'Calculando la imagen…', savedPng: 'Imagen guardada', juliaClick: 'toca para abrir' },
+  fr: { title: 'Explorateur de Mandelbrot', tooDeep: 'C\'est le plus profond possible pour l\'app (10^290×)', tooDeepFlat: 'Cette formule zoome jusqu\'à 10^13×', refCalc: 'Orbite de référence {p} %', modeJulia: 'Ensemble de Julia', formulas: { mandel: 'Mandelbrot', ship: 'Burning Ship', tricorn: 'Tricorne', multi3: 'Multibrot z³' }, modeDeep: 'zoom profond · {b} bits', modeFast: 'rapide',
+    home: 'Vue de départ', back: 'Retour', forward: 'Suivant', zoomOut: 'Dézoomer', zoomIn: 'Zoomer', movie: 'Vidéo de zoom', movieShort: 'Vidéo', juliaPreview: 'Aperçu de Julia', orbit: 'Afficher l\'orbite', savePng: 'Enregistrer l\'image', panel: 'Réglages', help: 'Aide', tabColor: 'Couleur', tabCalc: 'Calcul', tabPlaces: 'Lieux', tabLearn: 'Comprendre', palette: 'Palette',
+    palNames: { classic: 'Classique', sunset: 'Couchant', fire: 'Feu', ice: 'Glace', ocean: 'Océan', aurora: 'Aurore', neon: 'Néon', gold: 'Or', copper: 'Cuivre', forest: 'Forêt', lava: 'Lave', candy: 'Bonbon', midnight: 'Minuit', viridis: 'Viridis', rainbow: 'Arc-en-ciel', mono: 'N/B' },
+    density: 'Densité', offset: 'Décalage', mapping: 'Répartition', mapLog: 'Log', mapLin: 'Linéaire', colorCycle: 'Couleurs animées', cycleSpeed: 'Vitesse', lighting: 'Éclairage 3D', on: 'Oui', off: 'Non', lightAngle: 'Angle de lumière', lightStrength: 'Intensité', edges: 'Contour', inside: 'Couleur intérieure', inBlack: 'Noir', inWhite: 'Blanc', inNavy: 'Marine',
+    formula: 'Formule', juliaSet: 'Ensemble de Julia (valeur c)', juliaUpdate: 'Redessiner avec ce c', juliaOpen: 'Ouvrir l\'ensemble de Julia', backToMandel: 'Retour à Mandelbrot', juliaHint: 'Activez l\'aperçu de Julia en haut et survolez Mandelbrot pour voir l\'ensemble de Julia de ce point. Touchez l\'aperçu pour l\'ouvrir.',
+    iterations: 'Itérations', iterAuto: 'Auto selon la profondeur', iterManual: 'Manuel', iterMul: 'Facteur', iterCount: 'Nombre', quality: 'Qualité', qFast: 'Rapide', qNormal: 'Normale', qSharp: 'Nette',
+    deepNote: 'Au-delà de 10^13×, l\'app passe en perturbation : un point de référence est calculé avec des centaines de chiffres, les autres pixels seulement comme petites différences.\nPlus c\'est profond, plus il faut d\'itérations et de temps.',
+    famous: 'Lieux célèbres', myPlaces: 'Mes lieux', saveHere: 'Enregistrer ici', copyLoc: 'Copier la position', pasteLoc: 'Coller une position', delete: 'Supprimer', noMine: 'Touchez « Enregistrer ici » là où la vue vous plaît.', placeN: 'Lieu {n}', saved: 'Enregistré',
+    placeNames: { whole: 'L\'ensemble entier', seahorse: 'Vallée des hippocampes', elephant: 'Vallée des éléphants', triple: 'Vallée de la triple spirale', scepter: 'Vallée du sceptre', spike: 'Mini-ensemble sur l\'antenne', goldMini: 'Mini-ensemble dans la vallée', goldSpiral: 'Spirale dorée', deepMini: 'Mini-ensemble à 10^15', deep50: 'Spirale sans fin · 10^50', deep120: 'Spirale sans fin · 10^120', deep250: 'Près du fond · 10^250', rabbit: 'Lapin de Douady', siegel: 'Disque de Siegel', spiralJ: 'Julia spirale', dragon: 'Julia dragon', dendrite: 'Julia dendrite', ship: 'Le navire en feu', tricorn: 'Tricorne', multibrot: 'Multibrot z³' },
+    learn: [['Qu\'est-ce que l\'ensemble de Mandelbrot ?', 'Choisissez un nombre complexe c, partez de z = 0 et répétez z ← z² + c. Si z reste borné, c est dans l\'ensemble (la partie noire) ; s\'il explose, c est dehors. Cette règle minuscule crée une frontière infiniment complexe.'], ['Que veulent dire les couleurs ?', 'Les points extérieurs sont colorés selon la vitesse à laquelle ils s\'échappent (nombre d\'itérations). Près de la frontière ils résistent plus longtemps, d\'où des couleurs qui changent plus vite. L\'éclairage 3D vient de la pente de cette valeur.'], ['Jusqu\'où peut-on aller ?', 'Les nombres ordinaires (double) cèdent vers 10^13×. L\'app calcule un seul point de référence avec des centaines de chiffres et les autres pixels comme de minuscules écarts (théorie des perturbations), jusqu\'à 10^290×. L\'univers n\'est que 10^40 fois plus grand qu\'un atome.'], ['Mini-ensembles et spirales', 'Aussi loin que l\'on zoome, de petites copies de l\'ensemble réapparaissent. En visant un point de Misiurewicz, dont l\'orbite finit périodique, la même spirale se répète sans fin. Les spirales profondes des Lieux sont de tels points.'], ['Ensembles de Julia', 'Ici c est fixé et c\'est le point de départ z qui varie. Mandelbrot est une carte de tous les ensembles de Julia : un c intérieur donne un Julia connexe, un c extérieur un Julia éparpillé comme de la poussière.']],
+    credits: 'Toutes les images sont calculées par l\'app. Le zoom profond utilise la théorie des perturbations avec rebasage.', copied: 'Copié', cancel: 'Annuler', go: 'Aller', badLoc: 'Impossible de lire cette position', ok: 'OK',
+    keys: [['Glisser', 'Déplacer'], ['Molette · deux doigts', 'Zoom'], ['Double toucher', 'Zoomer 4× (Alt : dézoomer)'], ['Maj + glisser', 'Zoom sur un cadre'], ['+ · −', 'Zoomer · dézoomer'], ['Flèches', 'Déplacer'], ['Début · Retour arrière', 'Vue de départ · retour'], ['J', 'Aperçu de Julia'], ['O', 'Orbite'], ['P', 'Palette suivante'], ['C', 'Couleurs animées'], ['M', 'Vidéo de zoom'], ['S', 'Enregistrer l\'image'], ['Échap', 'Arrêter la vidéo']],
+    movieFly: 'Voler jusqu\'ici', movieFlyD: 'Zoome en douceur de l\'ensemble entier jusqu\'à cette vue ({z})', movieDive: 'Plongée automatique', movieDiveD: 'Choisit sans cesse l\'endroit le plus complexe et plonge sans fin', speed: 'Vitesse', slow: 'Lente', normal: 'Normale', fast: 'Rapide', movieNote: 'Peut marquer une pause pendant le calcul de l\'image suivante. Touchez l\'écran pour s\'arrêter là.', start: 'Démarrer', computing: 'Calcul de l\'image suivante…',
+    sizes: { screen: '2× écran', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Carré' }, antialias: 'Anticrénelage (2×2)', exportNote: 'Les vues profondes prennent plus de temps en grand format. L\'anticrénelage va jusqu\'au QHD.', save: 'Enregistrer', rendering: 'Calcul de l\'image…', savedPng: 'Image enregistrée', juliaClick: 'toucher pour ouvrir' },
+  de: { title: 'Mandelbrot-Entdecker', tooDeep: 'Tiefer geht es in dieser App nicht (10^290×)', tooDeepFlat: 'Diese Formel zoomt bis 10^13×', refCalc: 'Referenzbahn {p} %', modeJulia: 'Julia-Menge', formulas: { mandel: 'Mandelbrot', ship: 'Burning Ship', tricorn: 'Tricorn', multi3: 'Multibrot z³' }, modeDeep: 'Tiefzoom · {b} Bit', modeFast: 'schnell',
+    home: 'Startansicht', back: 'Zurück', forward: 'Vor', zoomOut: 'Verkleinern', zoomIn: 'Vergrößern', movie: 'Zoom-Video', movieShort: 'Video', juliaPreview: 'Julia-Vorschau', orbit: 'Bahn zeigen', savePng: 'Bild speichern', panel: 'Einstellungen', help: 'Hilfe', tabColor: 'Farbe', tabCalc: 'Rechnen', tabPlaces: 'Orte', tabLearn: 'Wissen', palette: 'Palette',
+    palNames: { classic: 'Klassisch', sunset: 'Abendrot', fire: 'Feuer', ice: 'Eis', ocean: 'Ozean', aurora: 'Polarlicht', neon: 'Neon', gold: 'Gold', copper: 'Kupfer', forest: 'Wald', lava: 'Lava', candy: 'Bonbon', midnight: 'Mitternacht', viridis: 'Viridis', rainbow: 'Regenbogen', mono: 'S/W' },
+    density: 'Dichte', offset: 'Versatz', mapping: 'Verteilung', mapLog: 'Log', mapLin: 'Linear', colorCycle: 'Farben fließen', cycleSpeed: 'Tempo', lighting: '3D-Licht', on: 'An', off: 'Aus', lightAngle: 'Lichtwinkel', lightStrength: 'Lichtstärke', edges: 'Kontur', inside: 'Innenfarbe', inBlack: 'Schwarz', inWhite: 'Weiß', inNavy: 'Marine',
+    formula: 'Formel', juliaSet: 'Julia-Menge (Wert c)', juliaUpdate: 'Mit diesem c neu zeichnen', juliaOpen: 'Julia-Menge öffnen', backToMandel: 'Zurück zu Mandelbrot', juliaHint: 'Schalte oben die Julia-Vorschau ein und fahre über die Mandelbrot-Menge, um die Julia-Menge dieses Punkts zu sehen. Ein Klick auf die Vorschau öffnet sie.',
+    iterations: 'Iterationen', iterAuto: 'Automatisch nach Tiefe', iterManual: 'Manuell', iterMul: 'Faktor', iterCount: 'Anzahl', quality: 'Qualität', qFast: 'Schnell', qNormal: 'Normal', qSharp: 'Scharf',
+    deepNote: 'Ab 10^13× rechnet die App mit Störungstheorie: Ein Referenzpunkt wird mit Hunderten Stellen berechnet, alle anderen Pixel nur als winzige Abweichung.\nJe tiefer, desto mehr Iterationen und Zeit.',
+    famous: 'Berühmte Orte', myPlaces: 'Meine Orte', saveHere: 'Hier speichern', copyLoc: 'Position kopieren', pasteLoc: 'Position einfügen', delete: 'Löschen', noMine: 'Tippe dort, wo dir die Ansicht gefällt, auf „Hier speichern".', placeN: 'Ort {n}', saved: 'Gespeichert',
+    placeNames: { whole: 'Die ganze Menge', seahorse: 'Seepferdchental', elephant: 'Elefantental', triple: 'Dreifachspiral-Tal', scepter: 'Zeptertal', spike: 'Mini-Menge auf der Antenne', goldMini: 'Mini-Menge im Tal', goldSpiral: 'Goldene Spirale', deepMini: 'Mini-Menge bei 10^15', deep50: 'Endlose Spirale · 10^50', deep120: 'Endlose Spirale · 10^120', deep250: 'Fast am Grund · 10^250', rabbit: 'Douady-Hase', siegel: 'Siegel-Scheibe', spiralJ: 'Spiral-Julia', dragon: 'Drachen-Julia', dendrite: 'Dendriten-Julia', ship: 'Das brennende Schiff', tricorn: 'Tricorn', multibrot: 'Multibrot z³' },
+    learn: [['Was ist die Mandelbrot-Menge?', 'Wähle eine komplexe Zahl c, beginne mit z = 0 und wiederhole z ← z² + c. Bleibt z beschränkt, liegt c in der Menge (schwarz); wächst z über alle Grenzen, liegt c draußen. Diese winzige Regel erzeugt einen unendlich verwickelten Rand.'], ['Was bedeuten die Farben?', 'Punkte außerhalb werden danach gefärbt, wie schnell sie entkommen (Iterationen). Nahe am Rand halten sie länger durch, daher wechseln die Farben schneller. Das 3D-Licht entsteht aus der Steigung dieses Werts.'], ['Wie tief geht es?', 'Normale Computerzahlen (double) versagen um 10^13×. Die App rechnet einen Referenzpunkt mit Hunderten Stellen und alle anderen Pixel als winzige Abweichungen (Störungstheorie) – bis 10^290×. Das Universum ist nur etwa 10^40-mal größer als ein Atom.'], ['Mini-Mengen und Spiralen', 'Egal wie weit man zoomt, tauchen kleine Kopien der ganzen Menge auf. Zielt man auf einen Misiurewicz-Punkt, dessen Bahn periodisch wird, wiederholt sich dieselbe Spirale endlos. Die tiefen Spiralen unter Orte sind solche Punkte.'], ['Julia-Mengen', 'Hier ist c fest und der Startpunkt z wechselt. Die Mandelbrot-Menge ist eine Landkarte aller Julia-Mengen: Ein c innen ergibt eine zusammenhängende Julia-Menge, ein c außen eine wie Staub verstreute.']],
+    credits: 'Alle Bilder berechnet die App selbst. Der Tiefzoom nutzt Störungstheorie mit Rebasing.', copied: 'Kopiert', cancel: 'Abbrechen', go: 'Los', badLoc: 'Position konnte nicht gelesen werden', ok: 'OK',
+    keys: [['Ziehen', 'Verschieben'], ['Mausrad · zwei Finger', 'Zoom'], ['Doppeltippen', '4× vergrößern (Alt: verkleinern)'], ['Umschalt + Ziehen', 'Rahmen-Zoom'], ['+ · −', 'Vergrößern · verkleinern'], ['Pfeiltasten', 'Verschieben'], ['Pos1 · Rücktaste', 'Startansicht · zurück'], ['J', 'Julia-Vorschau'], ['O', 'Bahn zeigen'], ['P', 'Nächste Palette'], ['C', 'Farben fließen'], ['M', 'Zoom-Video'], ['S', 'Bild speichern'], ['Esc', 'Video stoppen']],
+    movieFly: 'Hierher fliegen', movieFlyD: 'Zoomt sanft von der ganzen Menge bis zu dieser Ansicht ({z})', movieDive: 'Automatischer Tauchgang', movieDiveD: 'Wählt immer wieder die verwinkeltste Stelle und taucht endlos', speed: 'Tempo', slow: 'Langsam', normal: 'Normal', fast: 'Schnell', movieNote: 'Es kann kurz pausieren, während das nächste Bild berechnet wird. Tippe auf den Bildschirm, um dort anzuhalten.', start: 'Start', computing: 'Nächstes Bild wird berechnet…',
+    sizes: { screen: '2× Bildschirm', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Quadrat' }, antialias: 'Kantenglättung (2×2)', exportNote: 'Tiefe Ansichten dauern in großen Formaten länger. Kantenglättung gibt es bis QHD.', save: 'Speichern', rendering: 'Bild wird berechnet…', savedPng: 'Bild gespeichert', juliaClick: 'tippen zum Öffnen' },
+});
+Object.assign(TX_PART, {
+  pt: { title: 'Explorador de Mandelbrot', tooDeep: 'É o mais fundo que o app consegue ir (10^290×)', tooDeepFlat: 'Esta fórmula amplia até 10^13×', refCalc: 'Órbita de referência {p}%', modeJulia: 'Conjunto de Julia', formulas: { mandel: 'Mandelbrot', ship: 'Burning Ship', tricorn: 'Tricórnio', multi3: 'Multibrot z³' }, modeDeep: 'zoom profundo · {b} bits', modeFast: 'rápido',
+    home: 'Vista inicial', back: 'Voltar', forward: 'Avançar', zoomOut: 'Afastar', zoomIn: 'Aproximar', movie: 'Vídeo de zoom', movieShort: 'Vídeo', juliaPreview: 'Prévia de Julia', orbit: 'Mostrar órbita', savePng: 'Salvar imagem', panel: 'Ajustes', help: 'Ajuda', tabColor: 'Cor', tabCalc: 'Cálculo', tabPlaces: 'Lugares', tabLearn: 'Aprender', palette: 'Paleta',
+    palNames: { classic: 'Clássica', sunset: 'Pôr do sol', fire: 'Fogo', ice: 'Gelo', ocean: 'Oceano', aurora: 'Aurora', neon: 'Neon', gold: 'Ouro', copper: 'Cobre', forest: 'Floresta', lava: 'Lava', candy: 'Doce', midnight: 'Meia-noite', viridis: 'Viridis', rainbow: 'Arco-íris', mono: 'P/B' },
+    density: 'Densidade', offset: 'Deslocamento', mapping: 'Distribuição', mapLog: 'Log', mapLin: 'Linear', colorCycle: 'Cores em movimento', cycleSpeed: 'Velocidade', lighting: 'Luz 3D', on: 'Sim', off: 'Não', lightAngle: 'Ângulo da luz', lightStrength: 'Intensidade', edges: 'Contorno', inside: 'Cor interna', inBlack: 'Preto', inWhite: 'Branco', inNavy: 'Marinho',
+    formula: 'Fórmula', juliaSet: 'Conjunto de Julia (valor c)', juliaUpdate: 'Redesenhar com este c', juliaOpen: 'Abrir conjunto de Julia', backToMandel: 'Voltar ao Mandelbrot', juliaHint: 'Ative a prévia de Julia na barra de cima e passe sobre o Mandelbrot para ver o conjunto de Julia daquele ponto. Toque na prévia para abri-lo.',
+    iterations: 'Iterações', iterAuto: 'Automático pela profundidade', iterManual: 'Manual', iterMul: 'Fator', iterCount: 'Quantidade', quality: 'Qualidade', qFast: 'Rápida', qNormal: 'Normal', qSharp: 'Nítida',
+    deepNote: 'Além de 10^13× o app usa perturbação: calcula um ponto de referência com centenas de dígitos e os demais pixels só como diferença.\nQuanto mais fundo, mais iterações e mais tempo.',
+    famous: 'Lugares famosos', myPlaces: 'Meus lugares', saveHere: 'Salvar aqui', copyLoc: 'Copiar posição', pasteLoc: 'Colar posição', delete: 'Apagar', noMine: 'Toque em "Salvar aqui" onde gostar da vista.', placeN: 'Lugar {n}', saved: 'Salvo',
+    placeNames: { whole: 'O conjunto inteiro', seahorse: 'Vale dos cavalos-marinhos', elephant: 'Vale dos elefantes', triple: 'Vale da espiral tripla', scepter: 'Vale do cetro', spike: 'Minibrot na antena', goldMini: 'Minibrot no vale', goldSpiral: 'Espiral dourada', deepMini: 'Minibrot a 10^15', deep50: 'Espiral sem fim · 10^50', deep120: 'Espiral sem fim · 10^120', deep250: 'Perto do fundo · 10^250', rabbit: 'Coelho de Douady', siegel: 'Disco de Siegel', spiralJ: 'Julia espiral', dragon: 'Julia dragão', dendrite: 'Julia dendrito', ship: 'O navio em chamas', tricorn: 'Tricórnio', multibrot: 'Multibrot z³' },
+    learn: [['O que é o conjunto de Mandelbrot?', 'Escolha um número complexo c, comece com z = 0 e repita z ← z² + c. Se z nunca cresce sem limite, c está no conjunto (a parte preta); se dispara, está fora. Essa regra mínima cria uma borda infinitamente complexa.'], ['O que as cores significam?', 'Os pontos de fora são coloridos pela rapidez com que escapam (número de iterações). Perto da borda aguentam mais, então a cor muda mais depressa. A luz 3D vem da inclinação desse valor.'], ['Até onde dá para ir?', 'Os números comuns do computador (double) falham por volta de 10^13×. O app calcula um único ponto de referência com centenas de dígitos e o resto como diferenças minúsculas (teoria de perturbação), até 10^290×. O universo é só cerca de 10^40 vezes maior que um átomo.'], ['Minibrots e espirais', 'Por mais que se aproxime, cópias pequenas do conjunto continuam aparecendo. Mirando um ponto de Misiurewicz, cuja órbita acaba periódica, a mesma espiral se repete sem fim. As espirais profundas em Lugares são esses pontos.'], ['Conjuntos de Julia', 'Aqui c fica fixo e o ponto inicial z muda. O Mandelbrot é um mapa de todos os conjuntos de Julia: um c de dentro gera um Julia conexo; um de fora, um espalhado como poeira.']],
+    credits: 'Todas as imagens são calculadas pelo próprio app. O zoom profundo usa teoria de perturbação com rebase.', copied: 'Copiado', cancel: 'Cancelar', go: 'Ir', badLoc: 'Não foi possível ler essa posição', ok: 'OK',
+    keys: [['Arrastar', 'Mover'], ['Roda · dois dedos', 'Zoom'], ['Toque duplo', 'Aproximar 4× (Alt: afastar)'], ['Shift + arrastar', 'Zoom por retângulo'], ['+ · −', 'Aproximar · afastar'], ['Setas', 'Mover'], ['Home · Backspace', 'Vista inicial · voltar'], ['J', 'Prévia de Julia'], ['O', 'Mostrar órbita'], ['P', 'Próxima paleta'], ['C', 'Cores em movimento'], ['M', 'Vídeo de zoom'], ['S', 'Salvar imagem'], ['Esc', 'Parar vídeo']],
+    movieFly: 'Voar até aqui', movieFlyD: 'Aproxima suavemente do conjunto inteiro até esta vista ({z})', movieDive: 'Mergulho automático', movieDiveD: 'Escolhe sempre o ponto mais intrincado e mergulha sem fim', speed: 'Velocidade', slow: 'Lenta', normal: 'Normal', fast: 'Rápida', movieNote: 'Pode pausar enquanto calcula o próximo quadro. Toque na tela para parar ali.', start: 'Começar', computing: 'Calculando o próximo quadro…',
+    sizes: { screen: '2× tela', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Quadrada' }, antialias: 'Suavização (2×2)', exportNote: 'Vistas profundas demoram mais em tamanhos grandes. A suavização vai até QHD.', save: 'Salvar', rendering: 'Calculando a imagem…', savedPng: 'Imagem salva', juliaClick: 'toque para abrir' },
+  ru: { title: 'Исследователь Мандельброта', tooDeep: 'Глубже в этом приложении нельзя (10^290×)', tooDeepFlat: 'Эта формула увеличивает до 10^13×', refCalc: 'Опорная орбита {p}%', modeJulia: 'Множество Жюлиа', formulas: { mandel: 'Мандельброт', ship: 'Горящий корабль', tricorn: 'Трикорн', multi3: 'Мультиброт z³' }, modeDeep: 'глубокий зум · {b} бит', modeFast: 'быстро',
+    home: 'Исходный вид', back: 'Назад', forward: 'Вперёд', zoomOut: 'Отдалить', zoomIn: 'Приблизить', movie: 'Видео зума', movieShort: 'Видео', juliaPreview: 'Превью Жюлиа', orbit: 'Показать орбиту', savePng: 'Сохранить картинку', panel: 'Настройки', help: 'Справка', tabColor: 'Цвет', tabCalc: 'Расчёт', tabPlaces: 'Места', tabLearn: 'Узнать', palette: 'Палитра',
+    palNames: { classic: 'Классика', sunset: 'Закат', fire: 'Огонь', ice: 'Лёд', ocean: 'Океан', aurora: 'Сияние', neon: 'Неон', gold: 'Золото', copper: 'Медь', forest: 'Лес', lava: 'Лава', candy: 'Конфета', midnight: 'Полночь', viridis: 'Виридис', rainbow: 'Радуга', mono: 'Ч/Б' },
+    density: 'Плотность', offset: 'Сдвиг', mapping: 'Распределение', mapLog: 'Лог', mapLin: 'Линейно', colorCycle: 'Бегущие цвета', cycleSpeed: 'Скорость', lighting: '3D-свет', on: 'Вкл', off: 'Выкл', lightAngle: 'Угол света', lightStrength: 'Сила света', edges: 'Контур', inside: 'Цвет внутри', inBlack: 'Чёрный', inWhite: 'Белый', inNavy: 'Синий',
+    formula: 'Формула', juliaSet: 'Множество Жюлиа (значение c)', juliaUpdate: 'Перерисовать с этим c', juliaOpen: 'Открыть множество Жюлиа', backToMandel: 'Назад к Мандельброту', juliaHint: 'Включите превью Жюлиа на верхней панели и ведите над множеством Мандельброта — увидите множество Жюлиа для этой точки. Нажмите на превью, чтобы открыть его.',
+    iterations: 'Итерации', iterAuto: 'Авто по глубине', iterManual: 'Вручную', iterMul: 'Множитель', iterCount: 'Число', quality: 'Качество', qFast: 'Быстро', qNormal: 'Обычно', qSharp: 'Чётко',
+    deepNote: 'Глубже 10^13× приложение переходит на возмущения: одна опорная точка считается с сотнями знаков, остальные пиксели — лишь как малые отличия от неё.\nЧем глубже, тем больше итераций и времени.',
+    famous: 'Известные места', myPlaces: 'Мои места', saveHere: 'Сохранить здесь', copyLoc: 'Копировать место', pasteLoc: 'Вставить место', delete: 'Удалить', noMine: 'Нажмите «Сохранить здесь», где понравится вид.', placeN: 'Место {n}', saved: 'Сохранено',
+    placeNames: { whole: 'Всё множество', seahorse: 'Долина морских коньков', elephant: 'Долина слонов', triple: 'Долина тройной спирали', scepter: 'Долина скипетра', spike: 'Мини-множество на игле', goldMini: 'Мини-множество в долине', goldSpiral: 'Золотая спираль', deepMini: 'Мини-множество на 10^15', deep50: 'Бесконечная спираль · 10^50', deep120: 'Бесконечная спираль · 10^120', deep250: 'Почти у дна · 10^250', rabbit: 'Кролик Дуади', siegel: 'Диск Зигеля', spiralJ: 'Спиральное Жюлиа', dragon: 'Жюлиа-дракон', dendrite: 'Дендрит Жюлиа', ship: 'Горящий корабль', tricorn: 'Трикорн', multibrot: 'Мультиброт z³' },
+    learn: [['Что такое множество Мандельброта?', 'Возьмите комплексное число c, начните с z = 0 и повторяйте z ← z² + c. Если z остаётся ограниченным, c в множестве (чёрная часть); если улетает — снаружи. Это крошечное правило создаёт бесконечно сложную границу.'], ['Что значат цвета?', 'Внешние точки раскрашены по тому, как быстро они убегают (число итераций). У границы они держатся дольше, поэтому цвет меняется чаще. 3D-свет получается из наклона этой величины.'], ['Насколько глубоко можно?', 'Обычные компьютерные числа (double) сдаются около 10^13×. Приложение считает одну опорную точку с сотнями знаков, а остальные пиксели — как крошечные отличия (теория возмущений), до 10^290×. Вселенная всего примерно в 10^40 раз больше атома.'], ['Мини-множества и спирали', 'Как бы глубоко ни приближать, снова появляются маленькие копии всего множества. Если целиться в точку Мисюревича, чья орбита становится периодической, одна и та же спираль повторяется бесконечно. Глубокие спирали в «Местах» — такие точки.'], ['Множества Жюлиа', 'Здесь c закреплено, а меняется начальная точка z. Множество Мандельброта — карта всех множеств Жюлиа: c внутри даёт связное Жюлиа, c снаружи — рассыпанное, как пыль.']],
+    credits: 'Все картинки приложение считает само. Глубокий зум использует теорию возмущений с перебазированием.', copied: 'Скопировано', cancel: 'Отмена', go: 'Перейти', badLoc: 'Не удалось прочитать место', ok: 'ОК',
+    keys: [['Перетаскивание', 'Сдвиг'], ['Колесо · два пальца', 'Масштаб'], ['Двойное нажатие', 'Приблизить в 4 раза (Alt: отдалить)'], ['Shift + перетаскивание', 'Зум рамкой'], ['+ · −', 'Приблизить · отдалить'], ['Стрелки', 'Сдвиг'], ['Home · Backspace', 'Исходный вид · назад'], ['J', 'Превью Жюлиа'], ['O', 'Орбита'], ['P', 'Следующая палитра'], ['C', 'Бегущие цвета'], ['M', 'Видео зума'], ['S', 'Сохранить картинку'], ['Esc', 'Остановить видео']],
+    movieFly: 'Долететь сюда', movieFlyD: 'Плавно приближает от всего множества до этого вида ({z})', movieDive: 'Автопогружение', movieDiveD: 'Раз за разом выбирает самое замысловатое место и погружается без конца', speed: 'Скорость', slow: 'Медленно', normal: 'Обычно', fast: 'Быстро', movieNote: 'Может замирать, пока считается следующий кадр. Нажмите на экран, чтобы остановиться на месте.', start: 'Начать', computing: 'Считается следующий кадр…',
+    sizes: { screen: '2× экран', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Квадрат' }, antialias: 'Сглаживание (2×2)', exportNote: 'Глубокие виды в большом размере считаются дольше. Сглаживание — до QHD.', save: 'Сохранить', rendering: 'Считается картинка…', savedPng: 'Картинка сохранена', juliaClick: 'нажмите, чтобы открыть' },
+  vi: { title: 'Khám phá Mandelbrot', tooDeep: 'Đây là độ sâu lớn nhất ứng dụng đạt được (10^290×)', tooDeepFlat: 'Công thức này phóng tới 10^13×', refCalc: 'Quỹ đạo tham chiếu {p}%', modeJulia: 'Tập Julia', formulas: { mandel: 'Mandelbrot', ship: 'Con tàu bốc cháy', tricorn: 'Tricorn', multi3: 'Multibrot z³' }, modeDeep: 'phóng sâu · {b} bit', modeFast: 'nhanh',
+    home: 'Toàn cảnh', back: 'Lùi', forward: 'Tiến', zoomOut: 'Thu nhỏ', zoomIn: 'Phóng to', movie: 'Video phóng to', movieShort: 'Video', juliaPreview: 'Xem trước Julia', orbit: 'Xem quỹ đạo', savePng: 'Lưu ảnh', panel: 'Cài đặt', help: 'Trợ giúp', tabColor: 'Màu', tabCalc: 'Tính toán', tabPlaces: 'Địa điểm', tabLearn: 'Tìm hiểu', palette: 'Bảng màu',
+    palNames: { classic: 'Cổ điển', sunset: 'Hoàng hôn', fire: 'Lửa', ice: 'Băng', ocean: 'Đại dương', aurora: 'Cực quang', neon: 'Neon', gold: 'Vàng', copper: 'Đồng', forest: 'Rừng', lava: 'Dung nham', candy: 'Kẹo', midnight: 'Nửa đêm', viridis: 'Viridis', rainbow: 'Cầu vồng', mono: 'Đen trắng' },
+    density: 'Mật độ', offset: 'Dịch màu', mapping: 'Phân bố', mapLog: 'Log', mapLin: 'Đều', colorCycle: 'Màu chuyển động', cycleSpeed: 'Tốc độ', lighting: 'Ánh sáng 3D', on: 'Bật', off: 'Tắt', lightAngle: 'Hướng sáng', lightStrength: 'Độ sáng', edges: 'Viền', inside: 'Màu bên trong', inBlack: 'Đen', inWhite: 'Trắng', inNavy: 'Xanh đậm',
+    formula: 'Công thức', juliaSet: 'Tập Julia (giá trị c)', juliaUpdate: 'Vẽ lại với c này', juliaOpen: 'Mở tập Julia', backToMandel: 'Về Mandelbrot', juliaHint: 'Bật xem trước Julia ở thanh trên rồi rê chuột trên tập Mandelbrot để thấy tập Julia của điểm đó. Nhấn vào ô xem trước để mở.',
+    iterations: 'Số lần lặp', iterAuto: 'Tự động theo độ sâu', iterManual: 'Thủ công', iterMul: 'Hệ số', iterCount: 'Số lần', quality: 'Chất lượng', qFast: 'Nhanh', qNormal: 'Thường', qSharp: 'Sắc nét',
+    deepNote: 'Sâu hơn 10^13× ứng dụng chuyển sang phép nhiễu loạn: chỉ một điểm tham chiếu được tính với hàng trăm chữ số, các điểm ảnh khác chỉ tính phần chênh lệch.\nCàng sâu càng nhiều lần lặp và càng lâu.',
+    famous: 'Địa điểm nổi tiếng', myPlaces: 'Địa điểm của tôi', saveHere: 'Lưu chỗ này', copyLoc: 'Sao chép vị trí', pasteLoc: 'Dán vị trí', delete: 'Xóa', noMine: 'Nhấn "Lưu chỗ này" ở nơi bạn thích.', placeN: 'Địa điểm {n}', saved: 'Đã lưu',
+    placeNames: { whole: 'Toàn bộ tập', seahorse: 'Thung lũng cá ngựa', elephant: 'Thung lũng voi', triple: 'Thung lũng xoắn ba', scepter: 'Thung lũng quyền trượng', spike: 'Mandelbrot nhỏ trên ăng-ten', goldMini: 'Mandelbrot nhỏ trong thung lũng', goldSpiral: 'Xoắn ốc vàng', deepMini: 'Mandelbrot nhỏ ở 10^15', deep50: 'Xoắn ốc vô tận · 10^50', deep120: 'Xoắn ốc vô tận · 10^120', deep250: 'Gần đáy · 10^250', rabbit: 'Thỏ Douady', siegel: 'Đĩa Siegel', spiralJ: 'Julia xoắn ốc', dragon: 'Julia rồng', dendrite: 'Julia nhánh cây', ship: 'Con tàu bốc cháy', tricorn: 'Tricorn', multibrot: 'Multibrot z³' },
+    learn: [['Tập Mandelbrot là gì?', 'Chọn một số phức c, bắt đầu với z = 0 và lặp z ← z² + c. Nếu z mãi không lớn vô hạn thì c thuộc tập (phần màu đen); nếu z bùng lên thì c ở ngoài. Quy tắc nhỏ bé này tạo ra đường biên phức tạp vô tận.'], ['Màu sắc nghĩa là gì?', 'Điểm bên ngoài được tô theo tốc độ thoát ra (số lần lặp). Gần biên chúng trụ lâu hơn nên màu đổi nhanh hơn. Ánh sáng 3D được tạo từ độ dốc của giá trị này.'], ['Đi sâu được bao nhiêu?', 'Số máy tính thông thường (double) vỡ ở khoảng 10^13×. Ứng dụng tính một điểm tham chiếu với hàng trăm chữ số, còn lại chỉ là chênh lệch nhỏ (lý thuyết nhiễu loạn), sâu tới 10^290×. Vũ trụ chỉ lớn hơn nguyên tử khoảng 10^40 lần.'], ['Mandelbrot nhỏ và xoắn ốc', 'Phóng to bao nhiêu cũng vẫn hiện ra những bản sao nhỏ của cả tập. Nhắm vào điểm Misiurewicz, nơi quỹ đạo cuối cùng tuần hoàn, cùng một xoắn ốc lặp lại mãi. Các xoắn ốc sâu trong Địa điểm chính là những điểm như vậy.'], ['Tập Julia', 'Lần này c cố định, còn điểm xuất phát z thay đổi. Tập Mandelbrot là bản đồ của mọi tập Julia: c bên trong cho tập Julia liền mạch, c bên ngoài cho tập Julia rời rạc như bụi.']],
+    credits: 'Mọi hình ảnh đều do ứng dụng tự tính. Phóng sâu dùng lý thuyết nhiễu loạn kèm kỹ thuật đổi gốc.', copied: 'Đã sao chép', cancel: 'Hủy', go: 'Đi', badLoc: 'Không đọc được vị trí', ok: 'OK',
+    keys: [['Kéo', 'Di chuyển'], ['Cuộn · hai ngón', 'Phóng to · thu nhỏ'], ['Chạm đúp', 'Phóng to 4× (Alt: thu nhỏ)'], ['Shift + kéo', 'Phóng khung'], ['+ · −', 'Phóng to · thu nhỏ'], ['Mũi tên', 'Di chuyển'], ['Home · Backspace', 'Toàn cảnh · lùi'], ['J', 'Xem trước Julia'], ['O', 'Xem quỹ đạo'], ['P', 'Bảng màu tiếp'], ['C', 'Màu chuyển động'], ['M', 'Video phóng to'], ['S', 'Lưu ảnh'], ['Esc', 'Dừng video']],
+    movieFly: 'Bay tới đây', movieFlyD: 'Phóng mượt từ toàn bộ tập tới chỗ đang xem ({z})', movieDive: 'Tự lặn', movieDiveD: 'Liên tục chọn chỗ phức tạp nhất và lặn sâu mãi', speed: 'Tốc độ', slow: 'Chậm', normal: 'Thường', fast: 'Nhanh', movieNote: 'Có thể dừng một chút khi tính khung hình tiếp theo. Chạm màn hình để dừng tại chỗ.', start: 'Bắt đầu', computing: 'Đang tính khung hình tiếp…',
+    sizes: { screen: '2× màn hình', fhd: 'Full HD', qhd: 'QHD', uhd: '4K', sq: 'Vuông' }, antialias: 'Khử răng cưa (2×2)', exportNote: 'Chỗ càng sâu, ảnh càng lớn càng lâu. Khử răng cưa dùng được tới QHD.', save: 'Lưu', rendering: 'Đang tính ảnh…', savedPng: 'Đã lưu ảnh', juliaClick: 'chạm để mở' },
+});
+for (const k in TX_PART) TX[k] = Object.assign({}, TX.en, TX_PART[k]);
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let W, H;
-
-// i18n DOM
-document.getElementById('resetBtn').textContent=T.reset;
-document.getElementById('iterLabel').textContent=T.iterations;
-document.getElementById('pal0').textContent=T.rainbow;
-document.getElementById('pal1').textContent=T.fire;
-document.getElementById('pal2').textContent=T.ice;
-document.getElementById('pal3').textContent=T.bw;
-document.getElementById('pal4').textContent=T.neon;
-document.getElementById('zoomLabel').textContent=T.zoom;
-document.getElementById('centerLabel').textContent=T.center;
-
-let centerX = -0.5, centerY = 0, scale = 1.5;
-let maxIter = 200;
-let currentPalette = 0;
-let rendering = false;
-let renderCancel = false;
-
-const PALETTES = [
-  (t) => { const h = t * 360; return hslToRgb(h, 90, 50 + t * 20); },
-  (t) => {
-    if (t < 0.33) return lerpColor([0,0,0], [180,0,0], t/0.33);
-    if (t < 0.66) return lerpColor([180,0,0], [255,200,0], (t-0.33)/0.33);
-    return lerpColor([255,200,0], [255,255,220], (t-0.66)/0.34);
-  },
-  (t) => {
-    if (t < 0.5) return lerpColor([0,0,40], [100,180,255], t/0.5);
-    return lerpColor([100,180,255], [240,250,255], (t-0.5)/0.5);
-  },
-  (t) => { const v = Math.floor(t * 255); return [v, v, v]; },
-  (t) => {
-    const h = (t * 300 + 180) % 360;
-    return hslToRgb(h, 100, 30 + t * 40);
-  }
+// ───────────────────────── 유명한 장소 (좌표는 직접 계산해 그려 확인) ─────────────────────────
+// 깊은 곳: 미니브로 핵은 뉴턴법, 나선 중심은 미시우레비치 점(z_{k+p} = z_k)을 mpmath 로 300자리까지 구했다.
+// k: 이름 열쇠, f: 공식, x·y: 중심, s: 화면 높이의 절반, j: 줄리아 c, pal: 어울리는 팔레트
+const PLACES = [
+  {"k": "whole", "x": "-0.75", "y": "0", "s": 1.32, "pal": "classic"},
+  {"k": "seahorse", "x": "-0.7485", "y": "0.1", "s": 0.04, "pal": "classic"},
+  {"k": "elephant", "x": "0.2925", "y": "0.0161", "s": 0.012, "pal": "sunset"},
+  {"k": "triple", "x": "-0.0886", "y": "0.6555", "s": 0.006, "pal": "aurora"},
+  {"k": "scepter", "x": "-1.3605", "y": "0.0062", "s": 0.03, "pal": "copper"},
+  {"k": "spike", "x": "-1.7549", "y": "0", "s": 0.035, "pal": "ice"},
+  {"k": "goldMini", "x": "-0.743642301657885946118597319433", "y": "0.131826519812594723499193012305", "s": 6e-06, "pal": "gold"},
+  {"k": "goldSpiral", "x": "-0.770843140335950187359028807280", "y": "0.125872932511906111299078885853", "s": 1e-06, "pal": "gold"},
+  {"k": "deepMini", "x": "-0.743643887037158870778064543493642575047", "y": "0.131825904205312292821097354874767265262", "s": 5e-15, "pal": "neon"},
+  {"k": "deep50", "x": "-0.74801681888540114432364615620351716227230520161492703405751114547512536379", "y": "0.13331521694797122937432127945625865694131019649550873915632090788199303057", "s": 1e-50, "pal": "sunset"},
+  {"k": "deep120", "x": "-0.745737170900883414554404470829435591039131827299704086044915280778660822160390093371914041535289493451635279456989389177643934031744987138872443", "y": "0.179929497861093939679524198674203650653167491488494322820184617179130846272778344472268929259998704440732268759160833847560982996867407005458361", "s": 1e-120, "pal": "ocean"},
+  {"k": "deep250", "x": "-0.7758932478472283165187298154867675149536359240184057142346328063799196497675027736407638155761498173902529906444273873555761378900798254396214319719509814885494326227416433644789930731949708137816143425234774977371964898663806367569705965021522936691848130860901616094927065", "y": "0.1290773917299707934724828916369352170463534646851484932423525210130593091460288361487135474601818672335477011143085290282317756447293702536115745058340377847875518954337085800212061011547767395706118092360439007323628686120605212213606214655272725512632319251074825781994994", "s": 1e-250, "pal": "lava"},
+  {"k": "rabbit", "x": "0", "y": "0", "s": 1.3, "pal": "candy", "j": [-0.123, 0.745]},
+  {"k": "siegel", "x": "0", "y": "0", "s": 1.2, "pal": "aurora", "j": [-0.390541, -0.586788]},
+  {"k": "spiralJ", "x": "0", "y": "0", "s": 1.1, "pal": "sunset", "j": [0.285, 0.01]},
+  {"k": "dragon", "x": "0", "y": "0", "s": 1.2, "pal": "lava", "j": [-0.8, 0.156]},
+  {"k": "dendrite", "x": "0", "y": "0", "s": 1.3, "pal": "neon", "j": [0, 1]},
+  {"k": "ship", "x": "-1.762", "y": "0.028", "s": 0.045, "pal": "fire", "f": "ship"},
+  {"k": "tricorn", "x": "-0.3", "y": "0", "s": 1.4, "pal": "midnight", "f": "tricorn"},
+  {"k": "multibrot", "x": "0", "y": "0", "s": 1.4, "pal": "viridis", "f": "multi3"},
 ];
 
-function hslToRgb(h, s, l) {
-  s /= 100; l /= 100;
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-  const m = l - c / 2;
-  let r, g, b;
-  if (h < 60) { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
-  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+// ───────────────────────── 계산 관리 (일꾼 여럿 · 단계별 그리기) · 색칠 ─────────────────────────
+// 보기(view): { cx, cy: BigInt(고정소수점), F: 비트 수, scale: 화면 높이의 절반(복소 단위), formula, julia: {on, jr, ji}, maxIter }
+const DEEP = 2e-13;                     // 이보다 깊으면 섭동 계산
+function makeWorker() {
+  try { const url = URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })); const w = new Worker(url); return w; }
+  catch (e) {
+    // 일꾼을 못 쓰는 환경: 같은 코드를 이 자리에서 돌린다
+    const fake = { onmessage: null, terminate() {} }, self = { postMessage: (d) => setTimeout(() => fake.onmessage && fake.onmessage({ data: d }), 0) };
+    const run = new Function('self', WORKER_SRC + ';return self.onmessage;')(self);
+    fake.postMessage = d => setTimeout(() => run({ data: d }), 0); return fake;
+  }
+}
+class Engine {
+  constructor() {
+    const n = clamp((navigator.hardwareConcurrency || 4) - 1, 1, 12);
+    this.workers = Array.from({ length: n }, () => this.hook(makeWorker()));
+    this.refWorker = this.hook(makeWorker());
+    this.job = 0; this.queue = []; this.idle = [...this.workers]; this.ref = null; this.refBusy = null; this.listeners = {};
+  }
+  hook(w) { w.onmessage = e => this.onMsg(w, e.data); return w; }
+  on(ev, fn) { this.listeners[ev] = fn; }
+  emit(ev, ...a) { if (this.listeners[ev]) this.listeners[ev](...a); }
+  isDeep(v) { return !v.julia.on && v.formula === 'mandel' && v.scale < DEEP; }
+  // 계산 시작: W×H 화면, 단계 [4, 1] (거친 → 선명)
+  start(v, W, H, opts = {}) {
+    const job = ++this.job; this.queue = []; this.cur = { job, v, W, H, light: opts.light, passes: opts.passes || [4, 1], done: 0, t0: performance.now(), rowsDone: 0, sink: opts.sink || null, refIter: opts.refIter || 0 };
+    const deep = this.isDeep(v);
+    if (deep) {
+      const key = v.cx + ',' + v.cy + ',' + v.F;
+      if (this.ref && this.ref.key === key && this.ref.maxIter >= v.maxIter) this.queuePasses();
+      else this.requestRef(v, key);
+    } else this.queuePasses();
+    return job;
+  }
+  requestRef(v, key) {
+    const it = Math.max(v.maxIter, this.cur.refIter || 0), id = ++this.job * 1000 + 7; this.refBusy = { id, key, maxIter: it, job: this.job };
+    this.cur.job = this.job; this.emit('status', 'ref', 0, this.cur);
+    this.refWorker.postMessage({ type: 'ref', id, cx: v.cx.toString(), cy: v.cy.toString(), F: v.F, maxIter: it });
+  }
+  queuePasses() {
+    const c = this.cur, v = c.v, deep = this.isDeep(v);
+    for (const step of c.passes) {
+      const W = Math.ceil(c.W / step), H = Math.ceil(c.H / step), px = v.scale * 2 / Math.min(c.W, c.H), dx = px * step;
+      // 화면 왼쪽 위 = 중심 - (W/2, -H/2) 칸
+      const ox0 = -(c.W / 2) * px, oy0 = (c.H / 2) * px;
+      let ox = ox0, oy = oy0;
+      if (!deep) { const cxD = fixToD(v.cx, v.F), cyD = fixToD(v.cy, v.F); ox += cxD; oy += cyD; }
+      const rowsPer = step > 1 ? Math.max(4, Math.ceil(H / (this.workers.length * 2))) : 6;
+      for (let y = 0; y < H; y += rowsPer) this.queue.push({ type: 'rows', job: c.job, pass: step, mode: v.julia.on ? 'julia' : deep ? 'perturb' : 'plain', formula: v.julia.on ? 'mandel' : v.formula, refId: this.ref && this.ref.id, W, H, y0: y, y1: Math.min(H, y + rowsPer), maxIter: v.maxIter, light: c.light, dx, ox, oy, jr: v.julia.jr, ji: v.julia.ji });
+      c.todo = (c.todo || 0) + Math.ceil(H / rowsPer);
+    }
+    // 줄을 가운데부터 계산 (가운데가 먼저 선명해지게)
+    const full = this.queue.filter(q => q.pass === 1), rest = this.queue.filter(q => q.pass !== 1), mid = Math.floor(full.length / 2);
+    full.sort((a, b) => Math.abs(a.y0 / 6 - mid) - Math.abs(b.y0 / 6 - mid)); this.queue = [...rest, ...full];
+    this.pump();
+  }
+  pump() { while (this.idle.length && this.queue.length) { const w = this.idle.pop(), t = this.queue.shift(); w.busy = t; w.postMessage(t); } }
+  onMsg(w, d) {
+    if (d.type === 'refprog') { this.emit('status', 'ref', d.n / d.N, this.cur); return; }
+    if (d.type === 'ref') {
+      if (!this.refBusy || d.id !== this.refBusy.id) return;
+      this.ref = { id: d.id, key: this.refBusy.key, maxIter: this.refBusy.maxIter, len: d.len }; const stale = this.refBusy.job !== this.job; this.refBusy = null;
+      for (const x of this.workers) x.postMessage({ type: 'setref', id: d.id, zr: d.zr, zi: d.zi, len: d.len });
+      if (!stale) this.queuePasses(); return;
+    }
+    if (d.type === 'rows') {
+      w.busy = null; this.idle.push(w);
+      if (d.missingRef) { this.pump(); return; }
+      if (d.job === this.job && this.cur) { const c = this.cur; c.done++; this.emit('rows', d, c); if (c.done >= c.todo) this.emit('done', c, performance.now() - c.t0); }
+      this.pump();
+    }
+  }
+  cancel() { this.job++; this.queue = []; this.cur = null; }
 }
 
-function lerpColor(a, b, t) {
-  return [
-    Math.round(a[0] + (b[0] - a[0]) * t),
-    Math.round(a[1] + (b[1] - a[1]) * t),
-    Math.round(a[2] + (b[2] - a[2]) * t)
-  ];
+// ── 색칠: 반복 수 → 색 (다시 계산하지 않고 언제든 다시 칠한다)
+const COL = { pal: 'classic', density: 1, offset: 0, map: 'log', light: true, lightAng: 45, lightStr: 0.55, edge: 0.35, inside: [0, 0, 0] };
+let LUT = buildLut(COL.pal);
+function colorize(img, it, ang, de, n0, n1) {
+  const d32 = new Uint32Array(img.data.buffer), lut = LUT, N = LUT_N, dens = COL.density, off = COL.offset * N, log = COL.map === 'log';
+  const la = COL.lightAng * Math.PI / 180, lc = Math.cos(la), ls = Math.sin(la), ls2 = COL.lightStr, h = 1.2, edge = COL.edge, light = COL.light;
+  const inR = COL.inside[0], inG = COL.inside[1], inB = COL.inside[2], inC = 0xff000000 | inB << 16 | inG << 8 | inR;
+  for (let i = n0; i < n1; i++) {
+    const v = it[i]; if (v < 0) { d32[i] = inC; continue; }
+    const s = log ? Math.log(v + 1) * 180 * dens : v * 10 * dens;
+    let k = Math.floor(s + off) % N; if (k < 0) k += N; k *= 3;
+    let r = lut[k], g = lut[k + 1], b = lut[k + 2], f = 1;
+    if (light && ang && !isNaN(ang[i])) { const a = ang[i]; let t = (Math.cos(a) * lc + Math.sin(a) * ls + h) / (1 + h); if (t < 0) t = 0; f = 1 - ls2 + ls2 * t * 1.35; }
+    if (edge && de) { const q = de[i]; if (q < 1.5) f *= 1 - edge * (1 - q / 1.5); }
+    if (f !== 1) { r *= f; g *= f; b *= f; if (r > 255) r = 255; if (g > 255) g = 255; if (b > 255) b = 255; }
+    d32[i] = 0xff000000 | (b << 16) | (g << 8) | r;
+  }
 }
 
+// ───────────────────────── 탐험 화면: 보기 · 계산 연결 · 조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG; document.title = T.title;
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const fmt = (s, o) => String(s).replace(/\{(\w+)\}/g, (_, k) => (o && o[k] != null ? o[k] : ''));
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+const mobile = () => innerWidth <= 760;
+function toast(t, ms = 2000) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+function lsGet(k, d) { try { const v = localStorage.getItem('wiiiv-fractal-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem('wiiiv-fractal-' + k, JSON.stringify(v)); } catch (e) { /* 저장소 없이도 동작 */ } }
+
+// ── 보기
+const MIN_SCALE = { deep: 1e-290, flat: 2e-13 };
+const HOME = { mandel: ['-0.75', '0', 1.32], ship: ['-0.45', '-0.5', 1.1], tricorn: ['-0.3', '0', 1.4], multi3: ['0', '0', 1.4], julia: ['0', '0', 1.5] };
+let V = null;
+function mkView(formula, xs, ys, scale, julia) {
+  const F = fracBitsFor(scale); return { formula, cx: decToFix(xs, F), cy: decToFix(ys, F), F, scale, julia: julia || { on: false, jr: -0.8, ji: 0.156 } };
+}
+const SET = Object.assign({ iterMode: 'auto', iterMul: 1, iterManual: 1000, quality: 1, jprev: false, orbit: false }, lsGet('set', {}));
+const saveSet = () => { lsSet('set', SET); lsSet('col', COL); };
+Object.assign(COL, lsGet('col', {}));
+function autoIter(v) {
+  const L = Math.max(0, Math.log10(1.5 / v.scale)), base = v.julia.on ? 300 : v.formula === 'mandel' ? 400 : 300;
+  return Math.round((base + 90 * Math.pow(L, 1.45)) * SET.iterMul);
+}
+const maxIterOf = v => clamp(SET.iterMode === 'auto' ? autoIter(v) : SET.iterManual, 50, 2000000);
+const canDeep = v => v.formula === 'mandel' && !v.julia.on;
+function setBits(v) { const F = fracBitsFor(v.scale); if (F > v.F || F < v.F - 128) { v.cx = refix(v.cx, v.F, F); v.cy = refix(v.cy, v.F, F); v.F = F; } }
+// 화면 화소 → 중심에서의 복소 차이
+const pxSize = () => V.scale * 2 / Math.min(CW, CH);      // scale = 짧은 변의 절반
+function moveBy(dxPx, dyPx) { const s = pxSize(); V.cx += dToFix(dxPx * s, V.F); V.cy -= dToFix(dyPx * s, V.F); }
+function zoomAbout(sx, sy, k) {
+  const minS = canDeep(V) ? MIN_SCALE.deep : MIN_SCALE.flat;
+  if (V.scale / k < minS) { k = V.scale / minS; if (k <= 1.0001) { toast(canDeep(V) ? T.tooDeep : T.tooDeepFlat); return false; } }
+  if (V.scale / k > 6) k = V.scale / 6;
+  const ox = (sx - CW / 2), oy = (sy - CH / 2), f = 1 - 1 / k; moveBy(ox * f, oy * f); V.scale /= k; setBits(V); return true;
+}
+const viewStr = v => { const d = Math.max(4, Math.ceil(-Math.log10(v.scale)) + 6); return { f: v.formula, x: fixToDec(v.cx, v.F, d), y: fixToDec(v.cy, v.F, d), s: v.scale, j: v.julia.on ? [v.julia.jr, v.julia.ji] : null }; };
+function viewFrom(o) { const v = mkView(o.f || 'mandel', o.x, o.y, +o.s || 1.5, o.j ? { on: true, jr: +o.j[0], ji: +o.j[1] } : null); return v; }
+
+// ── 화면 (캔버스)
+const cv = $('cv'), ctx = cv.getContext('2d'), ov = $('ov'), octx = ov.getContext('2d');
+let CW = 0, CH = 0, DPR = 1, W = 0, H = 0;           // CW·CH = CSS 화소, W·H = 계산 화소
+let buf = null, img = null, low = null;              // 계산 결과·그림
+const shown = document.createElement('canvas'), sctx = shown.getContext('2d');   // 지금 보이는 그림 (끌기·확대 미리보기용)
+let xf = null;                                       // 보이는 그림에 걸 변환 {tx, ty, k}
 function resize() {
-  const wrap = canvas.parentElement;
-  W = wrap.clientWidth;
-  H = wrap.clientHeight;
-  canvas.width = W;
-  canvas.height = H;
-  render();
+  const r = $('stage').getBoundingClientRect(); CW = Math.max(50, Math.round(r.width)); CH = Math.max(50, Math.round(r.height));
+  DPR = Math.min(SET.quality === 2 ? 2 : 1.25, devicePixelRatio || 1); if (SET.quality === 0) DPR = 0.6;
+  W = Math.round(CW * DPR); H = Math.round(CH * DPR);
+  cv.width = W; cv.height = H; ov.width = CW * Math.min(2, devicePixelRatio || 1); ov.height = CH * Math.min(2, devicePixelRatio || 1);
+  buf = { it: new Float32Array(W * H), ang: new Float32Array(W * H), de: new Float32Array(W * H) }; img = ctx.createImageData(W, H);
+  shown.width = W; shown.height = H;
 }
-window.addEventListener('resize', resize);
-
-function setIter(v) {
-  maxIter = parseInt(v);
-  document.getElementById('iterVal').textContent = v;
-  render();
+// ── 계산 연결
+const ENG = new Engine();
+let rendering = false, lastMs = 0, renderT = null, progress = 0;
+function render(delay = 0) {
+  clearTimeout(renderT); renderT = setTimeout(doRender, delay);
 }
-
-function setPalette(idx, btn) {
-  currentPalette = idx;
-  document.querySelectorAll('.palettes button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  render();
-}
-
-function resetView() {
-  centerX = -0.5; centerY = 0; scale = 1.5;
-  render();
-}
-
-function updateInfo() {
-  const zoom = (1.5 / scale).toFixed(1);
-  document.getElementById('zoomInfo').textContent = zoom + 'x';
-  document.getElementById('centerInfo').textContent = centerX.toFixed(6) + ', ' + centerY.toFixed(6);
-}
-
-function render() {
-  renderCancel = true;
-  setTimeout(() => doRender(), 10);
-}
-
 function doRender() {
-  renderCancel = false;
-  rendering = true;
-  updateInfo();
-
-  const imgData = ctx.createImageData(W, H);
-  const data = imgData.data;
-  const aspect = W / H;
-  const palette = PALETTES[currentPalette];
-  const progressBar = document.getElementById('progressBar');
-
-  let y = 0;
-  const CHUNK = 8;
-
-  function renderChunk() {
-    if (renderCancel) { rendering = false; return; }
-    const endY = Math.min(y + CHUNK, H);
-
-    for (let py = y; py < endY; py++) {
-      for (let px = 0; px < W; px++) {
-        const x0 = centerX + (px - W / 2) / (W / 2) * scale * aspect;
-        const y0 = centerY + (py - H / 2) / (H / 2) * scale;
-
-        let zx = 0, zy = 0, iter = 0;
-        while (zx * zx + zy * zy < 4 && iter < maxIter) {
-          const tmp = zx * zx - zy * zy + x0;
-          zy = 2 * zx * zy + y0;
-          zx = tmp;
-          iter++;
-        }
-
-        const idx = (py * W + px) * 4;
-        if (iter === maxIter) {
-          data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0;
-        } else {
-          const smooth = iter + 1 - Math.log2(Math.log2(zx * zx + zy * zy));
-          const t = (smooth % 50) / 50;
-          const [r, g, b] = palette(t);
-          data[idx] = r; data[idx + 1] = g; data[idx + 2] = b;
-        }
-        data[idx + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(imgData, 0, 0, 0, y, W, endY);
-    progressBar.style.width = ((endY / H) * 100) + '%';
-    y = endY;
-
-    if (y < H) {
-      requestAnimationFrame(renderChunk);
-    } else {
-      progressBar.style.width = '0';
-      rendering = false;
-    }
-  }
-
-  renderChunk();
+  const v = { ...V, maxIter: maxIterOf(V) }; rendering = true; progress = 0;
+  low = null; ENG.start(v, W, H, { light: COL.light || COL.edge > 0, passes: [4, 1] }); updHud();
+  persist();
 }
-
-function zoomAt(px, py, factor) {
-  const aspect = W / H;
-  const mx = centerX + (px - W / 2) / (W / 2) * scale * aspect;
-  const my = centerY + (py - H / 2) / (H / 2) * scale;
-
-  centerX = mx + (centerX - mx) / factor;
-  centerY = my + (centerY - my) / factor;
-  scale /= factor;
-  render();
-}
-
-let dragStart = null;
-const selRect = document.getElementById('selRect');
-const DRAG_THRESHOLD = 6;
-
-canvas.addEventListener('mousedown', (e) => {
-  if (e.button !== 0) return;
-  dragStart = { x: e.offsetX, y: e.offsetY };
-});
-
-canvas.addEventListener('mousemove', (e) => {
-  const aspect = W / H;
-  const mx = centerX + (e.offsetX - W / 2) / (W / 2) * scale * aspect;
-  const my = centerY + (e.offsetY - H / 2) / (H / 2) * scale;
-  document.getElementById('coords').textContent = `${mx.toFixed(10)}, ${my.toFixed(10)}i`;
-
-  if (!dragStart) return;
-  const dx = e.offsetX - dragStart.x;
-  const dy = e.offsetY - dragStart.y;
-  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-
-  const rect = canvas.getBoundingClientRect();
-  const l = Math.min(dragStart.x, e.offsetX);
-  const t = Math.min(dragStart.y, e.offsetY);
-  const w = Math.abs(dx);
-  const h = Math.abs(dy);
-  selRect.style.display = 'block';
-  selRect.style.left = (rect.left - canvas.parentElement.getBoundingClientRect().left + l) + 'px';
-  selRect.style.top = t + 'px';
-  selRect.style.width = w + 'px';
-  selRect.style.height = h + 'px';
-});
-
-canvas.addEventListener('mouseup', (e) => {
-  if (!dragStart) return;
-  const dx = e.offsetX - dragStart.x;
-  const dy = e.offsetY - dragStart.y;
-  selRect.style.display = 'none';
-
-  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
-    if (e.shiftKey) zoomAt(e.offsetX, e.offsetY, 0.5);
-    else zoomAt(e.offsetX, e.offsetY, 2);
+ENG.on('status', (k, p, c) => { if (c && c.sink) return c.sink.status && c.sink.status(p); progress = p * 0.15; $('prog').style.width = (progress * 100) + '%'; $('hudMode').textContent = fmt(T.refCalc, { p: Math.round(p * 100) }); });
+ENG.on('rows', (d, c) => {
+  if (c.sink) return c.sink.rows(d, c);
+  if (d.pass !== 1) {
+    // 거친 그림: 작은 판에 칠해 늘려 보인다
+    const w = d.W || Math.ceil(c.W / d.pass), h = Math.ceil(c.H / d.pass);
+    if (!low || low.w !== w) { low = { w, h, it: new Float32Array(w * h), ang: new Float32Array(w * h), de: new Float32Array(w * h), cv: document.createElement('canvas') }; low.cv.width = w; low.cv.height = h; low.img = low.cv.getContext('2d').createImageData(w, h); }
+    low.it.set(d.it, d.y0 * w); low.ang.set(d.ang, d.y0 * w); low.de.set(d.de, d.y0 * w);
+    colorize(low.img, low.it, low.ang, low.de, d.y0 * w, d.y1 * w); low.cv.getContext('2d').putImageData(low.img, 0, 0, 0, d.y0, w, d.y1 - d.y0);
+    xf = null; ctx.imageSmoothingEnabled = true; ctx.drawImage(low.cv, 0, d.y0, w, d.y1 - d.y0, 0, d.y0 * d.pass, w * d.pass, (d.y1 - d.y0) * d.pass);
   } else {
-    const aspect = W / H;
-    const x1 = centerX + (Math.min(dragStart.x, e.offsetX) - W / 2) / (W / 2) * scale * aspect;
-    const x2 = centerX + (Math.max(dragStart.x, e.offsetX) - W / 2) / (W / 2) * scale * aspect;
-    const y1 = centerY + (Math.min(dragStart.y, e.offsetY) - H / 2) / (H / 2) * scale;
-    const y2 = centerY + (Math.max(dragStart.y, e.offsetY) - H / 2) / (H / 2) * scale;
-    centerX = (x1 + x2) / 2;
-    centerY = (y1 + y2) / 2;
-    const selW = x2 - x1;
-    const selH = y2 - y1;
-    scale = Math.max(selW / 2 / aspect, selH / 2);
-    render();
+    const o = d.y0 * W; buf.it.set(d.it, o); buf.ang.set(d.ang, o); buf.de.set(d.de, o);
+    colorize(img, buf.it, buf.ang, buf.de, o, d.y1 * W); ctx.putImageData(img, 0, 0, 0, d.y0, W, d.y1 - d.y0);
   }
-  dragStart = null;
+  progress = 0.15 + 0.85 * c.done / c.todo; $('prog').style.width = (progress * 100) + '%';
 });
+ENG.on('done', (c, ms) => { if (c.sink) return c.sink.done(c, ms); rendering = false; lastMs = ms; $('prog').style.width = '0'; sctx.drawImage(cv, 0, 0); updHud(); });
+function recolor() { if (!buf) return; colorize(img, buf.it, buf.ang, buf.de, 0, W * H); ctx.putImageData(img, 0, 0); sctx.drawImage(cv, 0, 0); }
+// 끌기·확대 중: 이미 보이던 그림을 옮기고 늘려서 바로 보여 준다
+function drawXf() { if (!xf) return; ctx.save(); ctx.fillStyle = '#05060a'; ctx.fillRect(0, 0, W, H); ctx.imageSmoothingEnabled = true; ctx.setTransform(xf.k, 0, 0, xf.k, xf.tx * DPR, xf.ty * DPR); ctx.drawImage(shown, 0, 0); ctx.restore(); }
+function applyXfToShown() { if (!xf) return; const t = document.createElement('canvas'); t.width = W; t.height = H; const c = t.getContext('2d'); c.drawImage(cv, 0, 0); sctx.clearRect(0, 0, W, H); sctx.drawImage(t, 0, 0); }
 
-canvas.addEventListener('mouseleave', () => {
-  dragStart = null;
-  selRect.style.display = 'none';
-});
-
-canvas.addEventListener('contextmenu', (e) => {
-  e.preventDefault();
-  zoomAt(e.offsetX, e.offsetY, 0.5);
-});
-
-canvas.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.3 : 0.77;
-  zoomAt(e.offsetX, e.offsetY, factor);
-}, { passive: false });
-
-function touchOffset(e) {
-  const r = canvas.getBoundingClientRect();
-  const t = e.touches[0] || e.changedTouches[0];
-  return { x: t.clientX - r.left, y: t.clientY - r.top };
+// ── 화면 정보
+function zoomText(s) { const z = 1.25 / s; if (z < 1e4) return '×' + (z < 10 ? z.toFixed(2) : Math.round(z).toLocaleString()); const e = Math.floor(Math.log10(z)); return `×${(z / Math.pow(10, e)).toFixed(2)}·10^${e}`; }
+function updHud() {
+  $('hudZoom').textContent = zoomText(V.scale);
+  const d = clamp(Math.ceil(-Math.log10(V.scale)) + 3, 4, 40);
+  $('hudRe').textContent = fixToDec(V.cx, V.F, d).replace(/^(?!-)/, ' '); $('hudIm').textContent = fixToDec(V.cy, V.F, d).replace(/^(?!-)/, ' ') + 'i';
+  $('hudIt').textContent = maxIterOf(V).toLocaleString();
+  const deep = ENG.isDeep(V);
+  $('hudMode').textContent = (V.julia.on ? T.modeJulia : T.formulas[V.formula]) + ' · ' + (deep ? fmt(T.modeDeep, { b: V.F }) : T.modeFast) + (rendering ? ' · …' : lastMs ? ` · ${(lastMs / 1000).toFixed(2)}s` : '');
+  $('hudJ').hidden = !V.julia.on; if (V.julia.on) $('hudJ').textContent = `c = ${V.julia.jr.toFixed(6)} ${V.julia.ji < 0 ? '−' : '+'} ${Math.abs(V.julia.ji).toFixed(6)}i`;
+  syncTop();
 }
-canvas.addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) return;
-  e.preventDefault();
-  const p = touchOffset(e);
-  dragStart = { x: p.x, y: p.y };
-}, { passive: false });
-canvas.addEventListener('touchmove', (e) => {
-  if (!dragStart || e.touches.length !== 1) return;
-  e.preventDefault();
-  const p = touchOffset(e);
-  const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
-  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
-  const l = Math.min(dragStart.x, p.x), t = Math.min(dragStart.y, p.y);
-  selRect.style.display = 'block';
-  selRect.style.left = l + 'px'; selRect.style.top = t + 'px';
-  selRect.style.width = Math.abs(dx) + 'px'; selRect.style.height = Math.abs(dy) + 'px';
-}, { passive: false });
-canvas.addEventListener('touchend', (e) => {
-  if (!dragStart) return;
-  const p = touchOffset(e);
-  const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
-  selRect.style.display = 'none';
-  if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
-    zoomAt(p.x, p.y, 2);
-  } else {
-    const aspect = W / H;
-    const x1 = centerX + (Math.min(dragStart.x, p.x) - W / 2) / (W / 2) * scale * aspect;
-    const x2 = centerX + (Math.max(dragStart.x, p.x) - W / 2) / (W / 2) * scale * aspect;
-    const y1 = centerY + (Math.min(dragStart.y, p.y) - H / 2) / (H / 2) * scale;
-    const y2 = centerY + (Math.max(dragStart.y, p.y) - H / 2) / (H / 2) * scale;
-    centerX = (x1 + x2) / 2;
-    centerY = (y1 + y2) / 2;
-    scale = Math.max((x2 - x1) / 2 / aspect, (y2 - y1) / 2);
-    render();
-  }
-  dragStart = null;
-});
+// ── 보기 기록 (뒤로 · 앞으로)
+const HIST = { list: [], i: -1 }; let histT = null;
+function pushHist() { clearTimeout(histT); histT = setTimeout(() => { const s = JSON.stringify(viewStr(V)); if (HIST.list[HIST.i] === s) return; HIST.list = HIST.list.slice(0, HIST.i + 1); HIST.list.push(s); if (HIST.list.length > 100) HIST.list.shift(); HIST.i = HIST.list.length - 1; syncTop(); }, 350); }
+function goHist(d) { const j = HIST.i + d; if (j < 0 || j >= HIST.list.length) return; HIST.i = j; V = viewFrom(JSON.parse(HIST.list[j])); xf = null; render(); syncTop(); }
+function persist() { lsSet('view', viewStr(V)); }
+function setView(v, noHist) { V = v; setBits(V); xf = null; render(); if (!noHist) pushHist(); }
 
-resize();
+// ── 조작: 끌기 = 옮기기, 휠·두 손가락 = 확대, 두 번 누르기 = 4배, Shift 끌기 = 상자 확대
+const ptrs = new Map(); let drag = null, pinch = null, lastTap = 0, wheelT = null;
+const stage = $('stage');
+stage.addEventListener('pointerdown', e => {
+  if (e.target !== ov) return; e.preventDefault(); stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (MOVIE) { stopMovie(); return; }
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, k: xf ? xf.k : 1, tx: xf ? xf.tx : 0, ty: xf ? xf.ty : 0 }; drag = null; return; }
+  if (e.shiftKey || e.button === 2) { drag = { box: true, x: e.offsetX, y: e.offsetY, x1: e.offsetX, y1: e.offsetY }; return; }
+  drag = { x: e.offsetX, y: e.offsetY, moved: false, t: performance.now() };
+});
+stage.addEventListener('pointermove', e => {
+  hover(e);
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (pinch && ptrs.size >= 2) {
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, k = d / pinch.d;
+    xf = { k: pinch.k * k, tx: cx - (pinch.cx - pinch.tx) * k, ty: cy - (pinch.cy - pinch.ty) * k }; drawXf(); return;
+  }
+  if (!drag) return;
+  if (drag.box) { drag.x1 = e.offsetX; drag.y1 = e.offsetY; drawOverlay(); return; }
+  const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y; if (!drag.moved && Math.hypot(dx, dy) < 4) return; drag.moved = true;
+  xf = { k: 1, tx: dx, ty: dy }; drawXf();
+});
+const endPtr = e => {
+  if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+  if (pinch) { if (ptrs.size < 2) { finishXf(); pinch = null; drag = null; } return; }
+  if (!drag) return; const d = drag; drag = null;
+  if (d.box) { drawOverlay(); const w = Math.abs(d.x1 - d.x), h = Math.abs(d.y1 - d.y); if (w > 6 && h > 6) zoomBox((d.x + d.x1) / 2 - CW / 2, (d.y + d.y1) / 2 - CH / 2, Math.min(CW / w, CH / h)); return; }
+  if (d.moved) { finishXf(); return; }
+  // 누르기: 두 번이면 확대 (Shift·오른쪽 = 축소)
+  const now = performance.now();
+  if (now - lastTap < 320) { lastTap = 0; animZoom(e.offsetX, e.offsetY, e.altKey ? 0.25 : 4); }
+  else { lastTap = now; if (SET.jprev && !V.julia.on && e.pointerType !== 'mouse') hover(e, true); }
+};
+stage.addEventListener('pointerup', endPtr); stage.addEventListener('pointercancel', endPtr);
+stage.addEventListener('contextmenu', e => e.preventDefault());
+function zoomBox(mx, my, k) { moveBy(mx, my); if (V.scale / k < (canDeep(V) ? MIN_SCALE.deep : MIN_SCALE.flat)) k = V.scale / (canDeep(V) ? MIN_SCALE.deep : MIN_SCALE.flat); V.scale /= k; setBits(V); xf = null; render(); pushHist(); }
+// 옮기기·확대한 그림 변환을 보기 값에 반영하고 다시 계산
+function finishXf() {
+  if (!xf) return; const k = xf.k;
+  // 화면 점 p 가 변환 뒤 p' = k p + t 로 갔다 → 새 중심은 옛 화면의 (C - t)/k 자리
+  const ox = (CW / 2 - xf.tx) / k - CW / 2, oy = (CH / 2 - xf.ty) / k - CH / 2;
+  if (k !== 1) { const minS = canDeep(V) ? MIN_SCALE.deep : MIN_SCALE.flat; if (V.scale / k < minS) { toast(T.tooDeep); xf = null; recolor(); return; } }
+  moveBy(ox, oy); V.scale /= k; setBits(V); applyXfToShown(); render(); pushHist();
+}
+stage.addEventListener('wheel', e => {
+  e.preventDefault(); if (MOVIE) return; const k = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0022));
+  const cur = xf || { k: 1, tx: 0, ty: 0 }; const nk = cur.k * k;
+  xf = { k: nk, tx: e.offsetX - (e.offsetX - cur.tx) * k, ty: e.offsetY - (e.offsetY - cur.ty) * k }; drawXf();
+  clearTimeout(wheelT); wheelT = setTimeout(finishXf, 160);
+}, { passive: false });
+// 부드럽게 확대하는 움직임 (두 번 누르기 · 단추)
+function animZoom(sx, sy, k, ms = 380) {
+  const t0 = performance.now();
+  const step = now => { const p = Math.min(1, (now - t0) / ms), e = p * p * (3 - 2 * p), kk = Math.pow(k, e); xf = { k: kk, tx: sx - sx * kk, ty: sy - sy * kk }; drawXf(); if (p < 1) requestAnimationFrame(step); else finishXf(); };
+  requestAnimationFrame(step);
+}
+// ── 마우스 아래: 좌표 · 줄리아 미리보기 · 궤도
+let hoverPt = null, jprevT = null;
+function hover(e, force) {
+  hoverPt = { x: e.offsetX, y: e.offsetY };
+  if (!V) return; const s = pxSize(), re = fixToD(V.cx, V.F) + (e.offsetX - CW / 2) * s, im = fixToD(V.cy, V.F) - (e.offsetY - CH / 2) * s;
+  $('hudPt').textContent = V.scale > 1e-9 ? `${re.toFixed(8)} ${im < 0 ? '−' : '+'} ${Math.abs(im).toFixed(8)}i` : '';
+  if (SET.orbit || drag && drag.box) drawOverlay();
+  if (SET.jprev && !V.julia.on && (!drag || force)) { cancelAnimationFrame(jprevT); jprevT = requestAnimationFrame(() => drawJuliaPreview(re, im)); }
+}
+stage.addEventListener('pointerleave', () => { hoverPt = null; drawOverlay(); });
+function drawOverlay() {
+  const r = ov.width / CW; octx.setTransform(r, 0, 0, r, 0, 0); octx.clearRect(0, 0, CW, CH);
+  if (drag && drag.box) { octx.strokeStyle = '#7fe3ff'; octx.lineWidth = 1.5; octx.setLineDash([6, 4]); octx.strokeRect(drag.x, drag.y, drag.x1 - drag.x, drag.y1 - drag.y); octx.setLineDash([]); octx.fillStyle = 'rgba(127,227,255,.08)'; octx.fillRect(drag.x, drag.y, drag.x1 - drag.x, drag.y1 - drag.y); }
+  if (SET.orbit && hoverPt && V.scale > 1e-12 && !xf) {
+    // 점 c 를 넣고 z ← z² + c 를 되풀이한 길
+    const s = pxSize(), cr = fixToD(V.cx, V.F) + (hoverPt.x - CW / 2) * s, ci = fixToD(V.cy, V.F) - (hoverPt.y - CH / 2) * s, cx0 = fixToD(V.cx, V.F), cy0 = fixToD(V.cy, V.F);
+    const toS = (a, b) => [CW / 2 + (a - cx0) / s, CH / 2 - (b - cy0) / s];
+    let zr = V.julia.on ? cr : 0, zi = V.julia.on ? ci : 0; const kr = V.julia.on ? V.julia.jr : cr, ki = V.julia.on ? V.julia.ji : ci;
+    octx.beginPath(); let [x, y] = toS(zr, zi); octx.moveTo(x, y); let n = 0;
+    for (; n < 400; n++) { const t = zr * zr - zi * zi + kr; zi = 2 * zr * zi + ki; zr = t; if (zr * zr + zi * zi > 64) break; [x, y] = toS(zr, zi); octx.lineTo(x, y); }
+    octx.strokeStyle = 'rgba(255,255,255,.75)'; octx.lineWidth = 1; octx.stroke();
+    octx.fillStyle = n === 400 ? '#7cffb2' : '#ff7b9c'; octx.beginPath(); octx.arc(hoverPt.x, hoverPt.y, 4, 0, 7); octx.fill();
+  }
+}
+// 줄리아 미리보기 (작게, 이 자리에서 바로 계산)
+const jc = $('jprev'), jctx = jc.getContext('2d'); let jImg = null;
+function drawJuliaPreview(cr, ci) {
+  const w = jc.width, h = jc.height; if (!jImg || jImg.width !== w) jImg = jctx.createImageData(w, h);
+  const it = new Float32Array(w * h), s = 3.2 / h; let k = 0;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++, k++) {
+    let zr = (x - w / 2) * s, zi = (h / 2 - y) * s, n = 0, m = 0;
+    for (; n < 160; n++) { const t = zr * zr - zi * zi + cr; zi = 2 * zr * zi + ci; zr = t; m = zr * zr + zi * zi; if (m > 256) break; }
+    it[k] = n >= 160 ? -1 : n + 1 - Math.log2(Math.log2(m) / 2);
+  }
+  colorize(jImg, it, null, null, 0, w * h); jctx.putImageData(jImg, 0, 0); jc.dataset.c = cr + ',' + ci;
+  $('jprevC').textContent = `c = ${cr.toFixed(4)} ${ci < 0 ? '−' : '+'} ${Math.abs(ci).toFixed(4)}i`;
+}
+
+// ───────────────────────── 탐험 화면: 막대 · 판 · 영상 · 저장 · 시작 ─────────────────────────
+const IC = {
+  logo: '<path d="M12 3a3 3 0 013 3 3 3 0 013 3 4.5 4.5 0 01-1.5 8.8A4.5 4.5 0 0112 21a4.5 4.5 0 01-4.5-3.2A4.5 4.5 0 016 9a3 3 0 013-3 3 3 0 013-3z" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="#0b0d14"/>',
+  home: '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  back: '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  fwd: '<path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  zin: '<circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  zout: '<circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  movie: '<rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>',
+  julia: '<path d="M12 4c4 0 7 2.5 7 6s-3 4-5 3-1-4 1-4M12 20c-4 0-7-2.5-7-6s3-4 5-3 1 4-1 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  orbit: '<circle cx="6" cy="17" r="2" fill="currentColor"/><path d="M6 17l5-9 6 5-3-9 6 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  panel: '<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14 4v16" stroke="currentColor" stroke-width="1.8"/>',
+  help: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  play: '<path d="M7 4.5l13 7.5-13 7.5z" fill="currentColor"/>', pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+};
+const svg = k => `<svg viewBox="0 0 24 24">${IC[k]}</svg>`;
+function ib(id, icon, title, extra = '') { return `<button class="ib" id="${id}" title="${esc(title)}">${svg(icon)}${extra}</button>`; }
+
+// ── 위 막대
+function buildTop() {
+  $('top').innerHTML = `<div class="brand">${svg('logo')}<span class="hide-s">${esc(T.title)}</span></div>
+    ${ib('bHome', 'home', T.home + ' (Home)')}${ib('bBack', 'back', T.back + ' (Backspace)')}${ib('bFwd', 'fwd', T.forward)}<div class="sep"></div>
+    ${ib('bOut', 'zout', T.zoomOut + ' (−)')}${ib('bIn', 'zin', T.zoomIn + ' (+)')}<div class="sep"></div>
+    ${ib('bMovie', 'movie', T.movie, `<span class="hide-s">${esc(T.movieShort)}</span>`)}${ib('bJul', 'julia', T.juliaPreview + ' (J)')}${ib('bOrb', 'orbit', T.orbit + ' (O)')}
+    <div class="spacer"></div>${ib('bShot', 'camera', T.savePng)}${ib('bPanel', 'panel', T.panel)}${ib('bHelp', 'help', T.help)}`;
+  $('bHome').onclick = goHome; $('bBack').onclick = () => goHist(-1); $('bFwd').onclick = () => goHist(1);
+  $('bIn').onclick = () => animZoom(CW / 2, CH / 2, 4); $('bOut').onclick = () => animZoom(CW / 2, CH / 2, 0.25);
+  $('bMovie').onclick = () => (MOVIE ? stopMovie() : movieDialog());
+  $('bJul').onclick = () => { SET.jprev = !SET.jprev; saveSet(); syncTop(); if (!SET.jprev) $('jbox').hidden = true; };
+  $('bOrb').onclick = () => { SET.orbit = !SET.orbit; saveSet(); syncTop(); drawOverlay(); };
+  $('bShot').onclick = exportDialog; $('bHelp').onclick = helpDialog;
+  $('bPanel').onclick = () => { $('side').classList.toggle('closed'); lsSet('panel', !$('side').classList.contains('closed')); setTimeout(() => { resize(); render(); }, 0); };
+}
+function syncTop() {
+  if (!$('bBack')) return; $('bBack').disabled = HIST.i <= 0; $('bFwd').disabled = HIST.i >= HIST.list.length - 1;
+  $('bJul').classList.toggle('on', SET.jprev); $('bOrb').classList.toggle('on', SET.orbit); $('bMovie').classList.toggle('on', !!MOVIE);
+  $('jbox').hidden = !(SET.jprev && !V.julia.on);
+}
+function goHome() { const h = V.julia.on ? HOME.julia : HOME[V.formula]; setView(mkView(V.formula, h[0], h[1], h[2], V.julia.on ? { ...V.julia } : null)); }
+
+// ── 오른쪽 판
+let TAB = lsGet('tab', 'color');
+function buildSide() {
+  const tabs = [['color', T.tabColor], ['calc', T.tabCalc], ['places', T.tabPlaces], ['learn', T.tabLearn]];
+  $('side').innerHTML = `<div class="tabs">${tabs.map(([k, l]) => `<button class="tab ${TAB === k ? 'on' : ''}" data-k="${k}">${esc(l)}</button>`).join('')}</div><div class="body" id="sbody"></div>`;
+  $('side').querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = b.dataset.k; lsSet('tab', TAB); buildSide(); });
+  ({ color: sideColor, calc: sideCalc, places: sidePlaces, learn: sideLearn })[TAB]($('sbody'));
+}
+function rowRange(host, label, min, max, step, val, show, on, end) {
+  const r = document.createElement('label'); r.className = 'row'; r.innerHTML = `<span>${esc(label)}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${val}"><output>${show(val)}</output>`;
+  const i = r.querySelector('input'), o = r.querySelector('output'); i.oninput = () => { on(+i.value); o.textContent = show(+i.value); }; i.onchange = () => end && end(); host.appendChild(r); return r;
+}
+function chipRow(host, label, list, cur, on) {
+  const r = document.createElement('div'); r.className = 'chips'; if (label) { const h = document.createElement('h5'); h.textContent = label; host.appendChild(h); }
+  r.innerHTML = list.map(([v, l]) => `<button class="chip ${String(v) === String(cur) ? 'on' : ''}" data-v="${esc(v)}">${esc(l)}</button>`).join('');
+  r.querySelectorAll('.chip').forEach(b => b.onclick = () => { r.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); on(b.dataset.v); });
+  host.appendChild(r); return r;
+}
+let cycleOn = false, cycleSpeed = lsGet('cycle', 0.25), cycleLast = 0;
+function sideColor(B) {
+  B.innerHTML = `<h5>${esc(T.palette)}</h5><div class="pals" id="pals"></div>`;
+  const P = $('pals'); for (const k of PALETTE_ORDER) { const b = document.createElement('button'); b.className = 'pal' + (COL.pal === k ? ' on' : ''); b.style.background = paletteCss(k); b.title = T.palNames[k] || k; b.onclick = () => { COL.pal = k; LUT = buildLut(k); saveSet(); recolor(); P.querySelectorAll('.pal').forEach(x => x.classList.toggle('on', x === b)); }; P.appendChild(b); }
+  rowRange(B, T.density, -2, 2, 0.01, Math.log2(COL.density), v => '×' + Math.pow(2, v).toFixed(2), v => { COL.density = Math.pow(2, v); recolor(); }, saveSet);
+  rowRange(B, T.offset, 0, 1, 0.005, COL.offset, v => Math.round(v * 100) + '%', v => { COL.offset = v; recolor(); }, saveSet);
+  chipRow(B, T.mapping, [['log', T.mapLog], ['lin', T.mapLin]], COL.map, v => { COL.map = v; saveSet(); recolor(); });
+  const cy = document.createElement('div'); cy.className = 'cyc'; cy.innerHTML = `<button class="btn" id="cyBtn">${svg(cycleOn ? 'pause' : 'play')}<span>${esc(T.colorCycle)}</span></button>`; B.appendChild(cy);
+  $('cyBtn').onclick = () => { cycleOn = !cycleOn; cycleLast = performance.now(); buildSide(); };
+  rowRange(B, T.cycleSpeed, -1, 1, 0.01, cycleSpeed, v => (v * 100).toFixed(0), v => { cycleSpeed = v; lsSet('cycle', v); });
+  const h = document.createElement('h5'); h.textContent = T.lighting; B.appendChild(h);
+  chipRow(B, '', [[1, T.on], [0, T.off]], COL.light ? 1 : 0, v => { const was = COL.light; COL.light = v === '1'; saveSet(); if (COL.light && !was) render(); else recolor(); });
+  rowRange(B, T.lightAngle, 0, 360, 1, COL.lightAng, v => v + '°', v => { COL.lightAng = v; recolor(); }, saveSet);
+  rowRange(B, T.lightStrength, 0, 1, 0.01, COL.lightStr, v => Math.round(v * 100) + '%', v => { COL.lightStr = v; recolor(); }, saveSet);
+  rowRange(B, T.edges, 0, 1, 0.01, COL.edge, v => Math.round(v * 100) + '%', v => { const was = COL.edge; COL.edge = v; if (!was && v && !COL.light) render(); else recolor(); }, saveSet);
+  chipRow(B, T.inside, [['0,0,0', T.inBlack], ['255,255,255', T.inWhite], ['16,20,40', T.inNavy]], COL.inside.join(','), v => { COL.inside = v.split(',').map(Number); saveSet(); recolor(); });
+}
+function sideCalc(B) {
+  chipRow(B, T.formula, ['mandel', 'ship', 'tricorn', 'multi3'].map(k => [k, T.formulas[k]]), V.julia.on ? '' : V.formula, v => { const h = HOME[v]; setView(mkView(v, h[0], h[1], h[2])); buildSide(); });
+  const j = document.createElement('div'); j.className = 'jrow';
+  j.innerHTML = `<h5>${esc(T.juliaSet)}</h5><div class="jin"><input id="jr" type="text" value="${V.julia.jr}" inputmode="decimal"><span>+</span><input id="ji" type="text" value="${V.julia.ji}" inputmode="decimal"><span>i</span></div><div class="btns"><button class="btn" id="jGo">${esc(V.julia.on ? T.juliaUpdate : T.juliaOpen)}</button>${V.julia.on ? `<button class="btn" id="jBack">${esc(T.backToMandel)}</button>` : ''}</div><p class="note">${esc(T.juliaHint)}</p>`;
+  B.appendChild(j); j.querySelectorAll('input').forEach(i => i.onkeydown = e => e.stopPropagation());
+  $('jGo').onclick = () => { const jr = parseFloat($('jr').value), ji = parseFloat($('ji').value); if (!isFinite(jr) || !isFinite(ji)) return; openJulia(jr, ji); };
+  if ($('jBack')) $('jBack').onclick = () => { const h = HOME.mandel; setView(mkView('mandel', h[0], h[1], h[2])); buildSide(); };
+  const h = document.createElement('h5'); h.textContent = T.iterations; B.appendChild(h);
+  chipRow(B, '', [['auto', T.iterAuto], ['manual', T.iterManual]], SET.iterMode, v => { SET.iterMode = v; saveSet(); buildSide(); render(); });
+  if (SET.iterMode === 'auto') rowRange(B, T.iterMul, -2, 2, 0.25, Math.log2(SET.iterMul), v => '×' + Math.pow(2, v).toFixed(2), v => { SET.iterMul = Math.pow(2, v); updHud(); }, () => { saveSet(); render(); });
+  else rowRange(B, T.iterCount, 2, 6, 0.01, Math.log10(SET.iterManual), v => Math.round(Math.pow(10, v)).toLocaleString(), v => { SET.iterManual = Math.round(Math.pow(10, v)); updHud(); }, () => { saveSet(); render(); });
+  chipRow(B, T.quality, [[0, T.qFast], [1, T.qNormal], [2, T.qSharp]], SET.quality, v => { SET.quality = +v; saveSet(); resize(); render(); });
+  const p = document.createElement('p'); p.className = 'note'; p.innerHTML = esc(T.deepNote).replace(/\n/g, '<br>'); B.appendChild(p);
+}
+function openJulia(jr, ji) { setView(mkView('mandel', '0', '0', 1.5, { on: true, jr, ji })); SET.jprev = false; saveSet(); buildSide(); syncTop(); }
+function sidePlaces(B) {
+  B.innerHTML = `<h5>${esc(T.famous)}</h5><div class="places" id="pl"></div><h5>${esc(T.myPlaces)}</h5><div class="btns"><button class="btn" id="pSave">${svg('star')}<span>${esc(T.saveHere)}</span></button><button class="btn" id="pCopy">${svg('copy')}<span>${esc(T.copyLoc)}</span></button><button class="btn" id="pPaste">${esc(T.pasteLoc)}</button></div><div class="places" id="my"></div>`;
+  $('pl').innerHTML = PLACES.map((p, i) => `<button class="place" data-i="${i}"><b>${esc(T.placeNames[p.k] || p.k)}</b><small>${esc(T.formulas[p.f || 'mandel'])}${p.j ? ' · ' + T.modeJulia : ''} · ${zoomText(p.s)}</small></button>`).join('');
+  $('pl').querySelectorAll('.place').forEach(b => b.onclick = () => flyTo(PLACES[+b.dataset.i]));
+  const mine = lsGet('mine', []);
+  $('my').innerHTML = mine.length ? mine.map((p, i) => `<div class="place mine" data-i="${i}"><img src="${p.th}" alt=""><span><b>${esc(p.name)}</b><small>${zoomText(p.v.s)}</small></span><button class="x" title="${esc(T.delete)}">✕</button></div>`).join('') : `<p class="note">${esc(T.noMine)}</p>`;
+  $('my').querySelectorAll('.mine').forEach(el => { const i = +el.dataset.i; el.onclick = e => { if (e.target.classList.contains('x')) { const m = lsGet('mine', []); m.splice(i, 1); lsSet('mine', m); buildSide(); return; } setView(viewFrom(mine[i].v)); }; });
+  $('pSave').onclick = () => { const t = document.createElement('canvas'); t.width = 120; t.height = 80; t.getContext('2d').drawImage(cv, 0, 0, 120, 80); const m = lsGet('mine', []); m.unshift({ name: fmt(T.placeN, { n: m.length + 1 }) + ' · ' + zoomText(V.scale), v: viewStr(V), th: t.toDataURL('image/jpeg', 0.7) }); lsSet('mine', m.slice(0, 30)); buildSide(); toast(T.saved); };
+  $('pCopy').onclick = () => { const s = 'wiiiv-fractal:' + JSON.stringify(viewStr(V)); copyText(s); };
+  $('pPaste').onclick = pasteDialog;
+}
+function sideLearn(B) { B.innerHTML = T.learn.map(([h, p]) => `<h5>${esc(h)}</h5><p class="learn">${esc(p)}</p>`).join('') + `<p class="note">${esc(T.credits)}</p>`; }
+function copyText(s) {
+  const done = () => toast(T.copied);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s).then(done, () => fallback()); else fallback();
+  function fallback() { const t = document.createElement('textarea'); t.value = s; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { toast(s.slice(0, 60) + '…'); } t.remove(); }
+}
+// ── 대화 상자
+function dialog(html, bind) {
+  const o = document.createElement('div'); o.className = 'ovl'; o.innerHTML = `<div class="dlg">${html}</div>`; document.body.appendChild(o);
+  const close = () => o.remove(); o.addEventListener('pointerdown', e => { if (e.target === o) close(); }); o.querySelectorAll('[data-close]').forEach(b => b.onclick = close); bind && bind(o, close); return o;
+}
+function pasteDialog() {
+  dialog(`<h3>${esc(T.pasteLoc)}</h3><textarea id="pt" rows="4" placeholder="wiiiv-fractal:{…}"></textarea><div class="foot"><button class="btn" data-close>${esc(T.cancel)}</button><button class="btn pri" id="ok">${esc(T.go)}</button></div>`, (o, close) => {
+    const t = o.querySelector('#pt'); t.focus(); t.onkeydown = e => e.stopPropagation();
+    o.querySelector('#ok').onclick = () => { try { const s = t.value.trim().replace(/^wiiiv-fractal:/, ''); const v = viewFrom(JSON.parse(s)); if (!v.cx && v.cx !== 0n) throw 0; close(); setView(v); } catch (e) { toast(T.badLoc); } };
+  });
+}
+function helpDialog() {
+  dialog(`<h3>${esc(T.help)}</h3><div class="keys">${T.keys.map(([k, v]) => `<kbd>${esc(k)}</kbd><span>${esc(v)}</span>`).join('')}</div><div class="foot"><button class="btn pri" data-close>${esc(T.ok)}</button></div>`);
+}
+
+// ── 결과를 화면 밖으로 받는 그릇 (영상 프레임 · 큰 그림 저장)
+function makeSink(w, h, light, onDone, onStatus) {
+  const S = { w, h, it: new Float32Array(w * h), ang: light ? new Float32Array(w * h) : null, de: light ? new Float32Array(w * h) : null };
+  S.rows = (d) => { if (d.pass !== 1) return; const o = d.y0 * w; S.it.set(d.it, o); if (S.ang) { S.ang.set(d.ang, o); S.de.set(d.de, o); } if (S.prog) S.prog(); };
+  S.done = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'), im = g.createImageData(w, h); colorize(im, S.it, S.ang, S.de, 0, w * h); g.putImageData(im, 0, 0); S.canvas = c; onDone(S); };
+  S.status = onStatus; return S;
+}
+
+// ════════════ 확대 영상 (XaoS 방식: 키프레임을 미리 계산해 겹쳐 늘린다) ════════════
+let MOVIE = null;
+function movieDialog() {
+  const deep = zoomText(V.scale);
+  dialog(`<h3>${esc(T.movie)}</h3><div class="mopts">
+      <button class="opt on" data-m="fly"><b>${esc(T.movieFly)}</b><small>${esc(fmt(T.movieFlyD, { z: deep }))}</small></button>
+      <button class="opt" data-m="dive"><b>${esc(T.movieDive)}</b><small>${esc(T.movieDiveD)}</small></button></div>
+    <h5>${esc(T.speed)}</h5><div class="chips" id="msp"></div><p class="note">${esc(T.movieNote)}</p>
+    <div class="foot"><button class="btn" data-close>${esc(T.cancel)}</button><button class="btn pri" id="ok">${svg('play')}${esc(T.start)}</button></div>`, (o, close) => {
+    let mode = 'fly', sp = lsGet('mspeed', 1.6);
+    o.querySelectorAll('.opt').forEach(b => b.onclick = () => { mode = b.dataset.m; o.querySelectorAll('.opt').forEach(x => x.classList.toggle('on', x === b)); });
+    chipRow(o.querySelector('#msp'), '', [[3, T.slow], [1.6, T.normal], [0.9, T.fast]], sp, v => { sp = +v; lsSet('mspeed', sp); });
+    o.querySelector('#ok').onclick = () => { close(); startMovie(mode, sp); };
+  });
+}
+function startMovie(mode, secPerDouble) {
+  stopMovie(true); ENG.cancel();
+  const target = { ...V }, home = HOME[V.julia.on ? 'julia' : V.formula];
+  const s0 = mode === 'fly' ? Math.max(V.scale, home[2]) : V.scale;
+  const n = mode === 'fly' ? Math.max(1, Math.ceil(Math.log2(s0 / V.scale))) : 1e9;
+  const q = [0.45, 0.6, 0.8][SET.quality] || 0.6, w = Math.round(CW * q), h = Math.round(CH * q);
+  MOVIE = { mode, target, s0, n, k: 0, p: 0, sec: secPerDouble, frames: [], busy: false, w, h, anchors: [], last: performance.now(), centers: [] };
+  // 영상 동안 기준점 계산을 한 번만: 가장 깊은 곳의 비트 수로 고정
+  MOVIE.F = mode === 'fly' ? V.F : fracBitsFor(MIN_SCALE.deep);
+  MOVIE.centers[0] = { cx: refix(V.cx, V.F, MOVIE.F), cy: refix(V.cy, V.F, MOVIE.F) };
+  if (mode === 'fly') for (let i = 0; i <= n; i++) MOVIE.centers[i] = MOVIE.centers[0];
+  $('movieBar').hidden = false; syncTop(); computeFrame(0); requestAnimationFrame(movieTick);
+}
+const frameScale = (i, M = MOVIE) => M.s0 / Math.pow(2, i);
+function computeFrame(i) {
+  const M = MOVIE; if (!M || M.busy || M.frames[i] || !M.centers[i]) return; if (M.mode === 'fly' && i > M.n) return;
+  const sc = i === M.n && M.mode === 'fly' ? M.target.scale : frameScale(i);
+  if (sc < MIN_SCALE.deep) { M.end = Math.min(M.end ?? i - 1, i - 1); return; }
+  M.busy = true;
+  const v = { formula: M.target.formula, julia: M.target.julia, cx: M.centers[i].cx, cy: M.centers[i].cy, F: M.F, scale: sc };
+  v.maxIter = maxIterOf(v);
+  const refIter = M.mode === 'fly' ? maxIterOf({ ...v, scale: M.target.scale }) : 0;
+  const S = makeSink(M.w, M.h, COL.light || COL.edge > 0, S => {
+    if (MOVIE !== M) return; M.busy = false; M.frames[i] = S;
+    if (M.mode === 'dive') pickNext(i, S);
+    computeAhead();
+  }, p => { $('movieMsg').textContent = fmt(T.refCalc, { p: Math.round(p * 100) }); });
+  ENG.start(v, M.w, M.h, { light: COL.light || COL.edge > 0, passes: [1], sink: S, refIter });
+}
+function computeAhead() { const M = MOVIE; if (!M) return; for (let i = M.k; i <= M.k + 2; i++) if (!M.frames[i]) { computeFrame(i); break; } }
+// 자동 잠수: 가운데 가까이에서 경계에 가장 가까운(반복이 가장 큰) 바깥 점으로
+function pickNext(i, S) {
+  const M = MOVIE, w = S.w, h = S.h; let best = -1, bx = w / 2, by = h / 2;
+  for (let y = Math.floor(h * 0.3); y < h * 0.7; y += 2) for (let x = Math.floor(w * 0.3); x < w * 0.7; x += 2) {
+    const v = S.it[y * w + x]; if (v < 0) continue; const sc = v - 0.02 * Math.hypot(x - w / 2, y - h / 2) + Math.random() * 0.5; if (sc > best) { best = sc; bx = x; by = y; }
+  }
+  M.anchors[i] = { x: bx, y: by };
+  const s = frameScale(i) * 2 / Math.min(w, h), c = M.centers[i];
+  M.centers[i + 1] = { cx: c.cx + dToFix((bx - w / 2) * s, M.F), cy: c.cy - dToFix((by - h / 2) * s, M.F) };
+}
+function movieTick(now) {
+  const M = MOVIE; if (!M) return; const dt = Math.min(0.1, (now - M.last) / 1000); M.last = now;
+  const A = M.frames[M.k], B = M.frames[M.k + 1], finalFly = M.mode === 'fly' && M.k >= M.n;
+  if (finalFly || (M.end != null && M.k >= M.end)) { finishMovie(); return; }
+  if (A && B) { M.p += dt / M.sec; $('movieMsg').textContent = zoomText(frameScale(M.k) / Math.pow(2, Math.min(1, M.p))); }
+  else if (!M.busy) computeAhead(); else if (!$('movieMsg').textContent.includes('%')) $('movieMsg').textContent = T.computing;
+  if (M.p >= 1) { M.frames[M.k] = null; M.k++; M.p = 0; computeAhead(); }
+  const a = M.frames[M.k], b = M.frames[M.k + 1];
+  if (a) {
+    // 지금 프레임을 기준점 쪽으로 늘리고, 다음 프레임을 그 가운데에 겹친다
+    const p = b ? M.p : 0, k = Math.pow(2, p), anc = M.anchors[M.k] || { x: M.w / 2, y: M.h / 2 }, cxp = M.w / 2, cyp = M.h / 2;
+    const ax = anc.x + (cxp - anc.x) * p, ay = anc.y + (cyp - anc.y) * p, sx = W / M.w;
+    ctx.setTransform(sx, 0, 0, sx, 0, 0); ctx.imageSmoothingEnabled = true;
+    ctx.save(); ctx.translate(ax, ay); ctx.scale(k, k); ctx.translate(-anc.x, -anc.y); ctx.drawImage(a.canvas, 0, 0); ctx.restore();
+    if (b) { ctx.save(); ctx.translate(ax, ay); ctx.scale(k / 2, k / 2); ctx.translate(-M.w / 2, -M.h / 2); ctx.drawImage(b.canvas, 0, 0); ctx.restore(); }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  $('movieProg').style.width = M.mode === 'fly' ? ((M.k + M.p) / M.n * 100) + '%' : '100%';
+  requestAnimationFrame(movieTick);
+}
+function finishMovie() {
+  const M = MOVIE; if (!M) return;
+  if (M.mode === 'fly') V = { ...M.target }; else { const c = M.centers[M.k] || M.centers[M.k - 1]; V = { formula: M.target.formula, julia: M.target.julia, cx: c.cx, cy: c.cy, F: M.F, scale: frameScale(M.k, M) }; setBits(V); }
+  stopMovie(true); xf = null; render(); pushHist();
+}
+function stopMovie(silent) {
+  if (!MOVIE) return; const M = MOVIE; MOVIE = null; ENG.cancel(); $('movieBar').hidden = true; syncTop();
+  if (!silent) { const c = M.centers[M.k]; if (c) { V = { formula: M.target.formula, julia: M.target.julia, cx: c.cx, cy: c.cy, F: M.F, scale: frameScale(M.k, M) / Math.pow(2, M.p) }; setBits(V); } xf = null; render(); pushHist(); }
+}
+// 장소로 가기 (영상으로 날아가려면 ▶)
+function flyTo(pl) {
+  const v = mkView(pl.f || 'mandel', pl.x, pl.y, pl.s, pl.j ? { on: true, jr: pl.j[0], ji: pl.j[1] } : null);
+  if (pl.pal) { COL.pal = pl.pal; LUT = buildLut(COL.pal); }
+  if (pl.col) Object.assign(COL, pl.col);
+  saveSet(); if (mobile()) $('side').classList.add('closed');
+  setView(v); if (TAB === 'color') buildSide();
+}
+
+// ════════════ 큰 그림 저장 ════════════
+function exportDialog() {
+  const sizes = [['screen', `${CW * 2} × ${CH * 2}`, CW * 2, CH * 2], ['fhd', '1920 × 1080', 1920, 1080], ['qhd', '2560 × 1440', 2560, 1440], ['uhd', '3840 × 2160', 3840, 2160], ['sq', '2048 × 2048', 2048, 2048]];
+  let pick = 'fhd', aa = false;
+  dialog(`<h3>${esc(T.savePng)}</h3><div class="mopts" id="sz">${sizes.map(([k, l]) => `<button class="opt ${k === pick ? 'on' : ''}" data-k="${k}"><b>${esc(T.sizes[k])}</b><small>${l}</small></button>`).join('')}</div>
+    <h5>${esc(T.antialias)}</h5><div class="chips" id="aa"></div><p class="note">${esc(T.exportNote)}</p>
+    <div class="foot"><button class="btn" data-close>${esc(T.cancel)}</button><button class="btn pri" id="ok">${esc(T.save)}</button></div>`, (o, close) => {
+    o.querySelectorAll('#sz .opt').forEach(b => b.onclick = () => { pick = b.dataset.k; o.querySelectorAll('#sz .opt').forEach(x => x.classList.toggle('on', x === b)); });
+    chipRow(o.querySelector('#aa'), '', [[0, T.off], [1, '2×2']], 0, v => { aa = v === '1'; });
+    o.querySelector('#ok').onclick = () => { const s = sizes.find(x => x[0] === pick); close(); exportPng(s[2], s[3], aa && s[2] * s[3] <= 2560 * 1440); };
+  });
+}
+function exportPng(w, h, aa) {
+  if (MOVIE) stopMovie(true); const m = aa ? 2 : 1, rw = w * m, rh = h * m;
+  const busy = document.createElement('div'); busy.className = 'busy'; busy.innerHTML = `<div>${esc(T.rendering)}</div><div class="bar"><i id="exProg"></i></div><button class="btn" id="exCancel">${esc(T.cancel)}</button>`; document.body.appendChild(busy);
+  let cancelled = false; busy.querySelector('#exCancel').onclick = () => { cancelled = true; ENG.cancel(); busy.remove(); render(); };
+  // 같은 중심·같은 세로 범위, 가로는 그림 비율대로
+  const v = { ...V, maxIter: maxIterOf(V) }; let rows = 0;
+  const S = makeSink(rw, rh, COL.light || COL.edge > 0, S => {
+    if (cancelled) return; busy.remove();
+    let c = S.canvas; if (m > 1) { const d = document.createElement('canvas'); d.width = w; d.height = h; const g = d.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(c, 0, 0, w, h); c = d; }
+    c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `wiiiv-fractal-${zoomText(V.scale).replace(/[^0-9a-z.]+/gi, '_')}.png`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); toast(T.savedPng); render(); });
+  });
+  S.prog = () => { rows++; const p = $('exProg'); if (p) p.style.width = Math.min(100, rows / Math.ceil(rh / 6) * 100) + '%'; };
+  ENG.start(v, rw, rh, { light: COL.light || COL.edge > 0, passes: [1], sink: S });
+}
+
+// ════════════ 단축키 ════════════
+addEventListener('keydown', e => {
+  if (document.querySelector('.ovl') || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const k = e.key;
+  if (k === 'Escape' && MOVIE) { stopMovie(); return; }
+  if (k === '+' || k === '=') animZoom(CW / 2, CH / 2, 2); else if (k === '-' || k === '_') animZoom(CW / 2, CH / 2, 0.5);
+  else if (k === 'Home') goHome(); else if (k === 'Backspace') { e.preventDefault(); goHist(-1); }
+  else if (/^Arrow/.test(k)) { e.preventDefault(); const s = CH * 0.12; moveBy(k === 'ArrowLeft' ? -s : k === 'ArrowRight' ? s : 0, k === 'ArrowUp' ? -s : k === 'ArrowDown' ? s : 0); render(); pushHist(); }
+  else if (k === 'j' || k === 'J') $('bJul').click(); else if (k === 'o' || k === 'O') $('bOrb').click();
+  else if (k === 'c' || k === 'C') { cycleOn = !cycleOn; cycleLast = performance.now(); if (TAB === 'color') buildSide(); }
+  else if (k === 'p' || k === 'P') { const i = (PALETTE_ORDER.indexOf(COL.pal) + 1) % PALETTE_ORDER.length; COL.pal = PALETTE_ORDER[i]; LUT = buildLut(COL.pal); saveSet(); recolor(); if (TAB === 'color') buildSide(); toast(T.palNames[COL.pal] || COL.pal); }
+  else if (k === 'm' || k === 'M') $('bMovie').click(); else if (k === 's' || k === 'S') exportDialog();
+});
+// 색 순환: 다시 계산 없이 띠를 흘린다
+function loop(now) {
+  if (cycleOn && !MOVIE && !rendering && !xf) { const dt = (now - cycleLast) / 1000; cycleLast = now; COL.offset = (COL.offset + dt * cycleSpeed * 0.15 + 1) % 1; recolor(); }
+  else cycleLast = now;
+  requestAnimationFrame(loop);
+}
+
+// ════════════ 시작 ════════════
+$('jbox').onclick = () => { const c = $('jprev').dataset.c; if (!c) return; const [jr, ji] = c.split(',').map(Number); openJulia(+jr.toFixed(10), +ji.toFixed(10)); };
+$('movieStop').onclick = () => stopMovie();
+$('jprevT').textContent = T.juliaClick;
+buildTop();
+if (lsGet('panel', !mobile()) === false || mobile()) $('side').classList.add('closed');
+buildSide();
+(() => {
+  const saved = lsGet('view', null); try { V = saved ? viewFrom(saved) : null; } catch (e) { V = null; }
+  if (!V) { const h = HOME.mandel; V = mkView('mandel', h[0], h[1], h[2]); }
+  resize(); render(); pushHist();
+})();
+let rzT = null; addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); if (!MOVIE) render(); }, 150); });
+requestAnimationFrame(loop);
+window.__fx = { get V() { return V; }, set V(v) { V = v; }, ENG, setView, mkView, viewStr, viewFrom, render, get rendering() { return rendering; }, get MOVIE() { return MOVIE; }, startMovie, stopMovie, flyTo, COL, SET, recolor, zoomAbout, get buf() { return buf; }, get W() { return W; }, get H() { return H; }, exportPng, PLACES: () => PLACES };
+
 </script>
 </body>
 </html>
