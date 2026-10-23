@@ -2,31 +2,44 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>오리온 레이더</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;background:#0d0d1a;overflow:hidden;user-select:none;outline:none}
-body{font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#fff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#0d0d1a;overflow:hidden;user-select:none;-webkit-user-select:none;outline:none;touch-action:none}
+body{font-family:'Segoe UI','Malgun Gothic','Apple SD Gothic Neo','Hiragino Sans','PingFang SC',sans-serif;color:#fff}
 canvas{display:block;width:100%;height:100%;cursor:crosshair}
+/* 휴대폰 조작 */
+#tui{position:fixed;inset:0;pointer-events:none;display:none}
+#tui.show{display:block}
+#tzone{position:absolute;left:0;top:48px;width:52%;bottom:var(--ph,110px);pointer-events:auto;touch-action:none}
+#tstick{position:absolute;width:112px;height:112px;border-radius:50%;border:2px solid rgba(124,92,252,.55);background:rgba(124,92,252,.12);display:none;pointer-events:none}
+#tstick.on{display:block}
+#tstick i{position:absolute;left:31px;top:31px;width:50px;height:50px;border-radius:50%;background:rgba(200,180,255,.55);box-shadow:0 0 14px rgba(124,92,252,.7)}
+.tb{position:absolute;pointer-events:auto;touch-action:none;width:44px;height:44px;border-radius:12px;border:1px solid rgba(160,140,255,.45);background:rgba(20,18,40,.55);color:#e6e0ff;font:700 16px 'Segoe UI',sans-serif;display:grid;place-items:center}
+.tb.down{background:rgba(124,92,252,.6)}
+.tb.big{width:86px;height:86px;border-radius:50%;right:18px;bottom:calc(var(--ph,110px) + 16px);font-size:30px;color:#ff8aa0;border-color:rgba(255,90,120,.6);background:rgba(60,10,25,.45)}
+.tb.big.down{background:rgba(255,60,100,.55);color:#fff}
+.tcol{position:absolute;right:114px;bottom:calc(var(--ph,110px) + 16px);display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.trow{position:absolute;right:14px;bottom:calc(var(--ph,110px) + 116px);display:flex;gap:6px;pointer-events:none}
+.tcol .tb,.trow .tb{position:static}
+.tb.laser{background:rgba(255,60,100,.45)}
+#tpause{right:12px;top:44px}
 </style>
 </head>
 <body tabindex="0">
 <canvas id="c"></canvas>
 <script>
-/*
- * 오리온 레이더 (Orion Raider) — wiiiv App 템플릿 (2026-10-22)
- * 1인칭 3D 우주 전투. 외부 라이브러리 없이 3D 투영·면 정렬(페인터)·뒷면 제거로 은면/은선을 지운다.
- * 표시 방식 두 가지: 로우폴리곤(면 음영) / 와이어프레임(면을 배경색으로 칠해 뒤쪽 선을 가림).
- * 1982년 ASCII 'Orion'(PC-6001) — 1985년 SPC-1000 테이프로 하루 빌려 했던 그 게임 — 의 기억에 바친다.
- */
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
 const LANG = 'ko';
-const T = {
-  ko: {
+const TX = {
+  ko: { hullLow: '선체 위험', jumpIn: '수송선 도약까지 {n}초!',
     title: '오리온 레이더', sub: 'ORION RAIDER',
     clickStart: '화면을 누르면 시작합니다', enterNext: 'Enter / 클릭 — 계속',
     keys1: '↑↓ / W S  기수 상하   ←→ / A D  좌우 선회   Q E  기체 회전',
     keys2: 'Space  레이저   R F  속도 ±   Z  쉴드/광선 강화 전환   T  표적 바꾸기',
-    keys3: 'V  표시 방식(로우폴리곤/와이어프레임)   M  마우스 조종   P  일시정지',
+    keys3: 'V  표시 방식   M  마우스 조종   P  일시정지   N  음악   X  소리',
+    musicOn: '음악 켬', musicOff: '음악 끔', soundOn: '소리 켬', soundOff: '소리 끔', touch1: '왼쪽을 누르고 끌면 조종간 — 기수를 원하는 쪽으로', touch2: '● 레이저   ▲▼ 속도   ⟲⟳ 회전   Z 전력   T 표적   V 표시', tapStart: '화면을 누르면 시작합니다',
     stage: '스테이지', score: '점수', shield: '방어막', hull: '선체', speed: '속도', energy: '전력',
     modeShield: '방어막 강화', modeLaser: '광선 강화', front: '전방', rear: '후방',
     target: '표적', noTarget: '표적 없음', dist: '거리', remain: '남은 적',
@@ -56,12 +69,13 @@ const T = {
       ['최후의 전투', '적 주력 함대 전부입니다. 이기면 전쟁이 끝납니다.'],
     ],
   },
-  en: {
+  en: { hullLow: 'HULL CRITICAL', jumpIn: 'Transport jumping in {n}!',
     title: 'Orion Raider', sub: 'ORION RAIDER',
     clickStart: 'Click to start', enterNext: 'Enter / click — continue',
     keys1: '↑↓ / W S  pitch   ←→ / A D  yaw   Q E  roll',
     keys2: 'Space  laser   R F  speed ±   Z  shield/laser power   T  next target',
-    keys3: 'V  display (low-poly/wireframe)   M  mouse steering   P  pause',
+    keys3: 'V  display   M  mouse steering   P  pause   N  music   X  sound',
+    musicOn: 'Music on', musicOff: 'Music off', soundOn: 'Sound on', soundOff: 'Sound off', touch1: 'Touch and drag on the left for the stick — point the nose', touch2: '● laser   ▲▼ speed   ⟲⟳ roll   Z power   T target   V display', tapStart: 'Tap to start',
     stage: 'Stage', score: 'Score', shield: 'Shield', hull: 'Hull', speed: 'Speed', energy: 'Power',
     modeShield: 'Shield boost', modeLaser: 'Laser boost', front: 'Front', rear: 'Rear',
     target: 'Target', noTarget: 'No target', dist: 'Dist', remain: 'Enemies',
@@ -91,8 +105,315 @@ const T = {
       ['Final battle', 'The enemy main fleet. Win this and the war is over.'],
     ],
   },
-}[LANG];
+  ja: { hullLow: '船体危険', jumpIn: '輸送船ジャンプまで {n} 秒!', title: 'オリオン・レイダー', sub: 'ORION RAIDER', clickStart: 'クリックでスタート', enterNext: 'Enter / クリック — 続ける',
+    keys1: '↑↓ / W S  機首上下   ←→ / A D  左右旋回   Q E  ロール', keys2: 'Space  レーザー   R F  速度 ±   Z  シールド/レーザー強化   T  標的切替', keys3: 'V  表示   M  マウス操縦   P  一時停止   N  音楽   X  サウンド',
+    musicOn: '音楽オン', musicOff: '音楽オフ', soundOn: 'サウンドオン', soundOff: 'サウンドオフ', touch1: '左側を押してドラッグで操縦桿 — 機首を向けたい方へ', touch2: '● レーザー   ▲▼ 速度   ⟲⟳ ロール   Z 出力   T 標的   V 表示', tapStart: 'タップでスタート',
+    stage: 'ステージ', score: 'スコア', shield: 'シールド', hull: '船体', speed: '速度', energy: '出力', modeShield: 'シールド強化', modeLaser: 'レーザー強化', front: '前方', rear: '後方',
+    target: '標的', noTarget: '標的なし', dist: '距離', remain: '残り', fighter: 'T型戦闘機', transport: '輸送船', bomber: '爆撃機',
+    paused: '一時停止 — P で再開', clear: 'ステージクリア!', bonus: 'ボーナス', over: '撃墜されました', retry: 'Enter / クリック — このステージをやり直す', escaped: '輸送船が脱出しました',
+    hit: '被弾!', shieldDown: 'シールド消失!', torpedo: '魚雷接近!', modeTo: '出力配分', polyMode: 'ローポリゴン', wireMode: 'ワイヤーフレーム', mouseOn: 'マウス操縦オン', mouseOff: 'マウス操縦オフ',
+    endTitle: '任務完了', endText: ['オリオン宙域の最後の艦隊が退きました。', '十回の出撃、あなたは最後まで生きて帰りました。', '', '— 1982 ASCII · Orion (PC-6001) に捧ぐ —', '1985年、一日だけ借りたカセットテープの衝撃を思い出して。'],
+    endScore: '最終スコア', endAgain: 'Enter / クリック — 最初から',
+    brief: [['偵察飛行', 'T型戦闘機の編隊が接近中。照準に入れてレーザーで撃墜せよ。'], ['迎撃', '戦闘機が増えた。前方・後方レーダーで位置を確かめよ。'], ['補給線遮断', '輸送船が宙域を出る前にすべて撃破せよ。'], ['爆撃機出現', '遅い爆撃機が魚雷を撃つ。魚雷は強力、シールドを保て。'], ['高速編隊', '速い戦闘機編隊だ。レーザー強化で素早く片付けよ。'], ['混成艦隊', '輸送船と護衛機、爆撃機が一緒に来る。'], ['魚雷の嵐', '爆撃機編隊の集中攻撃だ。'], ['エース編隊', '熟練パイロットたち。回避機動が鋭い。'], ['大脱出', '輸送船団が脱出を図る。逃すな。'], ['最後の戦い', '敵主力艦隊のすべて。勝てば戦争は終わる。']] },
+  zh: { hullLow: '船体危险', jumpIn: '运输船 {n} 秒后跃迁!', title: '猎户突击', sub: 'ORION RAIDER', clickStart: '点击开始', enterNext: 'Enter / 点击 — 继续',
+    keys1: '↑↓ / W S  机头上下   ←→ / A D  左右转向   Q E  横滚', keys2: 'Space  激光   R F  速度 ±   Z  护盾/激光强化   T  切换目标', keys3: 'V  显示方式   M  鼠标操纵   P  暂停   N  音乐   X  声音',
+    musicOn: '音乐开', musicOff: '音乐关', soundOn: '声音开', soundOff: '声音关', touch1: '按住左侧拖动即为操纵杆 — 机头指向想去的方向', touch2: '● 激光   ▲▼ 速度   ⟲⟳ 横滚   Z 能量   T 目标   V 显示', tapStart: '点击屏幕开始',
+    stage: '关卡', score: '得分', shield: '护盾', hull: '船体', speed: '速度', energy: '能量', modeShield: '护盾强化', modeLaser: '激光强化', front: '前方', rear: '后方',
+    target: '目标', noTarget: '无目标', dist: '距离', remain: '剩余', fighter: 'T 型战机', transport: '运输船', bomber: '轰炸机',
+    paused: '已暂停 — 按 P 继续', clear: '关卡完成!', bonus: '奖励', over: '你被击落了', retry: 'Enter / 点击 — 重玩本关', escaped: '运输船逃脱了',
+    hit: '被击中!', shieldDown: '护盾失效!', torpedo: '鱼雷接近!', modeTo: '能量分配', polyMode: '低多边形', wireMode: '线框', mouseOn: '鼠标操纵开', mouseOff: '鼠标操纵关',
+    endTitle: '任务完成', endText: ['猎户星域的最后一支舰队撤退了。', '十次出击，你每一次都活着归来。', '', '— 献给 1982 ASCII · Orion (PC-6001) —', '怀念 1985 年只借了一天的那盘磁带带来的震撼。'],
+    endScore: '最终得分', endAgain: 'Enter / 点击 — 从头再来',
+    brief: [['侦察飞行', 'T 型战机编队接近。把它们套进准星，用激光击落。'], ['拦截', '战机更多了。用前后雷达确认位置。'], ['切断补给', '在运输船离开空域前全部击毁。'], ['轰炸机出现', '缓慢的轰炸机会发射鱼雷。鱼雷威力大，注意护盾。'], ['高速编队', '快速战机编队。用激光强化速战速决。'], ['混合舰队', '运输船、护航机和轰炸机一起来袭。'], ['鱼雷风暴', '轰炸机编队集中攻击。'], ['王牌编队', '老练的飞行员，闪避动作很敏锐。'], ['大逃亡', '运输船队试图逃走，别放过它们。'], ['最终决战', '敌方主力舰队倾巢而出。赢下这一战，战争就结束了。']] },
+  es: { hullLow: 'CASCO CRÍTICO', jumpIn: '¡El transporte salta en {n}!', title: 'Orion Raider', sub: 'ORION RAIDER', clickStart: 'Haz clic para empezar', enterNext: 'Enter / clic — continuar',
+    keys1: '↑↓ / W S  cabeceo   ←→ / A D  giro   Q E  alabeo', keys2: 'Espacio  láser   R F  velocidad ±   Z  energía escudo/láser   T  siguiente objetivo', keys3: 'V  vista   M  control con ratón   P  pausa   N  música   X  sonido',
+    musicOn: 'Música sí', musicOff: 'Música no', soundOn: 'Sonido sí', soundOff: 'Sonido no', touch1: 'Toca y arrastra a la izquierda: palanca de mando — apunta el morro', touch2: '● láser   ▲▼ velocidad   ⟲⟳ alabeo   Z energía   T objetivo   V vista', tapStart: 'Toca para empezar',
+    stage: 'Fase', score: 'Puntos', shield: 'Escudo', hull: 'Casco', speed: 'Velocidad', energy: 'Energía', modeShield: 'Escudo +', modeLaser: 'Láser +', front: 'Delante', rear: 'Detrás',
+    target: 'Objetivo', noTarget: 'Sin objetivo', dist: 'Dist', remain: 'Enemigos', fighter: 'Caza T', transport: 'Transporte', bomber: 'Bombardero',
+    paused: 'Pausa — P para seguir', clear: '¡Fase superada!', bonus: 'Bonus', over: 'Te han derribado', retry: 'Enter / clic — repetir fase', escaped: 'Un transporte ha escapado',
+    hit: '¡Impacto!', shieldDown: '¡Escudo caído!', torpedo: '¡Torpedo a la vista!', modeTo: 'Energía a', polyMode: 'Polígonos', wireMode: 'Alambre', mouseOn: 'Ratón activado', mouseOff: 'Ratón desactivado',
+    endTitle: 'Misión cumplida', endText: ['La última flota del sector de Orión se ha retirado.', 'Diez salidas, y siempre volviste a casa.', '', '— Dedicado a ASCII · Orion (PC-6001, 1982) —', 'En recuerdo de una cinta prestada por un solo día en 1985.'],
+    endScore: 'Puntuación final', endAgain: 'Enter / clic — jugar de nuevo',
+    brief: [['Patrulla', 'Se acercan cazas T. Ponlos en la mira y dispara.'], ['Intercepción', 'Más cazas. Vigila el radar delantero y trasero.'], ['Línea de suministro', 'Destruye todos los transportes antes de que salgan de la zona.'], ['Bombarderos', 'Bombarderos lentos lanzan torpedos. Mantén el escudo.'], ['Escuadrilla rápida', 'Cazas veloces. El láser potenciado acaba antes.'], ['Flota mixta', 'Transportes, escoltas y bombarderos juntos.'], ['Tormenta de torpedos', 'Una escuadrilla de bombarderos ataca a fondo.'], ['Ases', 'Pilotos veteranos con maniobras evasivas afiladas.'], ['Éxodo', 'Un convoy intenta huir. No los dejes escapar.'], ['Batalla final', 'La flota principal enemiga. Gana y la guerra termina.']] },
+  fr: { hullLow: 'COQUE CRITIQUE', jumpIn: 'Le transport saute dans {n} !', title: 'Orion Raider', sub: 'ORION RAIDER', clickStart: 'Cliquez pour commencer', enterNext: 'Entrée / clic — continuer',
+    keys1: '↑↓ / W S  tangage   ←→ / A D  lacet   Q E  roulis', keys2: 'Espace  laser   R F  vitesse ±   Z  énergie bouclier/laser   T  cible suivante', keys3: 'V  affichage   M  pilotage souris   P  pause   N  musique   X  son',
+    musicOn: 'Musique oui', musicOff: 'Musique non', soundOn: 'Son oui', soundOff: 'Son non', touch1: 'Touchez et glissez à gauche : manche — orientez le nez', touch2: '● laser   ▲▼ vitesse   ⟲⟳ roulis   Z énergie   T cible   V affichage', tapStart: 'Touchez pour commencer',
+    stage: 'Niveau', score: 'Score', shield: 'Bouclier', hull: 'Coque', speed: 'Vitesse', energy: 'Énergie', modeShield: 'Bouclier +', modeLaser: 'Laser +', front: 'Avant', rear: 'Arrière',
+    target: 'Cible', noTarget: 'Aucune cible', dist: 'Dist', remain: 'Ennemis', fighter: 'Chasseur T', transport: 'Transport', bomber: 'Bombardier',
+    paused: 'Pause — P pour reprendre', clear: 'Niveau terminé !', bonus: 'Bonus', over: 'Vous avez été abattu', retry: 'Entrée / clic — rejouer le niveau', escaped: 'Un transport s\'est échappé',
+    hit: 'Touché !', shieldDown: 'Bouclier tombé !', torpedo: 'Torpille en approche !', modeTo: 'Énergie vers', polyMode: 'Polygones', wireMode: 'Fil de fer', mouseOn: 'Souris activée', mouseOff: 'Souris désactivée',
+    endTitle: 'Mission accomplie', endText: ['La dernière flotte du secteur d\'Orion s\'est retirée.', 'Dix sorties, et vous êtes rentré à chaque fois.', '', '— Dédié à ASCII · Orion (PC-6001, 1982) —', 'En souvenir d\'une cassette prêtée pour un seul jour en 1985.'],
+    endScore: 'Score final', endAgain: 'Entrée / clic — rejouer',
+    brief: [['Patrouille', 'Des chasseurs T approchent. Mettez-les dans le viseur et tirez.'], ['Interception', 'Plus de chasseurs. Surveillez les radars avant et arrière.'], ['Ravitaillement', 'Détruisez chaque transport avant qu\'il ne quitte la zone.'], ['Bombardiers', 'Des bombardiers lents lancent des torpilles. Gardez le bouclier.'], ['Escadrille rapide', 'Des chasseurs rapides. Le laser renforcé abrège le combat.'], ['Flotte mixte', 'Transports, escorteurs et bombardiers ensemble.'], ['Tempête de torpilles', 'Une escadrille de bombardiers attaque en force.'], ['As', 'Des pilotes aguerris aux esquives tranchantes.'], ['Exode', 'Un convoi tente de fuir. Ne le laissez pas partir.'], ['Bataille finale', 'Toute la flotte ennemie. Gagnez et la guerre prend fin.']] },
+  de: { hullLow: 'RUMPF KRITISCH', jumpIn: 'Transporter springt in {n}!', title: 'Orion Raider', sub: 'ORION RAIDER', clickStart: 'Klicken zum Starten', enterNext: 'Enter / Klick — weiter',
+    keys1: '↑↓ / W S  Nicken   ←→ / A D  Gieren   Q E  Rollen', keys2: 'Leertaste  Laser   R F  Tempo ±   Z  Energie Schild/Laser   T  nächstes Ziel', keys3: 'V  Darstellung   M  Maussteuerung   P  Pause   N  Musik   X  Ton',
+    musicOn: 'Musik an', musicOff: 'Musik aus', soundOn: 'Ton an', soundOff: 'Ton aus', touch1: 'Links tippen und ziehen: Steuerknüppel — die Nase ausrichten', touch2: '● Laser   ▲▼ Tempo   ⟲⟳ Rollen   Z Energie   T Ziel   V Darstellung', tapStart: 'Tippen zum Starten',
+    stage: 'Stufe', score: 'Punkte', shield: 'Schild', hull: 'Rumpf', speed: 'Tempo', energy: 'Energie', modeShield: 'Schild +', modeLaser: 'Laser +', front: 'Vorne', rear: 'Hinten',
+    target: 'Ziel', noTarget: 'Kein Ziel', dist: 'Dist', remain: 'Gegner', fighter: 'T-Jäger', transport: 'Transporter', bomber: 'Bomber',
+    paused: 'Pause — P zum Fortsetzen', clear: 'Stufe geschafft!', bonus: 'Bonus', over: 'Du wurdest abgeschossen', retry: 'Enter / Klick — Stufe wiederholen', escaped: 'Ein Transporter ist entkommen',
+    hit: 'Treffer!', shieldDown: 'Schild weg!', torpedo: 'Torpedo im Anflug!', modeTo: 'Energie an', polyMode: 'Low-Poly', wireMode: 'Drahtgitter', mouseOn: 'Maussteuerung an', mouseOff: 'Maussteuerung aus',
+    endTitle: 'Mission erfüllt', endText: ['Die letzte Flotte des Orion-Sektors hat sich zurückgezogen.', 'Zehn Einsätze, und du bist jedes Mal heimgekehrt.', '', '— Gewidmet ASCII · Orion (PC-6001, 1982) —', 'In Erinnerung an eine Kassette, 1985 für nur einen Tag geliehen.'],
+    endScore: 'Endpunktzahl', endAgain: 'Enter / Klick — von vorn',
+    brief: [['Aufklärung', 'T-Jäger nähern sich. Ins Fadenkreuz nehmen und feuern.'], ['Abfangen', 'Mehr Jäger. Behalte Front- und Heckradar im Blick.'], ['Nachschub', 'Zerstöre jeden Transporter, bevor er das Gebiet verlässt.'], ['Bomber', 'Langsame Bomber schießen Torpedos. Halte den Schild oben.'], ['Schnelle Staffel', 'Schnelle Jäger. Laser + bringt es schneller zu Ende.'], ['Gemischte Flotte', 'Transporter, Begleitjäger und Bomber zusammen.'], ['Torpedosturm', 'Eine Bomberstaffel greift massiv an.'], ['Asse', 'Erfahrene Piloten mit scharfen Ausweichmanövern.'], ['Exodus', 'Ein Konvoi will fliehen. Lass sie nicht entkommen.'], ['Letzte Schlacht', 'Die ganze feindliche Hauptflotte. Gewinne, und der Krieg ist vorbei.']] },
+  pt: { hullLow: 'CASCO CRÍTICO', jumpIn: 'Transporte salta em {n}!', title: 'Orion Raider', sub: 'ORION RAIDER', clickStart: 'Clique para começar', enterNext: 'Enter / clique — continuar',
+    keys1: '↑↓ / W S  arfagem   ←→ / A D  guinada   Q E  rolagem', keys2: 'Espaço  laser   R F  velocidade ±   Z  energia escudo/laser   T  próximo alvo', keys3: 'V  visual   M  pilotar com mouse   P  pausa   N  música   X  som',
+    musicOn: 'Música ligada', musicOff: 'Música desligada', soundOn: 'Som ligado', soundOff: 'Som desligado', touch1: 'Toque e arraste à esquerda: manche — aponte o nariz', touch2: '● laser   ▲▼ velocidade   ⟲⟳ rolagem   Z energia   T alvo   V visual', tapStart: 'Toque para começar',
+    stage: 'Fase', score: 'Pontos', shield: 'Escudo', hull: 'Casco', speed: 'Velocidade', energy: 'Energia', modeShield: 'Escudo +', modeLaser: 'Laser +', front: 'Frente', rear: 'Trás',
+    target: 'Alvo', noTarget: 'Sem alvo', dist: 'Dist', remain: 'Inimigos', fighter: 'Caça T', transport: 'Transporte', bomber: 'Bombardeiro',
+    paused: 'Pausa — P para continuar', clear: 'Fase concluída!', bonus: 'Bônus', over: 'Você foi abatido', retry: 'Enter / clique — repetir fase', escaped: 'Um transporte escapou',
+    hit: 'Atingido!', shieldDown: 'Escudo caiu!', torpedo: 'Torpedo chegando!', modeTo: 'Energia para', polyMode: 'Polígonos', wireMode: 'Aramado', mouseOn: 'Mouse ligado', mouseOff: 'Mouse desligado',
+    endTitle: 'Missão cumprida', endText: ['A última frota do setor de Órion recuou.', 'Dez surtidas, e você voltou para casa todas as vezes.', '', '— Dedicado a ASCII · Orion (PC-6001, 1982) —', 'Lembrando uma fita emprestada por um só dia em 1985.'],
+    endScore: 'Pontuação final', endAgain: 'Enter / clique — jogar de novo',
+    brief: [['Patrulha', 'Caças T se aproximam. Ponha-os na mira e atire.'], ['Interceptação', 'Mais caças. Fique de olho no radar dianteiro e traseiro.'], ['Linha de suprimento', 'Destrua todos os transportes antes que saiam da zona.'], ['Bombardeiros', 'Bombardeiros lentos lançam torpedos. Mantenha o escudo.'], ['Esquadrilha rápida', 'Caças velozes. O laser reforçado acaba logo.'], ['Frota mista', 'Transportes, escoltas e bombardeiros juntos.'], ['Tempestade de torpedos', 'Uma esquadrilha de bombardeiros ataca com tudo.'], ['Ases', 'Pilotos veteranos com esquivas afiadas.'], ['Êxodo', 'Um comboio tenta fugir. Não deixe escapar.'], ['Batalha final', 'Toda a frota principal inimiga. Vença e a guerra acaba.']] },
+  ru: { hullLow: 'КОРПУС КРИТ.', jumpIn: 'Транспорт прыгнет через {n}!', title: 'Орион Рейдер', sub: 'ORION RAIDER', clickStart: 'Щёлкните, чтобы начать', enterNext: 'Enter / щелчок — дальше',
+    keys1: '↑↓ / W S  тангаж   ←→ / A D  рыскание   Q E  крен', keys2: 'Пробел  лазер   R F  скорость ±   Z  энергия щит/лазер   T  следующая цель', keys3: 'V  вид   M  управление мышью   P  пауза   N  музыка   X  звук',
+    musicOn: 'Музыка вкл', musicOff: 'Музыка выкл', soundOn: 'Звук вкл', soundOff: 'Звук выкл', touch1: 'Нажмите и тяните слева — это ручка управления', touch2: '● лазер   ▲▼ скорость   ⟲⟳ крен   Z энергия   T цель   V вид', tapStart: 'Нажмите, чтобы начать',
+    stage: 'Этап', score: 'Очки', shield: 'Щит', hull: 'Корпус', speed: 'Скорость', energy: 'Энергия', modeShield: 'Щит +', modeLaser: 'Лазер +', front: 'Спереди', rear: 'Сзади',
+    target: 'Цель', noTarget: 'Нет цели', dist: 'Дист', remain: 'Врагов', fighter: 'Истребитель T', transport: 'Транспорт', bomber: 'Бомбардировщик',
+    paused: 'Пауза — P, чтобы продолжить', clear: 'Этап пройден!', bonus: 'Бонус', over: 'Вас сбили', retry: 'Enter / щелчок — повторить этап', escaped: 'Транспорт ушёл',
+    hit: 'Попадание!', shieldDown: 'Щит пал!', torpedo: 'Торпеда приближается!', modeTo: 'Энергия на', polyMode: 'Полигоны', wireMode: 'Каркас', mouseOn: 'Мышь вкл', mouseOff: 'Мышь выкл',
+    endTitle: 'Задание выполнено', endText: ['Последний флот сектора Ориона отступил.', 'Десять вылетов — и вы всякий раз возвращались домой.', '', '— Посвящается ASCII · Orion (PC-6001, 1982) —', 'В память о кассете, взятой лишь на один день в 1985 году.'],
+    endScore: 'Итоговый счёт', endAgain: 'Enter / щелчок — сначала',
+    brief: [['Разведка', 'Приближаются истребители T. Поймайте их в прицел и стреляйте.'], ['Перехват', 'Истребителей больше. Следите за передним и задним радаром.'], ['Снабжение', 'Уничтожьте все транспорты, пока они не покинули зону.'], ['Бомбардировщики', 'Медленные бомбардировщики пускают торпеды. Берегите щит.'], ['Быстрое звено', 'Быстрые истребители. Усиленный лазер закончит бой быстрее.'], ['Смешанный флот', 'Транспорты, эскорт и бомбардировщики вместе.'], ['Торпедный шторм', 'Звено бомбардировщиков атакует всей мощью.'], ['Асы', 'Опытные пилоты с резкими манёврами уклонения.'], ['Исход', 'Конвой пытается уйти. Не упустите его.'], ['Последняя битва', 'Весь главный флот врага. Победите — и война окончена.']] },
+  vi: { hullLow: 'THÂN TÀU NGUY', jumpIn: 'Tàu vận tải nhảy sau {n} giây!', title: 'Orion Raider', sub: 'ORION RAIDER', clickStart: 'Nhấp để bắt đầu', enterNext: 'Enter / nhấp — tiếp tục',
+    keys1: '↑↓ / W S  ngóc mũi   ←→ / A D  đổi hướng   Q E  nghiêng', keys2: 'Space  laser   R F  tốc độ ±   Z  năng lượng khiên/laser   T  mục tiêu kế', keys3: 'V  hiển thị   M  lái bằng chuột   P  tạm dừng   N  nhạc   X  âm thanh',
+    musicOn: 'Bật nhạc', musicOff: 'Tắt nhạc', soundOn: 'Bật âm thanh', soundOff: 'Tắt âm thanh', touch1: 'Chạm và kéo bên trái để lái — hướng mũi tàu', touch2: '● laser   ▲▼ tốc độ   ⟲⟳ nghiêng   Z năng lượng   T mục tiêu   V hiển thị', tapStart: 'Chạm để bắt đầu',
+    stage: 'Màn', score: 'Điểm', shield: 'Khiên', hull: 'Thân tàu', speed: 'Tốc độ', energy: 'Năng lượng', modeShield: 'Khiên +', modeLaser: 'Laser +', front: 'Trước', rear: 'Sau',
+    target: 'Mục tiêu', noTarget: 'Không có mục tiêu', dist: 'Cách', remain: 'Địch', fighter: 'Tiêm kích T', transport: 'Tàu vận tải', bomber: 'Oanh tạc cơ',
+    paused: 'Tạm dừng — nhấn P để tiếp', clear: 'Qua màn!', bonus: 'Thưởng', over: 'Bạn đã bị bắn hạ', retry: 'Enter / nhấp — chơi lại màn', escaped: 'Một tàu vận tải đã thoát',
+    hit: 'Trúng đạn!', shieldDown: 'Mất khiên!', torpedo: 'Ngư lôi đang tới!', modeTo: 'Năng lượng cho', polyMode: 'Đa giác', wireMode: 'Khung dây', mouseOn: 'Bật lái chuột', mouseOff: 'Tắt lái chuột',
+    endTitle: 'Hoàn thành nhiệm vụ', endText: ['Hạm đội cuối cùng của vùng Orion đã rút lui.', 'Mười lần xuất kích, lần nào bạn cũng trở về.', '', '— Kính tặng ASCII · Orion (PC-6001, 1982) —', 'Nhớ cuộn băng chỉ được mượn đúng một ngày năm 1985.'],
+    endScore: 'Điểm cuối', endAgain: 'Enter / nhấp — chơi lại từ đầu',
+    brief: [['Trinh sát', 'Biên đội tiêm kích T đang tới. Đưa vào tâm ngắm và bắn hạ.'], ['Đánh chặn', 'Thêm tiêm kích. Theo dõi radar trước và sau.'], ['Cắt tiếp tế', 'Tiêu diệt mọi tàu vận tải trước khi chúng rời vùng.'], ['Oanh tạc cơ', 'Oanh tạc cơ chậm phóng ngư lôi. Giữ khiên.'], ['Biên đội nhanh', 'Tiêm kích tốc độ cao. Laser tăng cường sẽ kết thúc nhanh.'], ['Hạm đội hỗn hợp', 'Tàu vận tải, hộ tống và oanh tạc cơ cùng tới.'], ['Bão ngư lôi', 'Biên đội oanh tạc tấn công dồn dập.'], ['Biên đội át chủ bài', 'Phi công lão luyện, né tránh rất sắc.'], ['Đại đào thoát', 'Đoàn tàu vận tải tìm cách trốn. Đừng để thoát.'], ['Trận chiến cuối', 'Toàn bộ hạm đội chủ lực địch. Thắng là chiến tranh kết thúc.']] },
+};
+TX['zh-TW'] = Object.assign({}, TX.zh, { hullLow: '船體危險', jumpIn: '運輸船 {n} 秒後躍遷!', title: '獵戶突擊', clickStart: '點擊開始', enterNext: 'Enter / 點擊 — 繼續',
+  keys1: '↑↓ / W S  機頭上下   ←→ / A D  左右轉向   Q E  橫滾', keys2: 'Space  雷射   R F  速度 ±   Z  護盾/雷射強化   T  切換目標', keys3: 'V  顯示方式   M  滑鼠操縱   P  暫停   N  音樂   X  聲音',
+  musicOn: '音樂開', musicOff: '音樂關', soundOn: '聲音開', soundOff: '聲音關', touch1: '按住左側拖曳即為操縱桿 — 機頭指向想去的方向', touch2: '● 雷射   ▲▼ 速度   ⟲⟳ 橫滾   Z 能量   T 目標   V 顯示', tapStart: '點擊畫面開始',
+  stage: '關卡', score: '分數', shield: '護盾', hull: '船體', energy: '能量', modeShield: '護盾強化', modeLaser: '雷射強化', target: '目標', noTarget: '無目標', dist: '距離', remain: '剩餘', fighter: 'T 型戰機', transport: '運輸船', bomber: '轟炸機',
+  paused: '已暫停 — 按 P 繼續', clear: '關卡完成!', bonus: '獎勵', over: '你被擊落了', retry: 'Enter / 點擊 — 重玩本關', escaped: '運輸船逃脫了', hit: '被擊中!', shieldDown: '護盾失效!', torpedo: '魚雷接近!', modeTo: '能量分配', polyMode: '低多邊形', wireMode: '線框', mouseOn: '滑鼠操縱開', mouseOff: '滑鼠操縱關',
+  endTitle: '任務完成', endText: ['獵戶星域的最後一支艦隊撤退了。', '十次出擊，你每一次都活著歸來。', '', '— 獻給 1982 ASCII · Orion (PC-6001) —', '懷念 1985 年只借了一天的那捲錄音帶帶來的震撼。'],
+  endScore: '最終分數', endAgain: 'Enter / 點擊 — 從頭再來',
+  brief: [['偵察飛行', 'T 型戰機編隊接近。把它們套進準星，用雷射擊落。'], ['攔截', '戰機更多了。用前後雷達確認位置。'], ['切斷補給', '在運輸船離開空域前全部擊毀。'], ['轟炸機出現', '緩慢的轟炸機會發射魚雷。魚雷威力大，注意護盾。'], ['高速編隊', '快速戰機編隊。用雷射強化速戰速決。'], ['混合艦隊', '運輸船、護航機和轟炸機一起來襲。'], ['魚雷風暴', '轟炸機編隊集中攻擊。'], ['王牌編隊', '老練的飛行員，閃避動作很敏銳。'], ['大逃亡', '運輸船隊試圖逃走，別放過它們。'], ['最終決戰', '敵方主力艦隊傾巢而出。贏下這一戰，戰爭就結束了。']] });
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; const b = TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; return Object.assign({}, TX.en, b); })();
+document.documentElement.lang = LANG; document.title = T.title;
 
+// ───────────────────────── 소리: 효과음 + 배경 음악 (합성 악기 · 공간 울림) ─────────────────────────
+// 10/23 나무님: "배경음이 완전 소음 — 단순한 가락이 짧게 무한 반복" → 8비트 음원을 버리고,
+// 현악 패드 · 부드러운 리드 · 베이스 · 벨 · 부드러운 드럼으로, 같은 마디가 되풀이되지 않는 긴 가락을 새로 지었다.
+let AC = null, MASTER = null, FXG = null, MUSG = null;
+const SND = Object.assign({ muted: false, music: true }, (() => { try { return JSON.parse(localStorage.getItem('wiiiv-orion-raider-sound') || '{}'); } catch { return {}; } })());
+const saveSnd = () => { try { localStorage.setItem('wiiiv-orion-raider-sound', JSON.stringify(SND)); } catch { /* */ } };
+let NOISE = null;
+function audio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { AC = null; return; }
+  const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 3; comp.connect(AC.destination);
+  MASTER = AC.createGain(); MASTER.gain.value = SND.muted ? 0 : 1; MASTER.connect(comp);
+  FXG = AC.createGain(); FXG.gain.value = 0.9; FXG.connect(MASTER);
+  MUSG = AC.createGain(); MUSG.gain.value = 0.55; MUSG.connect(MASTER);
+  // 우주 공간의 울림 (긴 리버브)
+  const n = AC.sampleRate * 3.2, ir = AC.createBuffer(2, n, AC.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); let lp = 0; for (let i = 0; i < n; i++) { lp += ((Math.random() * 2 - 1) - lp) * 0.35; d[i] = lp * Math.pow(1 - i / n, 2.6); } }
+  const rev = AC.createConvolver(); rev.buffer = ir; const rg = AC.createGain(); rg.gain.value = 0.38; MUSG.connect(rev); rev.connect(rg); rg.connect(MASTER);
+  NOISE = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const nd = NOISE.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+}
+function setMuted(m) { SND.muted = m; if (MASTER) MASTER.gain.setTargetAtTime(m ? 0 : 1, AC.currentTime, 0.03); }
+// ── 효과음 (원래 설계 그대로)
+function beep(type, f1, f2, dur, vol) {
+  if (!AC) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+  g.gain.setValueAtTime(vol * 1.4, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(FXG); o.start(t); o.stop(t + dur);
+}
+function boom(big) {
+  if (!AC) return;
+  const t = AC.currentTime, n = AC.sampleRate * (big ? 0.9 : 0.45), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
+  const s = AC.createBufferSource(), g = AC.createGain(), f = AC.createBiquadFilter();
+  f.type = 'lowpass'; f.frequency.value = big ? 600 : 1200; s.buffer = b; g.gain.value = big ? 0.7 : 0.45;
+  s.connect(f).connect(g).connect(FXG); s.start(t);
+}
+
+// 광선 발사음: 높은 음에서 뚝 떨어지는 두 겹 톱니 + 공명 필터 + 짧은 딸깍 (광선 강화면 더 높고 짧게)
+function zap(laser) {
+  if (!AC) return;
+  const t = AC.currentTime, d = laser ? 0.17 : 0.22, f0 = laser ? 2600 : 1800, f1 = laser ? 300 : 210;
+  const g = AC.createGain(), f = AC.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 7; f.frequency.setValueAtTime(7000, t); f.frequency.exponentialRampToValueAtTime(700, t + d);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.13, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + d); f.connect(g); g.connect(FXG);
+  for (const [ty, k, det] of [['sawtooth', 1, 0], ['square', 1.5, 9]]) { const o = AC.createOscillator(); o.type = ty; o.detune.value = det; o.frequency.setValueAtTime(f0 * k, t); o.frequency.exponentialRampToValueAtTime(f1 * k, t + d); o.connect(f); o.start(t); o.stop(t + d + 0.02); }
+  const n = AC.createBufferSource(), nf = AC.createBiquadFilter(), ng = AC.createGain(); n.buffer = NOISE; nf.type = 'highpass'; nf.frequency.value = 3000;
+  ng.gain.setValueAtTime(0.06, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.035); n.connect(nf); nf.connect(ng); ng.connect(FXG); n.start(t, Math.random() * 0.5); n.stop(t + 0.04);
+}
+
+// ── 악기 (음악 작업실의 합성 악기를 가져와 다듬음)
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const expTo = (p, v, t) => p.exponentialRampToValueAtTime(Math.max(0.0001, v), t);
+function env(out, t, peak, a, d, s, r, dur) {
+  const g = AC.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); expTo(g.gain, peak * s, t + a + d);
+  g.gain.setValueAtTime(peak * s, t + Math.max(a + d, dur)); g.gain.setTargetAtTime(0, t + Math.max(a + d, dur), r / 3); g.connect(out); return g;
+}
+function osc(type, f, t, end, dest, det = 0) { const o = AC.createOscillator(); o.type = type; o.frequency.value = f; o.detune.value = det; o.connect(dest); o.start(t); o.stop(end); return o; }
+const INST = {
+  // 플루트 같은 부드러운 가락: 사인 + 약한 삼각, 늦게 걸리는 비브라토
+  flute(t, m, v, dur, out) {
+    const f = mtof(m), e = env(out, t, 0.16 * v, 0.06, 0.2, 0.8, 0.35, dur), end = t + dur + 1.2;
+    const vib = AC.createOscillator(), vg = AC.createGain(); vib.frequency.value = 5; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.006, t + 0.45); vib.connect(vg); vib.start(t); vib.stop(end);
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600; lp.connect(e);
+    for (const [ty, k, g] of [['sine', 1, 1], ['triangle', 2, 0.18]]) { const gg = AC.createGain(); gg.gain.value = g; gg.connect(lp); const o = osc(ty, f * k, t, end, gg); vg.connect(o.frequency); }
+    const br = AC.createBufferSource(), bg = AC.createGain(), bf = AC.createBiquadFilter(); br.buffer = NOISE; bf.type = 'bandpass'; bf.frequency.value = f * 2; bf.Q.value = 2; bg.gain.setValueAtTime(0.012 * v, t); expTo(bg.gain, 0.0001, t + 0.25); br.connect(bf); bf.connect(bg); bg.connect(out); br.start(t); br.stop(t + 0.3);
+  },
+  // 따뜻한 신스 리드: 톱니 둘을 살짝 어긋나게, 저역 통과로 날을 죽인다
+  lead(t, m, v, dur, out) {
+    const f = mtof(m), e = env(out, t, 0.11 * v, 0.02, 0.25, 0.7, 0.3, dur), end = t + dur + 1;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2; lp.frequency.setValueAtTime(3200, t); expTo(lp.frequency, 1500, t + 0.5); lp.connect(e);
+    const vib = AC.createOscillator(), vg = AC.createGain(); vib.frequency.value = 5.5; vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(8, t + 0.4); vib.connect(vg); vib.start(t); vib.stop(end);
+    for (const det of [-7, 7]) { const o = osc('sawtooth', f, t, end, lp, det); vg.connect(o.detune); }
+    osc('triangle', f / 2, t, end, lp);
+  },
+  // 현악 패드: 톱니 넷을 넓게 어긋나게, 느리게 피고 진다
+  pad(t, m, v, dur, out) {
+    const f = mtof(m), e = env(out, t, 0.05 * v, 0.6, 0.4, 0.85, 1.2, dur), end = t + dur + 2.5;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700; lp.Q.value = 0.4; lp.connect(e);
+    for (const det of [-14, -5, 6, 13]) osc('sawtooth', f, t, end, lp, det);
+  },
+  // 베이스: 둥근 몸통 + 짧은 튕김
+  bass(t, m, v, dur, out) {
+    const f = mtof(m), e = env(out, t, 0.22 * v, 0.008, 0.3, 0.55, 0.12, dur), end = t + dur + 0.5;
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 4; lp.frequency.setValueAtTime(900, t); expTo(lp.frequency, 260, t + 0.25); lp.connect(e);
+    osc('sawtooth', f, t, end, lp); osc('sine', f / 2, t, end, e);
+  },
+  // 벨 (FM): 맑은 아르페지오
+  bell(t, m, v, dur, out) {
+    const f = mtof(m), e = env(out, t, 0.06 * v, 0.004, 1.4, 0.0001, 0.6, 0.01), end = t + 2.2;
+    const car = osc('sine', f, t, end, e), mod = AC.createOscillator(), mg = AC.createGain(); mod.frequency.value = f * 3.5; mg.gain.setValueAtTime(f * 1.6, t); expTo(mg.gain, f * 0.05, t + 1.2); mod.connect(mg); mg.connect(car.frequency); mod.start(t); mod.stop(end);
+  },
+  kick(t, m, v, dur, out) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(120, t); expTo(o.frequency, 45, t + 0.12); g.gain.setValueAtTime(0.5 * v, t); expTo(g.gain, 0.0001, t + 0.4); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.45); },
+  snare(t, m, v, dur, out) { const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = NOISE; f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.6; g.gain.setValueAtTime(0.18 * v, t); expTo(g.gain, 0.0001, t + 0.18); s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.5); s.stop(t + 0.2); const o = AC.createOscillator(), og = AC.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(200, t); expTo(o.frequency, 150, t + 0.06); og.gain.setValueAtTime(0.12 * v, t); expTo(og.gain, 0.0001, t + 0.1); o.connect(og); og.connect(out); o.start(t); o.stop(t + 0.12); },
+  hat(t, m, v, dur, out) { const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); s.buffer = NOISE; f.type = 'highpass'; f.frequency.value = 8000; g.gain.setValueAtTime(0.05 * v, t); expTo(g.gain, 0.0001, t + 0.05); s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random() * 0.5); s.stop(t + 0.06); },
+  tom(t, m, v, dur, out) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(mtof(m), t); expTo(o.frequency, mtof(m) * 0.6, t + 0.25); g.gain.setValueAtTime(0.3 * v, t); expTo(g.gain, 0.0001, t + 0.35); o.connect(g); g.connect(out); o.start(t); o.stop(t + 0.4); },
+};
+
+// ── 악보 → 사건 목록
+const NI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const nm = n => { const m = /^([A-G])(#|b)?(-?\d)$/.exec(n); return 12 * (+m[3] + 1) + NI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+// 가락: "E5:2 A5:2 | …" (길이 단위 = 박). 마디는 4박
+function melody(src, inst, vel = 0.9, shift = 0) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) { if (!tok || tok === '|') continue; const [n, l] = tok.split(':'), d = +l; if (n !== 'r') ev.push({ t, d: d * 0.95, p: nm(n) + shift, v: vel * (0.9 + Math.random() * 0.15), i: inst }); t += d; }
+  return { ev, len: t };
+}
+const CH = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 7, 10], m7: [0, 3, 7, 10], sus: [0, 5, 7] };
+function chordTones(name) { const m = /^([A-G])(#|b)?(m7|m|7|sus)?$/.exec(name); const r = NI[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return CH[m[3] || ''].map(x => r + x); }
+// 패드: 앞 화음과 가까운 자리바꿈으로 (목소리가 덜 움직이게)
+function padVoices(chords) {
+  let prev = [55, 60, 64]; return chords.map(c => {
+    const pcs = chordTones(c).slice(0, 3); let best = null, bd = 1e9;
+    for (let base = 48; base <= 60; base++) { const v = pcs.map(pc => { let p = base + ((pc - base) % 12 + 12) % 12; return p; }).sort((a, b) => a - b); const d = v.reduce((s, p, i) => s + Math.abs(p - prev[i]), 0); if (d < bd) { bd = d; best = v; } }
+    prev = best; return best;
+  });
+}
+// 반주 단락: 화음(마디당 하나)과 패턴 이름으로 사건을 만든다
+function backing(chords, o) {
+  const ev = [], V = padVoices(chords);
+  chords.forEach((c, i) => {
+    const t0 = i * 4, root = chordTones(c)[0], b = 36 + ((root - 36) % 12 + 12) % 12, tones = V[i];
+    if (o.pad) for (const p of tones) ev.push({ t: t0, d: 4, p, v: o.pad, i: 'pad' });
+    if (o.bass === 'long') ev.push({ t: t0, d: 3.8, p: b, v: 0.8, i: 'bass' });
+    if (o.bass === 'pulse') for (const k of [0, 1.5, 2, 3.5]) ev.push({ t: t0 + k, d: 0.45, p: k === 3.5 ? b + 7 : b, v: k === 0 ? 0.95 : 0.75, i: 'bass' });
+    if (o.bass === 'eighth') for (let k = 0; k < 8; k++) ev.push({ t: t0 + k / 2, d: 0.42, p: k === 6 ? b + 7 : k === 7 ? b + 12 : b, v: k % 2 ? 0.7 : 0.9, i: 'bass' });
+    if (o.arp) { const seq = [tones[0] + 12, tones[1] + 12, tones[2] + 12, tones[1] + 24]; const step = o.arp === 16 ? 0.25 : 0.5; for (let k = 0; k < 4 / step; k++) ev.push({ t: t0 + k * step, d: step, p: seq[k % 4], v: 0.55, i: 'bell' }); }
+    const dr = o.drums; if (dr) {
+      const hits = { light: [['kick', 0], ['hat', 1], ['hat', 2], ['hat', 3]], half: [['kick', 0], ['snare', 2], ['hat', 0.5], ['hat', 1.5], ['hat', 2.5], ['hat', 3.5]], full: [['kick', 0], ['kick', 1.5], ['snare', 1], ['kick', 2], ['snare', 3], ...[0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(x => ['hat', x])], drive: [['kick', 0], ['kick', 1], ['snare', 1], ['kick', 2], ['kick', 2.5], ['snare', 3], ...[0, .5, 1, 1.5, 2, 2.5, 3, 3.5].map(x => ['hat', x])] }[dr];
+      for (const [k, x] of hits) ev.push({ t: t0 + x, d: 0.2, p: 60, v: k === 'hat' ? (x % 1 ? 0.6 : 0.9) : 1, i: k });
+      if (o.fill && i === chords.length - 1) for (let k = 0; k < 4; k++) ev.push({ t: t0 + 2 + k * 0.5, d: 0.2, p: [55, 52, 48, 45][k], v: 0.9, i: 'tom' });
+    }
+  });
+  return ev;
+}
+// 곡 = 가락 하나(처음부터 끝까지 이어짐) + 단락별 반주
+function compose(meta, lead, sections) {
+  const L = melody(lead.src, lead.inst, lead.vel || 0.9, lead.shift || 0), ev = [...L.ev]; let bar = 0;
+  for (const s of sections) { for (const e of backing(s.ch, s)) ev.push({ ...e, t: e.t + bar * 4 }); bar += s.ch.length; }
+  if (Math.abs(bar * 4 - L.len) > 1e-6) console.warn('song length', meta.name, bar * 4, L.len);
+  ev.sort((a, b) => a.t - b.t); return { ...meta, ev, len: bar * 4 };
+}
+const SONGS = {
+  // 제목 「오리온 성역」 — 가단조 72, 플루트 가락 · 현악 · 벨 (24마디, 되풀이 없는 가락)
+  title: compose({ name: 'Orion Sanctuary', bpm: 72 }, { inst: 'flute', vel: 0.95, src:
+    'E5:2 A5:2 | G5:1.5 F5:.5 E5:2 | E5:1 G5:1 C6:2 | B5:3 r:1 | A5:1 C6:1 B5:1 A5:1 | A5:2 F5:2 | G#5:2 B5:2 | E6:4 | ' +
+    'C6:1.5 A5:.5 F5:2 | D6:1.5 B5:.5 G5:2 | E6:2 D6:1 B5:1 | C6:4 | D6:1 C6:1 A5:1 F5:1 | B5:2 G5:2 | C6:1 E6:1 G6:2 | G#6:3 r:1 | ' +
+    'A6:2 E6:2 | F6:1.5 E6:.5 C6:2 | E6:1 D6:1 C6:1 G5:1 | D6:3 B5:1 | C6:2 A5:2 | B5:1 D6:1 G6:2 | E6:2 C6:1 B5:1 | A5:4', shift: -12 }, [
+    { ch: ['Am', 'F', 'C', 'G', 'Am', 'F', 'E', 'E'], pad: 0.8, bass: 'long' },
+    { ch: ['F', 'G', 'Em', 'Am', 'Dm', 'G', 'C', 'E'], pad: 0.8, bass: 'long', arp: 8 },
+    { ch: ['Am', 'F', 'C', 'G', 'F', 'G', 'Am', 'Am'], pad: 0.9, bass: 'long', arp: 16, drums: 'light' },
+  ]),
+  // 전투 1 「요격 편대」 — 마단조 112 (32마디, 되풀이 없는 가락), 단락마다 악기가 들어온다
+  battle: compose({ name: 'Intercept', bpm: 112 }, { inst: 'lead', vel: 0.9, shift: -12, src:
+    'B4:1 E5:1 G5:1 B5:1 | C6:2 B5:1 G5:1 | D5:1.5 G5:.5 B5:2 | A5:2 F#5:2 | G5:1 F#5:1 E5:1 B4:1 | C5:1 E5:1 G5:1 C6:1 | B5:2 A5:1 F#5:1 | D#5:4 | ' +
+    'E5:1 A5:1 C6:1 E6:1 | D6:1.5 B5:.5 G5:2 | E5:1 G5:1 C6:1 D6:1 | E6:2 F#6:2 | G6:2 F#6:1 E6:1 | E6:1 D6:1 C6:1 B5:1 | A5:1 B5:1 C6:1 D#6:1 | E6:4 | ' +
+    'D6:2 B5:2 | A5:1 B5:1 D6:2 | G5:2 B5:1 E6:1 | E6:3 r:1 | G5:1 B5:1 D6:1 G6:1 | F#6:2 D6:2 | E6:1 D6:1 C6:1 A5:1 | B5:4 | ' +
+    'C6:1.5 B5:.5 A5:2 | D6:1.5 C6:.5 A5:2 | B5:1 D6:1 G6:1 F#6:1 | E6:2 B5:2 | C6:1 E6:1 G6:1 E6:1 | F#6:1 E6:1 D6:1 A5:1 | B5:2 D#6:2 | F#6:4' }, [
+    { ch: ['Em', 'C', 'G', 'D', 'Em', 'C', 'B', 'B'], pad: 0.7, bass: 'long', drums: 'light' },
+    { ch: ['Am', 'Em', 'C', 'D', 'Em', 'C', 'B', 'Em'], pad: 0.7, bass: 'pulse', drums: 'half', arp: 8 },
+    { ch: ['G', 'D', 'Em', 'C', 'G', 'D', 'C', 'B'], pad: 0.8, bass: 'eighth', drums: 'full', arp: 16 },
+    { ch: ['Am', 'D', 'G', 'Em', 'C', 'D', 'B', 'B'], pad: 0.8, bass: 'eighth', drums: 'drive', fill: true },
+  ]),
+  // 전투 2 「최후의 함대」 — 라단조 126 (32마디), 6~10스테이지
+  battle2: compose({ name: 'Last Fleet', bpm: 126 }, { inst: 'lead', vel: 0.9, shift: -12, src:
+    'D5:1 F5:1 A5:2 | Bb5:1.5 A5:.5 F5:2 | G5:1 E5:1 C5:2 | C#5:2 E5:2 | F5:1 A5:1 D6:2 | D6:1 C6:1 Bb5:1 F5:1 | G5:1 Bb5:1 D6:1 G6:1 | E6:3 r:1 | ' +
+    'F6:2 C6:2 | E6:1 D6:1 C6:2 | D6:1 F6:1 A6:2 | G6:1 F6:1 D6:2 | Bb5:1 D6:1 G6:2 | E6:1 G6:1 C6:2 | C#6:2 E6:2 | A5:4 | ' +
+    'D6:2 F6:2 | E6:2 G6:2 | F6:2 E6:1 D6:1 | A5:4 | G5:1 A5:1 Bb5:1 D6:1 | C#6:2 A5:2 | D6:1.5 E6:.5 F6:2 | D6:4 | ' +
+    'F6:1 D6:1 Bb5:2 | C6:1 A5:1 F5:2 | E5:1 G5:1 C6:1 E6:1 | D6:2 Bb5:2 | A5:1 C#6:1 E6:1 A6:1 | G6:2 E6:2 | C#6:1 E6:1 G6:1 E6:1 | A6:4' }, [
+    { ch: ['Dm', 'Bb', 'C', 'A', 'Dm', 'Bb', 'Gm', 'A'], pad: 0.7, bass: 'pulse', drums: 'half' },
+    { ch: ['F', 'C', 'Dm', 'Bb', 'Gm', 'C', 'A', 'A'], pad: 0.75, bass: 'eighth', drums: 'full', arp: 8 },
+    { ch: ['Bb', 'C', 'Dm', 'Dm', 'Gm', 'A', 'Dm', 'Dm'], pad: 0.8, bass: 'long', drums: 'light', arp: 16 },
+    { ch: ['Bb', 'F', 'C', 'Gm', 'A', 'A', 'A', 'A'], pad: 0.85, bass: 'eighth', drums: 'drive', fill: true },
+  ]),
+  // 엔딩 「귀환」 — 다장조 96, 벨과 현악 (16마디)
+  ending: compose({ name: 'Homecoming', bpm: 96 }, { inst: 'flute', vel: 0.95, shift: -12, src:
+    'E5:2 G5:2 | D5:1 G5:1 B5:2 | C6:2 A5:2 | A5:1 G5:1 F5:2 | E5:1 G5:1 C6:2 | B5:1.5 A5:.5 G5:2 | A5:1 C6:1 F6:2 | D6:4 | ' +
+    'E6:2 C6:2 | B5:2 G5:2 | A5:1 C6:1 D6:1 C6:1 | G5:4 | F5:1 A5:1 C6:1 F6:1 | D6:1 B5:1 G5:2 | E6:3 D6:1 | C6:4' }, [
+    { ch: ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'G'], pad: 0.8, bass: 'long', arp: 8 },
+    { ch: ['Am', 'Em', 'F', 'C', 'F', 'G', 'C', 'C'], pad: 0.85, bass: 'pulse', arp: 16, drums: 'light' },
+  ]),
+};
+
+// ── 재생기: 앞서 예약해 정확한 시각에, 곡 끝에서 처음으로 이어서
+const MUS = { song: null, id: null, next: 0, i: 0, beat0: 0, t0: 0, paused: false, timer: null };
+function musPlay(id) {
+  musStop(); const S = SONGS[id]; if (!S || !AC) return;
+  MUS.song = S; MUS.id = id; MUS.i = 0; MUS.t0 = AC.currentTime + 0.1; MUS.loop = 0;
+  MUSG.gain.cancelScheduledValues(AC.currentTime); MUSG.gain.setValueAtTime(0, AC.currentTime); MUSG.gain.linearRampToValueAtTime(0.55, AC.currentTime + 1.2);
+  MUS.timer = setInterval(musPump, 40); musPump();
+}
+function musStop() { clearInterval(MUS.timer); MUS.timer = null; MUS.song = null; MUS.id = null; }
+function musPump() {
+  const S = MUS.song; if (!S || MUS.paused) return; const spb = 60 / S.bpm, ahead = AC.currentTime + 0.25;
+  for (let guard = 0; guard < 400; guard++) {
+    if (MUS.i >= S.ev.length) { MUS.i = 0; MUS.t0 += S.len * spb; }
+    const e = S.ev[MUS.i], t = MUS.t0 + e.t * spb; if (t > ahead) break;
+    if (t > AC.currentTime - 0.05) INST[e.i](Math.max(t, AC.currentTime), e.p, e.v, e.d * spb, MUSG);
+    MUS.i++;
+  }
+}
+function musPause(p) {
+  if (p === MUS.paused || !AC) return; MUS.paused = p;
+  MUSG.gain.cancelScheduledValues(AC.currentTime); MUSG.gain.setTargetAtTime(p ? 0 : 0.55, AC.currentTime, p ? 0.08 : 0.3);
+  if (!p && MUS.song) { // 멈춘 동안 흐른 시간만큼 기준을 미룬다
+    const S = MUS.song, spb = 60 / S.bpm, e = S.ev[MUS.i] || S.ev[0]; MUS.t0 = AC.currentTime + 0.1 - e.t * spb;
+  }
+}
+// 상태에 맞는 배경 음악 (같은 곡이면 이어서)
+let songNow = null;
+function music(id) { if (!AC) return; const want = SND.music ? id : null; if (want === songNow) return; songNow = want; if (want) musPlay(want); else musStop(); }
+
+/*
+ * 오리온 레이더 (Orion Raider) — wiiiv App 템플릿 (2026-10-22)
+ * 1인칭 3D 우주 전투. 외부 라이브러리 없이 3D 투영·면 정렬(페인터)·뒷면 제거로 은면/은선을 지운다.
+ * 표시 방식 두 가지: 로우폴리곤(면 음영) / 와이어프레임(면을 배경색으로 칠해 뒤쪽 선을 가림).
+ * 1982년 ASCII 'Orion'(PC-6001) — 1985년 SPC-1000 테이프로 하루 빌려 했던 그 게임 — 의 기억에 바친다.
+ */
 // ───────────────────────── 수학 ─────────────────────────
 const V = (x = 0, y = 0, z = 0) => ({ x, y, z });
 const add = (a, b) => V(a.x + b.x, a.y + b.y, a.z + b.z);
@@ -211,7 +532,7 @@ const SKY = {
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 let W = 0, H = 0, FOC = 0, DPR = 1;
 function resize() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  DPR = Math.min(window.devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 1.5 : 2);
   W = window.innerWidth; H = window.innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -229,21 +550,26 @@ const P = { pos: V(), o: basis(), speed: 120, shield: 100, hull: 100, mode: 'shi
 let enemies = [], bolts = [], ebolts = [], parts = [], dust = [], debris = [], fires = [];
 const keys = {}; let mouseX = 0, mouseY = 0;
 
+const fmtT = (t, n) => String(t).replace('{n}', n);
 function say(t, s = 2.2) { G.msg = t; G.msgT = s; }
+// 게임 시간 타이머 (일시정지 중에는 흐르지 않는다)
+let timers = [];
+function later(sec, fn) { timers.push({ t: sec, fn }); }
 
 // ───────────────────────── 스테이지 ─────────────────────────
 // f 전투기, b 폭격기, t 수송선, fs 전투기 속도배수, acc 사격 정확도(작을수록 정확), ace 회피 강도
+// regen 방어막 회복(초당), rest 맞은 뒤 회복까지 쉬는 시간(초), fire 사격 간격 배수 — 10/23 난이도 조정 (초반부터 위협이 되게)
 const STAGES = [   // 적은 적게, 대신 끈질기게 — 스테이지가 오를수록 회피(ace)·선회가 결사적이 된다 (10/22 나무님)
-  { f: 2, b: 0, t: 0, fs: 0.85, acc: 0.10, ace: 0.25 },
-  { f: 3, b: 0, t: 0, fs: 0.95, acc: 0.08, ace: 0.35 },
-  { f: 1, b: 0, t: 2, fs: 0.95, acc: 0.08, ace: 0.4 },
-  { f: 2, b: 2, t: 0, fs: 1.0, acc: 0.07, ace: 0.45 },
-  { f: 4, b: 0, t: 0, fs: 1.2, acc: 0.06, ace: 0.55 },
-  { f: 2, b: 1, t: 2, fs: 1.1, acc: 0.06, ace: 0.6 },
-  { f: 2, b: 3, t: 0, fs: 1.15, acc: 0.05, ace: 0.65 },
-  { f: 5, b: 0, t: 0, fs: 1.3, acc: 0.045, ace: 0.85 },
-  { f: 3, b: 2, t: 2, fs: 1.25, acc: 0.045, ace: 0.8 },
-  { f: 6, b: 2, t: 2, fs: 1.35, acc: 0.04, ace: 1.0 },
+  { f: 2, b: 0, t: 0, fs: 0.85, acc: 0.045, ace: 0.25, regen: 3.2, rest: 2.5, fire: 0.75 },
+  { f: 3, b: 0, t: 0, fs: 0.95, acc: 0.047, ace: 0.35, regen: 3.244, rest: 2.478, fire: 0.778 },
+  { f: 1, b: 0, t: 2, fs: 0.95, acc: 0.048, ace: 0.4, regen: 3.289, rest: 2.456, fire: 0.806 },
+  { f: 2, b: 2, t: 0, fs: 1.0, acc: 0.05, ace: 0.45, regen: 3.333, rest: 2.433, fire: 0.833 },
+  { f: 4, b: 0, t: 0, fs: 1.2, acc: 0.052, ace: 0.55, regen: 3.378, rest: 2.411, fire: 0.861 },
+  { f: 2, b: 1, t: 2, fs: 1.1, acc: 0.053, ace: 0.6, regen: 3.422, rest: 2.389, fire: 0.889 },
+  { f: 2, b: 3, t: 0, fs: 1.15, acc: 0.055, ace: 0.65, regen: 3.467, rest: 2.367, fire: 0.917 },
+  { f: 5, b: 0, t: 0, fs: 1.3, acc: 0.057, ace: 0.85, regen: 3.511, rest: 2.344, fire: 0.944 },
+  { f: 3, b: 2, t: 2, fs: 1.25, acc: 0.058, ace: 0.8, regen: 3.556, rest: 2.322, fire: 0.972 },
+  { f: 6, b: 2, t: 2, fs: 1.35, acc: 0.06, ace: 1.0, regen: 3.6, rest: 2.3, fire: 1.0 },
 ];
 function spawn(kind, st) {
   const k = KIND[kind];
@@ -267,31 +593,12 @@ function spawn(kind, st) {
 function startStage(n) {
   G.stage = n; const st = STAGES[n];
   P.pos = V(); P.o = basis(); P.speed = 120; P.shield = 100; P.hull = Math.max(P.hull, 60); P.cool = 0; P.tgt = null; P.dead = false;
-  enemies = []; bolts = []; ebolts = []; parts = []; debris = []; fires = []; G.failed = false;
+  enemies = []; bolts = []; ebolts = []; parts = []; debris = []; fires = []; timers = []; G.failed = false; G.failReason = null; G.clearT = null; P.hitAgo = 9;
   for (let i = 0; i < st.f; i++) spawn('fighter', st);
   for (let i = 0; i < st.b; i++) spawn('bomber', st);
   for (let i = 0; i < st.t; i++) spawn('transport', st);
   dust = Array.from({ length: 140 }, () => V(rnd(-500, 500), rnd(-500, 500), rnd(-500, 500)));
   G.state = 'brief';
-}
-
-// ───────────────────────── 소리 (첫 클릭 뒤) ─────────────────────────
-let AC = null;
-function audio() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch { AC = null; } } }
-function beep(type, f1, f2, dur, vol) {
-  if (!AC) return;
-  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur);
-}
-function boom(big) {
-  if (!AC) return;
-  const t = AC.currentTime, n = AC.sampleRate * (big ? 0.9 : 0.45), b = AC.createBuffer(1, n, AC.sampleRate), d = b.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
-  const s = AC.createBufferSource(), g = AC.createGain(), f = AC.createBiquadFilter();
-  f.type = 'lowpass'; f.frequency.value = big ? 600 : 1200; s.buffer = b; g.gain.value = big ? 0.5 : 0.3;
-  s.connect(f).connect(g).connect(AC.destination); s.start(t);
 }
 
 // ───────────────────────── 입력 ─────────────────────────
@@ -300,6 +607,8 @@ document.addEventListener('keydown', e => {
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(k)) e.preventDefault();
   keys[k] = true;
   if (k === 'enter') advance();
+  if (k === 'n') { audio(); SND.music = !SND.music; saveSnd(); songNow = '?'; say(SND.music ? T.musicOn : T.musicOff, 1.2); }
+  if (k === 'x') { audio(); SND.muted = !SND.muted; setMuted(SND.muted); saveSnd(); say(SND.muted ? T.soundOff : T.soundOn, 1.2); }
   if (G.state === 'play' || G.state === 'paused') {
     if (k === 'p' || k === 'escape') G.state = G.state === 'play' ? 'paused' : 'play';
     if (G.state !== 'play') return;
@@ -313,7 +622,9 @@ document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 cv.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 cv.addEventListener('mousedown', e => { audio(); document.body.focus(); if (G.state === 'play') keys['mouse'] = true; else advance(); });
 window.addEventListener('mouseup', () => { keys['mouse'] = false; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (G.state === 'play') G.state = 'paused'; });
+function releaseKeys() { for (const k in keys) keys[k] = false; if (typeof TOUCH !== 'undefined') { TOUCH.x = TOUCH.y = 0; } }
+window.addEventListener('blur', () => { releaseKeys(); if (G.state === 'play') G.state = 'paused'; });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { releaseKeys(); if (G.state === 'play') G.state = 'paused'; musPause(true); } else musPause(G.state === 'paused'); });
 function advance() {
   audio();
   if (G.state === 'title') { G.score = 0; P.hull = 100; startStage(0); }
@@ -333,12 +644,12 @@ function cycleTarget() {
 }
 function damagePlayer(n) {
   if (P.dead) return;
-  const before = P.shield;
+  const before = P.shield; P.hitAgo = 0;
   P.shield -= n;
   if (P.shield < 0) { P.hull += P.shield; P.shield = 0; }
   if (before > 0 && P.shield === 0) say(T.shieldDown, 1.4); else say(T.hit, 0.6);
   G.flash = 0.25; G.shake = 0.3; beep('sawtooth', 160, 60, 0.2, 0.12);
-  if (P.hull <= 0) { P.hull = 0; P.dead = true; explode(add(P.pos, mul(P.o.f, 30)), 60, '#ffd27a'); boom(true); setTimeout(() => { G.state = 'over'; }, 1400); }
+  if (P.hull <= 0) { P.hull = 0; P.dead = true; explode(add(P.pos, mul(P.o.f, 30)), 60, '#ffd27a'); boom(true); later(1.4, () => { if (G.state === 'play') G.state = 'over'; }); }
 }
 function explode(p, n, col) {
   for (let i = 0; i < n; i++) parts.push({ p: V(p.x, p.y, p.z), v: mul(randDir(), rnd(20, 160)), life: rnd(0.6, 1.4), max: 1.4, c: col });
@@ -375,7 +686,7 @@ function breakUp(e) {
   splitInto(e, true);
 }
 function blast(p, r, dir, speed) {
-  fireball(p, r * 2.6); setTimeout(() => fireball(add(p, mul(dir, speed * 0.15)), r * 1.6), 120);
+  fireball(p, r * 2.6); later(0.12, () => fireball(add(p, mul(dir, speed * 0.15)), r * 1.6));
   explode(p, 70, '#ffd27a'); explode(p, 30, '#ff6a3d');
   for (let i = 0; i < 10; i++) parts.push({ p: V(p.x, p.y, p.z), v: add(mul(dir, speed * 0.4), mul(randDir(), rnd(60, 150))), life: rnd(1, 2), max: 2, c: '#8a8fa3', shard: true });
   boom(true);
@@ -400,6 +711,7 @@ function update(dt) {
   if (G.msgT > 0) G.msgT -= dt;
   G.flash = Math.max(0, G.flash - dt); G.shake = Math.max(0, G.shake - dt);
   if (G.state !== 'play') return;
+  if (timers.length) { for (const tm of timers) tm.t -= dt; const due = timers.filter(tm => tm.t <= 0); timers = timers.filter(tm => tm.t > 0); due.forEach(tm => tm.fn()); if (G.state !== 'play') return; }
   // ── 조종
   let yaw = 0, pitch = 0, roll = 0;
   if (!P.dead) {
@@ -409,6 +721,7 @@ function update(dt) {
     if (keys['arrowdown'] || keys['s']) pitch -= 1;
     if (keys['q']) roll -= 1;
     if (keys['e']) roll += 1;
+    if (TOUCH.on) { yaw += TOUCH.x; pitch += TOUCH.y; }
     if (G.mouse) {
       yaw += clamp((mouseX - W / 2) / (W * 0.35), -1, 1);
       pitch += clamp(-(mouseY - H / 2) / (H * 0.35), -1, 1);
@@ -423,7 +736,10 @@ function update(dt) {
   orthonormal(P.o);
   if (!P.dead) P.pos = add(P.pos, mul(P.o.f, P.speed * dt));
   // ── 전력: 방어막 강화면 방어막이 차고, 광선 강화면 레이저가 세고 빠르다
-  if (P.mode === 'shield') P.shield = Math.min(100, P.shield + 7 * dt);
+  // 방어막은 맞은 뒤 잠시 쉬었다가 찬다. 스테이지가 오를수록 천천히 (난이도 조정 10/23)
+  P.hitAgo = (P.hitAgo || 0) + dt; P.muzzle = Math.max(0, (P.muzzle || 0) - dt);
+  const stg = STAGES[G.stage];
+  if (P.mode === 'shield' && P.hitAgo > stg.rest) P.shield = Math.min(100, P.shield + stg.regen * dt);
   P.cool -= dt;
   if (!P.dead && (keys[' '] || keys['mouse']) && P.cool <= 0) {
     const laser = P.mode === 'laser';
@@ -432,7 +748,7 @@ function update(dt) {
     P.gun = -(P.gun || 1);
     const start = add(add(P.pos, mul(P.o.r, P.gun * 9)), add(mul(P.o.u, -6), mul(P.o.f, 8)));
     bolts.push({ p: start, v: add(mul(P.o.f, 1400), mul(P.o.f, P.speed)), life: 1.5, dmg: laser ? 2 : 1 });
-    beep('square', laser ? 1300 : 950, 200, 0.09, 0.05);
+    zap(laser); P.muzzle = 0.07;
   }
   // ── 아군 레이저
   for (const b of bolts) {
@@ -495,19 +811,25 @@ function update(dt) {
     if (!P.dead && e.cool <= 0 && e.kind !== 'transport') {
       const facing = dot(e.o.f, norm(toP));
       if (e.kind === 'fighter' && facing > 0.93 && dist < 1500) {
-        e.cool = rnd(0.9, 1.6);
+        e.cool = rnd(0.9, 1.6) * STAGES[G.stage].fire;
         const aim = norm(add(norm(add(toP, mul(P.o.f, P.speed * dist / 700))), mul(randDir(), e.acc)));
         ebolts.push({ p: add(e.pos, mul(e.o.f, 20)), v: mul(aim, 700), life: 3, dmg: 7, torp: false });
         beep('square', 700, 300, 0.06, 0.025);
       } else if (e.kind === 'bomber' && dist < 1400) {
-        e.cool = rnd(3.5, 5.5);
+        e.cool = rnd(3.5, 5.5) * STAGES[G.stage].fire;
         ebolts.push({ p: add(e.pos, mul(e.o.f, 30)), v: mul(norm(toP), 260), life: 7, dmg: 26, torp: true });
         if (dist < 900) say(T.torpedo, 1.2);
         beep('sine', 220, 90, 0.35, 0.06);
       }
     }
     // 수송선 탈출
-    if (e.kind === 'transport' && len(e.pos) > 5200 && G.state === 'play' && !G.failed) { G.failed = true; say(T.escaped, 2); setTimeout(() => { if (G.state === 'play') G.state = 'over'; }, 1200); e.hp = -1; }
+    // 수송선: 경계를 넘으면 바로 끝내지 않고 도약 준비 카운트다운 — 그 사이에 격추하면 된다 (10/23 나무님 제보)
+    if (e.kind === 'transport' && len(e.pos) > 5200 && G.state === 'play' && !G.failed) {
+      if (e.jumpT == null) { e.jumpT = 4; beep('sawtooth', 200, 900, 0.6, 0.06); }
+      e.jumpT -= dt; const sec = Math.ceil(e.jumpT);
+      if (sec !== e.jumpSay) { e.jumpSay = sec; if (sec > 0) { say(fmtT(T.jumpIn, sec), 1.1); beep('square', 880, 880, 0.08, 0.05); } }
+      if (e.jumpT <= 0) { G.failed = true; G.failReason = 'escaped'; say(T.escaped, 2); for (let i = 0; i < 3; i++) sparks(e.pos, 20); beep('sine', 300, 2000, 0.5, 0.08); later(1.2, () => { if (G.state === 'play') G.state = 'over'; }); e.hp = -1; }
+    }
   }
   // ── 적 탄
   for (const b of ebolts) {
@@ -565,7 +887,10 @@ function update(dt) {
     dust[i] = add(P.pos, d);
   }
   // ── 끝
-  if (!enemies.length && !P.dead && !G.failed && G.state === 'play') {
+  // 마지막 적이 부서지는 모습을 다 보여 준 뒤 클리어 (10/23 나무님: 폭파 장면이 잘린다)
+  if (!enemies.length && !P.dead && !G.failed && G.state === 'play' && G.clearT == null) { G.clearT = 3.2; ebolts = []; }
+  if (G.clearT != null && G.state === 'play') G.clearT -= dt;
+  if (!enemies.length && !P.dead && !G.failed && G.state === 'play' && G.clearT <= 0) {
     const bonus = Math.round(P.hull * 10 + P.shield * 3);
     G.score += bonus; G.bonus = bonus; G.state = 'clear'; beep('triangle', 520, 1040, 0.5, 0.08);
   }
@@ -654,7 +979,7 @@ function drawWorld() {
     // 멀어서 몇 픽셀도 안 되면 레이더 색 점으로 — 어디 있는지는 보이게
     const ec = camSpace(e.pos);
     if (ec.z > 2 && FOC * e.k.radius / ec.z < 4) { items.push({ z: ec.z, dot: proj(ec), r: 1.6, col: e.k.radar, far: true }); continue; }
-    addMesh(items, MESH[e.k.mesh], e.o, e.pos, e.hitT > 0, 1);
+    addMesh(items, MESH[e.k.mesh], e.o, e.pos, e.hitT > 0 || (e.jumpT != null && Math.sin(G.time * 18) > 0), 1);
   }
   for (const d of debris) {
     addMesh(items, d.mesh, d.o, d.pos, false, d.whole ? 0.8 : 0.55 + (d.arc > 0 ? 0.35 : 0));   // 그을린 조각, 전기가 튀면 번쩍
@@ -698,22 +1023,26 @@ function addMesh(items, m, o, pos, hit, tint) {
 }
 function pushRest(items) {
   // 레이저·어뢰도 같은 깊이 목록에 넣어 앞뒤가 맞게
-  const beam = (b, col, w, ln) => {
+  // 빔: 굵기는 거리에 따라 (가까우면 굵고 멀면 가늘게), 바깥 빛 · 색 · 하얀 심 세 겹
+  const beam = (b, col, rad, ln) => {
     const c1 = camSpace(b.p), c2 = camSpace(sub(b.p, mul(norm(b.v), ln)));
     if (c1.z < 2 || c2.z < 2) return;
-    items.push({ z: (c1.z + c2.z) / 2, line: [proj(c1), proj(c2)], col, w });
+    const z = (c1.z + c2.z) / 2;
+    items.push({ z, line: [proj(c1), proj(c2)], col, w: clamp(FOC * rad / z, 1.2, 7) });
   };
-  for (const b of bolts) beam(b, P.mode === 'laser' ? '#ff4d6d' : '#ff7b54', 3, 55);
+  for (const b of bolts) beam(b, P.mode === 'laser' ? '#ff3d6e' : '#ff8a3d', b.dmg > 1 ? 2.4 : 1.8, 70);
   for (const b of ebolts) {
     if (b.torp) { const c = camSpace(b.p); if (c.z > 2) { const q = proj(c); items.push({ z: c.z, dot: q, r: Math.max(2, 900 / c.z), col: '#ff6b9a' }); } }
-    else beam(b, '#59ff8f', 2, 30);
+    else beam(b, '#59ff8f', 1.4, 40);
   }
   items.sort((a, b) => b.z - a.z);
   for (const it of items) {
     if (it.line) {
-      ctx.strokeStyle = it.col; ctx.lineWidth = it.w; ctx.shadowColor = it.col; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.moveTo(it.line[0][0], it.line[0][1]); ctx.lineTo(it.line[1][0], it.line[1][1]); ctx.stroke(); ctx.shadowBlur = 0;
-      continue;
+      const [a, b] = it.line; ctx.save(); ctx.lineCap = 'round'; ctx.globalCompositeOperation = 'lighter';
+      for (const [k, al, c] of [[3.2, 0.18, it.col], [1.7, 0.55, it.col], [0.55, 0.95, '#ffffff']]) {
+        ctx.globalAlpha = al; ctx.strokeStyle = c; ctx.lineWidth = it.w * k; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      }
+      ctx.restore(); continue;
     }
     if (it.far) { ctx.fillStyle = it.col; ctx.fillRect(it.dot[0] - 2, it.dot[1] - 2, 4, 4); continue; }
     if (it.zap) {
@@ -783,6 +1112,8 @@ function drawRadar(cx, cy, R, rear) {
   ctx.fillText(rear ? T.rear : T.front, cx, cy - R - 6);
   ctx.restore();
 }
+// 글자가 칸보다 넓으면 글씨를 줄인다 (좁은 세로 화면·긴 언어)
+function fitFont(text, maxW, weight, size, min = 8) { let f = size; ctx.font = `${weight} ${f}px Segoe UI, Malgun Gothic, sans-serif`; while (f > min && ctx.measureText(text).width > maxW) { f--; ctx.font = `${weight} ${f}px Segoe UI, Malgun Gothic, sans-serif`; } }
 function bar(x, y, w, h, v, col, label) {
   ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = col; ctx.fillRect(x, y, w * clamp(v / 100, 0, 1), h);
@@ -790,43 +1121,126 @@ function bar(x, y, w, h, v, col, label) {
   ctx.fillStyle = '#cfd6ff'; ctx.font = '600 11px Segoe UI, Malgun Gothic, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText(label, x, y - 4);
 }
+// ───────────────────────── 조종석 계기판 ─────────────────────────
+// 10/23 나무님: "밑에 대시보드가 너무 빈약하다" → 금속 판 · 움푹한 화면 · 칸 막대 · 표적 화면(회전하는 선 그림) · 경고등
+const UIF = 'Segoe UI, Malgun Gothic, sans-serif';
+function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function screenBox(x, y, w, h, label) {
+  // 둘레 홈(위 어둡게 · 아래 밝게) → 유리 → 줄무늬
+  rrect(x - 2, y - 2, w + 4, h + 4, 7); const bz = ctx.createLinearGradient(0, y - 2, 0, y + h + 2); bz.addColorStop(0, '#07060f'); bz.addColorStop(1, '#4a4370'); ctx.fillStyle = bz; ctx.fill();
+  rrect(x, y, w, h, 6); const gl = ctx.createLinearGradient(0, y, 0, y + h); gl.addColorStop(0, '#0b1426'); gl.addColorStop(1, '#050912'); ctx.fillStyle = gl; ctx.fill();
+  ctx.save(); rrect(x, y, w, h, 6); ctx.clip();
+  ctx.fillStyle = 'rgba(120,170,255,0.035)'; for (let yy = y + 1; yy < y + h; yy += 3) ctx.fillRect(x, yy, w, 1);
+  const sh = ctx.createLinearGradient(x, y, x + w * 0.6, y + h); sh.addColorStop(0, 'rgba(255,255,255,0.06)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.fillRect(x, y, w, h);
+  ctx.restore();
+  if (label) { ctx.fillStyle = '#6f7fc0'; fitFont(label, w - 12, 700, 9, 7); ctx.textAlign = 'left'; ctx.fillText(label, x + 7, y + 11); }
+}
+function segBar(x, y, w, h, v, col, warn) {
+  const n = Math.max(6, Math.min(24, Math.floor(w / 7))), gap = 2, sw = (w - gap * (n - 1)) / n, lit = Math.ceil(clamp(v, 0, 100) / 100 * n - 0.001);
+  const blink = warn && Math.sin(G.time * 10) > 0;
+  for (let i = 0; i < n; i++) {
+    const on = i < lit; ctx.fillStyle = on ? (blink && i === lit - 1 ? '#ffffff' : col) : 'rgba(140,160,255,0.08)';
+    if (on) { ctx.shadowColor = col; ctx.shadowBlur = 6; }
+    ctx.fillRect(x + i * (sw + gap), y, sw, h); ctx.shadowBlur = 0;
+  }
+}
+function lamp(x, y, w, h, on, col, label, blink) {
+  const lit = on && (!blink || Math.sin(G.time * 9) > 0);
+  rrect(x, y, w, h, 4); ctx.fillStyle = lit ? col : 'rgba(255,255,255,0.05)'; if (lit) { ctx.shadowColor = col; ctx.shadowBlur = 12; } ctx.fill(); ctx.shadowBlur = 0;
+  ctx.strokeStyle = lit ? 'rgba(255,255,255,0.55)' : 'rgba(150,160,220,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = lit ? '#fff' : '#5d6390'; fitFont(label, w - 6, 700, Math.min(11, h * 0.55), 6); ctx.textAlign = 'center'; ctx.fillText(label, x + w / 2, y + h / 2 + 4);
+}
+function gaugeRow(x, y, w, h, label, v, col, val, warn) {
+  ctx.font = `700 ${Math.min(12, h + 1)}px ${UIF}`; const lw = Math.min(64, w * 0.3), vw = ctx.measureText('100%').width + 8;
+  ctx.fillStyle = '#9fb0e8'; fitFont(label, lw - 4, 600, Math.min(11, h), 7); ctx.textAlign = 'left'; ctx.fillText(label, x, y + h - 1);
+  segBar(x + lw, y + 1, w - lw - vw, h - 2, v, col, warn);
+  ctx.fillStyle = warn ? '#ff7a85' : '#e6ecff'; ctx.font = `700 ${Math.min(12, h + 1)}px ${UIF}`; ctx.textAlign = 'right'; ctx.fillText(val, x + w, y + h - 1);
+}
+function targetScreen(x, y, w, h) {
+  screenBox(x, y, w, h, T.target);
+  const e = P.tgt;
+  if (!e) { ctx.fillStyle = '#4c567f'; ctx.font = `600 11px ${UIF}`; ctx.textAlign = 'center'; ctx.fillText(T.noTarget, x + w / 2, y + h / 2 + 4); return; }
+  // 회전하는 선 그림 (표적의 생김새)
+  const m = MESH[e.k.mesh], cx = x + w * 0.29, cy = y + h * 0.56, ext = m.ext || (m.ext = Math.max(...m.v.map(v => Math.hypot(v.x, v.y, v.z)))), sc = Math.min(w * 0.25, h * 0.36) / ext;
+  const a = G.time * 0.9, ca = Math.cos(a), sa = Math.sin(a), tilt = 0.45, ct = Math.cos(tilt), st = Math.sin(tilt);
+  const pts = m.v.map(v => { const x1 = v.x * ca + v.z * sa, z1 = -v.x * sa + v.z * ca, y1 = v.y * ct - z1 * st; return [cx + x1 * sc, cy - y1 * sc]; });
+  ctx.strokeStyle = e.k.radar; ctx.globalAlpha = 0.85; ctx.lineWidth = 1; ctx.shadowColor = e.k.radar; ctx.shadowBlur = 4; ctx.beginPath();
+  for (const f of m.f) { const q = f.v.map(i => pts[i]); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) ctx.lineTo(q[i][0], q[i][1]); ctx.lineTo(q[0][0], q[0][1]); }
+  ctx.stroke(); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  // 정보
+  const ix = x + w * 0.58, iw = w * 0.38, d = len(sub(e.pos, P.pos));
+  ctx.fillStyle = e.k.radar; fitFont(T[e.kind], iw, 800, 13, 8); ctx.textAlign = 'left'; ctx.fillText(T[e.kind], ix, y + h * 0.36);
+  ctx.fillStyle = '#9fb0e8'; fitFont(T.dist, iw * 0.5, 600, 10, 7); ctx.fillText(T.dist, ix, y + h * 0.58);
+  ctx.fillStyle = '#e6ecff'; ctx.font = `700 13px ${UIF}`; ctx.textAlign = 'right'; ctx.fillText(String(Math.round(d)), ix + iw, y + h * 0.58);
+  segBar(ix, y + h * 0.7, iw, Math.max(5, h * 0.1), e.hp / e.k.hp * 100, e.k.radar);
+  if (e.jumpT != null) { ctx.fillStyle = Math.sin(G.time * 12) > 0 ? '#ffe46b' : '#ff5d6c'; ctx.font = `800 11px ${UIF}`; ctx.textAlign = 'left'; ctx.fillText('▲ ' + Math.max(0, e.jumpT).toFixed(1), ix, y + h * 0.92); }
+}
+function drawConsole() {
+  const narrow = W < 600, ph = narrow ? Math.max(130, H * 0.2) : Math.max(124, Math.min(180, H * 0.23)), top = H - ph;
+  ctx.save();
+  // 몸체: 어두운 금속 판, 위 가장자리에 빛나는 선
+  const body = () => { ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, top + ph * 0.3); ctx.lineTo(W * 0.16, top); ctx.lineTo(W * 0.84, top); ctx.lineTo(W, top + ph * 0.3); ctx.lineTo(W, H); ctx.closePath(); };
+  body(); const mg = ctx.createLinearGradient(0, top, 0, H); mg.addColorStop(0, '#2b2648'); mg.addColorStop(0.25, '#1b1832'); mg.addColorStop(1, '#0b0a16'); ctx.fillStyle = mg; ctx.fill();
+  ctx.save(); body(); ctx.clip();
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1;          // 판 이음매
+  for (const fx of [0.22, 0.78]) { ctx.beginPath(); ctx.moveTo(W * fx, top + 4); ctx.lineTo(W * fx, H); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(160,150,220,0.35)';                         // 나사
+  for (let xx = W * 0.2; xx < W * 0.81; xx += Math.max(40, W / 16)) { ctx.beginPath(); ctx.arc(xx, top + 6, 1.6, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+  ctx.strokeStyle = '#8f78ff'; ctx.lineWidth = 2; ctx.shadowColor = '#7c5cfc'; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.moveTo(0, top + ph * 0.3); ctx.lineTo(W * 0.16, top); ctx.lineTo(W * 0.84, top); ctx.lineTo(W, top + ph * 0.3); ctx.stroke(); ctx.shadowBlur = 0;
+  // 위쪽 창틀 기둥
+  ctx.fillStyle = '#14122a'; ctx.strokeStyle = 'rgba(143,120,255,0.55)'; ctx.lineWidth = 1.5;
+  for (const sgn of [1, -1]) { const x0 = sgn > 0 ? 0 : W; ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0 + sgn * W * 0.11, 0); ctx.lineTo(x0 + sgn * W * 0.035, H * 0.12); ctx.lineTo(x0, H * 0.14); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  // 레이더: 금속 테 안에
+  const R = narrow ? Math.max(26, Math.min(40, W * 0.085)) : Math.max(36, Math.min(62, ph * 0.38));
+  const rcy = top + ph * 0.55, rx1 = narrow ? R + 9 : W * 0.1 + R * 0.25, rx2 = narrow ? W - R - 9 : W * 0.9 - R * 0.25;
+  for (const rx of [rx1, rx2]) { const g = ctx.createLinearGradient(0, rcy - R - 7, 0, rcy + R + 7); g.addColorStop(0, '#05040c'); g.addColorStop(1, '#4d4677'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(rx, rcy, R + 6, 0, Math.PI * 2); ctx.fill(); }
+  drawRadar(rx1, rcy, R, false); drawRadar(rx2, rcy, R, true);
+  // 가운데 화면들
+  const mx = narrow ? R * 2 + 22 : W * 0.24, mw = narrow ? W - mx * 2 : W * 0.52, sy = top + (narrow ? 12 : 14), shh = H - sy - 10, gap = 8;
+  const hullWarn = P.hull <= 35, torp = ebolts.some(b => b.torp && len(sub(b.p, P.pos)) < 900);
+  if (!narrow) {
+    const w1 = mw * 0.38, w2 = mw * 0.37, w3 = mw - w1 - w2 - gap * 2;
+    // 계통 화면: 방어막 · 선체 · 속도
+    screenBox(mx, sy, w1, shh, '');
+    const rh = Math.min(14, (shh - 16) / 3.4), r0 = sy + (shh - rh * 3 - 16) / 2;
+    gaugeRow(mx + 8, r0, w1 - 16, rh, T.shield, P.shield, '#3d8bff', Math.round(P.shield) + '%', P.shield < 20);
+    gaugeRow(mx + 8, r0 + rh + 8, w1 - 16, rh, T.hull, P.hull, hullWarn ? '#ff5d6c' : '#4cd17a', Math.round(P.hull) + '%', hullWarn);
+    gaugeRow(mx + 8, r0 + (rh + 8) * 2, w1 - 16, rh, T.speed, (P.speed - 30) / 230 * 100, '#c8a2ff', String(Math.round(P.speed)));
+    targetScreen(mx + w1 + gap, sy, w2, shh);
+    // 전력 · 경고 화면
+    const x3 = mx + w1 + w2 + gap * 2; screenBox(x3, sy, w3, shh, T.energy + ' (Z)');
+    const lh = Math.min(20, (shh - 22) / 4 - 3), ly = sy + 17;
+    lamp(x3 + 6, ly, w3 - 12, lh, P.mode === 'shield', '#3d8bff', T.modeShield);
+    lamp(x3 + 6, ly + lh + 4, w3 - 12, lh, P.mode === 'laser', '#ff3d6e', T.modeLaser);
+    lamp(x3 + 6, ly + (lh + 4) * 2 + 4, w3 - 12, lh, hullWarn, '#d4283c', T.hullLow, true);
+    lamp(x3 + 6, ly + (lh + 4) * 3 + 4, w3 - 12, lh, torp, '#ff8a1f', T.torpedo.replace(/[!！]/g, ''), true);
+  } else {
+    // 세로 휴대폰: 위 계통 화면, 아래 표적 화면 (전력·경고는 계통 화면 끝줄 등으로)
+    const h1 = shh * 0.52; screenBox(mx, sy, mw, h1, '');
+    const rh = Math.min(11, (h1 - 30) / 3.6), r0 = sy + 6;
+    gaugeRow(mx + 6, r0, mw - 12, rh, T.shield, P.shield, '#3d8bff', Math.round(P.shield) + '%', P.shield < 20);
+    gaugeRow(mx + 6, r0 + rh + 4, mw - 12, rh, T.hull, P.hull, hullWarn ? '#ff5d6c' : '#4cd17a', Math.round(P.hull) + '%', hullWarn);
+    gaugeRow(mx + 6, r0 + (rh + 4) * 2, mw - 12, rh, T.speed, (P.speed - 30) / 230 * 100, '#c8a2ff', String(Math.round(P.speed)));
+    const lw = (mw - 12 - 6) / 2, ly = sy + h1 - 17;
+    lamp(mx + 6, ly, lw, 13, true, P.mode === 'shield' ? '#3d8bff' : '#ff3d6e', P.mode === 'shield' ? T.modeShield : T.modeLaser);
+    lamp(mx + 12 + lw, ly, lw, 13, hullWarn || torp, torp ? '#ff8a1f' : '#d4283c', torp ? T.torpedo.replace(/[!！]/g, '') : T.hullLow, true);
+    targetScreen(mx, sy + h1 + 6, mw, shh - h1 - 6);
+  }
+  ctx.restore();
+  return ph;
+}
 function drawHud() {
   const s = Math.min(1, W / 900);
-  // 조종석 틀
-  ctx.save();
-  ctx.fillStyle = 'rgba(18,16,34,0.92)'; ctx.strokeStyle = '#7c5cfc'; ctx.lineWidth = 2;
-  const ph = Math.max(110, H * 0.2);
-  ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, H - ph * 0.7); ctx.lineTo(W * 0.18, H - ph); ctx.lineTo(W * 0.82, H - ph); ctx.lineTo(W, H - ph * 0.7); ctx.lineTo(W, H); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(W * 0.12, H * 0.08); ctx.moveTo(W, 0); ctx.lineTo(W * 0.88, H * 0.08); ctx.strokeStyle = 'rgba(124,92,252,0.5)'; ctx.stroke();
-  ctx.restore();
-  // 레이더 둘
-  const R = Math.max(34, Math.min(62, ph * 0.42));
-  drawRadar(W * 0.1 + R * 0.3, H - ph * 0.5, R, false);
-  drawRadar(W * 0.9 - R * 0.3, H - ph * 0.5, R, true);
-  // 가운데 계기
-  const mx = W * 0.27, mw = W * 0.46, top = H - ph + 22;
-  bar(mx, top + 6, mw * 0.46, 10, P.shield, '#3d8bff', T.shield);
-  bar(mx + mw * 0.54, top + 6, mw * 0.46, 10, P.hull, P.hull > 35 ? '#4cd17a' : '#ff5d6c', T.hull);
-  bar(mx, top + 40, mw * 0.46, 8, (P.speed - 30) / 230 * 100, '#c8a2ff', T.speed + ' ' + Math.round(P.speed));
-  // 전력 배분 표시
-  const mode = P.mode === 'shield';
-  ctx.font = '700 12px Segoe UI, Malgun Gothic, sans-serif'; ctx.textAlign = 'left';
-  ctx.fillStyle = '#cfd6ff'; ctx.fillText(T.energy + ' (Z)', mx + mw * 0.54, top + 36);
-  const bw = mw * 0.22;
-  for (const [i, on, label, col] of [[0, mode, T.modeShield, '#3d8bff'], [1, !mode, T.modeLaser, '#ff4d6d']]) {
-    const bx = mx + mw * 0.54 + i * (bw + mw * 0.02);
-    ctx.fillStyle = on ? col : 'rgba(255,255,255,0.06)'; ctx.fillRect(bx, top + 41, bw, 16);
-    ctx.fillStyle = on ? '#fff' : '#7d82a8'; ctx.font = '600 10px Segoe UI, Malgun Gothic, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(label, bx + bw / 2, top + 53);
+  // 총구 섬광
+  if (P.muzzle > 0) {
+    const mc = camSpace(add(add(P.pos, mul(P.o.r, P.gun * 9)), add(mul(P.o.u, -6), mul(P.o.f, 60))));
+    if (mc.z > 2) { const q = proj(mc), r = 26 * P.muzzle / 0.07, g = ctx.createRadialGradient(q[0], q[1], 0, q[0], q[1], r);
+      g.addColorStop(0, 'rgba(255,255,240,0.9)'); g.addColorStop(0.4, P.mode === 'laser' ? 'rgba(255,70,120,0.6)' : 'rgba(255,150,70,0.6)'); g.addColorStop(1, 'rgba(255,80,40,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, Math.PI * 2); ctx.fill(); }
   }
-  // 표적 정보
-  ctx.textAlign = 'left'; ctx.font = '600 12px Segoe UI, Malgun Gothic, sans-serif';
-  const ty = top + 78;
-  if (P.tgt) {
-    const d = len(sub(P.tgt.pos, P.pos));
-    ctx.fillStyle = P.tgt.k.radar; ctx.fillText(`${T.target}: ${T[P.tgt.kind]}`, mx, ty);
-    ctx.fillStyle = '#cfd6ff'; ctx.fillText(`${T.dist} ${Math.round(d)}`, mx + mw * 0.34, ty);
-    bar(mx + mw * 0.54, ty - 9, mw * 0.46, 8, P.tgt.hp / P.tgt.k.hp * 100, P.tgt.k.radar, '');
-  } else { ctx.fillStyle = '#7d82a8'; ctx.fillText(T.noTarget, mx, ty); }
+  const ph = drawConsole();
   // 위쪽 정보
   ctx.font = '700 13px Segoe UI, Malgun Gothic, sans-serif'; ctx.fillStyle = '#cfd6ff'; ctx.textAlign = 'left';
   ctx.fillText(`${T.stage} ${G.stage + 1}/10`, 14, 22);
@@ -834,8 +1248,8 @@ function drawHud() {
   ctx.textAlign = 'right';
   const cnt = { fighter: 0, bomber: 0, transport: 0 }; enemies.forEach(e => cnt[e.kind]++);
   ctx.fillText(`${T.remain} ${enemies.length}`, W - 14, 22);
-  ctx.font = '11px Segoe UI, Malgun Gothic, sans-serif'; ctx.fillStyle = '#9aa0c8';
-  ctx.fillText(`${T.fighter} ${cnt.fighter} · ${T.bomber} ${cnt.bomber} · ${T.transport} ${cnt.transport}`, W - 14, 38);
+  const cl = `${T.fighter} ${cnt.fighter} · ${T.bomber} ${cnt.bomber} · ${T.transport} ${cnt.transport}`; fitFont(cl, W * 0.62, 400, 11, 7); ctx.fillStyle = '#9aa0c8';
+  ctx.fillText(cl, W - 14, 38);
   // 조준선
   ctx.strokeStyle = 'rgba(93,255,156,0.85)'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.arc(W / 2, H / 2, 14 * s + 6, 0, Math.PI * 2);
@@ -870,13 +1284,21 @@ function drawHud() {
   if (G.flash > 0) { ctx.fillStyle = `rgba(255,60,60,${G.flash * 0.8})`; ctx.fillRect(0, 0, W, H); }
   if (G.wire) { ctx.fillStyle = '#5dff9c'; ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillText('VECTOR', 14, 38); }
 }
+// 터치 기기에서는 'Enter / 클릭 — 계속' 같은 안내를 '▶ 계속' 으로
+const nextT = t => (isTouch() && t.includes('—') ? '▶ ' + t.split('—').pop().trim() : t);
 function panel(lines, title, sub) {
   ctx.fillStyle = 'rgba(8,8,20,0.78)'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#7c5cfc'; ctx.font = `800 ${Math.min(44, W / 14)}px Segoe UI, Malgun Gothic, sans-serif`; ctx.fillText(title, W / 2, H * 0.3);
+  ctx.fillStyle = '#7c5cfc'; fitFont(title, W - 24, 800, Math.min(44, W / 14), 14); ctx.fillText(title, W / 2, H * 0.3);
   if (sub) { ctx.fillStyle = '#9aa0c8'; ctx.font = '600 13px Segoe UI, sans-serif'; ctx.fillText(sub, W / 2, H * 0.3 + 26); }
-  ctx.font = '15px Segoe UI, Malgun Gothic, sans-serif';
-  lines.forEach((l, i) => { ctx.fillStyle = l.c || '#e6e8ff'; ctx.font = l.f || '15px Segoe UI, Malgun Gothic, sans-serif'; ctx.fillText(l.t, W / 2, H * 0.42 + i * 26); });
+  // 화면이 좁으면 낱말 단위로 줄을 나눈다
+  let y = H * 0.42; const maxW = W - 32;
+  for (const l of lines) {
+    ctx.fillStyle = l.c || '#e6e8ff'; ctx.font = l.f || '15px Segoe UI, Malgun Gothic, sans-serif';
+    const words = String(l.t).split(' '); let line = '';
+    const out = []; for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } out.push(line);
+    for (const o of out) { ctx.fillText(o, W / 2, y); y += 22; } y += 4;
+  }
 }
 // 제목 화면용 — 천천히 도는 T형 전투기
 function titleShip() {
@@ -891,12 +1313,11 @@ function render() {
   if (G.state === 'title') {
     [P.o.f, P.o.r] = turnPair(P.o.f, P.o.r, 0.0015); orthonormal(P.o);
     titleShip(); ctx.restore();
+    const tch = isTouch();
     panel([
-      { t: T.keys1, c: '#cfd6ff', f: '13px Segoe UI, Malgun Gothic, sans-serif' },
-      { t: T.keys2, c: '#cfd6ff', f: '13px Segoe UI, Malgun Gothic, sans-serif' },
-      { t: T.keys3, c: '#cfd6ff', f: '13px Segoe UI, Malgun Gothic, sans-serif' },
+      ...(tch ? [T.touch1, T.touch2] : [T.keys1, T.keys2, T.keys3]).map(t => ({ t, c: '#cfd6ff', f: '13px Segoe UI, Malgun Gothic, sans-serif' })),
       { t: '' },
-      { t: T.clickStart, c: Math.sin(G.time * 4) > 0 ? '#ffe9a8' : '#a99a6a', f: '700 17px Segoe UI, Malgun Gothic, sans-serif' },
+      { t: tch ? T.tapStart : T.clickStart, c: Math.sin(G.time * 4) > 0 ? '#ffe9a8' : '#a99a6a', f: '700 17px Segoe UI, Malgun Gothic, sans-serif' },
       { t: G.best ? `BEST ${G.best}` : '', c: '#9aa0c8' },
     ], T.title, T.sub);
     return;
@@ -905,13 +1326,13 @@ function render() {
   ctx.restore();
   if (G.state === 'brief') {
     const b = T.brief[G.stage];
-    panel([{ t: b[1] }, { t: '' }, { t: T.enterNext, c: '#ffe9a8', f: '700 15px Segoe UI, Malgun Gothic, sans-serif' }], `${T.stage} ${G.stage + 1} — ${b[0]}`);
+    panel([{ t: b[1] }, { t: '' }, { t: nextT(T.enterNext), c: '#ffe9a8', f: '700 15px Segoe UI, Malgun Gothic, sans-serif' }], `${T.stage} ${G.stage + 1} — ${b[0]}`);
   } else if (G.state === 'paused') panel([{ t: T.paused }], T.title);
-  else if (G.state === 'clear') panel([{ t: `${T.bonus} +${G.bonus}` }, { t: `${T.score} ${G.score}` }, { t: '' }, { t: T.enterNext, c: '#ffe9a8' }], T.clear);
-  else if (G.state === 'over') panel([{ t: `${T.score} ${G.score}` }, { t: '' }, { t: T.retry, c: '#ffe9a8' }], T.over);
+  else if (G.state === 'clear') panel([{ t: `${T.bonus} +${G.bonus}` }, { t: `${T.score} ${G.score}` }, { t: '' }, { t: nextT(T.enterNext), c: '#ffe9a8' }], T.clear);
+  else if (G.state === 'over') panel([{ t: `${T.score} ${G.score}` }, { t: '' }, { t: nextT(T.retry), c: '#ffe9a8' }], G.failReason === 'escaped' ? T.escaped : T.over);
   else if (G.state === 'ending') {
     const lines = T.endText.map(t => ({ t, c: t.startsWith('—') ? '#c8a2ff' : '#e6e8ff' }));
-    lines.push({ t: '' }, { t: `${T.endScore} ${G.score}`, c: '#ffe9a8', f: '700 18px Segoe UI, Malgun Gothic, sans-serif' }, { t: T.endAgain, c: '#9aa0c8' });
+    lines.push({ t: '' }, { t: `${T.endScore} ${G.score}`, c: '#ffe9a8', f: '700 18px Segoe UI, Malgun Gothic, sans-serif' }, { t: nextT(T.endAgain), c: '#9aa0c8' });
     panel(lines, T.endTitle);
   }
 }
@@ -921,6 +1342,8 @@ let last = 0;
 function loop(t) {
   const dt = Math.min(0.05, (t - last) / 1000 || 0); last = t;
   update(dt); render();
+  if (AC) { music(G.state === 'title' ? 'title' : G.state === 'ending' ? 'ending' : G.stage >= 5 ? 'battle2' : 'battle'); musPause(G.state === 'paused' || document.hidden); }
+  if (typeof touchUi === 'function') touchUi();
   requestAnimationFrame(loop);
 }
 function boot() {
@@ -930,6 +1353,57 @@ function boot() {
   requestAnimationFrame(loop);
 }
 boot();
+
+// ───────────────────────── 휴대폰 조작 (떠 있는 조종간 + 버튼) ─────────────────────────
+const TOUCH = { x: 0, y: 0, on: false, id: null, cx: 0, cy: 0 };
+const isTouch = () => !!(matchMedia('(pointer: coarse)').matches || TOUCH.seen);
+(function buildTouch() {
+  const ui = document.createElement('div'); ui.id = 'tui';
+  ui.innerHTML = `<div id="tzone"></div><div id="tstick"><i></i></div>
+    <button class="tb big" data-k="fire" id="tfire"></button>
+    <div class="tcol"><button class="tb" data-k="r">▲</button><button class="tb" data-k="f">▼</button></div>
+    <div class="trow"><button class="tb" data-k="q">⟲</button><button class="tb" data-k="e">⟳</button><button class="tb" data-k="z" id="tz">Z</button><button class="tb" data-k="t" id="tt">T</button><button class="tb" data-k="v">V</button></div>
+    <button class="tb" data-k="p" id="tpause">II</button>`;
+  document.body.appendChild(ui);
+  const zone = ui.querySelector('#tzone'), stick = ui.querySelector('#tstick'), knob = stick.querySelector('i');
+  const R = 56;
+  zone.addEventListener('pointerdown', e => {
+    e.preventDefault(); audio(); if (e.pointerType === 'touch') TOUCH.seen = true; if (TOUCH.on) return;
+    TOUCH.on = true; TOUCH.id = e.pointerId; TOUCH.cx = e.clientX; TOUCH.cy = e.clientY; try { zone.setPointerCapture(e.pointerId); } catch (x) { /* */ }
+    stick.style.left = (e.clientX - R) + 'px'; stick.style.top = (e.clientY - R) + 'px'; stick.classList.add('on'); knob.style.transform = 'translate(0,0)';
+  });
+  zone.addEventListener('pointermove', e => {
+    if (!TOUCH.on || e.pointerId !== TOUCH.id) return;
+    let dx = e.clientX - TOUCH.cx, dy = e.clientY - TOUCH.cy; const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; }
+    knob.style.transform = `translate(${dx}px,${dy}px)`;
+    // 가운데 근처는 무시하고, 끝으로 갈수록 세게 (세밀한 조준이 쉽게)
+    const f = v => { const a = Math.abs(v) / R; return Math.sign(v) * (a < 0.08 ? 0 : Math.pow((a - 0.08) / 0.92, 1.5)); };
+    TOUCH.x = f(dx); TOUCH.y = -f(dy);
+  });
+  const end = e => { if (e.pointerId !== TOUCH.id) return; TOUCH.on = false; TOUCH.id = null; TOUCH.x = TOUCH.y = 0; stick.classList.remove('on'); };
+  zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+  // 버튼: 누르는 동안 키를 누른 것으로
+  ui.querySelectorAll('.tb').forEach(b => {
+    const k = b.dataset.k, key = k === 'fire' ? 'mouse' : k;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation(); audio(); if (e.pointerType === 'touch') TOUCH.seen = true; b.classList.add('down'); try { b.setPointerCapture(e.pointerId); } catch (x) { /* 이미 끝난 손가락 */ }
+      if (['z', 't', 'v', 'p'].includes(k)) document.dispatchEvent(new KeyboardEvent('keydown', { key: k }));
+      else keys[key] = true;
+    });
+    const up = () => { b.classList.remove('down'); if (!['z', 't', 'v', 'p'].includes(k)) keys[key] = false; };
+    b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
+  });
+  addEventListener('pointerdown', e => { if (e.pointerType === 'touch') TOUCH.seen = true; }, { capture: true, passive: true });
+})();
+// 매 장면: 경기 중이고 터치 기기일 때만 보인다
+function touchUi() {
+  const ui = document.getElementById('tui'), show = isTouch() && (G.state === 'play' || G.state === 'paused');
+  ui.classList.toggle('show', show); if (!show) return;
+  const ph = Math.max(110, H * 0.2); ui.style.setProperty('--ph', ph + 'px');
+  document.getElementById('tfire').textContent = '●'; document.getElementById('tz').classList.toggle('laser', P.mode === 'laser');
+  document.getElementById('tpause').textContent = G.state === 'paused' ? '▶' : 'II';
+}
+
 </script>
 </body>
 </html>
