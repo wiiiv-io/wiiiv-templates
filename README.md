@@ -37,6 +37,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | typing-practice | tool |
 | music-studio | music |
 | mandelbrot | visualization |
+| moon-explorer | visualization |
 | graph3d | visualization |
 
 ---
@@ -44,6 +45,8 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 *wiiiv inc.*
 
 Exception: `music-studio` loads its grand-piano samples from `assets/piano/*.mp3` in this repo (Salamander Grand Piano by Alexander Holm, CC BY 3.0, credited in the app). They are kept out of the HTML so that an LLM editing the template never reads them; offline it falls back to a synthesized piano. `piano.html` and `drum-machine.html` stay only for old links — `index.json` now points to `music-studio`.
+
+Exception: `moon-explorer` loads its map tiles and feature names from `assets/moon/` (~165 MB: `t/` albedo+normal tiles, `h/` height tiles, `hg.png`, `tint.jpg`, `names.json`). Source: NASA/Goddard Scientific Visualization Studio CGI Moon Kit (LRO LROC WAC, LOLA — https://svs.gsfc.nasa.gov/4720) and the USGS/IAU Gazetteer of Planetary Nomenclature; both credited in the app. How they are built: `wiiiv/tools/wiiivapp-src/moon/data/`.
 
 ## Adding a template (no server/desktop build needed)
 

@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>달 탐험 — Moon Explorer</title>
+<style>
+:root { --bg: #000; --panel: rgba(14, 16, 24, 0.86); --line: rgba(160, 175, 210, 0.18); --fg: #e8ecf6; --dim: #9aa4bd; --acc: #ffd479; --acc2: #8fb7ff; --r: 12px; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.45 'Pretendard', 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+#sky, #gl, #ov { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#gl { touch-action: none; cursor: grab; }
+#gl:active { cursor: grabbing; }
+#ov, #sky { pointer-events: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.glass { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 30px rgba(0,0,0,0.45); }
+#top { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 10px; align-items: flex-start; pointer-events: none; }
+#top > * { pointer-events: auto; }
+#brand { padding: 8px 14px; display: flex; flex-direction: column; min-width: 0; }
+#brand b { font-size: 16px; letter-spacing: 0.02em; }
+#brand span { color: var(--dim); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#searchBox { position: relative; flex: 0 1 340px; min-width: 0; }
+#search { width: 100%; padding: 11px 14px 11px 36px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: inherit; outline: none; backdrop-filter: blur(10px); }
+#search:focus { border-color: var(--acc2); }
+#searchBox svg { z-index: 1; position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--dim); pointer-events: none; }
+#sugg { position: absolute; top: calc(100% + 6px); left: 0; right: 0; max-height: 50vh; overflow: auto; padding: 4px; display: none; }
+#sugg.show { display: block; }
+.sg { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.sg:hover, .sg.on { background: rgba(143,183,255,0.14); }
+.sg small { color: var(--dim); white-space: nowrap; }
+#tools { margin-left: auto; display: flex; gap: 8px; }
+.tb { padding: 9px 13px; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.tb.on { border-color: var(--acc); color: var(--acc); }
+.tb svg { width: 18px; height: 18px; flex: none; }
+#side { position: fixed; right: 12px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; }
+.sb { width: 44px; height: 44px; display: grid; place-items: center; font-size: 20px; font-weight: 600; }
+.sb small { font-size: 11px; font-weight: 700; }
+#compass svg { width: 26px; height: 26px; transition: transform 0.1s linear; }
+#phase { position: fixed; left: 12px; bottom: calc(40px + env(safe-area-inset-bottom)); padding: 10px 12px; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 24px); }
+#phaseIcon { width: 46px; height: 46px; flex: none; }
+#phaseText b { display: block; font-size: 13.5px; }
+#phaseText span { color: var(--dim); font-size: 12px; }
+#sunModes { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.chip { padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line); font-size: 11.5px; color: var(--dim); }
+.chip.on { color: #111; background: var(--acc); border-color: var(--acc); font-weight: 600; }
+#sunSlider { width: 100%; margin-top: 6px; display: none; accent-color: var(--acc); }
+#status { white-space: nowrap; position: fixed; left: 0; right: 0; bottom: 0; padding: 6px 14px calc(6px + env(safe-area-inset-bottom)); display: flex; gap: 16px; align-items: center; font-size: 12px; color: var(--dim); background: linear-gradient(transparent, rgba(0,0,0,0.75)); font-variant-numeric: tabular-nums; pointer-events: none; }
+#status b { color: var(--fg); font-weight: 600; }
+#scale { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+#scaleBar { height: 6px; border: 2px solid var(--fg); border-top: 0; }
+#credit { font-size: 10.5px; opacity: 0.75; max-width: 46vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#drawer { position: fixed; right: 68px; top: calc(70px + env(safe-area-inset-top)); width: 340px; max-height: calc(100% - 140px); overflow: auto; padding: 16px; display: none; }
+#drawer.show { display: block; }
+#drawer h2 { margin: 0 0 2px; font-size: 19px; line-height: 1.25; }
+#drawer h3 { margin: 14px 0 6px; font-size: 12px; color: var(--dim); font-weight: 600; letter-spacing: 0.04em; }
+#drawer .sub { color: var(--acc2); font-size: 13px; margin-bottom: 8px; }
+#drawer .x { position: absolute; right: 10px; top: 8px; font-size: 22px; color: var(--dim); width: 32px; height: 32px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+.kv dt { color: var(--dim); } .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.origin { font-size: 13px; color: #cfd6e8; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 10px; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+.tag { font-size: 11.5px; padding: 3px 8px; border-radius: 99px; background: rgba(255,212,121,0.12); color: var(--acc); }
+a.lnk { color: var(--acc2); font-size: 12.5px; }
+.site { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+.site:hover { background: rgba(255,255,255,0.06); }
+.site i { width: 10px; height: 10px; border-radius: 3px; }
+.site small { color: var(--dim); font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border: 0; }
+.seg { display: flex; gap: 4px; }
+.seg button { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--dim); }
+.seg button.on { background: var(--acc2); color: #0b1020; border-color: var(--acc2); font-weight: 600; }
+input[type=range] { accent-color: var(--acc2); }
+.sw { width: 40px; height: 22px; border-radius: 99px; background: rgba(255,255,255,0.15); position: relative; flex: none; }
+.sw::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.sw.on { background: var(--acc2); } .sw.on::after { left: 21px; }
+#meas { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(42px + env(safe-area-inset-bottom)); padding: 10px 14px; display: none; width: min(560px, calc(100% - 24px)); }
+#meas.show { display: block; }
+#meas b { color: var(--acc); font-size: 16px; }
+#profile { width: 100%; height: 90px; display: block; margin-top: 6px; }
+#loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--dim); font-size: 14px; pointer-events: none; transition: opacity 0.6s; }
+#loading.hide { opacity: 0; }
+#help { position: fixed; left: 50%; top: calc(70px + env(safe-area-inset-top)); transform: translateX(-50%); padding: 8px 14px; font-size: 12px; color: var(--dim); transition: opacity 1s; text-align: center; max-width: calc(100% - 24px); pointer-events: none; }
+@media (max-width: 720px) {
+  #brand span { display: none; } #brand { padding: 8px 12px; }
+  #top { flex-wrap: wrap; } #searchBox { order: 3; flex: 1 1 100%; }
+  .tb span { display: none; } .tb { padding: 9px 10px; }
+  #drawer { left: 8px; right: 8px; width: auto; top: auto; bottom: calc(36px + env(safe-area-inset-bottom)); max-height: 56%; }
+  #phase { bottom: calc(34px + env(safe-area-inset-bottom)); padding: 8px 10px; } #phaseIcon { width: 38px; height: 38px; }
+  #side { top: auto; bottom: calc(150px + env(safe-area-inset-bottom)); transform: none; }
+  #credit { display: none; } #status { gap: 10px; font-size: 11px; padding-left: 10px; padding-right: 10px; } #stAlt { display: none; } #help { top: calc(118px + env(safe-area-inset-top)); }
+}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<canvas id="gl"></canvas>
+<canvas id="ov"></canvas>
+<div id="loading"></div>
+<div id="top">
+  <div id="brand" class="glass"><b id="tTitle"></b><span id="tSub"></span></div>
+  <div id="searchBox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><input id="search" autocomplete="off" spellcheck="false"><div id="sugg" class="glass"></div></div>
+  <div id="tools">
+    <button class="tb glass" id="bSites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span></span></button>
+    <button class="tb glass" id="bMeasure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span></span></button>
+    <button class="tb glass" id="bSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span></span></button>
+  </div>
+</div>
+<div id="side">
+  <button class="sb glass" id="zIn">+</button>
+  <button class="sb glass" id="zOut">−</button>
+  <button class="sb glass" id="compass"><svg viewBox="0 0 24 24"><path d="M12 2l4 10h-8z" fill="#ff6b6b"/><path d="M12 22l-4-10h8z" fill="#cfd6e8"/></svg></button>
+  <button class="sb glass" id="bTilt"><small>3D</small></button>
+  <button class="sb glass" id="bFace"><small id="faceT"></small></button>
+</div>
+<div id="phase" class="glass"><canvas id="phaseIcon" width="92" height="92"></canvas><div id="phaseText" style="min-width:0"><b></b><span></span><div id="sunModes"></div><input type="range" id="sunSlider" min="-180" max="180" step="1"></div></div>
+<div id="drawer" class="glass"></div>
+<div id="meas" class="glass"><div id="measT"></div><canvas id="profile"></canvas></div>
+<div id="help" class="glass"></div>
+<div id="status"><span id="stPos"></span><span id="stAlt"></span><span id="credit"></span><span id="scale"><span id="scaleBar"></span><span id="scaleT"></span></span></div>
+<script>
+// ───────────────────────── 말 (11개 언어) ─────────────────────────
+const LANG = 'ko';
+const TX = {
+  ko: {
+    title: '달 탐험', sub: '실제 탐사 자료로 만든 3D 달', search: '크레이터·바다·착륙지 찾기', sites: '착륙지', settings: '설정', home: '앞면', far: '뒷면',
+    north: '북쪽을 위로', tilt: '기울이기', measure: '거리 재기', measureHint: '두 곳을 눌러 거리를 잽니다', dist: '거리', elev: '높이', lat: '위도', lon: '경도', alt: '카메라 높이',
+    sunToday: '오늘의 달', sunDrama: '그림자 강조', sunFlat: '고르게 밝게', sunHand: '태양 직접', sunLon: '태양 경도',
+    phases: ['그믐·삭', '초승달', '상현', '차오르는 달', '보름', '기우는 달', '하현', '그믐달'], age: '월령', illum: '밝은 부분', days: '일',
+    lSeas: '바다·대양', lCraters: '크레이터', lTerrain: '산·계곡·열구', lSmall: '작은 지형', showSites: '착륙지', grid: '위경도 격자', color: '색', cGray: '회색', cNat: '자연색', cVivid: '색 강조',
+    exag: '지형 과장', loading: '달 지도를 불러오는 중…', diam: '지름', type: '종류', origin: '이름 유래', usgs: 'USGS 지명 사전', crew: '승무원', landed: '착륙', close: '닫기', noResult: '찾는 곳이 없습니다',
+    help: '끌어서 돌리기 · 휠/두 손가락으로 확대 · 오른쪽 끌기/두 손가락 위아래로 기울이기 · 두 번 눌러 다가가기',
+    credit: '지도: NASA/GSFC 과학 시각화 스튜디오 (LRO LROC·LOLA) · 지명: USGS·IAU 행성 지명 사전',
+    T: { OC: '대양', ME: '바다', LC: '호수', SI: '만', PA: '늪', PL: '평원', AA: '크레이터', SF: '위성 크레이터', MO: '산', DO: '주름 능선', RI: '열구', CA: '크레이터 사슬', VA: '계곡', PR: '곶', RU: '절벽', LF: '탐사 지점 지형', AL: '밝기 무늬', ST: '착륙 지점' },
+    C: { su: '소련', us: '미국', cn: '중국', in: '인도', jp: '일본' },
+    G: { firstSoft: '처음으로 달에 연착륙', crewed: '유인 착륙', firstCrewed: '인류 첫 달 착륙', lastCrewed: '마지막 유인 착륙 (지금까지)', rover: '월면차', sample: '표본을 가지고 돌아옴', farFirst: '처음으로 달 뒷면에 착륙', farSample: '처음으로 뒷면 표본을 가지고 돌아옴', southPole: '남극 가까이 착륙', commercial: '민간 착륙선', pinpoint: '목표 100m 안에 정밀 착륙', tipped: '옆으로 넘어진 채 운용', robot: '무인 착륙선' },
+  },
+  en: {
+    title: 'Moon Explorer', sub: 'A 3D Moon built from real mission data', search: 'Find craters, seas, landing sites', sites: 'Landing sites', settings: 'Settings', home: 'Near side', far: 'Far side',
+    north: 'North up', tilt: 'Tilt', measure: 'Measure', measureHint: 'Tap two places to measure the distance', dist: 'Distance', elev: 'Elevation', lat: 'Lat', lon: 'Lon', alt: 'Camera altitude',
+    sunToday: 'Tonight\'s Moon', sunDrama: 'Dramatic shadows', sunFlat: 'Even light', sunHand: 'Move the Sun', sunLon: 'Sun longitude',
+    phases: ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous', 'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'], age: 'Age', illum: 'Illuminated', days: 'd',
+    lSeas: 'Seas & ocean', lCraters: 'Craters', lTerrain: 'Mountains, valleys, rilles', lSmall: 'Small features', showSites: 'Landing sites', grid: 'Lat/lon grid', color: 'Color', cGray: 'Gray', cNat: 'Natural', cVivid: 'Enhanced',
+    exag: 'Terrain exaggeration', loading: 'Loading the Moon…', diam: 'Diameter', type: 'Type', origin: 'Name origin', usgs: 'USGS Gazetteer', crew: 'Crew', landed: 'Landed', close: 'Close', noResult: 'No match',
+    help: 'Drag to rotate · wheel/pinch to zoom · right-drag or two-finger up/down to tilt · double-tap to fly closer',
+    credit: 'Maps: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Names: USGS / IAU Gazetteer of Planetary Nomenclature',
+    T: { OC: 'Ocean', ME: 'Sea', LC: 'Lake', SI: 'Bay', PA: 'Marsh', PL: 'Plain', AA: 'Crater', SF: 'Satellite crater', MO: 'Mountain', DO: 'Wrinkle ridge', RI: 'Rille', CA: 'Crater chain', VA: 'Valley', PR: 'Cape', RU: 'Scarp', LF: 'Landing-site feature', AL: 'Albedo feature', ST: 'Landing site' },
+    C: { su: 'USSR', us: 'USA', cn: 'China', in: 'India', jp: 'Japan' },
+    G: { firstSoft: 'First soft landing on the Moon', crewed: 'Crewed landing', firstCrewed: 'First humans on the Moon', lastCrewed: 'Last crewed landing (so far)', rover: 'Rover', sample: 'Returned samples to Earth', farFirst: 'First landing on the far side', farSample: 'First samples from the far side', southPole: 'Landed near the south pole', commercial: 'Commercial lander', pinpoint: 'Pinpoint landing within 100 m', tipped: 'Operated after tipping over', robot: 'Robotic lander' },
+  },
+  ja: {
+    title: '月探検', sub: '実際の探査データで作った3Dの月', search: 'クレーター・海・着陸地を探す', sites: '着陸地', settings: '設定', home: '表側', far: '裏側',
+    north: '北を上に', tilt: '傾ける', measure: '距離を測る', measureHint: '2か所をタップして距離を測ります', dist: '距離', elev: '高さ', lat: '緯度', lon: '経度', alt: 'カメラ高度',
+    sunToday: '今夜の月', sunDrama: '影を強調', sunFlat: '均一な光', sunHand: '太陽を動かす', sunLon: '太陽経度',
+    phases: ['新月', '三日月', '上弦', '十三夜', '満月', '寝待月', '下弦', '有明月'], age: '月齢', illum: '輝面比', days: '日',
+    lSeas: '海・大洋', lCraters: 'クレーター', lTerrain: '山・谷・谷溝', lSmall: '小さな地形', showSites: '着陸地', grid: '経緯線', color: '色', cGray: 'グレー', cNat: '自然色', cVivid: '色強調',
+    exag: '地形の誇張', loading: '月の地図を読み込み中…', diam: '直径', type: '種類', origin: '名前の由来', usgs: 'USGS 地名辞典', crew: '乗員', landed: '着陸', close: '閉じる', noResult: '見つかりません',
+    help: 'ドラッグで回転 · ホイール/ピンチで拡大 · 右ドラッグ/2本指上下で傾ける · ダブルタップで近づく',
+    credit: '地図: NASA/GSFC 科学可視化スタジオ (LRO LROC・LOLA) · 地名: USGS・IAU 惑星地名辞典',
+    T: { OC: '大洋', ME: '海', LC: '湖', SI: '湾', PA: '沼', PL: '平原', AA: 'クレーター', SF: '衛星クレーター', MO: '山', DO: 'しわ尾根', RI: '谷溝', CA: 'クレーター列', VA: '谷', PR: '岬', RU: '断崖', LF: '着陸地点の地形', AL: 'アルベド模様', ST: '着陸地点' },
+    C: { su: 'ソ連', us: 'アメリカ', cn: '中国', in: 'インド', jp: '日本' },
+    G: { firstSoft: '初の月面軟着陸', crewed: '有人着陸', firstCrewed: '人類初の月面着陸', lastCrewed: '最後の有人着陸 (現在まで)', rover: '月面車', sample: 'サンプルを地球へ持ち帰り', farFirst: '初の月の裏側着陸', farSample: '初の裏側サンプル回収', southPole: '南極付近に着陸', commercial: '民間着陸機', pinpoint: '目標100m以内のピンポイント着陸', tipped: '横倒しのまま運用', robot: '無人着陸機' },
+  },
+  zh: {
+    title: '月球探索', sub: '用真实探测数据构建的三维月球', search: '查找环形山、月海、着陆点', sites: '着陆点', settings: '设置', home: '正面', far: '背面',
+    north: '北朝上', tilt: '倾斜', measure: '测距', measureHint: '点两处测量距离', dist: '距离', elev: '高程', lat: '纬度', lon: '经度', alt: '相机高度',
+    sunToday: '今晚的月亮', sunDrama: '强调阴影', sunFlat: '均匀照明', sunHand: '移动太阳', sunLon: '太阳经度',
+    phases: ['新月', '蛾眉月', '上弦月', '盈凸月', '满月', '亏凸月', '下弦月', '残月'], age: '月龄', illum: '照亮比例', days: '天',
+    lSeas: '月海·大洋', lCraters: '环形山', lTerrain: '山·谷·月溪', lSmall: '小地形', showSites: '着陆点', grid: '经纬网', color: '颜色', cGray: '灰色', cNat: '自然色', cVivid: '增强色',
+    exag: '地形夸张', loading: '正在加载月球地图…', diam: '直径', type: '类型', origin: '名称由来', usgs: 'USGS 地名词典', crew: '航天员', landed: '着陆', close: '关闭', noResult: '没有找到',
+    help: '拖动旋转 · 滚轮/双指缩放 · 右键拖动/双指上下倾斜 · 双击飞近',
+    credit: '地图: NASA/GSFC 科学可视化工作室 (LRO LROC、LOLA) · 地名: USGS·IAU 行星地名词典',
+    T: { OC: '洋', ME: '海', LC: '湖', SI: '湾', PA: '沼', PL: '平原', AA: '环形山', SF: '卫星坑', MO: '山', DO: '皱脊', RI: '月溪', CA: '坑链', VA: '谷', PR: '岬', RU: '峭壁', LF: '着陆区地标', AL: '反照率特征', ST: '着陆点' },
+    C: { su: '苏联', us: '美国', cn: '中国', in: '印度', jp: '日本' },
+    G: { firstSoft: '首次月面软着陆', crewed: '载人着陆', firstCrewed: '人类首次登月', lastCrewed: '最后一次载人着陆 (至今)', rover: '月球车', sample: '采样返回地球', farFirst: '首次在月球背面着陆', farSample: '首次月背采样返回', southPole: '在南极附近着陆', commercial: '商业着陆器', pinpoint: '目标100米内精确着陆', tipped: '倾倒后继续工作', robot: '无人着陆器' },
+  },
+  es: {
+    title: 'Explorador lunar', sub: 'Una Luna 3D hecha con datos reales de misiones', search: 'Buscar cráteres, mares, alunizajes', sites: 'Alunizajes', settings: 'Ajustes', home: 'Cara visible', far: 'Cara oculta',
+    north: 'Norte arriba', tilt: 'Inclinar', measure: 'Medir', measureHint: 'Toca dos lugares para medir la distancia', dist: 'Distancia', elev: 'Altura', lat: 'Lat', lon: 'Lon', alt: 'Altitud de cámara',
+    sunToday: 'La Luna de hoy', sunDrama: 'Sombras marcadas', sunFlat: 'Luz uniforme', sunHand: 'Mover el Sol', sunLon: 'Longitud del Sol',
+    phases: ['Luna nueva', 'Creciente', 'Cuarto creciente', 'Gibosa creciente', 'Luna llena', 'Gibosa menguante', 'Cuarto menguante', 'Menguante'], age: 'Edad', illum: 'Iluminada', days: 'd',
+    lSeas: 'Mares y océano', lCraters: 'Cráteres', lTerrain: 'Montes, valles, surcos', lSmall: 'Detalles pequeños', showSites: 'Alunizajes', grid: 'Cuadrícula', color: 'Color', cGray: 'Gris', cNat: 'Natural', cVivid: 'Realzado',
+    exag: 'Exagerar relieve', loading: 'Cargando la Luna…', diam: 'Diámetro', type: 'Tipo', origin: 'Origen del nombre', usgs: 'Nomenclátor USGS', crew: 'Tripulación', landed: 'Alunizaje', close: 'Cerrar', noResult: 'Sin resultados',
+    help: 'Arrastra para girar · rueda/pellizco para acercar · clic derecho o dos dedos arriba/abajo para inclinar · doble toque para acercarte',
+    credit: 'Mapas: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Nombres: USGS / IAU',
+    T: { OC: 'Océano', ME: 'Mar', LC: 'Lago', SI: 'Bahía', PA: 'Pantano', PL: 'Llanura', AA: 'Cráter', SF: 'Cráter satélite', MO: 'Monte', DO: 'Dorsal', RI: 'Surco', CA: 'Cadena de cráteres', VA: 'Valle', PR: 'Cabo', RU: 'Escarpe', LF: 'Rasgo del sitio de alunizaje', AL: 'Rasgo de albedo', ST: 'Sitio de alunizaje' },
+    C: { su: 'URSS', us: 'EE. UU.', cn: 'China', in: 'India', jp: 'Japón' },
+    G: { firstSoft: 'Primer alunizaje suave', crewed: 'Alunizaje tripulado', firstCrewed: 'Primeros humanos en la Luna', lastCrewed: 'Último alunizaje tripulado (hasta hoy)', rover: 'Vehículo explorador', sample: 'Trajo muestras a la Tierra', farFirst: 'Primer alunizaje en la cara oculta', farSample: 'Primeras muestras de la cara oculta', southPole: 'Cerca del polo sur', commercial: 'Módulo comercial', pinpoint: 'Alunizaje de precisión (<100 m)', tipped: 'Funcionó tras volcarse', robot: 'Módulo robótico' },
+  },
+  fr: {
+    title: 'Explorateur lunaire', sub: 'Une Lune en 3D issue de vraies données de mission', search: 'Chercher cratères, mers, sites', sites: 'Sites d\'alunissage', settings: 'Réglages', home: 'Face visible', far: 'Face cachée',
+    north: 'Nord en haut', tilt: 'Incliner', measure: 'Mesurer', measureHint: 'Touchez deux endroits pour mesurer', dist: 'Distance', elev: 'Altitude', lat: 'Lat', lon: 'Lon', alt: 'Altitude caméra',
+    sunToday: 'La Lune ce soir', sunDrama: 'Ombres marquées', sunFlat: 'Lumière égale', sunHand: 'Déplacer le Soleil', sunLon: 'Longitude du Soleil',
+    phases: ['Nouvelle lune', 'Premier croissant', 'Premier quartier', 'Gibbeuse croissante', 'Pleine lune', 'Gibbeuse décroissante', 'Dernier quartier', 'Dernier croissant'], age: 'Âge', illum: 'Éclairée', days: 'j',
+    lSeas: 'Mers et océan', lCraters: 'Cratères', lTerrain: 'Monts, vallées, rainures', lSmall: 'Petits reliefs', showSites: 'Sites d\'alunissage', grid: 'Grille', color: 'Couleur', cGray: 'Gris', cNat: 'Naturelle', cVivid: 'Accentuée',
+    exag: 'Exagération du relief', loading: 'Chargement de la Lune…', diam: 'Diamètre', type: 'Type', origin: 'Origine du nom', usgs: 'Gazetteer USGS', crew: 'Équipage', landed: 'Alunissage', close: 'Fermer', noResult: 'Aucun résultat',
+    help: 'Glisser pour tourner · molette/pincer pour zoomer · clic droit ou deux doigts haut/bas pour incliner · double appui pour s\'approcher',
+    credit: 'Cartes : NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Noms : USGS / UAI',
+    T: { OC: 'Océan', ME: 'Mer', LC: 'Lac', SI: 'Baie', PA: 'Marais', PL: 'Plaine', AA: 'Cratère', SF: 'Cratère satellite', MO: 'Mont', DO: 'Dorsale', RI: 'Rainure', CA: 'Chaîne de cratères', VA: 'Vallée', PR: 'Cap', RU: 'Escarpement', LF: 'Repère du site', AL: 'Tache d\'albédo', ST: 'Site d\'alunissage' },
+    C: { su: 'URSS', us: 'États-Unis', cn: 'Chine', in: 'Inde', jp: 'Japon' },
+    G: { firstSoft: 'Premier alunissage en douceur', crewed: 'Alunissage habité', firstCrewed: 'Premiers humains sur la Lune', lastCrewed: 'Dernier alunissage habité (à ce jour)', rover: 'Rover', sample: 'Échantillons rapportés sur Terre', farFirst: 'Premier alunissage sur la face cachée', farSample: 'Premiers échantillons de la face cachée', southPole: 'Près du pôle Sud', commercial: 'Atterrisseur commercial', pinpoint: 'Alunissage de précision (<100 m)', tipped: 'A fonctionné couché sur le flanc', robot: 'Atterrisseur robotique' },
+  },
+  de: {
+    title: 'Mond-Entdecker', sub: 'Ein 3D-Mond aus echten Missionsdaten', search: 'Krater, Meere, Landestellen suchen', sites: 'Landestellen', settings: 'Einstellungen', home: 'Vorderseite', far: 'Rückseite',
+    north: 'Norden oben', tilt: 'Neigen', measure: 'Messen', measureHint: 'Zwei Orte antippen, um die Entfernung zu messen', dist: 'Entfernung', elev: 'Höhe', lat: 'Breite', lon: 'Länge', alt: 'Kamerahöhe',
+    sunToday: 'Der Mond heute', sunDrama: 'Lange Schatten', sunFlat: 'Gleichmäßiges Licht', sunHand: 'Sonne bewegen', sunLon: 'Sonnenlänge',
+    phases: ['Neumond', 'Zunehmende Sichel', 'Erstes Viertel', 'Zunehmender Mond', 'Vollmond', 'Abnehmender Mond', 'Letztes Viertel', 'Abnehmende Sichel'], age: 'Alter', illum: 'Beleuchtet', days: 'T',
+    lSeas: 'Meere & Ozean', lCraters: 'Krater', lTerrain: 'Berge, Täler, Rillen', lSmall: 'Kleine Formen', showSites: 'Landestellen', grid: 'Gradnetz', color: 'Farbe', cGray: 'Grau', cNat: 'Natürlich', cVivid: 'Verstärkt',
+    exag: 'Relief überhöhen', loading: 'Mond wird geladen…', diam: 'Durchmesser', type: 'Art', origin: 'Namensherkunft', usgs: 'USGS-Ortsnamenverzeichnis', crew: 'Besatzung', landed: 'Landung', close: 'Schließen', noResult: 'Nichts gefunden',
+    help: 'Ziehen zum Drehen · Mausrad/Spreizen zum Zoomen · Rechtsziehen oder zwei Finger hoch/runter zum Neigen · Doppeltippen zum Heranfliegen',
+    credit: 'Karten: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Namen: USGS / IAU',
+    T: { OC: 'Ozean', ME: 'Meer', LC: 'See', SI: 'Bucht', PA: 'Sumpf', PL: 'Ebene', AA: 'Krater', SF: 'Nebenkrater', MO: 'Berg', DO: 'Rücken', RI: 'Rille', CA: 'Kraterkette', VA: 'Tal', PR: 'Kap', RU: 'Steilhang', LF: 'Landestellen-Merkmal', AL: 'Albedo-Merkmal', ST: 'Landestelle' },
+    C: { su: 'UdSSR', us: 'USA', cn: 'China', in: 'Indien', jp: 'Japan' },
+    G: { firstSoft: 'Erste weiche Mondlandung', crewed: 'Bemannte Landung', firstCrewed: 'Erste Menschen auf dem Mond', lastCrewed: 'Letzte bemannte Landung (bisher)', rover: 'Rover', sample: 'Proben zur Erde gebracht', farFirst: 'Erste Landung auf der Rückseite', farSample: 'Erste Proben von der Rückseite', southPole: 'Nahe dem Südpol gelandet', commercial: 'Kommerzieller Lander', pinpoint: 'Punktlandung (<100 m)', tipped: 'Umgekippt weiter betrieben', robot: 'Robotischer Lander' },
+  },
+  pt: {
+    title: 'Explorador da Lua', sub: 'Uma Lua 3D feita com dados reais de missões', search: 'Buscar crateras, mares, pousos', sites: 'Locais de pouso', settings: 'Ajustes', home: 'Lado visível', far: 'Lado oculto',
+    north: 'Norte para cima', tilt: 'Inclinar', measure: 'Medir', measureHint: 'Toque em dois lugares para medir', dist: 'Distância', elev: 'Altitude', lat: 'Lat', lon: 'Lon', alt: 'Altitude da câmera',
+    sunToday: 'A Lua de hoje', sunDrama: 'Sombras fortes', sunFlat: 'Luz uniforme', sunHand: 'Mover o Sol', sunLon: 'Longitude do Sol',
+    phases: ['Lua nova', 'Crescente', 'Quarto crescente', 'Gibosa crescente', 'Lua cheia', 'Gibosa minguante', 'Quarto minguante', 'Minguante'], age: 'Idade', illum: 'Iluminada', days: 'd',
+    lSeas: 'Mares e oceano', lCraters: 'Crateras', lTerrain: 'Montes, vales, sulcos', lSmall: 'Detalhes pequenos', showSites: 'Locais de pouso', grid: 'Grade', color: 'Cor', cGray: 'Cinza', cNat: 'Natural', cVivid: 'Realçada',
+    exag: 'Exagerar relevo', loading: 'Carregando a Lua…', diam: 'Diâmetro', type: 'Tipo', origin: 'Origem do nome', usgs: 'Gazetteer USGS', crew: 'Tripulação', landed: 'Pouso', close: 'Fechar', noResult: 'Nada encontrado',
+    help: 'Arraste para girar · roda/pinça para ampliar · botão direito ou dois dedos para cima/baixo para inclinar · toque duplo para aproximar',
+    credit: 'Mapas: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Nomes: USGS / IAU',
+    T: { OC: 'Oceano', ME: 'Mar', LC: 'Lago', SI: 'Baía', PA: 'Pântano', PL: 'Planície', AA: 'Cratera', SF: 'Cratera satélite', MO: 'Monte', DO: 'Dorsal', RI: 'Sulco', CA: 'Cadeia de crateras', VA: 'Vale', PR: 'Cabo', RU: 'Escarpa', LF: 'Marco do local de pouso', AL: 'Feição de albedo', ST: 'Local de pouso' },
+    C: { su: 'URSS', us: 'EUA', cn: 'China', in: 'Índia', jp: 'Japão' },
+    G: { firstSoft: 'Primeiro pouso suave na Lua', crewed: 'Pouso tripulado', firstCrewed: 'Primeiros humanos na Lua', lastCrewed: 'Último pouso tripulado (até agora)', rover: 'Veículo lunar', sample: 'Trouxe amostras à Terra', farFirst: 'Primeiro pouso no lado oculto', farSample: 'Primeiras amostras do lado oculto', southPole: 'Perto do polo sul', commercial: 'Módulo comercial', pinpoint: 'Pouso de precisão (<100 m)', tipped: 'Operou tombado', robot: 'Módulo robótico' },
+  },
+  ru: {
+    title: 'Исследователь Луны', sub: 'Трёхмерная Луна по данным реальных миссий', search: 'Найти кратер, море, место посадки', sites: 'Места посадок', settings: 'Настройки', home: 'Видимая сторона', far: 'Обратная сторона',
+    north: 'Север вверху', tilt: 'Наклон', measure: 'Измерить', measureHint: 'Нажмите две точки, чтобы измерить расстояние', dist: 'Расстояние', elev: 'Высота', lat: 'Шир.', lon: 'Долг.', alt: 'Высота камеры',
+    sunToday: 'Луна сегодня', sunDrama: 'Длинные тени', sunFlat: 'Ровный свет', sunHand: 'Двигать Солнце', sunLon: 'Долгота Солнца',
+    phases: ['Новолуние', 'Молодая луна', 'Первая четверть', 'Растущая луна', 'Полнолуние', 'Убывающая луна', 'Последняя четверть', 'Старая луна'], age: 'Возраст', illum: 'Освещено', days: 'дн.',
+    lSeas: 'Моря и океан', lCraters: 'Кратеры', lTerrain: 'Горы, долины, борозды', lSmall: 'Мелкие детали', showSites: 'Места посадок', grid: 'Сетка', color: 'Цвет', cGray: 'Серый', cNat: 'Естественный', cVivid: 'Усиленный',
+    exag: 'Усиление рельефа', loading: 'Загрузка Луны…', diam: 'Диаметр', type: 'Тип', origin: 'Происхождение названия', usgs: 'Справочник USGS', crew: 'Экипаж', landed: 'Посадка', close: 'Закрыть', noResult: 'Ничего не найдено',
+    help: 'Тяните — вращение · колесо/щипок — масштаб · правая кнопка или два пальца вверх/вниз — наклон · двойное касание — приблизиться',
+    credit: 'Карты: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Названия: USGS / МАС',
+    T: { OC: 'Океан', ME: 'Море', LC: 'Озеро', SI: 'Залив', PA: 'Болото', PL: 'Равнина', AA: 'Кратер', SF: 'Кратер-спутник', MO: 'Гора', DO: 'Гряда', RI: 'Борозда', CA: 'Цепочка кратеров', VA: 'Долина', PR: 'Мыс', RU: 'Уступ', LF: 'Ориентир места посадки', AL: 'Альбедная деталь', ST: 'Место посадки' },
+    C: { su: 'СССР', us: 'США', cn: 'Китай', in: 'Индия', jp: 'Япония' },
+    G: { firstSoft: 'Первая мягкая посадка на Луну', crewed: 'Пилотируемая посадка', firstCrewed: 'Первые люди на Луне', lastCrewed: 'Последняя пилотируемая посадка (пока)', rover: 'Луноход', sample: 'Доставил грунт на Землю', farFirst: 'Первая посадка на обратной стороне', farSample: 'Первый грунт с обратной стороны', southPole: 'Посадка у южного полюса', commercial: 'Частный посадочный модуль', pinpoint: 'Точная посадка (<100 м)', tipped: 'Работал, опрокинувшись', robot: 'Автоматическая станция' },
+  },
+  vi: {
+    title: 'Khám phá Mặt Trăng', sub: 'Mặt Trăng 3D dựng từ dữ liệu thám hiểm thật', search: 'Tìm hố, biển, nơi hạ cánh', sites: 'Nơi hạ cánh', settings: 'Cài đặt', home: 'Mặt gần', far: 'Mặt xa',
+    north: 'Hướng bắc lên trên', tilt: 'Nghiêng', measure: 'Đo', measureHint: 'Chạm hai điểm để đo khoảng cách', dist: 'Khoảng cách', elev: 'Độ cao', lat: 'Vĩ độ', lon: 'Kinh độ', alt: 'Độ cao máy ảnh',
+    sunToday: 'Trăng hôm nay', sunDrama: 'Bóng đổ rõ', sunFlat: 'Sáng đều', sunHand: 'Di chuyển Mặt Trời', sunLon: 'Kinh độ Mặt Trời',
+    phases: ['Trăng non', 'Trăng lưỡi liềm đầu', 'Thượng huyền', 'Trăng khuyết đầu', 'Trăng tròn', 'Trăng khuyết cuối', 'Hạ huyền', 'Trăng lưỡi liềm cuối'], age: 'Tuổi trăng', illum: 'Phần sáng', days: 'ngày',
+    lSeas: 'Biển và đại dương', lCraters: 'Hố va chạm', lTerrain: 'Núi, thung lũng, rãnh', lSmall: 'Địa hình nhỏ', showSites: 'Nơi hạ cánh', grid: 'Lưới kinh vĩ', color: 'Màu', cGray: 'Xám', cNat: 'Tự nhiên', cVivid: 'Tăng màu',
+    exag: 'Phóng đại địa hình', loading: 'Đang tải Mặt Trăng…', diam: 'Đường kính', type: 'Loại', origin: 'Nguồn gốc tên', usgs: 'Từ điển địa danh USGS', crew: 'Phi hành đoàn', landed: 'Hạ cánh', close: 'Đóng', noResult: 'Không tìm thấy',
+    help: 'Kéo để xoay · cuộn/chụm để phóng to · kéo chuột phải hoặc hai ngón lên/xuống để nghiêng · chạm hai lần để bay lại gần',
+    credit: 'Bản đồ: NASA/GSFC Scientific Visualization Studio (LRO LROC, LOLA) · Địa danh: USGS / IAU',
+    T: { OC: 'Đại dương', ME: 'Biển', LC: 'Hồ', SI: 'Vịnh', PA: 'Đầm', PL: 'Đồng bằng', AA: 'Hố va chạm', SF: 'Hố vệ tinh', MO: 'Núi', DO: 'Gờ nếp nhăn', RI: 'Rãnh', CA: 'Chuỗi hố', VA: 'Thung lũng', PR: 'Mũi đất', RU: 'Vách đá', LF: 'Mốc nơi hạ cánh', AL: 'Vệt sáng', ST: 'Nơi hạ cánh' },
+    C: { su: 'Liên Xô', us: 'Hoa Kỳ', cn: 'Trung Quốc', in: 'Ấn Độ', jp: 'Nhật Bản' },
+    G: { firstSoft: 'Hạ cánh mềm đầu tiên lên Mặt Trăng', crewed: 'Hạ cánh có người', firstCrewed: 'Con người đầu tiên lên Mặt Trăng', lastCrewed: 'Lần hạ cánh có người cuối cùng (đến nay)', rover: 'Xe tự hành', sample: 'Mang mẫu về Trái Đất', farFirst: 'Hạ cánh đầu tiên ở mặt xa', farSample: 'Mẫu đầu tiên từ mặt xa', southPole: 'Gần cực nam', commercial: 'Tàu đổ bộ thương mại', pinpoint: 'Hạ cánh chính xác (<100 m)', tipped: 'Hoạt động khi bị lật nghiêng', robot: 'Tàu đổ bộ tự động' },
+  },
+};
+TX['zh-TW'] = Object.assign({}, TX.zh, {
+  title: '月球探索', sub: '用真實探測資料打造的三維月球', search: '搜尋撞擊坑、月海、著陸點', sites: '著陸點', settings: '設定', far: '背面', north: '北朝上', tilt: '傾斜', measure: '測距', measureHint: '點兩處測量距離',
+  elev: '高程', lat: '緯度', lon: '經度', alt: '相機高度', sunToday: '今晚的月亮', sunDrama: '強調陰影', sunFlat: '均勻照明', sunHand: '移動太陽', sunLon: '太陽經度',
+  phases: ['新月', '眉月', '上弦月', '盈凸月', '滿月', '虧凸月', '下弦月', '殘月'], illum: '照亮比例',
+  lSeas: '月海·大洋', lCraters: '撞擊坑', lTerrain: '山·谷·月溪', lSmall: '小地形', showSites: '著陸點', grid: '經緯網', color: '顏色', cNat: '自然色', cVivid: '增強色',
+  exag: '地形誇張', loading: '正在載入月球地圖…', type: '類型', origin: '名稱由來', usgs: 'USGS 地名辭典', crew: '太空人', landed: '著陸', close: '關閉', noResult: '找不到',
+  help: '拖曳旋轉 · 滾輪/雙指縮放 · 右鍵拖曳/雙指上下傾斜 · 雙擊飛近',
+  credit: '地圖: NASA/GSFC 科學視覺化工作室 (LRO LROC、LOLA) · 地名: USGS·IAU 行星地名辭典',
+  T: Object.assign({}, TX.zh.T, { AA: '撞擊坑', SF: '衛星坑', DO: '皺脊', CA: '坑鏈', RU: '峭壁', LF: '著陸區地標', AL: '反照率特徵', ST: '著陸點' }),
+  C: { su: '蘇聯', us: '美國', cn: '中國', in: '印度', jp: '日本' },
+  G: { firstSoft: '首次月面軟著陸', crewed: '載人著陸', firstCrewed: '人類首次登月', lastCrewed: '最後一次載人著陸 (至今)', rover: '月球車', sample: '採樣返回地球', farFirst: '首次在月球背面著陸', farSample: '首次月背採樣返回', southPole: '在南極附近著陸', commercial: '商業著陸器', pinpoint: '目標100公尺內精確著陸', tipped: '傾倒後繼續運作', robot: '無人著陸器' },
+});
+const T = Object.assign({}, TX.en, TX[LANG] || {});
+// 바다·대양 등 큰 지형의 우리말 이름 (라틴 이름은 그대로 두고 옆에 붙인다)
+const COMMON = {
+  'Oceanus Procellarum': { ko: '폭풍의 대양', ja: '嵐の大洋', zh: '风暴洋', 'zh-TW': '風暴洋', en: 'Ocean of Storms' },
+  'Mare Tranquillitatis': { ko: '고요의 바다', ja: '静かの海', zh: '静海', 'zh-TW': '靜海', en: 'Sea of Tranquility' },
+  'Mare Serenitatis': { ko: '맑음의 바다', ja: '晴れの海', zh: '澄海', 'zh-TW': '澄海', en: 'Sea of Serenity' },
+  'Mare Imbrium': { ko: '비의 바다', ja: '雨の海', zh: '雨海', 'zh-TW': '雨海', en: 'Sea of Showers' },
+  'Mare Crisium': { ko: '위난의 바다', ja: '危機の海', zh: '危海', 'zh-TW': '危海', en: 'Sea of Crises' },
+  'Mare Fecunditatis': { ko: '풍요의 바다', ja: '豊かの海', zh: '丰富海', 'zh-TW': '豐富海', en: 'Sea of Fertility' },
+  'Mare Nectaris': { ko: '신주의 바다', ja: '神酒の海', zh: '酒海', 'zh-TW': '酒海', en: 'Sea of Nectar' },
+  'Mare Nubium': { ko: '구름의 바다', ja: '雲の海', zh: '云海', 'zh-TW': '雲海', en: 'Sea of Clouds' },
+  'Mare Humorum': { ko: '습기의 바다', ja: '湿りの海', zh: '湿海', 'zh-TW': '濕海', en: 'Sea of Moisture' },
+  'Mare Frigoris': { ko: '추위의 바다', ja: '氷の海', zh: '冷海', 'zh-TW': '冷海', en: 'Sea of Cold' },
+  'Mare Vaporum': { ko: '증기의 바다', ja: '蒸気の海', zh: '汽海', 'zh-TW': '汽海', en: 'Sea of Vapors' },
+  'Mare Cognitum': { ko: '알려진 바다', ja: '既知の海', zh: '知海', 'zh-TW': '知海', en: 'Sea that has become known' },
+  'Mare Insularum': { ko: '섬의 바다', ja: '島の海', zh: '岛海', 'zh-TW': '島海', en: 'Sea of Islands' },
+  'Mare Moscoviense': { ko: '모스크바의 바다', ja: 'モスクワの海', zh: '莫斯科海', 'zh-TW': '莫斯科海', en: 'Sea of Moscow' },
+  'Mare Orientale': { ko: '동쪽 바다', ja: '東の海', zh: '东海', 'zh-TW': '東海', en: 'Eastern Sea' },
+  'Mare Smythii': { ko: '스미스의 바다', ja: 'スミス海', zh: '史密斯海', 'zh-TW': '史密斯海', en: 'Smyth\'s Sea' },
+  'Mare Marginis': { ko: '가장자리 바다', ja: '縁の海', zh: '界海', 'zh-TW': '界海', en: 'Sea of the Edge' },
+  'Mare Australe': { ko: '남쪽 바다', ja: '南の海', zh: '南海', 'zh-TW': '南海', en: 'Southern Sea' },
+  'Mare Undarum': { ko: '파도의 바다', ja: '波の海', zh: '浪海', 'zh-TW': '浪海', en: 'Sea of Waves' },
+  'Mare Spumans': { ko: '거품의 바다', ja: '泡の海', zh: '泡沫海', 'zh-TW': '泡沫海', en: 'Foaming Sea' },
+  'Mare Anguis': { ko: '뱀의 바다', ja: '蛇の海', zh: '蛇海', 'zh-TW': '蛇海', en: 'Serpent Sea' },
+  'Mare Ingenii': { ko: '지혜의 바다', ja: '賢者の海', zh: '智海', 'zh-TW': '智海', en: 'Sea of Cleverness' },
+  'Mare Humboldtianum': { ko: '훔볼트의 바다', ja: 'フンボルト海', zh: '洪堡海', 'zh-TW': '洪堡海', en: 'Humboldt\'s Sea' },
+  'Sinus Iridum': { ko: '무지개 만', ja: '虹の入江', zh: '虹湾', 'zh-TW': '虹灣', en: 'Bay of Rainbows' },
+  'Sinus Medii': { ko: '중앙의 만', ja: '中央の入江', zh: '中央湾', 'zh-TW': '中央灣', en: 'Central Bay' },
+  'Sinus Roris': { ko: '이슬의 만', ja: '露の入江', zh: '露湾', 'zh-TW': '露灣', en: 'Bay of Dew' },
+  'Lacus Somniorum': { ko: '꿈의 호수', ja: '夢の湖', zh: '梦湖', 'zh-TW': '夢湖', en: 'Lake of Dreams' },
+  'Palus Putredinis': { ko: '부패의 늪', ja: '腐敗の沼', zh: '腐沼', 'zh-TW': '腐沼', en: 'Marsh of Decay' },
+  'Montes Apenninus': { ko: '아펜니노 산맥', ja: 'アペニン山脈', zh: '亚平宁山脉', 'zh-TW': '亞平寧山脈', en: 'Apennine Mountains' },
+  'Vallis Alpes': { ko: '알프스 계곡', ja: 'アルプス谷', zh: '阿尔卑斯大峡谷', 'zh-TW': '阿爾卑斯大峽谷', en: 'Alpine Valley' },
+};
+const commonName = n => { const c = COMMON[n]; return c ? (c[LANG] || (['es', 'fr', 'de', 'pt', 'ru', 'vi'].includes(LANG) ? null : c.en)) : null; };
+
+// ───────────────────────── 착륙지 (성공한 연착륙) ─────────────────────────
+// 좌표: Wikipedia "List of artificial objects on the Moon"(2026-10 확인), IM-1 은 NASA LRO 사진 위치(80.13°S 1.44°E)로 바로잡음
+// c: 나라, g: 특징(말 목록 G), crew: 달에 내린 승무원, statio: IAU 가 붙인 공식 이름
+const SITES = [
+  { id: 'luna9', name: 'Luna 9', c: 'su', date: '1966-02-03', lat: 7.08, lon: -64.37, g: ['firstSoft', 'robot'] },
+  { id: 'surveyor1', name: 'Surveyor 1', c: 'us', date: '1966-06-02', lat: -2.474, lon: -43.339, g: ['robot'] },
+  { id: 'luna13', name: 'Luna 13', c: 'su', date: '1966-12-24', lat: 18.87, lon: -62.05, g: ['robot'] },
+  { id: 'surveyor3', name: 'Surveyor 3', c: 'us', date: '1967-04-20', lat: -3.015, lon: -23.418, g: ['robot'] },
+  { id: 'surveyor5', name: 'Surveyor 5', c: 'us', date: '1967-09-11', lat: 1.461, lon: 23.195, g: ['robot'] },
+  { id: 'surveyor6', name: 'Surveyor 6', c: 'us', date: '1967-11-10', lat: 0.4743, lon: -1.4275, g: ['robot'] },
+  { id: 'surveyor7', name: 'Surveyor 7', c: 'us', date: '1968-01-10', lat: -40.98, lon: -11.514, g: ['robot'] },
+  { id: 'apollo11', name: 'Apollo 11', sub: 'Eagle', c: 'us', date: '1969-07-20', lat: 0.6741, lon: 23.473, g: ['firstCrewed'], crew: 'Neil Armstrong · Buzz Aldrin', statio: 'Statio Tranquillitatis', crewed: true },
+  { id: 'apollo12', name: 'Apollo 12', sub: 'Intrepid', c: 'us', date: '1969-11-19', lat: -3.0124, lon: -23.4216, g: ['crewed'], crew: 'Pete Conrad · Alan Bean', crewed: true },
+  { id: 'luna16', name: 'Luna 16', c: 'su', date: '1970-09-20', lat: -0.68, lon: 56.3, g: ['sample', 'robot'] },
+  { id: 'luna17', name: 'Luna 17', sub: 'Lunokhod 1', c: 'su', date: '1970-11-17', lat: 38.28, lon: -35.0, g: ['rover', 'robot'] },
+  { id: 'apollo14', name: 'Apollo 14', sub: 'Antares', c: 'us', date: '1971-02-05', lat: -3.6453, lon: -17.4714, g: ['crewed'], crew: 'Alan Shepard · Edgar Mitchell', crewed: true },
+  { id: 'apollo15', name: 'Apollo 15', sub: 'Falcon', c: 'us', date: '1971-07-30', lat: 26.1322, lon: 3.6339, g: ['crewed', 'rover'], crew: 'David Scott · James Irwin', crewed: true },
+  { id: 'luna20', name: 'Luna 20', c: 'su', date: '1972-02-21', lat: 3.57, lon: 56.5, g: ['sample', 'robot'] },
+  { id: 'apollo16', name: 'Apollo 16', sub: 'Orion', c: 'us', date: '1972-04-21', lat: -8.973, lon: 15.5002, g: ['crewed', 'rover'], crew: 'John Young · Charles Duke', crewed: true },
+  { id: 'apollo17', name: 'Apollo 17', sub: 'Challenger', c: 'us', date: '1972-12-11', lat: 20.1908, lon: 30.7717, g: ['lastCrewed', 'rover'], crew: 'Eugene Cernan · Harrison Schmitt', crewed: true },
+  { id: 'luna21', name: 'Luna 21', sub: 'Lunokhod 2', c: 'su', date: '1973-01-15', lat: 25.85, lon: 30.45, g: ['rover', 'robot'] },
+  { id: 'luna24', name: 'Luna 24', c: 'su', date: '1976-08-18', lat: 12.75, lon: 62.2, g: ['sample', 'robot'] },
+  { id: 'change3', name: 'Chang\'e 3', sub: 'Yutu', c: 'cn', date: '2013-12-14', lat: 44.12, lon: -19.51, g: ['rover', 'robot'], statio: 'Guang Han Gong' },
+  { id: 'change4', name: 'Chang\'e 4', sub: 'Yutu-2', c: 'cn', date: '2019-01-03', lat: -45.4561, lon: 177.5885, g: ['farFirst', 'rover'], statio: 'Statio Tianhe' },
+  { id: 'change5', name: 'Chang\'e 5', c: 'cn', date: '2020-12-01', lat: 43.0576, lon: -51.9161, g: ['sample', 'robot'], statio: 'Statio Tianchuan' },
+  { id: 'chandrayaan3', name: 'Chandrayaan-3', sub: 'Vikram · Pragyan', c: 'in', date: '2023-08-23', lat: -69.373, lon: 32.319, g: ['southPole', 'rover'], statio: 'Statio Shiv Shakti' },
+  { id: 'slim', name: 'SLIM', c: 'jp', date: '2024-01-19', lat: -13.316, lon: 25.251, g: ['pinpoint', 'tipped'] },
+  { id: 'im1', name: 'IM-1', sub: 'Odysseus', c: 'us', date: '2024-02-22', lat: -80.13, lon: 1.44, g: ['commercial', 'southPole', 'tipped'] },
+  { id: 'change6', name: 'Chang\'e 6', c: 'cn', date: '2024-06-01', lat: -41.6385, lon: -153.9852, g: ['farSample'], statio: 'Statio Tianjiang' },
+  { id: 'blueghost1', name: 'Blue Ghost 1', c: 'us', date: '2025-03-02', lat: 18.5623, lon: 61.8103, g: ['commercial'] },
+  { id: 'im2', name: 'IM-2', sub: 'Athena', c: 'us', date: '2025-03-06', lat: -84.7906, lon: 29.1957, g: ['commercial', 'southPole', 'tipped'] },
+];
+const FLAG = { su: '#d9453b', us: '#5aa0ff', cn: '#ffb02e', in: '#ff8f3a', jp: '#ff5d7a' };
+
+// ───────────────────────── 3D 달 (WebGL2) — 조각 지도 · 지형 솟음 · 태양 그림자 ─────────────────────────
+// 좌표: 달 중심 원점, km. x = 경도 0 위도 0 (지구 쪽), y = 동경 90, z = 북극
+const R_MOON = 1737.4, D2R = Math.PI / 180;
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const vlen = a => Math.hypot(a[0], a[1], a[2]), norm = a => mul(a, 1 / (vlen(a) || 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function llv(lat, lon, r = 1) { const a = lat * D2R, b = lon * D2R, c = Math.cos(a); return [r * c * Math.cos(b), r * c * Math.sin(b), r * Math.sin(a)]; }
+function vll(v) { const l = vlen(v); return [Math.asin(clamp(v[2] / l, -1, 1)) / D2R, Math.atan2(v[1], v[0]) / D2R]; }
+function enu(lat, lon) { const a = lat * D2R, b = lon * D2R; return { e: [-Math.sin(b), Math.cos(b), 0], n: [-Math.sin(a) * Math.cos(b), -Math.sin(a) * Math.sin(b), Math.cos(a)], u: llv(lat, lon) }; }
+function rotAxis(v, ax, ang) { const c = Math.cos(ang), s = Math.sin(ang), d = dot(ax, v); return add(add(mul(v, c), mul(cross(ax, v), s)), mul(ax, d * (1 - c))); }
+// 큰 원 거리 (km, 기준 구)
+function gcDist(a, b) { const p = llv(a[0], a[1]), q = llv(b[0], b[1]); return Math.atan2(vlen(cross(p, q)), dot(p, q)) * R_MOON; }
+
+// 행렬 (열 우선)
+function perspective(fovy, asp, n, f) { const t = 1 / Math.tan(fovy / 2); return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, 2 * f * n / (n - f), 0]); }
+function lookDir(fwd, up) { const z = mul(fwd, -1), x = norm(cross(up, z)), y = cross(z, x); return new Float32Array([x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, 0, 0, 0, 1]); }
+function mmul(a, b) { const o = new Float32Array(16); for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k]; o[c * 4 + r] = s; } return o; }
+
+const VS = `#version 300 es
+precision highp float; precision highp int;
+in vec2 a_uv; in float a_skirt;
+uniform vec4 u_ll; uniform highp sampler2D u_h; uniform vec4 u_hx; uniform vec4 u_cx;
+uniform float u_exag, u_R, u_skirt; uniform vec3 u_eye; uniform mat4 u_vp;
+out vec2 v_uvc; out vec2 v_ll; out vec3 v_p; out float v_h;
+void main() {
+  float lon = u_ll.x + a_uv.x * u_ll.z, lat = u_ll.y + a_uv.y * u_ll.w;
+  vec3 dir = vec3(cos(lat) * cos(lon), cos(lat) * sin(lon), sin(lat));
+  float h = texture(u_h, (clamp(u_hx.xy + a_uv * u_hx.z, 0.0, 1.0) * u_hx.w + 0.5) / (u_hx.w + 1.0)).r;
+  float r = u_R + h * u_exag - a_skirt * u_skirt;
+  vec3 p = dir * r - u_eye;
+  v_p = p; v_ll = vec2(lon, lat); v_uvc = u_cx.xy + a_uv * u_cx.z; v_h = h * u_exag;
+  gl_Position = u_vp * vec4(p, 1.0);
+}`;
+const FS = `#version 300 es
+precision highp float;
+in vec2 v_uvc; in vec2 v_ll; in vec3 v_p; in float v_h;
+uniform sampler2D u_t, u_tint; uniform highp sampler2D u_h, u_hg; uniform vec3 u_sun; uniform float u_exag, u_tintK, u_grid, u_expo, u_flat, u_gridStep, u_R;
+uniform vec4 u_hb; uniform float u_hn, u_step; uniform int u_steps;
+out vec4 o;
+// 높이 (km): 이 조각의 정밀 높이, 벗어나면 달 전체 높이
+float H(vec2 ll) {
+  vec2 uv = vec2((ll.x - u_hb.x) / u_hb.z, (ll.y - u_hb.y) / u_hb.w);
+  if (uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0) return texture(u_h, (uv * (u_hn - 1.0) + 0.5) / u_hn).r;
+  return texture(u_hg, vec2(ll.x / 6.2831853 + 0.5, 0.5 - ll.y / 3.14159265)).r;
+}
+// 태양 쪽으로 지형을 따라가며 가리는 땅이 있는지 (태양 크기만큼 부드러운 그림자 가장자리)
+float castShadow(vec3 east, vec3 north, vec3 up, float lat, float lon) {
+  float se = dot(u_sun, east), sn = dot(u_sun, north), su = dot(u_sun, up), sh = length(vec2(se, sn));
+  if (sh < 1e-4) return 1.0;
+  vec2 d = vec2(se, sn) / sh; float tanE = su / sh, vis = 1.0, t = u_step, cl = max(cos(lat), 0.02);
+  for (int i = 0; i < 40; i++) {
+    if (i >= u_steps) break;
+    vec2 ll = vec2(lon + d.x * t / (u_R * cl), lat + d.y * t / u_R);
+    float ray = v_h + t * tanE + t * t / (2.0 * u_R), ang = (ray - H(ll) * u_exag) / t;
+    vis = min(vis, clamp(ang / 0.0094 + 0.5, 0.0, 1.0));
+    if (vis <= 0.0) break;
+    t *= 1.2;
+  }
+  return vis;
+}
+void main() {
+  vec2 a = clamp(v_uvc, vec2(0.5 / 512.0), vec2(1.0 - 0.5 / 512.0));
+  float alb = texture(u_t, vec2(a.x * (512.0 / 768.0), a.y)).r;
+  vec2 b = clamp(v_uvc, vec2(0.5 / 256.0), vec2(1.0 - 0.5 / 256.0));
+  float ne = (texture(u_t, vec2((512.0 + b.x * 256.0) / 768.0, b.y * 0.5)).r * 255.0 - 128.0) / 127.0;
+  float nn = (texture(u_t, vec2((512.0 + b.x * 256.0) / 768.0, 0.5 + b.y * 0.5)).r * 255.0 - 128.0) / 127.0;
+  float lon = v_ll.x, lat = v_ll.y, cl = cos(lat), sl = sin(lat), co = cos(lon), so = sin(lon);
+  vec3 up = vec3(cl * co, cl * so, sl), east = vec3(-so, co, 0.0), north = vec3(-sl * co, -sl * so, cl);
+  float nz = sqrt(max(0.0, 1.0 - ne * ne - nn * nn));
+  vec3 N = normalize(east * ne * u_exag + north * nn * u_exag + up * nz);
+  vec3 V = normalize(-v_p);
+  float mu0 = dot(N, u_sun), mu = max(dot(N, V), 0.02);
+  // 달 표면 빛: 람베르트와 로멜-젤리거 (보름달이 평평하게 밝은 까닭) 를 섞고, 지형선(낮밤 경계)은 부드럽게
+  float terminator = smoothstep(-0.03, 0.02, dot(up, u_sun));
+  float lit = mu0 > 0.0 ? mix(mu0, 2.0 * mu0 / (mu0 + mu), 0.55) : 0.0;
+  lit *= terminator;
+  if (lit > 0.0 && u_steps > 0 && u_flat < 0.5) lit *= castShadow(east, north, up, lat, lon);
+  float earth = 0.035 * max(dot(up, vec3(1.0, 0.0, 0.0)), 0.0);     // 지구빛: 밤인 앞면을 희미하게
+  float bounce = 0.03 * terminator * clamp(dot(up, u_sun) * 3.0, 0.0, 1.0);   // 둘레 땅에서 튄 빛: 그늘이 칠흑이 되지 않게
+  float I = mix(lit * u_expo + earth + bounce, 1.15, u_flat);
+  vec3 tint = texture(u_tint, vec2(lon / 6.2831853 + 0.5, 0.5 - lat / 3.14159265)).rgb * 2.0;
+  tint = max(vec3(0.0), vec3(1.0) + (tint - vec3(1.0)) * u_tintK);
+  vec3 c = pow(alb, 2.2) * tint * I;
+  if (u_grid > 0.0) {
+    vec2 d = vec2(lon, lat) / (u_gridStep * 0.01745329);
+    vec2 g = abs(fract(d - 0.5) - 0.5) / max(fwidth(d), vec2(1e-6));
+    float line = 1.0 - min(min(g.x, g.y), 1.0);
+    c = mix(c, vec3(0.35, 0.6, 1.0), line * 0.45 * u_grid);
+  }
+  o = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+}`;
+
+class Globe {
+  constructor(canvas) {
+    this.cv = canvas;
+    const gl = this.gl = canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+    if (!gl) throw new Error('webgl2');
+    const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+    const p = this.prog = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    this.U = {}; for (const n of ['u_hg', 'u_hb', 'u_hn', 'u_step', 'u_steps', 'u_ll', 'u_h', 'u_hx', 'u_cx', 'u_exag', 'u_R', 'u_skirt', 'u_eye', 'u_vp', 'u_t', 'u_tint', 'u_sun', 'u_tintK', 'u_grid', 'u_expo', 'u_flat', 'u_gridStep']) this.U[n] = gl.getUniformLocation(p, n);
+    // 조각 격자 (32×32 칸 + 치마)
+    const N = 32, uv = [], sk = [], idx = [], at = (i, j) => (j + 1) * (N + 3) + (i + 1);
+    for (let j = -1; j <= N + 1; j++) for (let i = -1; i <= N + 1; i++) { uv.push(clamp(i, 0, N) / N, clamp(j, 0, N) / N); sk.push(i < 0 || j < 0 || i > N || j > N ? 1 : 0); }
+    for (let j = -1; j <= N; j++) for (let i = -1; i <= N; i++) { const a = at(i, j), b = at(i + 1, j), c = at(i, j + 1), d = at(i + 1, j + 1); idx.push(a, c, b, b, c, d); }
+    this.nIdx = idx.length;
+    this.vao = gl.createVertexArray(); gl.bindVertexArray(this.vao);
+    const buf = (data, loc, n) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW); const l = gl.getAttribLocation(p, loc); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, n, gl.FLOAT, false, 0, 0); };
+    buf(uv, 'a_uv', 2); buf(sk, 'a_skirt', 1);
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+    gl.bindVertexArray(null);
+    this.tiles = new Map(); this.heights = new Map(); this.queue = new Map(); this.busy = 0; this.frame = 0;
+    this.meta = null; this.base = null; this.onLoad = null;
+    this.opt = { exag: 1, tintK: 1, grid: 0, expo: 1.75, flat: 0, quality: 1, shadow: true, shadowSteps: matchMedia('(pointer: coarse)').matches ? 22 : 32 };
+    this.maxBusy = 6; this.gpuMax = matchMedia('(pointer: coarse)').matches ? 160 : 320;
+  }
+  async init(bases) {
+    for (const b of bases) {
+      try { const r = await fetch(b + 'meta.json', { cache: 'force-cache' }); if (!r.ok) continue; const m = await r.json(); if (m && m.tile) { this.base = b; this.meta = m; break; } } catch (e) { /* 다음 후보 */ }
+    }
+    if (!this.meta) throw new Error('no-data');
+    const gl = this.gl;
+    const tb = await this.bitmap(this.base + 'tint.jpg');
+    this.tintTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, this.tintTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB8, gl.RGB, gl.UNSIGNED_BYTE, tb);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // 뿌리 조각 둘은 먼저 받아 둔다 (언제나 그릴 것이 있게)
+    await Promise.all([0, 1].map(x => Promise.all([this.loadTile(`0/${x}/0`), this.loadHeight(`0/${x}/0`)])));
+    this.loadGlobalHeight();
+  }
+  // 달 전체 높이 (그림자용) — 화면을 먼저 띄우고 뒤이어 받는다
+  async loadGlobalHeight() {
+    try {
+      const gl = this.gl;
+      const hb = await this.bitmap(this.base + 'hg.png'), oc = new OffscreenCanvas(hb.width, hb.height), c2 = oc.getContext('2d', { willReadFrequently: true }); c2.drawImage(hb, 0, 0);
+      const px = c2.getImageData(0, 0, hb.width, hb.height).data, hg = new Float32Array(hb.width * hb.height); for (let i = 0; i < hg.length; i++) hg[i] = ((px[i * 4] * 256 + px[i * 4 + 1]) - 20000) * 0.0005;
+      this.hgTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, this.hgTex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, hb.width, hb.height, 0, gl.RED, gl.FLOAT, hg);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this.onLoad && this.onLoad();
+    } catch (e) { /* 그림자 없이 */ }
+  }
+  async bitmap(url) {
+    const r = await fetch(url); if (!r.ok) throw new Error(url);
+    const bl = await r.blob(); return createImageBitmap(bl, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  }
+  key(L, x, y) { return `${L}/${x}/${y}`; }
+  async loadTile(k) {
+    const t = { state: 'loading', used: this.frame }; this.tiles.set(k, t);
+    try {
+      const [L, x, y] = k.split('/'); const bm = await this.bitmap(`${this.base}t/${L}/${x}_${y}.jpg`); const gl = this.gl;
+      const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, gl.RED, gl.UNSIGNED_BYTE, bm); bm.close && bm.close();
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      t.tex = tex; t.state = 'ready';
+    } catch (e) { t.state = 'error'; }
+    this.onLoad && this.onLoad();
+  }
+  async loadHeight(k) {
+    const t = { state: 'loading', used: this.frame }; this.heights.set(k, t);
+    try {
+      const [L, x, y] = k.split('/'); const bm = await this.bitmap(`${this.base}h/${L}/${x}_${y}.png`);
+      const n = this.meta.hgrid, oc = new OffscreenCanvas(n, n), c2 = oc.getContext('2d', { willReadFrequently: true }); c2.drawImage(bm, 0, 0); const px = c2.getImageData(0, 0, n, n).data;
+      const h = new Float32Array(n * n); for (let i = 0; i < n * n; i++) h[i] = ((px[i * 4] * 256 + px[i * 4 + 1]) - 20000) * 0.0005;   // km
+      const gl = this.gl, tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, n, n, 0, gl.RED, gl.FLOAT, h);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      t.h = h; t.tex = tex; t.state = 'ready';
+    } catch (e) { t.state = 'error'; }
+    this.onLoad && this.onLoad();
+  }
+  // 조각 범위 (도)
+  bounds(L, x, y) { const nx = 2 ** (L + 1), ny = 2 ** L, dl = 360 / nx, dp = 180 / ny; return { lon0: -180 + x * dl, lat0: 90 - y * dp, dl, dp }; }
+  // 그 자리의 높이 (km): 받아 둔 가장 깊은 높이 조각에서
+  elevAt(lat, lon) {
+    const hm = this.meta ? this.meta.hmax : 0, n = this.meta ? this.meta.hgrid : 129;
+    for (let L = hm; L >= 0; L--) {
+      const nx = 2 ** (L + 1), ny = 2 ** L, fx = (lon + 180) / 360 * nx, fy = (90 - lat) / 180 * ny;
+      const x = Math.min(nx - 1, Math.floor(fx)), y = Math.min(ny - 1, Math.floor(fy)), t = this.heights.get(this.key(L, x, y));
+      if (!t || t.state !== 'ready') continue;
+      const gx = (fx - x) * (n - 1), gy = (fy - y) * (n - 1), i = Math.min(n - 2, Math.floor(gx)), j = Math.min(n - 2, Math.floor(gy)), u = gx - i, v = gy - j, h = t.h;
+      return (h[j * n + i] * (1 - u) + h[j * n + i + 1] * u) * (1 - v) + (h[(j + 1) * n + i] * (1 - u) + h[(j + 1) * n + i + 1] * u) * v;
+    }
+    return 0;
+  }
+  want(map, k, pr, kind) { const q = this.queue.get(kind + k); if (!q || q.pr > pr) this.queue.set(kind + k, { k, pr, kind }); }
+  pump() {
+    if (this.busy >= this.maxBusy || !this.queue.size) return;
+    const list = [...this.queue.values()].sort((a, b) => a.pr - b.pr); this.queue.clear();
+    for (const q of list) {
+      if (this.busy >= this.maxBusy) break;
+      const m = q.kind === 'h' ? this.heights : this.tiles; if (m.has(q.k)) continue;
+      this.busy++; (q.kind === 'h' ? this.loadHeight(q.k) : this.loadTile(q.k)).finally(() => { this.busy--; this.pump(); });
+    }
+  }
+  // 오래 안 쓴 조각 버리기
+  evict() {
+    for (const [m, keep] of [[this.tiles, this.gpuMax], [this.heights, this.gpuMax]]) {
+      if (m.size <= keep) continue;
+      const list = [...m.entries()].filter(([k, t]) => t.state !== 'loading' && !k.startsWith('0/')).sort((a, b) => a[1].used - b[1].used);
+      for (let i = 0; i < m.size - keep && i < list.length; i++) { const [k, t] = list[i]; if (t.tex) this.gl.deleteTexture(t.tex); m.delete(k); }
+    }
+  }
+  // 그 조각(또는 조상)의 준비된 결: [결, 오프셋x, 오프셋y, 배율]
+  texFor(m, L, x, y, maxL) {
+    let l = Math.min(L, maxL), xx = x >> (L - l), yy = y >> (L - l);
+    while (l >= 0) {
+      const t = m.get(this.key(l, xx, yy));
+      if (t && t.state === 'ready') { t.used = this.frame; const s = 2 ** (l - L); return [t, (x * s) - xx, (y * s) - yy, s]; }
+      l--; xx >>= 1; yy >>= 1;
+    }
+    return null;
+  }
+  render(cam, sun, W, H) {
+    const gl = this.gl; this.frame++;
+    gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (!this.meta) return 0;
+    gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
+    gl.useProgram(this.prog); gl.bindVertexArray(this.vao);
+    const U = this.U, o = this.opt;
+    gl.uniformMatrix4fv(U.u_vp, false, cam.vp); gl.uniform3fv(U.u_eye, cam.eye); gl.uniform1f(U.u_R, R_MOON); gl.uniform1f(U.u_exag, o.exag);
+    gl.uniform3fv(U.u_sun, sun); gl.uniform1f(U.u_tintK, o.tintK); gl.uniform1f(U.u_grid, o.grid); gl.uniform1f(U.u_expo, o.expo); gl.uniform1f(U.u_flat, o.flat);
+    gl.uniform1f(U.u_gridStep, cam.range > 1500 ? 15 : cam.range > 300 ? 5 : cam.range > 60 ? 1 : 0.25);
+    gl.uniform1i(U.u_t, 0); gl.uniform1i(U.u_h, 1); gl.uniform1i(U.u_tint, 2); gl.uniform1i(U.u_hg, 3);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.tintTex); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.hgTex || this.tintTex);
+    gl.uniform1f(U.u_hn, this.meta.hgrid); gl.uniform1i(U.u_steps, o.shadow && this.hgTex ? o.shadowSteps : 0);
+    const draw = [], cmax = this.meta.cmax, hmax = this.meta.hmax;
+    const pxKm = cam.pxAngle * o.quality;   // 화소 하나가 거리 1km 에서 차지하는 크기
+    const eyeD = vlen(cam.eye), horizon = Math.acos(clamp((R_MOON - 12) / eyeD, -1, 1)), eyeDir = norm(cam.eye);
+    const visit = (L, x, y) => {
+      const b = this.bounds(L, x, y), cLat = b.lat0 - b.dp / 2, cLon = b.lon0 + b.dl / 2, c = llv(cLat, cLon, R_MOON);
+      // 조각을 감싸는 구 (각 반지름)
+      const latFar = Math.min(Math.abs(b.lat0), Math.abs(b.lat0 - b.dp)) * D2R, ang = Math.min(Math.PI, Math.hypot(b.dp / 2 * D2R, b.dl / 2 * D2R * Math.cos(latFar)));
+      const tAng = Math.acos(clamp(dot(eyeDir, norm(c)), -1, 1));
+      if (tAng - ang > horizon + 0.02) return;                          // 지평선 너머
+      const rad = 2 * R_MOON * Math.sin(Math.min(ang, Math.PI / 2)) + 12;
+      if (!cam.sphereIn(c, rad)) return;                                  // 화면 밖
+      const dist = Math.max(0.05, vlen(sub(c, cam.eye)) - rad);
+      const wKm = Math.max(b.dp, b.dl * Math.cos(latFar)) * D2R * R_MOON, texel = wKm / 512;
+      const refine = L < cmax && texel > dist * pxKm * 1.0;
+      if (refine) {
+        const kids = [[2 * x, 2 * y], [2 * x + 1, 2 * y], [2 * x, 2 * y + 1], [2 * x + 1, 2 * y + 1]];
+        let ready = true;
+        for (const [cx, cy] of kids) { const t = this.tiles.get(this.key(L + 1, cx, cy)); if (!t || t.state === 'loading') { ready = false; this.want(this.tiles, this.key(L + 1, cx, cy), L + 1 + dist / 5000, 't'); } }
+        if (ready) { for (const [cx, cy] of kids) visit(L + 1, cx, cy); return; }   // 아이들이 다 오기 전에는 지금 조각으로
+      }
+      draw.push([L, x, y, b, dist]);
+      if (!this.tiles.has(this.key(L, x, y))) this.want(this.tiles, this.key(L, x, y), L + dist / 5000, 't');
+      const hl = Math.min(L, hmax), hk = this.key(hl, x >> (L - hl), y >> (L - hl)); if (!this.heights.has(hk)) this.want(this.heights, hk, hl - 0.5 + dist / 5000, 'h');
+    };
+    visit(0, 0, 0); visit(0, 1, 0);
+    for (const [L, x, y, b, dist] of draw) {
+      const ct = this.texFor(this.tiles, L, x, y, cmax), ht = this.texFor(this.heights, L, x, y, hmax); if (!ct || !ht) continue;
+      gl.uniform4f(U.u_ll, b.lon0 * D2R, b.lat0 * D2R, b.dl * D2R, -b.dp * D2R);
+      gl.uniform4f(U.u_cx, ct[1], ct[2], ct[3], 0); gl.uniform4f(U.u_hx, ht[1], ht[2], ht[3], this.meta.hgrid - 1);
+      const wKm = b.dp * D2R * R_MOON; gl.uniform1f(U.u_skirt, Math.min(30, wKm * 0.02 + 0.3));
+      // 높이 결이 덮는 범위 (그림자 따라가기용)
+      const hL = L + Math.round(Math.log2(ht[3])), hbnd = this.bounds(hL, Math.floor(x * ht[3]), Math.floor(y * ht[3]));
+      gl.uniform4f(U.u_hb, hbnd.lon0 * D2R, hbnd.lat0 * D2R, hbnd.dl * D2R, -hbnd.dp * D2R);
+      gl.uniform1f(U.u_step, Math.max(0.05, hbnd.dp * D2R * R_MOON / (this.meta.hgrid - 1) * 0.8));
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, ct[0].tex);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, ht[0].tex);
+      gl.drawElements(gl.TRIANGLES, this.nIdx, gl.UNSIGNED_SHORT, 0);
+    }
+    gl.bindVertexArray(null);
+    this.pump(); if (this.frame % 30 === 0) this.evict();
+    return draw.length;
+  }
+  loading() { return this.busy + this.queue.size; }
+}
+
+// ───────────────────────── 카메라 · 손 조작 · 날아가기 ─────────────────────────
+// 카메라는 표면의 한 점(lat, lon)을 바라보고, 그 점에서 range km 떨어져, head(방위) · tilt(기울기)로 놓인다
+const CAM = { lat: 8, lon: 0, range: 5600, head: 0, tilt: 0, fov: 40 * D2R, th: 0, W: 1, H: 1, eye: [0, 0, 1], vp: null, fwd: [0, 0, 1], up: [0, 1, 0], right: [1, 0, 0], pxAngle: 0.001, planes: [] };
+const RANGE_MAX = 14000, CLEAR = 0.35;   // 지면 위로 최소 0.35 km
+let globe = null, dirty = true, fly = null;
+const tiltMax = r => r > 4200 ? 0 : r > 1600 ? (4200 - r) / 2600 * 45 * D2R : r > 400 ? (45 + (1600 - r) / 1200 * 30) * D2R : 78 * D2R;
+function camUpdate() {
+  const C = CAM, ex = globe ? globe.opt.exag : 1;
+  C.tilt = clamp(C.tilt, 0, tiltMax(C.range)); C.range = clamp(C.range, 0.4, RANGE_MAX); C.lat = clamp(C.lat, -89.999, 89.999);
+  C.lon = ((C.lon + 540) % 360) - 180;
+  const want = globe ? globe.elevAt(C.lat, C.lon) : 0; C.th += (want - C.th) * 0.25;
+  const T = llv(C.lat, C.lon, R_MOON + C.th * ex), f = enu(C.lat, C.lon);
+  const fh = add(mul(f.n, Math.cos(C.head)), mul(f.e, Math.sin(C.head)));
+  const off = add(mul(f.u, Math.cos(C.tilt)), mul(fh, -Math.sin(C.tilt)));
+  let eye = add(T, mul(off, C.range));
+  // 땅속으로 들어가지 않게
+  const [elat, elon] = vll(eye), floor = R_MOON + (globe ? globe.elevAt(elat, elon) : 0) * ex + CLEAR;
+  if (vlen(eye) < floor) { const b = dot(T, off), k = -b + Math.sqrt(Math.max(0, b * b - (dot(T, T) - floor * floor))); if (k > C.range) { C.range = k; eye = add(T, mul(off, C.range)); } }
+  C.eye = eye; C.target = T; C.fwd = mul(off, -1); C.up = norm(add(mul(fh, Math.cos(C.tilt)), mul(f.u, Math.sin(C.tilt)))); C.right = norm(cross(C.fwd, C.up));
+  const eyeD = vlen(eye), alt = Math.max(0.001, eyeD - R_MOON - 11 * ex);
+  const far = Math.min(eyeD + R_MOON, Math.sqrt(Math.max(1, eyeD * eyeD - (R_MOON - 10) ** 2)) + 400);
+  const near = Math.max(far * 2e-6, Math.min(alt * 0.35, eyeD - R_MOON + 20 > 0 ? Math.max(0.002, (eyeD - R_MOON - 11 * ex) * 0.35) : 0.002));
+  const P = perspective(C.fov, C.W / C.H, Math.max(0.002, near), far), V = lookDir(C.fwd, C.up);
+  C.vp = mmul(P, V); C.pxAngle = 2 * Math.tan(C.fov / 2) / C.H;
+  const m = C.vp, row = i => [m[i], m[4 + i], m[8 + i], m[12 + i]], r3 = row(3);
+  C.planes = [0, 1, 2].flatMap(i => { const r = row(i); return [[r3[0] + r[0], r3[1] + r[1], r3[2] + r[2], r3[3] + r[3]], [r3[0] - r[0], r3[1] - r[1], r3[2] - r[2], r3[3] - r[3]]]; }).map(p => { const l = Math.hypot(p[0], p[1], p[2]); return p.map(v => v / l); });
+}
+CAM.sphereIn = (c, rad) => { const p = sub(c, CAM.eye); for (const q of CAM.planes) if (q[0] * p[0] + q[1] * p[1] + q[2] * p[2] + q[3] < -rad) return false; return true; };
+// 화면 점 → 광선
+function rayAt(x, y) { const C = CAM, t = Math.tan(C.fov / 2), a = C.W / C.H; return norm(add(C.fwd, add(mul(C.right, (2 * x / C.W - 1) * t * a), mul(C.up, (1 - 2 * y / C.H) * t)))); }
+function hitSphere(o, d, r) { const b = dot(o, d), c = dot(o, o) - r * r, D = b * b - c; if (D < 0) return null; const t = -b - Math.sqrt(D); return t > 0 ? add(o, mul(d, t)) : null; }
+// 화면 점 아래의 땅 (높이까지 맞춰 몇 번 다듬음)
+function pickGround(x, y) {
+  const d = rayAt(x, y), ex = globe.opt.exag; let r = R_MOON + CAM.th * ex, p = null;
+  for (let i = 0; i < 4; i++) { p = hitSphere(CAM.eye, d, r); if (!p) return null; const [la, lo] = vll(p); r = R_MOON + globe.elevAt(la, lo) * ex; }
+  return p;
+}
+// 화면 좌표 (보이지 않으면 null)
+function project(p) {
+  const m = CAM.vp, q = sub(p, CAM.eye), w = m[3] * q[0] + m[7] * q[1] + m[11] * q[2] + m[15];
+  if (w <= 0) return null;
+  const x = (m[0] * q[0] + m[4] * q[1] + m[8] * q[2] + m[12]) / w, y = (m[1] * q[0] + m[5] * q[1] + m[9] * q[2] + m[13]) / w;
+  return [(x + 1) / 2 * CAM.W, (1 - y) / 2 * CAM.H, w];
+}
+// 카메라 전체를 축 둘레로 돌리기 (끌기에서 손 아래 점을 붙잡아 두려고)
+function rotateCam(axis, ang) {
+  const C = CAM, f = enu(C.lat, C.lon), fh = add(mul(f.n, Math.cos(C.head)), mul(f.e, Math.sin(C.head)));
+  const t2 = rotAxis(llv(C.lat, C.lon), axis, ang), h2 = rotAxis(fh, axis, ang);
+  [C.lat, C.lon] = vll(t2); const g = enu(C.lat, C.lon); C.head = Math.atan2(dot(h2, g.e), dot(h2, g.n));
+}
+function grabMove(p0, x, y) {
+  const r0 = vlen(p0), p1 = hitSphere(CAM.eye, rayAt(x, y), r0);
+  if (!p1) return false;
+  const ax = cross(p1, p0), s = vlen(ax); if (s < 1e-12) return true;
+  rotateCam(mul(ax, 1 / s), Math.atan2(s, dot(p1, p0))); return true;
+}
+function zoomAt(x, y, k) {
+  const q = pickGround(x, y); CAM.range = clamp(CAM.range * k, 0.4, RANGE_MAX); camUpdate();
+  if (q) { const p = pickGround(x, y); if (p) { const ax = cross(p, q), s = vlen(ax); if (s > 1e-12) rotateCam(mul(ax, 1 / s), Math.atan2(s, dot(p, q))); } }
+  fly = null; dirty = true;
+}
+// 날아가기: 큰 원을 따라, 멀면 한 번 솟았다가
+function flyTo(lat, lon, range, opts = {}) {
+  const s = { lat: CAM.lat, lon: CAM.lon, range: CAM.range, head: CAM.head, tilt: CAM.tilt }, a = llv(s.lat, s.lon), b = llv(lat, lon);
+  const ang = Math.acos(clamp(dot(a, b), -1, 1)), peak = Math.max(s.range, range, ang * R_MOON * 1.1);
+  let dh = (opts.head ?? 0) - s.head; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+  fly = { s, a, b, ang, range, peak, head: s.head + dh, tilt: opts.tilt ?? 0, t: 0, dur: clamp(1.1 + ang * 1.1 + Math.abs(Math.log(range / s.range)) * 0.12, 1, 3.6) };
+  dirty = true;
+}
+function flyStep(dt) {
+  if (!fly) return; const F = fly; F.t = Math.min(1, F.t + dt / F.dur); const e = F.t < 0.5 ? 4 * F.t ** 3 : 1 - (-2 * F.t + 2) ** 3 / 2;
+  // 표적: 구면 보간
+  let v; if (F.ang < 1e-6) v = F.b; else { const s1 = Math.sin((1 - e) * F.ang) / Math.sin(F.ang), s2 = Math.sin(e * F.ang) / Math.sin(F.ang); v = add(mul(F.a, s1), mul(F.b, s2)); }
+  [CAM.lat, CAM.lon] = vll(v);
+  const l0 = Math.log(F.s.range), l1 = Math.log(F.range), bump = Math.max(0, Math.log(F.peak) - Math.max(l0, l1));
+  CAM.range = Math.exp(l0 + (l1 - l0) * e + bump * 4 * e * (1 - e));
+  CAM.head = F.s.head + (F.head - F.s.head) * e; CAM.tilt = F.s.tilt + (F.tilt - F.s.tilt) * e;
+  if (F.t >= 1) fly = null; dirty = true;
+}
+
+// ── 손 조작 (마우스 · 터치)
+const PTR = new Map(); let drag = null, lastTap = 0, onTapFn = null, onHoverFn = null;
+function bindInput(el) {
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('pointerdown', e => {
+    el.setPointerCapture(e.pointerId); PTR.set(e.pointerId, { x: e.offsetX, y: e.offsetY, x0: e.offsetX, y0: e.offsetY, t0: performance.now() }); fly = null;
+    if (PTR.size === 1) {
+      const orbit = e.button === 2 || e.ctrlKey || e.shiftKey;
+      drag = { mode: orbit ? 'orbit' : 'grab', p0: orbit ? null : pickGround(e.offsetX, e.offsetY), x: e.offsetX, y: e.offsetY, moved: 0 };
+    } else if (PTR.size === 2) { const [a, b] = [...PTR.values()]; drag = { mode: 'two', d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), my: (a.y + b.y) / 2, mx: (a.x + b.x) / 2, moved: 99 }; }
+  });
+  el.addEventListener('pointermove', e => {
+    const p = PTR.get(e.pointerId);
+    if (!p) { onHoverFn && onHoverFn(e.offsetX, e.offsetY); return; }
+    p.x = e.offsetX; p.y = e.offsetY;
+    if (!drag) return;
+    if (drag.mode === 'two' && PTR.size >= 2) {
+      const [a, b] = [...PTR.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x), my = (a.y + b.y) / 2, mx = (a.x + b.x) / 2;
+      const pinch = d / drag.d, dy = my - drag.my;
+      if (Math.abs(pinch - 1) > 0.002) zoomAt(mx, my, 1 / pinch);
+      let da = ang - drag.ang; da = Math.atan2(Math.sin(da), Math.cos(da)); CAM.head -= da;
+      if (Math.abs(pinch - 1) < 0.02) CAM.tilt = clamp(CAM.tilt - dy * 0.006, 0, tiltMax(CAM.range));
+      Object.assign(drag, { d, ang, my, mx }); dirty = true; return;
+    }
+    const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y; drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.offsetX; drag.y = e.offsetY;
+    if (drag.mode === 'orbit') { CAM.head -= dx * 0.006; CAM.tilt = clamp(CAM.tilt - dy * 0.006, 0, tiltMax(CAM.range)); }
+    else {
+      camUpdate();
+      if (!(drag.p0 && grabMove(drag.p0, e.offsetX, e.offsetY))) {
+        // 하늘을 잡았을 때: 화면 이동량만큼
+        const k = CAM.range * CAM.pxAngle / R_MOON;
+        rotateCam(CAM.up, -dx * k); rotateCam(CAM.right, -dy * k); drag.p0 = pickGround(e.offsetX, e.offsetY);
+      }
+    }
+    dirty = true;
+  });
+  const end = e => {
+    const p = PTR.get(e.pointerId); PTR.delete(e.pointerId);
+    if (drag && drag.mode !== 'two' && drag.moved < 6 && p && performance.now() - p.t0 < 500) {
+      const now = performance.now();
+      if (now - lastTap < 320) { const q = pickGround(e.offsetX, e.offsetY); if (q) { const [la, lo] = vll(q); flyTo(la, lo, Math.max(1.2, CAM.range / 3.2), { head: CAM.head, tilt: CAM.tilt }); } lastTap = 0; }
+      else { lastTap = now; onTapFn && onTapFn(e.offsetX, e.offsetY); }
+    }
+    if (PTR.size === 1) { const [q] = [...PTR.values()]; drag = { mode: 'grab', p0: pickGround(q.x, q.y), x: q.x, y: q.y, moved: 99 }; } else if (!PTR.size) drag = null;
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  el.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, Math.exp(e.deltaY * (e.deltaMode ? 0.05 : 0.0016))); }, { passive: false });
+  addEventListener('keydown', e => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    const k = e.key, step = CAM.range / R_MOON * 0.12;
+    if (k === '+' || k === '=') zoomAt(CAM.W / 2, CAM.H / 2, 0.8);
+    else if (k === '-') zoomAt(CAM.W / 2, CAM.H / 2, 1.25);
+    else if (k === 'ArrowLeft') rotateCam(norm(CAM.up), -step); else if (k === 'ArrowRight') rotateCam(norm(CAM.up), step);
+    else if (k === 'ArrowUp') rotateCam(CAM.right, -step); else if (k === 'ArrowDown') rotateCam(CAM.right, step);
+    else return;
+    fly = null; dirty = true;
+  });
+}
+
+// ───────────────────────── 태양 · 달의 위상 (간이 천문 계산, 오차 1° 안팎) ─────────────────────────
+// 태양 아래 점(태양이 머리 위에 있는 곳)의 달 경도 ≈ 180° − 이각(달 황경 − 태양 황경). 위도 ±1.5° 흔들림은 0 으로 둔다
+function moonPhase(date = new Date()) {
+  const d = date.getTime() / 86400000 + 2440587.5 - 2451545.0, T = d / 36525, r = x => (x % 360 + 360) % 360 * D2R;
+  const Ms = r(357.5291 + 35999.0503 * T), Ls = r(280.4665 + 36000.7698 * T);
+  const lamS = Ls + (1.9146 * Math.sin(Ms) + 0.02 * Math.sin(2 * Ms)) * D2R;
+  const Lm = r(218.3165 + 481267.8813 * T), Mm = r(134.9634 + 477198.8676 * T), D = r(297.8502 + 445267.1115 * T);
+  const lamM = Lm + (6.289 * Math.sin(Mm) + 1.274 * Math.sin(2 * D - Mm) + 0.658 * Math.sin(2 * D) + 0.214 * Math.sin(2 * Mm) - 0.186 * Math.sin(Ms) - 0.114 * Math.sin(2 * (Lm - r(125.0445 - 1934.1363 * T)))) * D2R;
+  const elong = ((lamM - lamS) / D2R % 360 + 360) % 360;     // 0 = 삭, 180 = 보름
+  const subLon = ((180 - elong + 540) % 360) - 180;
+  const illum = (1 - Math.cos(elong * D2R)) / 2, age = elong / 360 * 29.530589;
+  const idx = Math.floor(((elong + 22.5) % 360) / 45);
+  return { subLon, subLat: 0, elong, illum, age, idx };
+}
+
+// ───────────────────────── 지명 · 착륙지 표시 (2D 겹그림) ─────────────────────────
+// 지명: USGS/IAU 행성 지명 사전 9천여 개. 화면에서 충분히 커 보이는 것만, 큰 것부터 겹치지 않게
+let NAMES = [];                // [이름, 위도, 경도, 지름, 종류, 유래, USGS 번호]
+const GROUP = { OC: 'sea', ME: 'sea', LC: 'sea', SI: 'sea', PA: 'sea', PL: 'sea', AL: 'sea', AA: 'crater', MO: 'terrain', DO: 'terrain', RI: 'terrain', CA: 'terrain', VA: 'terrain', PR: 'terrain', RU: 'terrain', SF: 'small', LF: 'small', ST: 'none' };
+const GMIN = { sea: 26, crater: 26, terrain: 34, small: 40 };          // 이만큼 커 보여야 이름을 단다 (화소)
+const SHOW = { sea: true, crater: true, terrain: true, small: true, sites: true };
+let PLACED = [], SITE_PX = [], SEL = null;
+const UI_FONT = "'Pretendard', 'Segoe UI', 'Malgun Gothic', system-ui, sans-serif";
+function labelText(f) { const c = commonName(f[0]); return c ? `${f[0]} · ${c}` : f[0]; }
+function drawOverlay(ctx, W, H) {
+  ctx.clearRect(0, 0, W, H);
+  PLACED = []; SITE_PX = [];
+  if (!globe || !globe.meta) return;
+  const eyeD = vlen(CAM.eye), horizonCos = (R_MOON - 3) / eyeD, ex = globe.opt.exag, boxes = [];
+  const free = (x0, y0, x1, y1) => { for (const b of boxes) if (x0 < b[2] && x1 > b[0] && y0 < b[3] && y1 > b[1]) return false; return true; };
+  const visible = p => dot(norm(p), norm(CAM.eye)) > horizonCos - 0.002 && dot(sub(CAM.eye, p), norm(p)) > -0.5;
+  // 선택한 것의 테두리
+  if (SEL && SEL.kind === 'name') ring(ctx, SEL.f, '#ffd479');
+  // 지명 후보
+  const cand = [];
+  for (const f of NAMES) {
+    const g = GROUP[f[4]]; if (!g || g === 'none' || !SHOW[g]) continue;
+    if (g === 'small' && CAM.range > 900) continue;
+    const pd = llv(f[1], f[2]); if (dot(pd, norm(CAM.eye)) < horizonCos - 0.01) continue;
+    const p = mul(pd, R_MOON), dist = vlen(sub(p, CAM.eye)), px = f[3] / dist / CAM.pxAngle;
+    if (px < GMIN[g] && !(SEL && SEL.f === f)) continue;
+    cand.push([f, g, px]);
+  }
+  const rank = { sea: 0, crater: 1, terrain: 2, small: 3 };
+  cand.sort((a, b) => (rank[a[1]] - rank[b[1]]) || (b[0][3] - a[0][3]));
+  let n = 0;
+  const placeNames = only => { for (const [f, g] of cand) {
+    if ((g === 'sea') !== only) continue;
+    if (n > Math.max(50, W * H / 8500)) break;
+    const p = llv(f[1], f[2], R_MOON + globe.elevAt(f[1], f[2]) * ex); if (!visible(p)) continue;
+    const q = project(p); if (!q || q[0] < -50 || q[0] > W + 50 || q[1] < -20 || q[1] > H + 20) continue;
+    const t = g === 'sea' ? labelText(f) : f[0];
+    const sc = clamp(Math.min(W, H) / 760, 0.78, 1), size = (g === 'sea' ? clamp(11 + f[3] / 120, 12, 17) : g === 'crater' ? 12 : 11) * sc;
+    ctx.font = g === 'sea' ? `italic 600 ${size}px ${UI_FONT}` : g === 'terrain' ? `italic 500 ${size}px ${UI_FONT}` : `${g === 'small' ? 500 : 600} ${size}px ${UI_FONT}`;
+    if (g === 'sea') ctx.letterSpacing = sc < 0.9 ? '0.5px' : '1.5px';
+    const tw = ctx.measureText(t).width; ctx.letterSpacing = '0px';
+    const x0 = q[0] - tw / 2 - 3, y0 = q[1] - size / 2 - 3, x1 = q[0] + tw / 2 + 3, y1 = q[1] + size / 2 + 3;
+    if (x0 < 2 || x1 > W - 2 || !free(x0, y0, x1, y1)) continue;
+    boxes.push([x0, y0, x1, y1]); PLACED.push({ f, box: [x0, y0, x1, y1] }); n++;
+    const col = SEL && SEL.f === f ? '#ffd479' : g === 'sea' ? '#bcd3ff' : g === 'terrain' ? '#ffd9a8' : g === 'small' ? 'rgba(235,235,235,0.78)' : '#ffffff';
+    ctx.font = g === 'sea' ? `italic 600 ${size}px ${UI_FONT}` : g === 'terrain' ? `italic 500 ${size}px ${UI_FONT}` : `${g === 'small' ? 500 : 600} ${size}px ${UI_FONT}`;
+    if (g === 'sea') ctx.letterSpacing = sc < 0.9 ? '0.5px' : '1.5px';
+    txt(ctx, t, q[0], q[1] + size * 0.36, col, 'center'); ctx.letterSpacing = '0px';
+  } };
+  placeNames(true);
+  // 착륙지 (바다 이름 다음, 다른 지명보다 먼저)
+  if (SHOW.sites) for (const s of SITES) {
+    const p = llv(s.lat, s.lon, R_MOON + globe.elevAt(s.lat, s.lon) * ex); if (!visible(p)) continue; const q = project(p); if (!q) continue;
+    const col = FLAG[s.c], big = !!s.crewed, x = q[0], y = q[1];
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
+    ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - (big ? 20 : 15)); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x, y - (big ? 20 : 15)); ctx.lineTo(x + (big ? 11 : 8), y - (big ? 16.5 : 12.5)); ctx.lineTo(x, y - (big ? 13 : 10)); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, 2.4, 0, 7); ctx.fill(); ctx.restore();
+    SITE_PX.push({ s, x, y: y - 10, r: 16 });
+    ctx.font = `${big ? 700 : 600} ${big ? 12.5 : 11}px ${UI_FONT}`; const tw = ctx.measureText(s.name).width, tx = x + 13, ty = y - (big ? 12 : 9);
+    if (free(tx - 2, ty - 11, tx + tw + 2, ty + 4)) { boxes.push([tx - 2, ty - 11, tx + tw + 2, ty + 4]); txt(ctx, s.name, tx, ty, SEL && SEL.s === s ? '#ffd479' : '#ffffff', 'left'); }
+    boxes.push([x - 4, y - 22, x + 12, y + 3]);
+  }
+  placeNames(false);
+  drawMeasure(ctx);
+}
+function txt(ctx, t, x, y, col, al) {
+  ctx.textAlign = al; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(0,0,0,0.78)'; ctx.lineWidth = 3.2; ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y);
+}
+// 지형 둘레 원 (표면 위의 작은 원을 투영)
+function ring(ctx, f, col) {
+  const c = llv(f[1], f[2]), a = f[3] / 2 / R_MOON, e = enu(f[1], f[2]), ex = globe.opt.exag; let started = false;
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([6, 4]); ctx.beginPath();
+  for (let i = 0; i <= 72; i++) {
+    const th = i / 72 * Math.PI * 2, d = norm(add(mul(c, Math.cos(a)), mul(add(mul(e.e, Math.cos(th)), mul(e.n, Math.sin(th))), Math.sin(a))));
+    const [la, lo] = vll(d), p = mul(d, R_MOON + globe.elevAt(la, lo) * ex);
+    const vis = dot(d, norm(CAM.eye)) > (R_MOON - 3) / vlen(CAM.eye) - 0.002, q = vis ? project(p) : null;
+    if (!q) { started = false; continue; }
+    if (!started) { ctx.moveTo(q[0], q[1]); started = true; } else ctx.lineTo(q[0], q[1]);
+  }
+  ctx.stroke(); ctx.restore();
+}
+// ── 거리 재기: 큰 원을 따라 표면 위로 선을 긋고 높이 단면을 만든다
+const MEAS = { on: false, pts: [] };
+function measurePath(a, b, n = 96) {
+  const p = llv(a[0], a[1]), q = llv(b[0], b[1]), ang = Math.acos(clamp(dot(p, q), -1, 1)), out = [];
+  for (let i = 0; i <= n; i++) { const t = i / n; let v; if (ang < 1e-9) v = p; else { const s1 = Math.sin((1 - t) * ang) / Math.sin(ang), s2 = Math.sin(t * ang) / Math.sin(ang); v = add(mul(p, s1), mul(q, s2)); } const [la, lo] = vll(v); out.push([la, lo, globe.elevAt(la, lo), t * ang * R_MOON]); }
+  return out;
+}
+function drawMeasure(ctx) {
+  if (!MEAS.on || !MEAS.pts.length) return;
+  const ex = globe.opt.exag;
+  ctx.save(); ctx.lineWidth = 2.2; ctx.strokeStyle = '#ffd479'; ctx.fillStyle = '#ffd479';
+  if (MEAS.pts.length === 2) {
+    const path = measurePath(MEAS.pts[0], MEAS.pts[1]); let st = false; ctx.beginPath();
+    for (const [la, lo, h] of path) { const p = llv(la, lo, R_MOON + h * ex + 0.02), d = norm(p); const q = dot(d, norm(CAM.eye)) > (R_MOON - 3) / vlen(CAM.eye) ? project(p) : null; if (!q) { st = false; continue; } if (!st) { ctx.moveTo(q[0], q[1]); st = true; } else ctx.lineTo(q[0], q[1]); }
+    ctx.stroke();
+  }
+  for (const [la, lo] of MEAS.pts) { const q = project(llv(la, lo, R_MOON + globe.elevAt(la, lo) * ex)); if (q) { ctx.beginPath(); ctx.arc(q[0], q[1], 5, 0, 7); ctx.fill(); ctx.strokeStyle = '#1b1406'; ctx.lineWidth = 1.5; ctx.stroke(); } }
+  ctx.restore();
+}
+// 눌린 곳의 지명·착륙지
+function hitTest(x, y) {
+  for (const p of SITE_PX) if (Math.hypot(p.x - x, p.y - y) < p.r) return { kind: 'site', s: p.s };
+  for (const p of PLACED) { const b = p.box; if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) return { kind: 'name', f: p.f }; }
+  return null;
+}
+// 그 점을 품는 가장 작은 지형 (예: 어느 크레이터 안인가)
+function featureAt(lat, lon) {
+  const v = llv(lat, lon); let best = null;
+  for (const f of NAMES) { if (f[4] === 'ST' || f[4] === 'AL') continue; const a = f[3] / 2 / R_MOON; if (a < 1e-5) continue; const c = Math.cos(a); if (dot(v, llv(f[1], f[2])) >= c && (!best || f[3] < best[3])) best = f; }
+  return best;
+}
+
+// ───────────────────────── 하늘: 별 · 지구 (달 뒤 캔버스) ─────────────────────────
+const STARS = (() => { let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, out = [];
+  for (let i = 0; i < 2600; i++) { const z = rnd() * 2 - 1, a = rnd() * 6.2832, r = Math.sqrt(1 - z * z), m = Math.pow(rnd(), 3.2); out.push([r * Math.cos(a), r * Math.sin(a), z, 0.25 + m * 1.6, m, rnd()]); }
+  return out; })();
+const EARTH_KM = 384400, EARTH_R = 6371;
+const earthImg = document.createElement('canvas'); earthImg.width = earthImg.height = 96;
+let earthKey = '';
+function paintEarth(sunV, toEye) {
+  // 작은 지구: 바다·대륙 느낌의 무늬 + 태양 쪽만 밝게 (지구에서 본 달과 반대로 차고 기운다)
+  const k = sunV.map(v => v.toFixed(2)).join() + toEye.map(v => v.toFixed(2)).join(); if (k === earthKey) return; earthKey = k;
+  const g = earthImg.getContext('2d'), n = 96, img = g.createImageData(n, n), d = img.data;
+  const fz = norm(toEye), up0 = Math.abs(fz[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1], fx = norm(cross(up0, fz)), fy = cross(fz, fx);
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const x = (i + 0.5) / n * 2 - 1, y = 1 - (j + 0.5) / n * 2, rr = x * x + y * y, o = (j * n + i) * 4; if (rr > 1) { d[o + 3] = 0; continue; }
+    const z = Math.sqrt(1 - rr), N = add(add(mul(fx, x), mul(fy, y)), mul(fz, z));
+    const lat = Math.asin(N[2]), lon = Math.atan2(N[1], N[0]);
+    const land = Math.sin(lon * 2.1 + Math.sin(lat * 3) * 1.7) * Math.cos(lat * 2.3 + 0.6) + 0.35 * Math.sin(lon * 5 + lat * 4) > 0.42;
+    const cloud = Math.max(0, Math.sin(lon * 7 + lat * 9 + Math.sin(lon * 3) * 2) * Math.cos(lat * 5 - lon * 2)) ** 2 * 0.9 + (Math.abs(lat) > 1.2 ? 0.8 : 0);
+    let c = land ? [70, 120, 70] : [30, 70, 160]; c = c.map((v, q) => v + (235 - v) * Math.min(1, cloud));
+    const l = Math.max(0, dot(N, sunV)), lit = 0.04 + 0.96 * Math.min(1, l * 1.3), rim = Math.pow(1 - z, 3) * 0.6;
+    d[o] = Math.min(255, c[0] * lit + 80 * rim * l); d[o + 1] = Math.min(255, c[1] * lit + 140 * rim * l); d[o + 2] = Math.min(255, c[2] * lit + 255 * rim * l); d[o + 3] = 255 * Math.min(1, (1 - Math.sqrt(rr)) * n / 2);
+  }
+  g.putImageData(img, 0, 0);
+}
+function drawSky(ctx, W, H, sunV) {
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  const C = CAM, f = C.fwd, r = C.right, u = C.up, t = Math.tan(C.fov / 2), a = W / H;
+  for (const s of STARS) {
+    const z = dot(s, f); if (z <= 0.05) continue;
+    const x = (dot(s, r) / z / (t * a) + 1) / 2 * W, y = (1 - dot(s, u) / z / t) / 2 * H; if (x < 0 || y < 0 || x > W || y > H) continue;
+    const b = 0.25 + s[4] * 0.75, tint = s[5] < 0.15 ? [255, 214, 170] : s[5] > 0.85 ? [175, 205, 255] : [235, 238, 255];
+    ctx.fillStyle = `rgba(${tint[0]},${tint[1]},${tint[2]},${b})`; ctx.fillRect(x - s[3] / 2, y - s[3] / 2, s[3], s[3]);
+  }
+  // 지구 (달 중심에서 +x 쪽 384,400 km)
+  const E = [EARTH_KM, 0, 0], v = sub(E, C.eye), dist = vlen(v), dir = mul(v, 1 / dist), z = dot(dir, f);
+  if (z > 0.02) {
+    const x = (dot(dir, r) / z / (t * a) + 1) / 2 * W, y = (1 - dot(dir, u) / z / t) / 2 * H, rad = Math.atan(EARTH_R / dist) / z / t * H / 2;
+    if (x > -rad && y > -rad && x < W + rad && y < H + rad) {
+      paintEarth(sunV, mul(dir, -1));
+      ctx.save(); ctx.shadowColor = 'rgba(120,170,255,0.55)'; ctx.shadowBlur = rad * 0.6; ctx.drawImage(earthImg, x - rad, y - rad, rad * 2, rad * 2); ctx.restore();
+    }
+  }
+}
+
+// ───────────────────────── 화면 · 시작 ─────────────────────────
+const $ = id => document.getElementById(id);
+const BASES = ['moon-tiles/', 'https://wiiiv-io.github.io/wiiiv-templates/assets/moon/'];
+const cvGL = $('gl'), cvOV = $('ov'), ov = cvOV.getContext('2d'), cvSky = $('sky'), sky = cvSky.getContext('2d');
+const PREF = (() => { try { return JSON.parse(localStorage.getItem('wiiiv-moon') || '{}'); } catch { return {}; } })();
+const savePref = () => { try { localStorage.setItem('wiiiv-moon', JSON.stringify(PREF)); } catch { /* */ } };
+let SUN = { mode: PREF.sun || 'today', lon: 0 }, PHASE = moonPhase();
+const fmtKm = km => km >= 100 ? `${Math.round(km).toLocaleString()} km` : km >= 1 ? `${km.toFixed(1)} km` : `${Math.round(km * 1000)} m`;
+const fmtLL = (la, lo) => `${Math.abs(la).toFixed(la > -10 && la < 10 ? 3 : 2)}°${la >= 0 ? 'N' : 'S'} ${Math.abs(lo).toFixed(2)}°${lo >= 0 ? 'E' : 'W'}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function sunVec() {
+  let lon = PHASE.subLon;
+  if (SUN.mode === 'drama') lon = CAM.lon - 78;               // 보는 곳이 아침 — 그림자가 길다
+  if (SUN.mode === 'hand') lon = SUN.lon;
+  return llv(PHASE.subLat, lon);
+}
+// ── 위상 아이콘 (오늘의 달 모양)
+function drawPhaseIcon() {
+  const c = $('phaseIcon'), g = c.getContext('2d'), r = 40, cx = 46, cy = 46, k = Math.cos(PHASE.elong * D2R), waxing = PHASE.elong < 180;
+  g.clearRect(0, 0, 92, 92); g.fillStyle = '#23262f'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+  g.fillStyle = '#e9e4d6'; g.beginPath();
+  // 밝은 쪽 반원 + 경계 타원 (북반구에서 본 모양: 차오를 때 오른쪽이 밝다)
+  g.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2, !waxing);
+  g.ellipse(cx, cy, Math.abs(k) * r, r, 0, Math.PI / 2, -Math.PI / 2, waxing ? k > 0 : k < 0);
+  g.fill();
+}
+function renderPhase() {
+  PHASE = moonPhase();
+  $('phaseText').querySelector('b').textContent = `${T.sunToday} · ${T.phases[PHASE.idx]}`;
+  $('phaseText').querySelector('span').textContent = `${T.age} ${PHASE.age.toFixed(1)}${T.days} · ${T.illum} ${Math.round(PHASE.illum * 100)}%`;
+  drawPhaseIcon();
+  const box = $('sunModes'); box.innerHTML = '';
+  for (const [m, l] of [['today', T.sunToday], ['drama', T.sunDrama], ['flat', T.sunFlat], ['hand', T.sunHand]]) {
+    const b = document.createElement('button'); b.className = 'chip' + (SUN.mode === m ? ' on' : ''); b.textContent = l;
+    b.onclick = () => { SUN.mode = m; PREF.sun = m; savePref(); if (m === 'hand') SUN.lon = Math.round(PHASE.subLon); globe.opt.flat = m === 'flat' ? 1 : 0; renderPhase(); dirty = true; };
+    box.appendChild(b);
+  }
+  const sl = $('sunSlider'); sl.style.display = SUN.mode === 'hand' ? 'block' : 'none'; sl.value = SUN.lon; sl.title = T.sunLon;
+  sl.oninput = () => { SUN.lon = +sl.value; dirty = true; };
+}
+// ── 서랍 (정보 · 착륙지 · 설정)
+let drawerKind = null;
+function openDrawer(kind, html) { const d = $('drawer'); drawerKind = kind; d.innerHTML = `<button class="x" aria-label="${T.close}">×</button>` + html; d.classList.add('show'); d.querySelector('.x').onclick = closeDrawer; d.scrollTop = 0; for (const b of ['bSites', 'bSettings']) $(b).classList.toggle('on', (kind === 'sites' && b === 'bSites') || (kind === 'settings' && b === 'bSettings')); }
+function closeDrawer() { $('drawer').classList.remove('show'); drawerKind = null; SEL = null; $('bSites').classList.remove('on'); $('bSettings').classList.remove('on'); dirty = true; }
+function showFeature(f, fly) {
+  SEL = { kind: 'name', f };
+  const cn = commonName(f[0]), g = GROUP[f[4]];
+  openDrawer('info', `<h2>${esc(f[0])}</h2>${cn ? `<div class="sub">${esc(cn)}</div>` : ''}
+    <dl class="kv"><dt>${T.type}</dt><dd>${esc(T.T[f[4]] || f[4])}</dd><dt>${T.diam}</dt><dd>${fmtKm(f[3])}</dd><dt>${T.lat} · ${T.lon}</dt><dd>${fmtLL(f[1], f[2])}</dd><dt>${T.elev}</dt><dd>${fmtKm(Math.abs(globe.elevAt(f[1], f[2])) ).replace(/^/, globe.elevAt(f[1], f[2]) < 0 ? '−' : '')}</dd></dl>
+    ${f[5] ? `<h3>${T.origin}</h3><div class="origin">${esc(f[5])}</div>` : ''}
+    ${f[6] ? `<h3></h3><a class="lnk" href="https://planetarynames.wr.usgs.gov/Feature/${f[6]}" target="_blank" rel="noopener">${T.usgs} ↗</a>` : ''}`);
+  if (fly) flyTo(f[1], f[2], clamp(f[3] * (g === 'sea' ? 1.6 : 2.6), 3, 5200), { head: 0, tilt: f[3] < 300 ? 0.75 : 0 });
+  dirty = true;
+}
+function showSite(s, fly) {
+  SEL = { kind: 'site', s };
+  const st = s.statio ? NAMES.find(f => f[0] === s.statio) : null;
+  openDrawer('info', `<h2 style="color:${FLAG[s.c]}">${esc(s.name)}</h2>${s.sub ? `<div class="sub">${esc(s.sub)}</div>` : ''}
+    <div class="tags">${s.g.map(g => `<span class="tag">${esc(T.G[g])}</span>`).join('')}</div>
+    <dl class="kv"><dt>${T.landed}</dt><dd>${s.date}</dd><dt>&nbsp;</dt><dd>${esc(T.C[s.c])}</dd>${s.crew ? `<dt>${T.crew}</dt><dd>${esc(s.crew)}</dd>` : ''}<dt>${T.lat} · ${T.lon}</dt><dd>${fmtLL(s.lat, s.lon)}</dd></dl>
+    ${st ? `<h3>${esc(st[0])}</h3><div class="origin">${esc(st[5])}</div>` : ''}`);
+  if (fly) flyTo(s.lat, s.lon, s.crewed ? 9 : 14, { head: 0, tilt: 0.95 });
+  dirty = true;
+}
+function showSites() {
+  if (drawerKind === 'sites') return closeDrawer();
+  const rows = SITES.slice().sort((a, b) => a.date.localeCompare(b.date)).map((s, i) => `<div class="site" data-i="${SITES.indexOf(s)}"><i style="background:${FLAG[s.c]}"></i><div><b>${esc(s.name)}</b>${s.sub ? ` <small>${esc(s.sub)}</small>` : ''}<br><small>${esc(T.C[s.c])} · ${esc(T.G[s.g[0]])}</small></div><small>${s.date.slice(0, 4)}</small></div>`).join('');
+  openDrawer('sites', `<h2>${T.sites}</h2><div style="margin-top:8px">${rows}</div>`);
+  $('drawer').querySelectorAll('.site').forEach(el => el.onclick = () => showSite(SITES[+el.dataset.i], true));
+}
+function showSettings() {
+  if (drawerKind === 'settings') return closeDrawer();
+  const o = globe.opt, sw = (id, on, label) => `<div class="row"><span>${label}</span><button class="sw${on ? ' on' : ''}" data-sw="${id}"></button></div>`;
+  openDrawer('settings', `<h2>${T.settings}</h2>
+    <div class="row"><span>${T.exag}</span><span style="display:flex;gap:8px;align-items:center"><input type="range" id="exag" min="1" max="6" step="0.5" value="${o.exag}"><b id="exagV">${o.exag}×</b></span></div>
+    <div class="row"><span>${T.color}</span><span class="seg" id="colSeg"><button data-k="0">${T.cGray}</button><button data-k="1">${T.cNat}</button><button data-k="4">${T.cVivid}</button></span></div>
+    ${sw('sea', SHOW.sea, T.lSeas)}${sw('crater', SHOW.crater, T.lCraters)}${sw('terrain', SHOW.terrain, T.lTerrain)}${sw('small', SHOW.small, T.lSmall)}${sw('sites', SHOW.sites, T.showSites)}${sw('grid', o.grid > 0, T.grid)}
+    <p style="color:var(--dim);font-size:11.5px;margin:12px 0 0">${T.help}</p><p style="color:var(--dim);font-size:11px;margin:8px 0 0">${T.credit}</p>`);
+  const d = $('drawer');
+  d.querySelector('#exag').oninput = e => { o.exag = +e.target.value; d.querySelector('#exagV').textContent = o.exag + '×'; PREF.exag = o.exag; savePref(); dirty = true; };
+  const segs = d.querySelectorAll('#colSeg button'); const mark = () => segs.forEach(b => b.classList.toggle('on', +b.dataset.k === o.tintK)); mark();
+  segs.forEach(b => b.onclick = () => { o.tintK = +b.dataset.k; PREF.tint = o.tintK; savePref(); mark(); dirty = true; });
+  d.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => {
+    const k = b.dataset.sw; if (k === 'grid') o.grid = o.grid ? 0 : 1; else SHOW[k] = !SHOW[k];
+    b.classList.toggle('on', k === 'grid' ? o.grid > 0 : SHOW[k]); PREF.show = SHOW; PREF.grid = o.grid; savePref(); dirty = true;
+  });
+}
+// ── 찾기
+let suggIdx = -1, suggList = [];
+function norm2(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’\s-]/g, ''); }
+function doSearch(q) {
+  const box = $('sugg'); q = q.trim(); if (!q) { box.classList.remove('show'); return; }
+  const n = norm2(q), out = [];
+  for (const s of SITES) if (norm2(s.name + (s.sub || '')).includes(n)) out.push({ s, score: 0 });
+  for (const f of NAMES) {
+    if (out.length > 400) break;
+    const nm = norm2(f[0]), cn = commonName(f[0]);
+    if (nm.startsWith(n)) out.push({ f, score: 1 + (f[4] === 'SF' ? 2 : 0) }); else if (nm.includes(n) || (cn && norm2(cn).includes(n))) out.push({ f, score: 3 + (f[4] === 'SF' ? 2 : 0) });
+  }
+  out.sort((a, b) => a.score - b.score || ((b.f ? b.f[3] : 99) - (a.f ? a.f[3] : 99)));
+  suggList = out.slice(0, 12); suggIdx = -1;
+  box.innerHTML = suggList.length ? suggList.map((r, i) => r.s ? `<div class="sg" data-i="${i}"><span>${esc(r.s.name)}${r.s.sub ? ' · ' + esc(r.s.sub) : ''}</span><small>${T.T.ST} · ${r.s.date.slice(0, 4)}</small></div>` : `<div class="sg" data-i="${i}"><span>${esc(r.f[0])}${commonName(r.f[0]) ? ' · ' + esc(commonName(r.f[0])) : ''}</span><small>${esc(T.T[r.f[4]] || '')} · ${fmtKm(r.f[3])}</small></div>`).join('') : `<div class="sg"><small>${T.noResult}</small></div>`;
+  box.classList.add('show');
+  box.querySelectorAll('.sg[data-i]').forEach(el => el.onmousedown = e => { e.preventDefault(); pickSugg(+el.dataset.i); });
+}
+function pickSugg(i) { const r = suggList[i]; if (!r) return; $('sugg').classList.remove('show'); $('search').blur(); if (r.s) showSite(r.s, true); else showFeature(r.f, true); }
+// ── 거리 재기
+function renderMeasure() {
+  const m = $('meas');
+  if (!MEAS.on) { m.classList.remove('show'); return; }
+  m.classList.add('show');
+  if (MEAS.pts.length < 2) { $('measT').textContent = T.measureHint; $('profile').style.display = 'none'; return; }
+  const path = measurePath(MEAS.pts[0], MEAS.pts[1], 160), dist = path[path.length - 1][3];
+  const hs = path.map(p => p[2]), lo = Math.min(...hs), hi = Math.max(...hs);
+  $('measT').innerHTML = `${T.dist} <b>${fmtKm(dist)}</b> &nbsp;·&nbsp; ${T.elev} ${fmtKm(Math.abs(lo)).replace(/^/, lo < 0 ? '−' : '')} ~ ${fmtKm(Math.abs(hi)).replace(/^/, hi < 0 ? '−' : '')}`;
+  const c = $('profile'); c.style.display = 'block'; const W = c.clientWidth * devicePixelRatio, H = 90 * devicePixelRatio; c.width = W; c.height = H; const g = c.getContext('2d');
+  const pad = 4 * devicePixelRatio, X = i => pad + i / (path.length - 1) * (W - pad * 2), Y = h => H - pad - (h - lo) / Math.max(0.01, hi - lo) * (H - pad * 2);
+  const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, 'rgba(255,212,121,0.45)'); gr.addColorStop(1, 'rgba(255,212,121,0.02)');
+  g.beginPath(); g.moveTo(X(0), H); path.forEach((p, i) => g.lineTo(X(i), Y(p[2]))); g.lineTo(X(path.length - 1), H); g.fillStyle = gr; g.fill();
+  g.beginPath(); path.forEach((p, i) => i ? g.lineTo(X(i), Y(p[2])) : g.moveTo(X(i), Y(p[2]))); g.strokeStyle = '#ffd479'; g.lineWidth = 1.6 * devicePixelRatio; g.stroke();
+}
+// ── 눌렀을 때
+onTapFn = (x, y) => {
+  const h = hitTest(x, y);
+  if (MEAS.on) {
+    const p = pickGround(x, y); if (!p) return; const ll = vll(p);
+    if (MEAS.pts.length >= 2) MEAS.pts = []; MEAS.pts.push(ll); renderMeasure(); dirty = true; return;
+  }
+  if (h && h.kind === 'site') return showSite(h.s, false);
+  if (h && h.kind === 'name') return showFeature(h.f, false);
+  const p = pickGround(x, y); if (!p) return closeDrawer();
+  const [la, lo] = vll(p), f = featureAt(la, lo);
+  if (f) showFeature(f, false); else closeDrawer();
+};
+let hoverLL = null;
+onHoverFn = (x, y) => { const p = pickGround(x, y); hoverLL = p ? vll(p) : null; statusDirty = true; };
+let statusDirty = true;
+function renderStatus() {
+  const ll = hoverLL || [CAM.lat, CAM.lon];
+  const h = globe.elevAt(ll[0], ll[1]);
+  $('stPos').innerHTML = `<b>${fmtLL(ll[0], ll[1])}</b> &nbsp;${T.elev} <b>${h < 0 ? '−' : ''}${fmtKm(Math.abs(h))}</b>`;
+  $('stAlt').innerHTML = `${T.alt} <b>${fmtKm(Math.max(0, vlen(CAM.eye) - R_MOON - CAM.th * globe.opt.exag))}</b>`;
+  // 축척 막대: 화면 가운데에서 1화소 = 몇 km
+  const d = CAM.target ? vlen(sub(CAM.target, CAM.eye)) : CAM.range, kmPx = d * CAM.pxAngle, want = kmPx * 110, p10 = 10 ** Math.floor(Math.log10(want)), nice = [1, 2, 5, 10].map(k => k * p10).filter(v => v <= want).pop() || p10;
+  $('scaleBar').style.width = `${nice / kmPx}px`; $('scaleT').textContent = fmtKm(nice);
+  $('compass').querySelector('svg').style.transform = `rotate(${-CAM.head / D2R}deg)`;
+  $('faceT').textContent = Math.abs(CAM.lon) < 90 ? T.far : T.home;
+}
+// ── 그리기 고리
+let lastT = performance.now(), dpr = 1;
+function resize() {
+  dpr = Math.min(devicePixelRatio || 1, matchMedia('(pointer: coarse)').matches ? 2 : 2);
+  const w = innerWidth, h = innerHeight; cvGL.width = Math.round(w * dpr); cvGL.height = Math.round(h * dpr); cvOV.width = Math.round(w * dpr); cvOV.height = Math.round(h * dpr); cvSky.width = Math.round(w * dpr); cvSky.height = Math.round(h * dpr);
+  CAM.W = w; CAM.H = h; dirty = true;
+}
+function loop(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+  flyStep(dt);
+  if (dirty || fly || globe.loading()) {
+    const was = dirty; dirty = false;
+    camUpdate();
+    const s = sunVec(); CAM.vpPx = null;
+    // 화면 화소 기준으로 다시 (WebGL 은 실제 화소, 카메라 계산은 CSS 화소)
+    globe.render(CAM, s, cvGL.width, cvGL.height);
+    sky.setTransform(dpr, 0, 0, dpr, 0, 0); drawSky(sky, CAM.W, CAM.H, s);
+    ov.setTransform(dpr, 0, 0, dpr, 0, 0); drawOverlay(ov, CAM.W, CAM.H);
+    statusDirty = true; if (Math.abs(CAM.th - globe.elevAt(CAM.lat, CAM.lon)) > 0.01) dirty = true;
+  }
+  if (statusDirty) { renderStatus(); statusDirty = false; }
+  requestAnimationFrame(loop);
+}
+async function start() {
+  document.documentElement.lang = LANG;
+  $('tTitle').textContent = T.title; $('tSub').textContent = T.sub; $('search').placeholder = T.search; $('loading').textContent = T.loading;
+  $('bSites').querySelector('span').textContent = T.sites; $('bMeasure').querySelector('span').textContent = T.measure; $('bSettings').querySelector('span').textContent = T.settings;
+  $('credit').textContent = T.credit; $('help').textContent = T.help; $('compass').title = T.north; $('bTilt').title = T.tilt;
+  setTimeout(() => $('help').style.opacity = 0, 9000);
+  try { globe = new Globe(cvGL); } catch (e) { $('loading').textContent = 'WebGL2 ✕'; return; }
+  globe.opt.exag = PREF.exag || 1; globe.opt.tintK = PREF.tint ?? 1; globe.opt.grid = PREF.grid || 0; globe.opt.flat = SUN.mode === 'flat' ? 1 : 0;
+  if (PREF.show) Object.assign(SHOW, PREF.show);
+  globe.onLoad = () => { dirty = true; };
+  resize(); addEventListener('resize', resize);
+  bindInput(cvGL);
+  // 처음엔 오늘 밤 지구에서 보이는 달 그대로 (앞면, 북쪽 위)
+  CAM.lat = 0; CAM.lon = 0; CAM.range = (R_MOON / Math.sin(Math.atan(Math.tan(CAM.fov / 2) * Math.min(1, CAM.W / CAM.H) * 0.86))) - R_MOON;   // 달이 화면의 86% 정도
+  renderPhase();
+  try { await globe.init(BASES); } catch (e) { $('loading').textContent = '✕ ' + T.loading; return; }
+  $('loading').classList.add('hide');
+  fetch(globe.base + 'names.json').then(r => r.json()).then(d => { NAMES = d; dirty = true; }).catch(() => { });
+  $('search').addEventListener('input', e => doSearch(e.target.value));
+  $('search').addEventListener('keydown', e => {
+    const n = suggList.length; if (e.key === 'ArrowDown') suggIdx = (suggIdx + 1) % n; else if (e.key === 'ArrowUp') suggIdx = (suggIdx - 1 + n) % n; else if (e.key === 'Enter') { pickSugg(Math.max(0, suggIdx)); return; } else if (e.key === 'Escape') { $('sugg').classList.remove('show'); return; } else return;
+    e.preventDefault(); $('sugg').querySelectorAll('.sg').forEach((el, i) => el.classList.toggle('on', i === suggIdx));
+  });
+  $('search').addEventListener('blur', () => setTimeout(() => $('sugg').classList.remove('show'), 150));
+  $('bSites').onclick = showSites; $('bSettings').onclick = showSettings;
+  $('bMeasure').onclick = () => { MEAS.on = !MEAS.on; MEAS.pts = []; $('bMeasure').classList.toggle('on', MEAS.on); renderMeasure(); dirty = true; };
+  $('zIn').onclick = () => zoomAt(CAM.W / 2, CAM.H / 2, 0.6); $('zOut').onclick = () => zoomAt(CAM.W / 2, CAM.H / 2, 1.6);
+  $('compass').onclick = () => flyTo(CAM.lat, CAM.lon, CAM.range, { head: 0, tilt: CAM.tilt });
+  $('bTilt').onclick = () => { const tm = tiltMax(CAM.range); flyTo(CAM.lat, CAM.lon, CAM.range, { head: CAM.head, tilt: CAM.tilt > 0.1 ? 0 : Math.min(tm, 1.1) }); };
+  $('bFace').onclick = () => { const far = Math.abs(CAM.lon) < 90; flyTo(0, far ? 180 : 0, 5600, { head: 0, tilt: 0 }); };
+  setInterval(() => { const p = moonPhase(); if (Math.abs(p.elong - PHASE.elong) > 0.2) { renderPhase(); dirty = true; } }, 60000);
+  requestAnimationFrame(loop);
+}
+start();
+
+</script>
+</body>
+</html>
