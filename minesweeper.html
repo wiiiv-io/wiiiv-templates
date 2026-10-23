@@ -2,267 +2,1012 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title id="pageTitle">지뢰찾기</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif;
-  display: flex; align-items: center; justify-content: center;
-  height: 100vh; overflow: hidden; user-select: none;
-}
-.game-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.top-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; width: 100%;
-}
-.info-box {
-  background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.25);
-  border-radius: 8px; padding: 6px 14px; text-align: center; min-width: 60px;
-}
-.info-box .label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-.info-box .val { font-size: 18px; font-weight: 700; color: #7c5cfc; font-variant-numeric: tabular-nums; }
-.face-btn {
-  font-size: 28px; cursor: pointer; background: none; border: none;
-  padding: 4px 10px; border-radius: 8px; transition: background 0.15s;
-}
-.face-btn:hover { background: rgba(255,255,255,0.06); }
-.difficulty { display: flex; gap: 6px; }
-.diff-btn {
-  padding: 5px 12px; border: 1px solid rgba(124,92,252,0.3); border-radius: 6px;
-  background: transparent; color: #aaa; font-size: 11px; cursor: pointer;
-  transition: all 0.15s;
-}
-.diff-btn:hover { background: rgba(124,92,252,0.1); color: #fff; }
-.diff-btn.active { background: #7c5cfc; color: #fff; border-color: #7c5cfc; }
-.board {
-  display: inline-grid; gap: 1px; padding: 4px;
-  background: rgba(124,92,252,0.06); border: 2px solid rgba(124,92,252,0.25);
-  border-radius: 6px;
-}
-.cell {
-  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; cursor: pointer;
-  border-radius: 3px; transition: background 0.1s;
-}
-.cell.hidden {
-  background: linear-gradient(145deg, #2a2a4a, #1e1e38);
-  box-shadow: inset -1px -1px 2px rgba(0,0,0,0.3), inset 1px 1px 2px rgba(255,255,255,0.05);
-}
-.cell.hidden:hover { background: linear-gradient(145deg, #35355a, #282848); }
-.cell.revealed { background: rgba(255,255,255,0.03); cursor: default; }
-.cell.flagged { background: linear-gradient(145deg, #2a2a4a, #1e1e38); }
-.cell.mine { background: #ff4757; }
-.cell.mine-source { background: #ff2030; }
-.n1 { color: #4488ff; } .n2 { color: #44cc44; } .n3 { color: #ff4444; }
-.n4 { color: #2244aa; } .n5 { color: #882222; } .n6 { color: #22aaaa; }
-.n7 { color: #333; } .n8 { color: #888; }
-.keys-info { font-size: 10px; color: #666; }
-.keys-info span { color: #888; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; overflow: hidden; }
+body { background: radial-gradient(120% 80% at 50% 0%, #1c2346 0%, #0b0e1d 60%, #070912 100%); font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK KR', system-ui, sans-serif; color: #eef1ff; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+.top { width: var(--bw); display: flex; align-items: center; gap: 8px; }
+.top .ttl { font-weight: 900; font-size: 26px; letter-spacing: .02em; background: linear-gradient(90deg, #ff6a6a, #ffb35c, #3fe0d0); -webkit-background-clip: text; background-clip: text; color: transparent; margin-right: auto; }
+.ib { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: #dfe3ff; cursor: pointer; display: grid; place-items: center; flex: none; }
+.ib svg { width: 18px; height: 18px; }
+.modeline { width: var(--bw); font-size: 13px; color: #9aa3c7; display: flex; justify-content: space-between; gap: 8px; min-height: 18px; }
+.modeline b { color: #dfe3ff; font-weight: 700; }
+.stats { width: var(--bw); display: flex; gap: 8px; }
+.stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .05); border: 1px solid rgba(160, 170, 255, .14); border-radius: 12px; padding: 6px 10px; position: relative; }
+.stat small { display: block; font-size: 11px; letter-spacing: .03em; color: #9aa3c7; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stat .plus { position: absolute; right: 10px; top: 4px; font-weight: 900; color: #7dffb0; animation: plus .8s ease-out forwards; pointer-events: none; }
+@keyframes plus { to { transform: translateY(-26px); opacity: 0; } }
+.actions { width: var(--bw); display: flex; gap: 8px; }
+.btn { flex: 1 1 auto; padding: 10px 12px; font: inherit; font-size: 14px; font-weight: 700; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; white-space: nowrap; }
+.btn:hover { filter: brightness(1.15); } .btn:disabled { opacity: .35; cursor: default; filter: none; }
+.btn.primary { background: linear-gradient(160deg, #3fe0d0, #1f8fd1); border-color: transparent; color: #04121a; box-shadow: 0 8px 20px -8px rgba(63, 224, 208, .6); }
+.btn.wide { display: block; width: 100%; margin-top: 10px; }
+.hint { font-size: 12.5px; color: #7d86ad; text-align: center; width: var(--bw); }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; background: rgba(5, 7, 16, .6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ov[hidden] { display: none; }
+.card { background: linear-gradient(160deg, rgba(30, 34, 64, .9), rgba(12, 14, 30, .95)); border: 1px solid rgba(160, 170, 255, .18); border-radius: 22px; padding: 22px 22px 18px; width: min(420px, 100%); max-height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); }
+.card::-webkit-scrollbar { display: none; }
+.logo { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.tag { text-align: center; color: #9aa3c7; font-size: 13px; letter-spacing: .08em; margin-bottom: 16px; }
+.mbox { border: 1px solid rgba(160, 170, 255, .16); background: rgba(255, 255, 255, .04); border-radius: 16px; padding: 14px; margin-top: 10px; }
+.mbox h3 { font-size: 17px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mbox h3 small { font-size: 12px; color: #ffb35c; font-weight: 800; white-space: nowrap; }
+.mbox p { font-size: 12.5px; color: #9aa3c7; margin-top: 4px; line-height: 1.45; }
+.mbox .status { font-size: 13px; color: #c5cbea; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { padding: 6px 11px; font: inherit; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; }
+.chip.on { background: linear-gradient(160deg, #3fe0d0, #1f8fd1); border-color: transparent; color: #04121a; }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+h2 { font-size: 22px; text-align: center; margin-bottom: 10px; }
+.big { text-align: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #ff6a6a, #ffb35c, #3fe0d0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { text-align: center; color: #9aa3c7; font-size: 13px; }
+.newrec { text-align: center; color: #ffd23f; font-weight: 800; letter-spacing: .1em; font-size: 13px; margin-top: 4px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.grid2 { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin-top: 14px; font-size: 14px; color: #c5cbea; font-variant-numeric: tabular-nums; }
+.grid2 b { color: #fff; text-align: right; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.row > span:first-child { white-space: nowrap; }
+.row .chips { margin-top: 0; justify-content: flex-end; }
+.sl { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.sl input { width: 100%; accent-color: #8a7cff; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); } td:last-child { text-align: right; color: #9aa3c7; font-size: 12.5px; }
+td:first-child { color: #b9a6ff; font-weight: 800; }
+h4 { font-size: 13px; color: #9aa3c7; letter-spacing: .08em; margin-top: 14px; }
+.keys { display: grid; grid-template-columns: minmax(0, 45%) 1fr; gap: 7px 14px; font-size: 13.5px; color: #c5cbea; align-items: center; }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: #fff; justify-self: start; white-space: normal; overflow-wrap: anywhere; }
+.tips { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: #9aa3c7; line-height: 1.45; }
+.tips div::before { content: '•'; color: #a05cff; margin-right: 6px; }
+.toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 12; background: rgba(20, 24, 50, .92); border: 1px solid rgba(160, 170, 255, .3); padding: 10px 18px; border-radius: 14px; font-weight: 800; animation: toast 1.8s ease forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 12%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+
+.logo { align-items: center; gap: 10px; }
+.logo b { font-size: clamp(28px, 8vw, 42px); font-weight: 900; background: linear-gradient(90deg, #ff6a6a, #ffb35c 50%, #3fe0d0); -webkit-background-clip: text; background-clip: text; color: transparent; white-space: nowrap; }
+.logo svg { width: 46px; height: 46px; flex: none; animation: bob 2.6s ease-in-out infinite; }
+.hudrow { width: var(--bw); display: flex; align-items: center; gap: 8px; }
+.hudrow .stat { text-align: center; }
+.face { width: 52px; height: 52px; border-radius: 16px; border: 1px solid rgba(160, 170, 255, .25); background: rgba(255, 255, 255, .07); cursor: pointer; display: grid; place-items: center; flex: none; }
+.face svg { width: 34px; height: 34px; }
+.boardwrap { position: relative; flex: none; padding: 8px; border-radius: 16px; background: rgba(14, 18, 40, .85); border: 1px solid rgba(160, 170, 255, .16); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .9); touch-action: none; }
+.boardwrap.shake { animation: shake .35s; }
+@keyframes shake { 15% { transform: translate(-6px, 3px); } 30% { transform: translate(5px, -4px); } 45% { transform: translate(-4px, -3px); } 60% { transform: translate(3px, 4px); } 80% { transform: translate(-2px, 1px); } }
+#cv { display: block; touch-action: none; }
+.btn.on { background: linear-gradient(160deg, #ff6a6a, #d81e3c); border-color: transparent; color: #fff; }
+.stepper { display: flex; align-items: center; gap: 6px; } .stepper button { width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; font-size: 17px; cursor: pointer; }
+.stepper span { min-width: 30px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+#custom { margin-top: 4px; }
 </style>
 </head>
-<body>
-<div class="game-wrap">
-  <div class="difficulty">
-    <button class="diff-btn active" data-level="easy" id="btn-easy" onclick="setDifficulty('easy',this)">초급</button>
-    <button class="diff-btn" data-level="medium" id="btn-medium" onclick="setDifficulty('medium',this)">중급</button>
-    <button class="diff-btn" data-level="hard" id="btn-hard" onclick="setDifficulty('hard',this)">고급</button>
-  </div>
-  <div class="top-bar" id="topBar">
-    <div class="info-box"><div class="label" id="lbl-mines">지뢰</div><div class="val" id="mineCount">10</div></div>
-    <button class="face-btn" id="faceBtn" onclick="newGame()">😊</button>
-    <div class="info-box"><div class="label" id="lbl-time">시간</div><div class="val" id="timer">0</div></div>
-  </div>
-  <div class="board" id="board"></div>
-  <div class="keys-info" id="keys-info"><span>좌클릭</span> 열기 | <span>우클릭</span> 깃발 🚩</div>
+<body tabindex="0">
+<canvas id="fx"></canvas>
+<div class="app" id="app">
+  <div class="top"><button class="ib" id="bMenu" title="Esc"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="16" height="2.4" rx="1.2"/><rect x="4" y="10.8" width="16" height="2.4" rx="1.2"/><rect x="4" y="16.6" width="16" height="2.4" rx="1.2"/></svg></button><div class="ttl" id="ttl"></div><button class="ib" id="bMute" title="M"></button></div>
+  <div class="modeline"><span id="modeName"></span><span id="modeInfo"></span></div>
+  <div class="hudrow"><div class="stat"><small id="lMines"></small><b id="vMines">0</b></div><button class="face" id="bFace" title="F2"></button><div class="stat"><small id="lTime"></small><b id="vTime">0</b></div></div>
+  <div class="actions"><button class="btn" id="bHint"></button><button class="btn" id="bFlagMode"></button></div>
+  <div class="boardwrap" id="wrap"><canvas id="cv"></canvas></div>
+  <div class="hint" id="hint"></div>
 </div>
-
+<div class="ov" id="menu"><div class="card">
+  <div class="logo"><svg viewBox="0 0 48 48"><g stroke="#8a93b8" stroke-width="3.4" stroke-linecap="round"><path d="M24 8v32M8 24h32M12.7 12.7l22.6 22.6M35.3 12.7L12.7 35.3"/></g><circle cx="24" cy="24" r="11" fill="#1b1f33" stroke="#3fe0d0" stroke-width="2"/><circle cx="20" cy="20" r="3.2" fill="#fff" opacity=".8"/></svg><b id="logo"></b></div><div class="tag" id="tTag"></div>
+  <div class="mbox"><h3 id="hClassic"></h3><p id="pClassic"></p><div class="chips" id="lvChips"></div><div id="custom"></div><div class="status" id="lNG"></div><div class="chips" id="ngChips" style="margin-top:6px"></div><button class="btn primary wide" id="bClassic"></button></div>
+  <div class="mbox"><h3><span id="hDaily"></span><small id="dStreak"></small></h3><p id="pDaily"></p><div class="status" id="dStatus"></div><button class="btn primary wide" id="bDaily"></button></div>
+  <div class="foot"><button class="btn" id="bSettings"></button><button class="btn" id="bRecords"></button><button class="btn" id="bHelp"></button></div>
+</div></div>
+<div class="ov" id="settings" hidden><div class="card"><h2 id="tSettings"></h2><div id="setBody"></div><div class="foot"><button class="btn primary" id="bSetDone"></button></div></div></div>
+<div class="ov" id="records" hidden><div class="card"><h2 id="tRecords"></h2><div id="recBody"></div><div class="foot"><button class="btn primary" id="bRecDone"></button></div></div></div>
+<div class="ov" id="help" hidden><div class="card"><h2 id="tHelp"></h2><div class="keys" id="helpKeys"></div><div class="tips" id="helpTips"></div><div class="foot"><button class="btn primary" id="bHelpDone"></button></div></div></div>
+<div class="ov" id="result" hidden><div class="card"><h2 id="resTitle"></h2><div class="big" id="resScore"></div><div class="sub" id="resSub"></div><div class="newrec" id="resNew" hidden></div><div class="grid2" id="resGrid"></div><button class="btn wide" id="bShare" hidden></button><button class="btn wide" id="bLook"></button><div class="foot"><button class="btn" id="bResMenu"></button><button class="btn primary" id="bAgain"></button></div></div></div>
 <script>
-const LANG = 'ko';
-const T = {
-  ko: { title: '지뢰찾기', easy: '초급', medium: '중급', hard: '고급', mines: '지뢰', time: '시간', keysInfo: '<span>좌클릭</span> 열기 | <span>우클릭</span> 깃발 🚩' },
-  en: { title: 'Minesweeper', easy: 'Easy', medium: 'Medium', hard: 'Hard', mines: 'Mines', time: 'Time', keysInfo: '<span>Left click</span> Open | <span>Right click</span> Flag 🚩' },
-}[LANG];
-document.getElementById('pageTitle').textContent = T.title;
-document.getElementById('btn-easy').textContent = T.easy;
-document.getElementById('btn-medium').textContent = T.medium;
-document.getElementById('btn-hard').textContent = T.hard;
-document.getElementById('lbl-mines').textContent = T.mines;
-document.getElementById('lbl-time').textContent = T.time;
-document.getElementById('keys-info').innerHTML = T.keysInfo;
+// ───────────────────────── 지뢰찾기 엔진 (화면과 무관, Node 에서도 시험) ─────────────────────────
+class Rng {
+  constructor(seed) { this.s = seed >>> 0; }
+  next() { let t = (this.s = (this.s + 0x6D2B79F5) >>> 0); t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+}
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const LEVELS = { easy: [9, 9, 10], medium: [16, 16, 40], hard: [30, 16, 99] };
+const HIDDEN = 0, OPEN = 1, FLAG = 2, MARK = 3;
+// 오늘의 퍼즐: 날마다 크기가 돌아가며 바뀐다 (모두에게 같은 판, 같은 출발 칸)
+const DAILY_LEVELS = ['medium', 'hard', 'easy'];
+function dailyInfo(date) {
+  const day = Math.floor(Date.parse(date + 'T00:00:00Z') / 86400000);
+  return { date, seed: hashStr('wiiiv-mines-' + date), level: DAILY_LEVELS[((day % 3) + 3) % 3] };
+}
 
-const LEVELS = {
-  easy: {cols: 9, rows: 9, mines: 10},
-  medium: {cols: 16, rows: 16, mines: 40},
-  hard: {cols: 30, rows: 16, mines: 99},
+class Mines {
+  constructor(o = {}) {
+    const [w, h, n] = o.level && LEVELS[o.level] ? LEVELS[o.level] : [o.w || 9, o.h || 9, o.n || 10];
+    this.w = w; this.h = h; this.n = Math.min(n, w * h - 9); this.level = o.level || 'custom';
+    this.noGuess = o.noGuess ?? true; this.seed = o.seed ?? ((Math.random() * 2 ** 32) >>> 0);
+    this.N = w * h; this.mine = new Uint8Array(this.N); this.adj = new Uint8Array(this.N); this.st = new Uint8Array(this.N);
+    this.status = 'ready'; this.opened = 0; this.flags = 0; this.genTries = 0; this.boom = -1; this.hints = 0;
+    this.nb = [];
+    for (let i = 0; i < this.N; i++) { const x = i % w, y = (i / w) | 0, a = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < w && Y < h) a.push(Y * w + X); } this.nb.push(a); }
+  }
+  // 첫 클릭 둘레 3x3 은 지뢰 없음 → 첫 칸은 늘 0 이라 넓게 열린다
+  generate(first) {
+    const rng = new Rng(this.seed), safe = new Set([first, ...this.nb[first]]);
+    const t0 = Date.now();
+    for (let tries = 1; ; tries++) {
+      this.mine.fill(0); const pool = []; for (let i = 0; i < this.N; i++) if (!safe.has(i)) pool.push(i);
+      for (let k = 0; k < this.n; k++) { const j = k + Math.floor(rng.next() * (pool.length - k)); [pool[k], pool[j]] = [pool[j], pool[k]]; this.mine[pool[k]] = 1; }
+      this.calcAdj(); this.genTries = tries;
+      // 운에 맡기지 않아도 되는 판인지 (논리만으로 다 풀리는지)
+      if (!this.noGuess || this.solvable(first) || tries >= 4000 || Date.now() - t0 > 2500) break;
+    }
+  }
+  calcAdj() { for (let i = 0; i < this.N; i++) { let c = 0; for (const j of this.nb[i]) c += this.mine[j]; this.adj[i] = c; } }
+  // ── 논리 풀이기: 숫자 하나 규칙 + 두 숫자 겹침 규칙 + 남은 지뢰 수
+  solve(first, opts = {}) {
+    const N = this.N, open = new Uint8Array(N), mk = new Uint8Array(N), nb = this.nb, adj = this.adj, mine = this.mine;
+    let nOpen = 0, nMine = 0; const q = [];
+    const doOpen = i => { if (open[i] || mk[i]) return; if (mine[i]) throw new Error('solver hit mine'); open[i] = 1; nOpen++; q.push(i); if (adj[i] === 0) for (const j of nb[i]) doOpen(j); };
+    if (opts.state) { for (let i = 0; i < N; i++) { if (opts.state[i] === OPEN) { open[i] = 1; nOpen++; } } }
+    else doOpen(first);
+    const safeN = N - this.n; let changed = true, firstSafe = -1;
+    const unknownsOf = i => { const u = []; let m = 0; for (const j of nb[i]) { if (mk[j]) m++; else if (!open[j]) u.push(j); } return { u, rem: adj[i] - m }; };
+    while (changed && nOpen < safeN) {
+      changed = false;
+      const front = []; for (let i = 0; i < N; i++) if (open[i] && adj[i] > 0) { const c = unknownsOf(i); if (c.u.length) front.push({ i, ...c }); }
+      for (const c of front) {
+        if (c.rem === 0) { for (const j of c.u) { if (firstSafe < 0) firstSafe = j; if (opts.one) return { safe: j }; doOpen(j); } changed = true; }
+        else if (c.rem === c.u.length) { for (const j of c.u) if (!mk[j]) { mk[j] = 1; nMine++; } changed = true; }
+      }
+      if (changed) continue;
+      // 겹침 규칙: A의 미지 칸이 B의 미지 칸에 다 들어 있으면 B−A 에 (remB−remA) 개
+      const fr = front.map(c => ({ ...c, s: new Set(c.u) }));
+      for (let a = 0; a < fr.length && !changed; a++) for (let b = 0; b < fr.length && !changed; b++) {
+        if (a === b) continue; const A = fr[a], B = fr[b];
+        if (A.u.length >= B.u.length || Math.abs(A.i % this.w - B.i % this.w) > 2 || Math.abs(((A.i / this.w) | 0) - ((B.i / this.w) | 0)) > 2) continue;
+        if (!A.u.every(j => B.s.has(j))) continue;
+        const rest = B.u.filter(j => !A.s.has(j)), dm = B.rem - A.rem;
+        if (dm === 0) { for (const j of rest) { if (opts.one) return { safe: j }; doOpen(j); } changed = true; }
+        else if (dm === rest.length) { for (const j of rest) if (!mk[j]) { mk[j] = 1; nMine++; } changed = true; }
+      }
+      if (changed) continue;
+      // 남은 지뢰 수: 다 찾았으면 나머지는 안전, 남은 칸 = 남은 지뢰면 전부 지뢰
+      const left = this.n - nMine, hidden = []; for (let i = 0; i < N; i++) if (!open[i] && !mk[i]) hidden.push(i);
+      if (left === 0 && hidden.length) { for (const j of hidden) { if (opts.one) return { safe: j }; doOpen(j); } changed = true; }
+      else if (left === hidden.length && hidden.length) { for (const j of hidden) { mk[j] = 1; nMine++; } changed = true; }
+    }
+    return { solved: nOpen >= safeN, nOpen, mk };
+  }
+  solvable(first) { try { return this.solve(first).solved; } catch { return false; } }
+  // 힌트: 지금 화면에서 논리로 확실히 안전한 칸 하나
+  hint() {
+    if (this.status !== 'play') return -1;
+    const st = new Uint8Array(this.N); for (let i = 0; i < this.N; i++) st[i] = this.st[i] === OPEN ? OPEN : 0;
+    let r; try { r = this.solve(-1, { state: st, one: true }); } catch { r = {}; }
+    if (r.safe != null && r.safe >= 0) { this.hints++; return r.safe; }
+    // 논리로 안 되면(운 판) 아무 안전한 칸이라도
+    for (let i = 0; i < this.N; i++) if (!this.mine[i] && this.st[i] !== OPEN && this.nb[i].some(j => this.st[j] === OPEN)) { this.hints++; return i; }
+    return -1;
+  }
+  // 칸 열기 → 열린 칸 목록 (거리 순, 화면 연출용)
+  open(i) {
+    if (this.status === 'won' || this.status === 'lost') return null;
+    if (this.status === 'ready') { this.generate(i); this.status = 'play'; this.startCell = i; }
+    if (this.st[i] === FLAG || this.st[i] === OPEN) return { opened: [] };
+    if (this.mine[i]) { this.st[i] = OPEN; this.status = 'lost'; this.boom = i; return { opened: [], boom: i }; }
+    const opened = [], seen = new Set([i]), q = [[i, 0]];
+    while (q.length) {
+      const [c, d] = q.shift(); if (this.st[c] === OPEN || this.st[c] === FLAG) continue;
+      if (this.st[c] === MARK) { /* 물음표도 열린다 */ }
+      this.st[c] = OPEN; this.opened++; opened.push([c, d]);
+      if (this.adj[c] === 0) for (const j of this.nb[c]) if (!seen.has(j) && !this.mine[j]) { seen.add(j); q.push([j, d + 1]); }
+    }
+    if (this.opened === this.N - this.n) this.win();
+    return { opened };
+  }
+  // 숫자 칸: 둘레 깃발 수가 맞으면 나머지를 한꺼번에 연다
+  chord(i) {
+    if (this.status !== 'play' || this.st[i] !== OPEN || !this.adj[i]) return null;
+    const f = this.nb[i].filter(j => this.st[j] === FLAG).length; if (f !== this.adj[i]) return { opened: [], short: true };
+    const all = []; let boom = null;
+    for (const j of this.nb[i]) {
+      if (this.st[j] !== HIDDEN && this.st[j] !== MARK) continue;
+      if (this.mine[j]) { this.st[j] = OPEN; this.status = 'lost'; this.boom = j; boom = j; continue; }
+      const r = this.open(j); if (r && r.opened) all.push(...r.opened.map(([c, d]) => [c, d + 1]));
+    }
+    if (boom != null) { this.status = 'lost'; if (this.opened === this.N - this.n) this.status = 'lost'; }
+    return { opened: all, boom };
+  }
+  flag(i, marks) {
+    if (this.status === 'won' || this.status === 'lost' || this.st[i] === OPEN) return null;
+    const s = this.st[i];
+    if (s === HIDDEN) { this.st[i] = FLAG; this.flags++; }
+    else if (s === FLAG) { this.flags--; this.st[i] = marks ? MARK : HIDDEN; }
+    else this.st[i] = HIDDEN;
+    return this.st[i];
+  }
+  win() { this.status = 'won'; for (let i = 0; i < this.N; i++) if (this.mine[i] && this.st[i] !== FLAG) { this.st[i] = FLAG; this.flags++; } }
+  // 이어하기 저장
+  save() { return { w: this.w, h: this.h, n: this.n, level: this.level, noGuess: this.noGuess, seed: this.seed, status: this.status, startCell: this.startCell, mine: Array.from(this.mine), st: Array.from(this.st), opened: this.opened, flags: this.flags, boom: this.boom, hints: this.hints }; }
+  static load(s) {
+    const m = new Mines({ w: s.w, h: s.h, n: s.n, noGuess: s.noGuess, seed: s.seed }); m.level = s.level;
+    m.mine = Uint8Array.from(s.mine); m.st = Uint8Array.from(s.st); m.calcAdj(); Object.assign(m, { status: s.status, startCell: s.startCell, opened: s.opened, flags: s.flags, boom: s.boom, hints: s.hints || 0 });
+    return m;
+  }
+}
+
+// ───────────────────────── 8비트 소리 장치 (펄스 2 · 삼각 1 · 잡음 1, 옛 게임기 방식) ─────────────────────────
+const NOTE_IX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function noteMidi(n) { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); if (!m) throw new Error('note ' + n); return 12 * (+m[3] + 1) + NOTE_IX[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); }
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+// 악보 한 채널: "E5:4 B4:2 | r:2 …" (길이 단위 = 16분음표, | 는 마디 경계 표시일 뿐)
+function parseTrack(src) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [n, l] = tok.split(':'); const len = +(l || 1);
+    if (n !== 'r') ev.push({ t, len, n });
+    t += len;
+  }
+  return { ev, len: t };
+}
+// 화음으로 반주 만들기: 마디마다 화음 이름 (예: 'Am', 'E', 'Bb', 'F#', 'C#7')
+const CH_Q = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 10], m7: [0, 3, 10], dim: [0, 3, 6] };
+function chordNotes(name) { const m = /^([A-G][#b]?)(m7|m|7|dim)?$/.exec(name); const root = noteMidi(m[1] + '3'); return CH_Q[m[2] || ''].map(i => root + i); }
+const MN = m => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][m % 12] + (Math.floor(m / 12) - 1);
+// 베이스: 근음 옥타브 왕복 (8분), 3박자 곡은 근음·5음·5음
+function bassLine(chords, bar, style) {
+  return chords.map(c => {
+    const [r, , f] = chordNotes(c); const R = r - 12, F5 = f - 12;
+    if (bar === 12) return `${MN(R)}:4 ${MN(F5)}:4 ${MN(F5 + 0)}:4`;
+    if (style === 'pizz') return `${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2 ${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2`;
+    return Array.from({ length: bar / 2 }, (_, i) => `${MN(i % 2 ? R + 12 : R)}:2`).join(' ');
+  }).join(' | ');
+}
+// 반주: 뒷박에 짧게 끊는 화음 (3음·5음)
+function compLine(chords, bar) {
+  return chords.map(c => {
+    const [, th, fi] = chordNotes(c).map(m => m + 12);
+    if (bar === 12) return `r:4 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2`;
+    return `r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2`;
+  }).join(' | ');
+}
+const rep = (s, n) => Array(n).fill(s).join(' | ');
+
+// ── 곡 (자작곡)
+const SONGS = {
+  // A: 「조용한 들판」 — 생각하며 듣는 곡
+  A: (() => {
+    const m = 'D5:4 F5:4 A5:6 G5:2 | F5:6 D5:2 Bb4:8 | E5:4 G5:4 C6:6 Bb5:2 | A5:12 r:4 | D6:4 C6:2 A5:2 F5:4 A5:4 | G5:4 Bb5:4 D6:8 | C6:4 Bb5:2 A5:2 G5:4 F5:4 | E5:8 C#5:4 E5:4 | '
+      + 'F5:4 A5:4 C6:4 A5:4 | G5:4 E5:4 C5:8 | D5:2 E5:2 F5:2 G5:2 A5:4 D6:4 | D6:6 C6:2 Bb5:8 | Bb5:4 A5:2 G5:2 F5:4 G5:4 | A5:4 E5:4 C#5:8 | D5:4 F5:4 A5:4 D6:4 | C#6:8 E5:4 A4:4';
+    const ch = ['Dm', 'Bb', 'C', 'A', 'Dm', 'Gm', 'Bb', 'A', 'F', 'C', 'Dm', 'Bb', 'Gm', 'A', 'Dm', 'A'];
+    return { name: 'Quiet Field', bpm: 104, bar: 16, duty: [0.25, 0.125], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16, 'pizz'), noi: rep('k:4 h:4 s:4 h:2 h:2', 16) };
+  })(),
 };
 
-let currentLevel = 'easy';
-let cols, rows, mineCount, board, revealed, flagged, mines;
-let gameStarted, gameEnded, timerInterval, elapsed, firstClick;
-
-function setDifficulty(level, btn) {
-  currentLevel = level;
-  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  newGame();
-}
-
-function newGame() {
-  const cfg = LEVELS[currentLevel];
-  cols = cfg.cols; rows = cfg.rows; mineCount = cfg.mines;
-  board = Array.from({length: rows}, () => new Array(cols).fill(0));
-  revealed = Array.from({length: rows}, () => new Array(cols).fill(false));
-  flagged = Array.from({length: rows}, () => new Array(cols).fill(false));
-  mines = Array.from({length: rows}, () => new Array(cols).fill(false));
-  gameStarted = false; gameEnded = false; firstClick = true;
-  elapsed = 0;
-  if (timerInterval) clearInterval(timerInterval);
-  document.getElementById('timer').textContent = '0';
-  document.getElementById('mineCount').textContent = mineCount;
-  document.getElementById('faceBtn').textContent = '😊';
-  renderBoard();
-}
-
-function placeMines(safeR, safeC) {
-  let placed = 0;
-  while (placed < mineCount) {
-    const r = Math.floor(Math.random() * rows);
-    const c = Math.floor(Math.random() * cols);
-    if (mines[r][c]) continue;
-    if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
-    mines[r][c] = true;
-    placed++;
+class Chip {
+  constructor() { this.ctx = null; this.musicVol = 0.55; this.sfxVol = 0.7; this.song = null; this.tempo = 1; this.beatCbs = []; this.muted = false; }
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const c = this.ctx = new AC();
+    this.out = c.createDynamicsCompressor(); this.out.threshold.value = -12; this.out.ratio.value = 4; this.out.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(this.out);
+    this.mus = c.createGain(); this.mus.gain.value = this.musicVol; this.mus.connect(this.master);
+    this.fx = c.createGain(); this.fx.gain.value = this.sfxVol; this.fx.connect(this.master);
+    // 펄스파 (듀티 12.5·25·50%)
+    this.pw = {};
+    for (const d of [0.125, 0.25, 0.5]) { const N = 48, re = new Float32Array(N), im = new Float32Array(N); for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * d)) / (n * Math.PI); } this.pw[d] = c.createPeriodicWave(re, im); }
+    // 4비트 계단 삼각파
+    { const S = 32, N = 40, re = new Float32Array(N), im = new Float32Array(N); const v = i => { const k = i < 16 ? i : 31 - i; return (k / 7.5) - 1; };
+      for (let n = 1; n < N; n++) { let a = 0, b = 0; for (let i = 0; i < S; i++) { const t0 = i / S, t1 = (i + 1) / S, w = 2 * Math.PI * n; a += v(i) * (Math.sin(w * t1) - Math.sin(w * t0)) / w; b += v(i) * (Math.cos(w * t0) - Math.cos(w * t1)) / w; } re[n] = 2 * a; im[n] = 2 * b; }
+      this.tw = c.createPeriodicWave(re, im); }
+    // 잡음 (15비트 LFSR)
+    const mk = short => { const len = c.sampleRate; const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0); let r = 1, v = 0; const step = Math.max(1, Math.round(c.sampleRate / 22000));
+      for (let i = 0; i < len; i++) { if (i % step === 0) { const bit = ((r & 1) ^ ((r >> (short ? 6 : 1)) & 1)); r = (r >> 1) | (bit << 14); v = (r & 1) ? 0.8 : -0.8; } d[i] = v; } return b; };
+    this.nz = mk(false); this.nzs = mk(true);
+    this.timer = setInterval(() => this.pump(), 25);
   }
-  // calc numbers
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (mines[r][c]) { board[r][c] = -1; continue; }
-      let count = 0;
-      for (let dr = -1; dr <= 1; dr++)
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && mines[nr][nc]) count++;
+  setVol(music, sfx) { if (music != null) this.musicVol = music; if (sfx != null) this.sfxVol = sfx; if (this.ctx) { this.mus.gain.setTargetAtTime(this.musicVol, this.ctx.currentTime, 0.05); this.fx.gain.setTargetAtTime(this.sfxVol, this.ctx.currentTime, 0.05); } }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); }
+  // ── 한 음
+  tone(dest, wave, f, t, dur, vol, o = {}) {
+    const c = this.ctx, os = c.createOscillator(), g = c.createGain();
+    if (wave === 'tri') os.setPeriodicWave(this.tw); else os.setPeriodicWave(this.pw[wave] || this.pw[0.5]);
+    os.frequency.setValueAtTime(f, t);
+    if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + (o.sweep || dur));
+    if (o.vib && dur > 0.25) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.25); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    const a = 0.004, rel = o.rel ?? 0.03, sus = o.decay ? vol * o.decay : vol;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+    if (o.decay != null) g.gain.exponentialRampToValueAtTime(Math.max(0.0001, sus), t + Math.max(a + 0.01, dur));
+    g.gain.setValueAtTime(o.decay != null ? Math.max(0.0001, sus) : vol, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + rel);
+    os.connect(g); g.connect(dest); os.start(t); os.stop(t + dur + rel + 0.02);
+  }
+  noise(dest, t, dur, vol, o = {}) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = o.short ? this.nzs : this.nz; s.playbackRate.value = o.rate || 1; s.loop = true;
+    f.type = o.type || 'highpass'; f.frequency.value = o.freq || 1000; if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+  }
+  // ── 음악 순서기
+  play(id) {
+    this.init(); if (!this.ctx) return;
+    this.stop();
+    const S = SONGS[id]; if (!S) return;
+    const ch = ['p1', 'p2', 'tri', 'noi'].map(k => ({ k, ...parseTrack(S[k]) }));
+    const L = ch[0].len; const at = {}; ch.forEach(c => { if (c.len !== L) console.warn('track length', S.name, c.k, c.len, L); c.ev.forEach(e => { (at[e.t] = at[e.t] || []).push({ ...e, k: c.k }); }); });
+    this.song = { S, at, L, step: 0, next: this.ctx.currentTime + 0.08, loops: 0, id };
+  }
+  stop() { this.song = null; }
+  pause(p) { this.paused = p; if (!p && this.song && this.ctx) this.song.next = this.ctx.currentTime + 0.05; }
+  pump() {
+    const sg = this.song; if (!sg || this.paused || !this.ctx) return;
+    const c = this.ctx, ahead = c.currentTime + 0.12;
+    if (sg.next < c.currentTime - 0.25) sg.next = c.currentTime + 0.02;     // 탭이 잠들었다 깨면 따라잡지 않고 이어서
+    while (sg.next < ahead) {
+      const S = sg.S, accel = S.accel ? Math.min(1.6, Math.pow(S.accel, sg.loops)) : 1;
+      const sp = 60 / (S.bpm * this.tempo * accel) / 4;      // 16분음표 길이(초)
+      const evs = sg.at[sg.step];
+      if (evs) for (const e of evs) {
+        const d = e.len * sp;
+        if (e.k === 'noi') {
+          if (e.n === 'k') { this.noise(this.mus, sg.next, 0.09, 0.32, { type: 'lowpass', freq: 900, fto: 120 }); this.tone(this.mus, 'tri', 140, sg.next, 0.07, 0.35, { to: 50, sweep: 0.07, rel: 0.01 }); }
+          else if (e.n === 's') this.noise(this.mus, sg.next, 0.12, 0.2, { type: 'bandpass', freq: 2200 });
+          else if (e.n === 'h') this.noise(this.mus, sg.next, 0.035, 0.07, { type: 'highpass', freq: 7000 });
+        } else {
+          const f = midiHz(noteMidi(e.n));
+          if (e.k === 'p1') this.tone(this.mus, S.duty[0], f, sg.next, d * 0.92, 0.13, { vib: true, decay: 0.75 });
+          else if (e.k === 'p2') this.tone(this.mus, S.duty[1], f, sg.next, d * 0.8, 0.065, { decay: 0.5 });
+          else this.tone(this.mus, 'tri', f, sg.next, d * 0.85, 0.3, {});
         }
-      board[r][c] = count;
-    }
-  }
-}
-
-function renderBoard() {
-  const boardEl = document.getElementById('board');
-  boardEl.style.gridTemplateColumns = `repeat(${cols}, 26px)`;
-  boardEl.innerHTML = '';
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.r = r; cell.dataset.c = c;
-      updateCell(cell, r, c);
-      cell.addEventListener('click', () => handleClick(r, c));
-      cell.addEventListener('contextmenu', e => { e.preventDefault(); handleFlag(r, c); });
-      boardEl.appendChild(cell);
-    }
-  }
-}
-
-function getCell(r, c) {
-  return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-}
-
-function updateCell(cell, r, c) {
-  if (!revealed[r][c]) {
-    cell.className = flagged[r][c] ? 'cell hidden flagged' : 'cell hidden';
-    cell.textContent = flagged[r][c] ? '🚩' : '';
-  } else if (mines[r][c]) {
-    cell.className = 'cell mine';
-    cell.textContent = '💣';
-  } else {
-    const n = board[r][c];
-    cell.className = 'cell revealed' + (n > 0 ? ` n${n}` : '');
-    cell.textContent = n > 0 ? n : '';
-  }
-}
-
-function handleClick(r, c) {
-  if (gameEnded || flagged[r][c] || revealed[r][c]) return;
-  if (firstClick) {
-    firstClick = false;
-    placeMines(r, c);
-    gameStarted = true;
-    timerInterval = setInterval(() => {
-      elapsed++;
-      document.getElementById('timer').textContent = elapsed;
-    }, 1000);
-  }
-  if (mines[r][c]) {
-    revealAll(r, c);
-    endGame(false);
-    return;
-  }
-  reveal(r, c);
-  checkWin();
-}
-
-function handleFlag(r, c) {
-  if (gameEnded || revealed[r][c]) return;
-  flagged[r][c] = !flagged[r][c];
-  const cell = getCell(r, c);
-  updateCell(cell, r, c);
-  const flagCount = flagged.flat().filter(Boolean).length;
-  document.getElementById('mineCount').textContent = mineCount - flagCount;
-}
-
-function reveal(r, c) {
-  if (r < 0 || r >= rows || c < 0 || c >= cols) return;
-  if (revealed[r][c] || flagged[r][c] || mines[r][c]) return;
-  revealed[r][c] = true;
-  const cell = getCell(r, c);
-  updateCell(cell, r, c);
-  if (board[r][c] === 0) {
-    for (let dr = -1; dr <= 1; dr++)
-      for (let dc = -1; dc <= 1; dc++)
-        reveal(r + dr, c + dc);
-  }
-}
-
-function revealAll(srcR, srcC) {
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (mines[r][c]) {
-        revealed[r][c] = true;
-        const cell = getCell(r, c);
-        cell.className = (r === srcR && c === srcC) ? 'cell mine-source' : 'cell mine';
-        cell.textContent = '💣';
       }
+      if (sg.step % 4 === 0) { const when = sg.next; this.beatCbs.forEach(cb => cb(when, sg.step % (S.bar) === 0)); }
+      sg.next += sp; sg.step++;
+      if (sg.step >= sg.L) { sg.step = 0; sg.loops++; }
+    }
+  }
+  onBeat(cb) { this.beatCbs.push(cb); }
+  // ── 효과음
+  sfx(name, a = {}) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + 0.005, F = this.fx;
+    const arp = (notes, step, wave = 0.5, vol = 0.16, len) => notes.forEach((n, i) => this.tone(F, wave, midiHz(typeof n === 'number' ? n : noteMidi(n)), t + i * step, len || step * 1.6, vol, { decay: 0.4 }));
+    switch (name) {
+      case 'open': this.tone(F, 0.25, 700 + Math.min(8, a.n || 0) * 40, t, 0.03, 0.07, { rel: 0.01 }); break;
+      case 'flood': { const k = Math.min(10, Math.ceil((a.n || 10) / 6)); for (let i = 0; i < k; i++) this.tone(F, 0.125, midiHz(72 + [0, 2, 4, 7, 9][i % 5] + 12 * Math.floor(i / 5)), t + i * 0.028, 0.04, 0.05, { rel: 0.01 }); this.noise(F, t, 0.15 + k * 0.02, 0.05, { type: 'bandpass', freq: 2500, fto: 5000 }); break; }
+      case 'flag': this.tone(F, 0.5, 520, t, 0.05, 0.1, { to: 880, sweep: 0.05, rel: 0.01 }); break;
+      case 'unflag': this.tone(F, 0.5, 700, t, 0.05, 0.08, { to: 400, sweep: 0.05, rel: 0.01 }); break;
+      case 'chord': this.noise(F, t, 0.06, 0.08, { type: 'bandpass', freq: 1500 }); this.tone(F, 0.25, 600, t, 0.04, 0.07, { rel: 0.01 }); break;
+      case 'nope': this.tone(F, 0.5, 150, t, 0.07, 0.08, { to: 120, sweep: 0.07 }); break;
+      case 'boom': this.noise(F, t, 0.9, 0.5, { type: 'lowpass', freq: 3000, fto: 60 }); this.tone(F, 'tri', 160, t, 0.6, 0.5, { to: 30, sweep: 0.6 }); this.tone(F, 0.5, 300, t, 0.3, 0.12, { to: 50, sweep: 0.3 }); break;
+      case 'pop': this.noise(F, t, 0.18, 0.12 * (a.k ?? 1), { type: 'lowpass', freq: 1600, fto: 120 }); break;
+      case 'win': arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6', 'G6', 'C7'], 0.08, 0.5, 0.14, 0.3); this.noise(F, t, 0.6, 0.12, { type: 'highpass', freq: 3000, fto: 8000 }); break;
+      case 'hint': arp([84, 88, 91], 0.05, 0.125, 0.08); break;
+      case 'start': arp([72, 79], 0.06, 0.25, 0.1); break;
+      case 'menu': this.tone(F, 0.25, 1000, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'select': arp([76, 83], 0.05, 0.25, 0.1); break;
     }
   }
 }
 
-function checkWin() {
-  let unrev = 0;
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      if (!revealed[r][c]) unrev++;
-  if (unrev === mineCount) endGame(true);
-}
-
-function endGame(won) {
-  gameEnded = true;
-  if (timerInterval) clearInterval(timerInterval);
-  document.getElementById('faceBtn').textContent = won ? '😎' : '😵';
-  if (won) {
-    for (let r = 0; r < rows; r++)
-      for (let c = 0; c < cols; c++)
-        if (mines[r][c] && !flagged[r][c]) {
-          flagged[r][c] = true;
-          const cell = getCell(r, c);
-          updateCell(cell, r, c);
+// ───────────────────────── 판 그리기 ─────────────────────────
+const NUMC = ['', '#4fa3ff', '#3ecf7a', '#ff5d6a', '#b07cff', '#ff9a3d', '#3fe0d0', '#f2f4ff', '#9aa4b8'];
+const UI_FONT = "'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif";
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+class BoardView {
+  constructor(cv) { this.cv = cv; this.c = cv.getContext('2d'); this.cache = {}; this.revealAt = null; this.boomAt = null; this.hover = -1; this.press = []; this.hintCell = -1; this.hintT = 0; this.winT = 0; }
+  // 칸 크기·배치 (세로 화면에서 가로로 긴 판은 돌려서 보여 준다)
+  fit(m, maxW, maxH, dpr) {
+    const tr = m.w > m.h && maxH > maxW * 1.1;
+    const cols = tr ? m.h : m.w, rows = tr ? m.w : m.h;
+    const cs = Math.max(14, Math.floor(Math.min(maxW / cols, maxH / rows, 46)));
+    this.tr = tr; this.cols = cols; this.rows = rows; this.cs = cs; this.dpr = dpr; this.m = m;
+    const W = cols * cs, H = rows * cs; this.W = W; this.H = H;
+    this.cv.width = Math.round(W * dpr); this.cv.height = Math.round(H * dpr); this.cv.style.width = W + 'px'; this.cv.style.height = H + 'px';
+    this.cache = {};
+    if (!this.revealAt || this.revealAt.length !== m.N) { this.revealAt = new Float64Array(m.N); this.boomAt = new Float64Array(m.N).fill(0); }
+  }
+  // 칸 번호 ↔ 화면 칸
+  xy(i) { const m = this.m, x = i % m.w, y = (i / m.w) | 0; return this.tr ? [y, m.w - 1 - x] : [x, y]; }
+  at(px, py) {
+    const col = Math.floor(px / this.cs), row = Math.floor(py / this.cs); if (col < 0 || row < 0 || col >= this.cols || row >= this.rows) return -1;
+    const m = this.m; return this.tr ? col * m.w + (m.w - 1 - row) : row * m.w + col;
+  }
+  sprite(key, draw) {
+    if (this.cache[key]) return this.cache[key];
+    const s = this.cs, d = this.dpr, cv = document.createElement('canvas'); cv.width = cv.height = Math.ceil(s * d); const c = cv.getContext('2d'); c.scale(d, d); draw(c, s);
+    return (this.cache[key] = cv);
+  }
+  hiddenTile(pressed) {
+    return this.sprite('h' + (pressed ? 1 : 0), (c, s) => {
+      const p = Math.max(1, s * 0.05), r = s * 0.16;
+      const g = c.createLinearGradient(0, 0, 0, s); g.addColorStop(0, pressed ? '#2a3354' : '#5a6aa8'); g.addColorStop(1, pressed ? '#232b48' : '#39457a');
+      c.fillStyle = g; rr(c, p, p, s - 2 * p, s - 2 * p, r); c.fill();
+      if (!pressed) { c.fillStyle = 'rgba(255,255,255,.22)'; rr(c, p, p, s - 2 * p, s * 0.18, r); c.fill(); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(p + r, s - p - s * 0.08, s - 2 * p - 2 * r, s * 0.08); }
+    });
+  }
+  openTile() {
+    return this.sprite('o', (c, s) => {
+      const p = Math.max(0.5, s * 0.025); c.fillStyle = '#141a30'; c.fillRect(p, p, s - 2 * p, s - 2 * p);
+      c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(p, p, s - 2 * p, Math.max(1, s * 0.05));
+    });
+  }
+  flagIcon(wrong) {
+    return this.sprite('f' + (wrong ? 1 : 0), (c, s) => {
+      c.fillStyle = '#d8dcf0'; c.fillRect(s * 0.44, s * 0.2, s * 0.07, s * 0.58);
+      c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(s * 0.28, s * 0.74, s * 0.42, s * 0.08);
+      const g = c.createLinearGradient(0, s * 0.2, 0, s * 0.52); g.addColorStop(0, '#ff6a6a'); g.addColorStop(1, '#d81e3c');
+      c.fillStyle = g; c.beginPath(); c.moveTo(s * 0.51, s * 0.2); c.lineTo(s * 0.8, s * 0.35); c.lineTo(s * 0.51, s * 0.5); c.closePath(); c.fill();
+      if (wrong) { c.strokeStyle = '#ffd23f'; c.lineWidth = Math.max(2, s * 0.09); c.lineCap = 'round'; c.beginPath(); c.moveTo(s * 0.22, s * 0.22); c.lineTo(s * 0.78, s * 0.78); c.moveTo(s * 0.78, s * 0.22); c.lineTo(s * 0.22, s * 0.78); c.stroke(); }
+    });
+  }
+  mineIcon() {
+    return this.sprite('m', (c, s) => {
+      const cx = s / 2, cy = s / 2, r = s * 0.22;
+      c.strokeStyle = '#0a0c14'; c.lineWidth = Math.max(1.5, s * 0.07); c.lineCap = 'round';
+      for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; c.beginPath(); c.moveTo(cx + Math.cos(a) * r * 0.6, cy + Math.sin(a) * r * 0.6); c.lineTo(cx + Math.cos(a) * r * 1.55, cy + Math.sin(a) * r * 1.55); c.stroke(); }
+      const g = c.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r); g.addColorStop(0, '#5a6078'); g.addColorStop(1, '#0a0c14');
+      c.fillStyle = g; c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.75)'; c.beginPath(); c.arc(cx - r * 0.35, cy - r * 0.35, r * 0.22, 0, 7); c.fill();
+    });
+  }
+  frame(now, opts = {}) {
+    const m = this.m, c = this.c, s = this.cs; if (!m) return;
+    c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); c.clearRect(0, 0, this.W, this.H);
+    const H = this.hiddenTile(false), P = this.hiddenTile(true), O = this.openTile(), F = this.flagIcon(false), FW = this.flagIcon(true), M = this.mineIcon();
+    const lost = m.status === 'lost', won = m.status === 'won', pressSet = new Set(this.press);
+    c.font = `900 ${Math.round(s * 0.62)}px ${UI_FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    for (let i = 0; i < m.N; i++) {
+      const [cx, cy] = this.xy(i), x = cx * s, y = cy * s, st = m.st[i];
+      const rev = this.revealAt[i], t = rev ? Math.min(1, Math.max(0, (now - rev) / 140)) : 1;
+      if (st === OPEN) {
+        c.drawImage(O, x, y, s, s);
+        if (m.mine[i]) {
+          const ba = this.boomAt[i];
+          if (i === m.boom) { c.fillStyle = '#c8203c'; c.fillRect(x + 1, y + 1, s - 2, s - 2); }
+          c.drawImage(M, x, y, s, s);
+          if (ba && now - ba < 250) { c.fillStyle = `rgba(255,220,120,${1 - (now - ba) / 250})`; c.fillRect(x, y, s, s); }
+        } else if (m.adj[i]) { c.fillStyle = NUMC[m.adj[i]]; c.fillText(m.adj[i], x + s / 2, y + s / 2 + s * 0.03); }
+        // 열리는 순간: 덮개가 작아지며 사라진다
+        if (t < 1) { const k = 1 - t, d = s * (1 - k) / 2; c.globalAlpha = k; c.drawImage(H, x + d, y + d, s * k, s * k); c.globalAlpha = 1; }
+      } else {
+        // 지고 나면 숨은 지뢰가 차례로 터져 드러난다
+        const ba = lost && m.mine[i] && st !== FLAG ? this.boomAt[i] : 0;
+        if (ba && now >= ba) {
+          c.drawImage(O, x, y, s, s); c.drawImage(M, x, y, s, s);
+          if (now - ba < 260) { const k = (now - ba) / 260; c.fillStyle = `rgba(255,${180 - k * 120},80,${1 - k})`; c.beginPath(); c.arc(x + s / 2, y + s / 2, s * (0.3 + k * 0.9), 0, 7); c.fill(); }
+          continue;
         }
-    document.getElementById('mineCount').textContent = '0';
+        c.drawImage(pressSet.has(i) && st === HIDDEN ? P : H, x, y, s, s);
+        if (i === this.hover && st !== FLAG && m.status !== 'lost' && m.status !== 'won') { c.fillStyle = 'rgba(255,255,255,.1)'; rr(c, x + 1, y + 1, s - 2, s - 2, s * 0.16); c.fill(); }
+        if (st === FLAG) {
+          const wrong = lost && !m.mine[i]; let dy = 0;
+          if (won && this.winT) { const ph = (now - this.winT) / 1000 - (cx + cy) * 0.04; if (ph > 0 && ph < 0.5) dy = -Math.sin(ph / 0.5 * Math.PI) * s * 0.25; }
+          c.drawImage(wrong ? FW : F, x, y + dy, s, s);
+        } else if (st === MARK) { c.fillStyle = '#e8ebff'; c.fillText('?', x + s / 2, y + s / 2 + s * 0.03); }
+      }
+      if (i === this.hintCell && now - this.hintT < 2200) { const a = 0.5 + Math.sin((now - this.hintT) / 120) * 0.5; c.strokeStyle = `rgba(63,224,208,${a})`; c.lineWidth = Math.max(2, s * 0.1); rr(c, x + 2, y + 2, s - 4, s - 4, s * 0.16); c.stroke(); }
+      if (i === opts.start && m.status === 'ready') { const a = 0.55 + Math.sin(now / 200) * 0.35; c.strokeStyle = `rgba(255,210,63,${a})`; c.lineWidth = Math.max(2, s * 0.1); rr(c, x + 2, y + 2, s - 4, s - 4, s * 0.16); c.stroke(); }
+    }
+    // 이긴 판: 빛 물결
+    if (won && this.winT) {
+      const k = (now - this.winT) / 1400; if (k < 1.4) { const gx = (k * 1.6 - 0.3) * this.W; const g = c.createLinearGradient(gx - this.W * 0.25, 0, gx + this.W * 0.25, this.H); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, this.W, this.H); }
+    }
   }
 }
 
-newGame();
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+const TX = {
+  ko: {
+    title: '지뢰찾기', tag: '숫자를 읽고 지뢰를 피하라', classic: '클래식', classicDesc: '첫 칸은 늘 안전하고 넓게 열린다', daily: '오늘의 퍼즐', dailyDesc: '모두 같은 판, 같은 출발 칸. 공식 기록은 하루 한 번',
+    levels: { easy: '초급', medium: '중급', hard: '고급', custom: '사용자 지정' }, w: '가로', h: '세로', n: '지뢰',
+    noGuess: '운에 맡기는 칸', ngOn: '없음 (논리만)', ngOff: '있을 수 있음',
+    start: '시작', cont: '이어하기 · {t}', play: '도전하기', resume: '이어서 도전', viewResult: '결과 보기', notYet: '아직 도전하지 않았어요', doneTime: '성공 · {t}', failed: '실패', inProgress: '진행 중', streak: '연속 {n}일',
+    settings: '설정', records: '기록', help: '조작법', done: '확인', mines: '지뢰', time: '시간', hintBtn: '힌트 {n}', flagMode: '깃발 모드', noHint: '오늘의 퍼즐은 힌트가 없어요',
+    win: '성공!', lose: '펑!', again: '다시 하기', menu: '메뉴', look: '판 보기', newRec: '★ 새 기록 ★', none: '아직 기록이 없습니다',
+    progress: '진행', flagsUsed: '깃발', hintsUsed: '힌트 사용', hintPenalty: '힌트 1번에 10초 추가', share: '결과 복사하기', copied: '복사했습니다', nextIn: '다음 퍼즐까지 {t}',
+    hint: '왼쪽 클릭 열기 · 오른쪽 클릭 깃발 · 숫자 클릭 한꺼번에 열기', hintTouch: '누르면 열기 · 길게 누르면 깃발 · 숫자를 누르면 한꺼번에 열기',
+    startHere: '빛나는 칸에서 시작하세요',
+    music: '음악', musicNames: { A: '조용한 들판', off: '끔' }, mv: '음악 볼륨', sv: '효과음 볼륨', fx: '효과', marks: '물음표 표시', on: '켬', off: '끔',
+    bestTimes: '난이도별 최고 기록', winRate: '승률', played: '판 수', history: '최근 오늘의 퍼즐',
+    keys: [['왼쪽 클릭', '열기'], ['오른쪽 클릭', '깃발 꽂기·뽑기'], ['숫자 칸 클릭 / 가운데 클릭', '깃발 수가 맞으면 둘레를 한꺼번에 열기'], ['길게 누르기', '깃발 (휴대폰)'], ['H', '힌트 (클래식)'], ['F2 / 얼굴', '새 판'], ['Esc', '메뉴'], ['M', '소리 끄기·켜기']],
+    tips: ['숫자는 둘레 8칸에 있는 지뢰 수다', '"운에 맡기는 칸 없음"으로 만든 판은 처음부터 끝까지 논리만으로 풀린다', '오늘의 퍼즐은 날마다 크기가 바뀐다: 중급 · 고급 · 초급'],
+  },
+  en: {
+    title: 'Minesweeper', tag: 'READ THE NUMBERS · DODGE THE MINES', classic: 'Classic', classicDesc: 'Your first click is always safe and opens wide', daily: 'Daily Puzzle', dailyDesc: 'Same board and same start cell for everyone. One official run per day',
+    levels: { easy: 'Beginner', medium: 'Intermediate', hard: 'Expert', custom: 'Custom' }, w: 'Width', h: 'Height', n: 'Mines',
+    noGuess: 'Guessing', ngOn: 'Never (logic only)', ngOff: 'Sometimes',
+    start: 'Start', cont: 'Continue · {t}', play: 'Play', resume: 'Resume', viewResult: 'See result', notYet: 'Not played yet', doneTime: 'Solved · {t}', failed: 'Failed', inProgress: 'In progress', streak: '{n}-day streak',
+    settings: 'Settings', records: 'Records', help: 'Controls', done: 'Done', mines: 'MINES', time: 'TIME', hintBtn: 'Hint {n}', flagMode: 'Flag mode', noHint: 'No hints in the Daily Puzzle',
+    win: 'Cleared!', lose: 'Boom!', again: 'Play again', menu: 'Menu', look: 'View board', newRec: '★ NEW RECORD ★', none: 'No records yet',
+    progress: 'Progress', flagsUsed: 'Flags', hintsUsed: 'Hints used', hintPenalty: 'Each hint adds 10 seconds', share: 'Copy result', copied: 'Copied', nextIn: 'Next puzzle in {t}',
+    hint: 'Left click opens · right click flags · click a number to open around it', hintTouch: 'Tap opens · long press flags · tap a number to open around it',
+    startHere: 'Start on the glowing cell',
+    music: 'Music', musicNames: { A: 'Quiet Field', off: 'Off' }, mv: 'Music volume', sv: 'Sound volume', fx: 'Effects', marks: 'Question marks', on: 'On', off: 'Off',
+    bestTimes: 'Best times by level', winRate: 'Win rate', played: 'Games', history: 'Recent daily puzzles',
+    keys: [['Left click', 'Open'], ['Right click', 'Place or remove a flag'], ['Click a number / middle click', 'Open around it when the flags match'], ['Long press', 'Flag (phone)'], ['H', 'Hint (Classic)'], ['F2 / face', 'New board'], ['Esc', 'Menu'], ['M', 'Mute']],
+    tips: ['A number tells how many mines touch that cell', 'Boards made with "Guessing: never" can be solved by logic from start to finish', 'The Daily Puzzle size rotates: Intermediate · Expert · Beginner'],
+  },
+  ja: {
+    title: 'マインスイーパー', tag: '数字を読んで地雷を避けよう', classic: 'クラシック', classicDesc: '最初のマスは必ず安全で、広く開く', daily: '今日のパズル', dailyDesc: '全員が同じ盤・同じ開始マス。公式記録は1日1回',
+    levels: { easy: '初級', medium: '中級', hard: '上級', custom: 'カスタム' }, w: '横', h: '縦', n: '地雷',
+    noGuess: '運任せのマス', ngOn: 'なし (論理だけ)', ngOff: 'あるかも',
+    start: 'スタート', cont: '続きから · {t}', play: '挑戦する', resume: '続きから挑戦', viewResult: '結果を見る', notYet: 'まだ挑戦していません', doneTime: '成功 · {t}', failed: '失敗', inProgress: '挑戦中', streak: '{n}日連続',
+    settings: '設定', records: '記録', help: '操作方法', done: 'OK', mines: '地雷', time: '時間', hintBtn: 'ヒント {n}', flagMode: '旗モード', noHint: '今日のパズルはヒントなし',
+    win: 'クリア!', lose: 'ドカン!', again: 'もう一度', menu: 'メニュー', look: '盤を見る', newRec: '★ 新記録 ★', none: 'まだ記録がありません',
+    progress: '進み具合', flagsUsed: '旗', hintsUsed: 'ヒント使用', hintPenalty: 'ヒント1回につき10秒追加', share: '結果をコピー', copied: 'コピーしました', nextIn: '次のパズルまで {t}',
+    hint: '左クリックで開く · 右クリックで旗 · 数字をクリックで周りを一気に開く', hintTouch: 'タップで開く · 長押しで旗 · 数字をタップで周りを一気に開く',
+    startHere: '光っているマスから始めよう',
+    music: '音楽', musicNames: { A: '静かな野原', off: 'オフ' }, mv: '音楽の音量', sv: '効果音の音量', fx: 'エフェクト', marks: 'はてなマーク', on: 'オン', off: 'オフ',
+    bestTimes: '難易度別ベスト', winRate: '勝率', played: 'プレイ数', history: '最近の今日のパズル',
+    keys: [['左クリック', '開く'], ['右クリック', '旗を立てる・外す'], ['数字をクリック / 中クリック', '旗の数が合えば周りを一気に開く'], ['長押し', '旗 (スマホ)'], ['H', 'ヒント (クラシック)'], ['F2 / 顔', '新しい盤'], ['Esc', 'メニュー'], ['M', '消音']],
+    tips: ['数字はまわり8マスにある地雷の数', '「運任せのマスなし」で作った盤は最初から最後まで論理だけで解ける', '今日のパズルは毎日大きさが変わる: 中級 · 上級 · 初級'],
+  },
+  zh: {
+    title: '扫雷', tag: '读懂数字，避开地雷', classic: '经典', classicDesc: '第一下一定安全，而且会打开一大片', daily: '每日谜题', dailyDesc: '所有人同一盘、同一个起点。正式记录每天一次',
+    levels: { easy: '初级', medium: '中级', hard: '高级', custom: '自定义' }, w: '宽', h: '高', n: '雷数',
+    noGuess: '需要猜的格子', ngOn: '没有 (只靠推理)', ngOff: '可能有',
+    start: '开始', cont: '继续 · {t}', play: '挑战', resume: '继续挑战', viewResult: '查看结果', notYet: '还没有挑战', doneTime: '成功 · {t}', failed: '失败', inProgress: '进行中', streak: '连续 {n} 天',
+    settings: '设置', records: '记录', help: '操作说明', done: '确定', mines: '雷', time: '时间', hintBtn: '提示 {n}', flagMode: '插旗模式', noHint: '每日谜题没有提示',
+    win: '成功!', lose: '轰!', again: '再玩一次', menu: '菜单', look: '查看棋盘', newRec: '★ 新纪录 ★', none: '还没有记录',
+    progress: '进度', flagsUsed: '旗子', hintsUsed: '使用提示', hintPenalty: '每次提示加 10 秒', share: '复制结果', copied: '已复制', nextIn: '距离下一题 {t}',
+    hint: '左键打开 · 右键插旗 · 点数字一次打开周围', hintTouch: '点按打开 · 长按插旗 · 点数字一次打开周围',
+    startHere: '从发光的格子开始',
+    music: '音乐', musicNames: { A: '安静的田野', off: '关' }, mv: '音乐音量', sv: '音效音量', fx: '特效', marks: '问号标记', on: '开', off: '关',
+    bestTimes: '各难度最佳成绩', winRate: '胜率', played: '局数', history: '最近的每日谜题',
+    keys: [['左键', '打开'], ['右键', '插旗 / 拔旗'], ['点数字 / 中键', '旗数对上时打开周围'], ['长按', '插旗 (手机)'], ['H', '提示 (经典)'], ['F2 / 表情', '新一局'], ['Esc', '菜单'], ['M', '静音']],
+    tips: ['数字表示周围 8 格里有几颗雷', '用"没有需要猜的格子"生成的棋盘，从头到尾只靠推理就能解开', '每日谜题的大小每天轮换：中级 · 高级 · 初级'],
+  },
+  'zh-TW': {
+    title: '踩地雷', tag: '讀懂數字，避開地雷', classic: '經典', classicDesc: '第一下一定安全，而且會打開一大片', daily: '每日謎題', dailyDesc: '所有人同一盤、同一個起點。正式紀錄每天一次',
+    levels: { easy: '初級', medium: '中級', hard: '高級', custom: '自訂' }, w: '寬', h: '高', n: '地雷',
+    noGuess: '需要猜的格子', ngOn: '沒有 (只靠推理)', ngOff: '可能有',
+    start: '開始', cont: '繼續 · {t}', play: '挑戰', resume: '繼續挑戰', viewResult: '查看結果', notYet: '還沒有挑戰', doneTime: '成功 · {t}', failed: '失敗', inProgress: '進行中', streak: '連續 {n} 天',
+    settings: '設定', records: '紀錄', help: '操作說明', done: '確定', mines: '地雷', time: '時間', hintBtn: '提示 {n}', flagMode: '插旗模式', noHint: '每日謎題沒有提示',
+    win: '成功!', lose: '轟!', again: '再玩一次', menu: '選單', look: '查看棋盤', newRec: '★ 新紀錄 ★', none: '還沒有紀錄',
+    progress: '進度', flagsUsed: '旗子', hintsUsed: '使用提示', hintPenalty: '每次提示加 10 秒', share: '複製結果', copied: '已複製', nextIn: '距離下一題 {t}',
+    hint: '左鍵打開 · 右鍵插旗 · 點數字一次打開周圍', hintTouch: '點按打開 · 長按插旗 · 點數字一次打開周圍',
+    startHere: '從發光的格子開始',
+    music: '音樂', musicNames: { A: '安靜的田野', off: '關' }, mv: '音樂音量', sv: '音效音量', fx: '特效', marks: '問號標記', on: '開', off: '關',
+    bestTimes: '各難度最佳成績', winRate: '勝率', played: '局數', history: '最近的每日謎題',
+    keys: [['左鍵', '打開'], ['右鍵', '插旗 / 拔旗'], ['點數字 / 中鍵', '旗數對上時打開周圍'], ['長按', '插旗 (手機)'], ['H', '提示 (經典)'], ['F2 / 表情', '新一局'], ['Esc', '選單'], ['M', '靜音']],
+    tips: ['數字表示周圍 8 格裡有幾顆地雷', '用「沒有需要猜的格子」產生的棋盤，從頭到尾只靠推理就能解開', '每日謎題的大小每天輪換：中級 · 高級 · 初級'],
+  },
+  es: {
+    title: 'Buscaminas', tag: 'LEE LOS NÚMEROS · ESQUIVA LAS MINAS', classic: 'Clásico', classicDesc: 'El primer clic siempre es seguro y abre una zona amplia', daily: 'Reto diario', dailyDesc: 'El mismo tablero y la misma casilla de inicio para todos. Un intento oficial al día',
+    levels: { easy: 'Principiante', medium: 'Intermedio', hard: 'Experto', custom: 'Personalizado' }, w: 'Ancho', h: 'Alto', n: 'Minas',
+    noGuess: 'Casillas a la suerte', ngOn: 'Nunca (solo lógica)', ngOff: 'A veces',
+    start: 'Empezar', cont: 'Continuar · {t}', play: 'Jugar', resume: 'Continuar reto', viewResult: 'Ver resultado', notYet: 'Aún no lo has jugado', doneTime: 'Resuelto · {t}', failed: 'Fallido', inProgress: 'En curso', streak: 'Racha de {n} días',
+    settings: 'Ajustes', records: 'Récords', help: 'Controles', done: 'Listo', mines: 'MINAS', time: 'TIEMPO', hintBtn: 'Pista {n}', flagMode: 'Modo bandera', noHint: 'En el reto diario no hay pistas',
+    win: '¡Despejado!', lose: '¡Bum!', again: 'Jugar otra vez', menu: 'Menú', look: 'Ver tablero', newRec: '★ NUEVO RÉCORD ★', none: 'Aún no hay récords',
+    progress: 'Progreso', flagsUsed: 'Banderas', hintsUsed: 'Pistas usadas', hintPenalty: 'Cada pista suma 10 segundos', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo reto en {t}',
+    hint: 'Clic izquierdo abre · clic derecho marca · clic en un número abre alrededor', hintTouch: 'Toca para abrir · mantén pulsado para marcar · toca un número para abrir alrededor',
+    startHere: 'Empieza en la casilla que brilla',
+    music: 'Música', musicNames: { A: 'Campo tranquilo', off: 'No' }, mv: 'Volumen de música', sv: 'Volumen de efectos', fx: 'Efectos', marks: 'Signos de interrogación', on: 'Sí', off: 'No',
+    bestTimes: 'Mejores tiempos por nivel', winRate: 'Victorias', played: 'Partidas', history: 'Retos diarios recientes',
+    keys: [['Clic izquierdo', 'Abrir'], ['Clic derecho', 'Poner o quitar bandera'], ['Clic en número / clic central', 'Abrir alrededor si las banderas cuadran'], ['Mantener pulsado', 'Bandera (móvil)'], ['H', 'Pista (Clásico)'], ['F2 / cara', 'Nuevo tablero'], ['Esc', 'Menú'], ['M', 'Silenciar']],
+    tips: ['Un número indica cuántas minas tocan esa casilla', 'Los tableros con "Casillas a la suerte: nunca" se resuelven solo con lógica', 'El tamaño del reto diario rota: Intermedio · Experto · Principiante'],
+  },
+  fr: {
+    title: 'Démineur', tag: 'LISEZ LES CHIFFRES · ÉVITEZ LES MINES', classic: 'Classique', classicDesc: 'Le premier clic est toujours sûr et ouvre une large zone', daily: 'Défi du jour', dailyDesc: 'Même plateau et même case de départ pour tous. Un essai officiel par jour',
+    levels: { easy: 'Débutant', medium: 'Intermédiaire', hard: 'Expert', custom: 'Personnalisé' }, w: 'Largeur', h: 'Hauteur', n: 'Mines',
+    noGuess: 'Cases au hasard', ngOn: 'Jamais (logique seule)', ngOff: 'Parfois',
+    start: 'Jouer', cont: 'Continuer · {t}', play: 'Relever le défi', resume: 'Reprendre', viewResult: 'Voir le résultat', notYet: 'Pas encore joué', doneTime: 'Réussi · {t}', failed: 'Échoué', inProgress: 'En cours', streak: 'Série de {n} jours',
+    settings: 'Réglages', records: 'Records', help: 'Commandes', done: 'OK', mines: 'MINES', time: 'TEMPS', hintBtn: 'Indice {n}', flagMode: 'Mode drapeau', noHint: 'Pas d’indice dans le défi du jour',
+    win: 'Déminé !', lose: 'Boum !', again: 'Rejouer', menu: 'Menu', look: 'Voir le plateau', newRec: '★ NOUVEAU RECORD ★', none: 'Pas encore de record',
+    progress: 'Progression', flagsUsed: 'Drapeaux', hintsUsed: 'Indices utilisés', hintPenalty: 'Chaque indice ajoute 10 secondes', share: 'Copier le résultat', copied: 'Copié', nextIn: 'Prochain défi dans {t}',
+    hint: 'Clic gauche ouvre · clic droit pose un drapeau · clic sur un chiffre ouvre autour', hintTouch: 'Touchez pour ouvrir · appui long pour un drapeau · touchez un chiffre pour ouvrir autour',
+    startHere: 'Commencez sur la case qui brille',
+    music: 'Musique', musicNames: { A: 'Champ tranquille', off: 'Non' }, mv: 'Volume musique', sv: 'Volume effets', fx: 'Effets', marks: 'Points d’interrogation', on: 'Oui', off: 'Non',
+    bestTimes: 'Meilleurs temps par niveau', winRate: 'Victoires', played: 'Parties', history: 'Défis du jour récents',
+    keys: [['Clic gauche', 'Ouvrir'], ['Clic droit', 'Poser ou retirer un drapeau'], ['Clic sur un chiffre / clic central', 'Ouvrir autour si les drapeaux correspondent'], ['Appui long', 'Drapeau (mobile)'], ['H', 'Indice (Classique)'], ['F2 / visage', 'Nouveau plateau'], ['Échap', 'Menu'], ['M', 'Couper le son']],
+    tips: ['Un chiffre indique combien de mines touchent cette case', 'Les plateaux « Cases au hasard : jamais » se résolvent uniquement par la logique', 'La taille du défi du jour change chaque jour : Intermédiaire · Expert · Débutant'],
+  },
+  de: {
+    title: 'Minesweeper', tag: 'ZAHLEN LESEN · MINEN MEIDEN', classic: 'Klassisch', classicDesc: 'Der erste Klick ist immer sicher und öffnet eine große Fläche', daily: 'Tagesrätsel', dailyDesc: 'Gleiches Feld und gleiches Startfeld für alle. Ein offizieller Versuch pro Tag',
+    levels: { easy: 'Anfänger', medium: 'Fortgeschritten', hard: 'Experte', custom: 'Eigenes' }, w: 'Breite', h: 'Höhe', n: 'Minen',
+    noGuess: 'Ratefelder', ngOn: 'Nie (nur Logik)', ngOff: 'Manchmal',
+    start: 'Start', cont: 'Weiter · {t}', play: 'Spielen', resume: 'Weiterspielen', viewResult: 'Ergebnis ansehen', notYet: 'Noch nicht gespielt', doneTime: 'Gelöst · {t}', failed: 'Gescheitert', inProgress: 'Läuft', streak: '{n} Tage in Folge',
+    settings: 'Einstellungen', records: 'Rekorde', help: 'Steuerung', done: 'Fertig', mines: 'MINEN', time: 'ZEIT', hintBtn: 'Tipp {n}', flagMode: 'Flaggenmodus', noHint: 'Im Tagesrätsel gibt es keine Tipps',
+    win: 'Geschafft!', lose: 'Bumm!', again: 'Nochmal', menu: 'Menü', look: 'Feld ansehen', newRec: '★ NEUER REKORD ★', none: 'Noch keine Rekorde',
+    progress: 'Fortschritt', flagsUsed: 'Flaggen', hintsUsed: 'Tipps genutzt', hintPenalty: 'Jeder Tipp kostet 10 Sekunden', share: 'Ergebnis kopieren', copied: 'Kopiert', nextIn: 'Nächstes Rätsel in {t}',
+    hint: 'Linksklick öffnet · Rechtsklick setzt Flagge · Klick auf Zahl öffnet ringsum', hintTouch: 'Tippen öffnet · lang drücken setzt Flagge · Zahl antippen öffnet ringsum',
+    startHere: 'Beginne auf dem leuchtenden Feld',
+    music: 'Musik', musicNames: { A: 'Stilles Feld', off: 'Aus' }, mv: 'Musiklautstärke', sv: 'Effektlautstärke', fx: 'Effekte', marks: 'Fragezeichen', on: 'An', off: 'Aus',
+    bestTimes: 'Bestzeiten je Stufe', winRate: 'Siegquote', played: 'Spiele', history: 'Letzte Tagesrätsel',
+    keys: [['Linksklick', 'Öffnen'], ['Rechtsklick', 'Flagge setzen oder entfernen'], ['Klick auf Zahl / Mittelklick', 'Ringsum öffnen, wenn die Flaggen passen'], ['Lang drücken', 'Flagge (Handy)'], ['H', 'Tipp (Klassisch)'], ['F2 / Gesicht', 'Neues Feld'], ['Esc', 'Menü'], ['M', 'Ton aus']],
+    tips: ['Eine Zahl sagt, wie viele Minen dieses Feld berühren', 'Felder mit „Ratefelder: nie“ lassen sich vom Anfang bis zum Ende rein logisch lösen', 'Die Größe des Tagesrätsels wechselt täglich: Fortgeschritten · Experte · Anfänger'],
+  },
+  pt: {
+    title: 'Campo Minado', tag: 'LEIA OS NÚMEROS · DESVIE DAS MINAS', classic: 'Clássico', classicDesc: 'O primeiro clique é sempre seguro e abre uma área grande', daily: 'Desafio do dia', dailyDesc: 'Mesmo tabuleiro e mesma casa inicial para todos. Uma tentativa oficial por dia',
+    levels: { easy: 'Iniciante', medium: 'Intermediário', hard: 'Especialista', custom: 'Personalizado' }, w: 'Largura', h: 'Altura', n: 'Minas',
+    noGuess: 'Casas no chute', ngOn: 'Nunca (só lógica)', ngOff: 'Às vezes',
+    start: 'Jogar', cont: 'Continuar · {t}', play: 'Desafiar', resume: 'Continuar desafio', viewResult: 'Ver resultado', notYet: 'Ainda não jogado', doneTime: 'Resolvido · {t}', failed: 'Falhou', inProgress: 'Em andamento', streak: '{n} dias seguidos',
+    settings: 'Configurações', records: 'Recordes', help: 'Controles', done: 'OK', mines: 'MINAS', time: 'TEMPO', hintBtn: 'Dica {n}', flagMode: 'Modo bandeira', noHint: 'Sem dicas no desafio do dia',
+    win: 'Limpo!', lose: 'Bum!', again: 'Jogar de novo', menu: 'Menu', look: 'Ver tabuleiro', newRec: '★ NOVO RECORDE ★', none: 'Ainda não há recordes',
+    progress: 'Progresso', flagsUsed: 'Bandeiras', hintsUsed: 'Dicas usadas', hintPenalty: 'Cada dica soma 10 segundos', share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo desafio em {t}',
+    hint: 'Clique esquerdo abre · clique direito marca · clique num número abre em volta', hintTouch: 'Toque abre · toque longo marca · toque num número abre em volta',
+    startHere: 'Comece pela casa que brilha',
+    music: 'Música', musicNames: { A: 'Campo tranquilo', off: 'Desligada' }, mv: 'Volume da música', sv: 'Volume dos efeitos', fx: 'Efeitos', marks: 'Pontos de interrogação', on: 'Ligado', off: 'Desligado',
+    bestTimes: 'Melhores tempos por nível', winRate: 'Vitórias', played: 'Jogos', history: 'Desafios do dia recentes',
+    keys: [['Clique esquerdo', 'Abrir'], ['Clique direito', 'Pôr ou tirar bandeira'], ['Clique no número / clique do meio', 'Abrir em volta se as bandeiras baterem'], ['Toque longo', 'Bandeira (celular)'], ['H', 'Dica (Clássico)'], ['F2 / rosto', 'Novo tabuleiro'], ['Esc', 'Menu'], ['M', 'Silenciar']],
+    tips: ['O número diz quantas minas tocam aquela casa', 'Tabuleiros com "Casas no chute: nunca" se resolvem só com lógica do início ao fim', 'O tamanho do desafio do dia muda todo dia: Intermediário · Especialista · Iniciante'],
+  },
+  ru: {
+    title: 'Сапёр', tag: 'ЧИТАЙ ЦИФРЫ · ОБХОДИ МИНЫ', classic: 'Классика', classicDesc: 'Первый ход всегда безопасен и открывает большую область', daily: 'Задача дня', dailyDesc: 'У всех одно поле и одна стартовая клетка. Одна официальная попытка в день',
+    levels: { easy: 'Новичок', medium: 'Любитель', hard: 'Профи', custom: 'Своё' }, w: 'Ширина', h: 'Высота', n: 'Мины',
+    noGuess: 'Клетки наугад', ngOn: 'Нет (только логика)', ngOff: 'Бывают',
+    start: 'Начать', cont: 'Продолжить · {t}', play: 'Играть', resume: 'Продолжить', viewResult: 'Посмотреть итог', notYet: 'Ещё не сыграно', doneTime: 'Решено · {t}', failed: 'Провал', inProgress: 'Идёт', streak: '{n} дн. подряд',
+    settings: 'Настройки', records: 'Рекорды', help: 'Управление', done: 'Готово', mines: 'МИНЫ', time: 'ВРЕМЯ', hintBtn: 'Подсказка {n}', flagMode: 'Режим флажков', noHint: 'В задаче дня подсказок нет',
+    win: 'Разминировано!', lose: 'Бум!', again: 'Ещё раз', menu: 'Меню', look: 'Посмотреть поле', newRec: '★ НОВЫЙ РЕКОРД ★', none: 'Рекордов пока нет',
+    progress: 'Прогресс', flagsUsed: 'Флажки', hintsUsed: 'Подсказки', hintPenalty: 'Каждая подсказка — плюс 10 секунд', share: 'Скопировать итог', copied: 'Скопировано', nextIn: 'Следующая задача через {t}',
+    hint: 'Левый клик — открыть · правый — флажок · клик по цифре открывает вокруг', hintTouch: 'Касание — открыть · долгое нажатие — флажок · касание цифры открывает вокруг',
+    startHere: 'Начни с подсвеченной клетки',
+    music: 'Музыка', musicNames: { A: 'Тихое поле', off: 'Выкл' }, mv: 'Громкость музыки', sv: 'Громкость эффектов', fx: 'Эффекты', marks: 'Знаки вопроса', on: 'Вкл', off: 'Выкл',
+    bestTimes: 'Лучшее время по уровням', winRate: 'Победы', played: 'Игры', history: 'Недавние задачи дня',
+    keys: [['Левый клик', 'Открыть'], ['Правый клик', 'Поставить или снять флажок'], ['Клик по цифре / средний клик', 'Открыть вокруг, если флажков хватает'], ['Долгое нажатие', 'Флажок (телефон)'], ['H', 'Подсказка (классика)'], ['F2 / лицо', 'Новое поле'], ['Esc', 'Меню'], ['M', 'Звук']],
+    tips: ['Цифра показывает, сколько мин касается клетки', 'Поля с «Клетки наугад: нет» решаются одной логикой от начала до конца', 'Размер задачи дня меняется каждый день: любитель · профи · новичок'],
+  },
+  vi: {
+    title: 'Dò mìn', tag: 'ĐỌC SỐ · TRÁNH MÌN', classic: 'Cổ điển', classicDesc: 'Lần bấm đầu luôn an toàn và mở ra một vùng rộng', daily: 'Câu đố hôm nay', dailyDesc: 'Mọi người cùng một bàn, cùng một ô bắt đầu. Mỗi ngày một lượt chính thức',
+    levels: { easy: 'Dễ', medium: 'Trung bình', hard: 'Khó', custom: 'Tùy chỉnh' }, w: 'Rộng', h: 'Cao', n: 'Mìn',
+    noGuess: 'Ô phải đoán', ngOn: 'Không có (chỉ suy luận)', ngOff: 'Có thể có',
+    start: 'Bắt đầu', cont: 'Chơi tiếp · {t}', play: 'Thử thách', resume: 'Chơi tiếp', viewResult: 'Xem kết quả', notYet: 'Chưa chơi', doneTime: 'Thành công · {t}', failed: 'Thất bại', inProgress: 'Đang chơi', streak: 'Chuỗi {n} ngày',
+    settings: 'Cài đặt', records: 'Kỷ lục', help: 'Điều khiển', done: 'Xong', mines: 'MÌN', time: 'THỜI GIAN', hintBtn: 'Gợi ý {n}', flagMode: 'Chế độ cờ', noHint: 'Câu đố hôm nay không có gợi ý',
+    win: 'Thành công!', lose: 'Bùm!', again: 'Chơi lại', menu: 'Menu', look: 'Xem bàn', newRec: '★ KỶ LỤC MỚI ★', none: 'Chưa có kỷ lục',
+    progress: 'Tiến độ', flagsUsed: 'Cờ', hintsUsed: 'Gợi ý đã dùng', hintPenalty: 'Mỗi gợi ý cộng 10 giây', share: 'Sao chép kết quả', copied: 'Đã sao chép', nextIn: 'Câu đố mới sau {t}',
+    hint: 'Chuột trái mở · chuột phải cắm cờ · bấm vào số để mở xung quanh', hintTouch: 'Chạm để mở · giữ lâu để cắm cờ · chạm vào số để mở xung quanh',
+    startHere: 'Bắt đầu ở ô đang sáng',
+    music: 'Nhạc', musicNames: { A: 'Cánh đồng yên tĩnh', off: 'Tắt' }, mv: 'Âm lượng nhạc', sv: 'Âm lượng hiệu ứng', fx: 'Hiệu ứng', marks: 'Dấu hỏi', on: 'Bật', off: 'Tắt',
+    bestTimes: 'Thời gian tốt nhất theo cấp', winRate: 'Tỉ lệ thắng', played: 'Số ván', history: 'Câu đố hôm nay gần đây',
+    keys: [['Chuột trái', 'Mở'], ['Chuột phải', 'Cắm hoặc gỡ cờ'], ['Bấm vào số / chuột giữa', 'Mở xung quanh khi đủ cờ'], ['Giữ lâu', 'Cắm cờ (điện thoại)'], ['H', 'Gợi ý (Cổ điển)'], ['F2 / mặt cười', 'Bàn mới'], ['Esc', 'Menu'], ['M', 'Tắt tiếng']],
+    tips: ['Con số cho biết có bao nhiêu mìn chạm vào ô đó', 'Bàn tạo với "Ô phải đoán: không có" giải được hoàn toàn bằng suy luận', 'Cỡ bàn của câu đố hôm nay đổi mỗi ngày: Trung bình · Khó · Dễ'],
+  },
+};
+
+// ───────────────────────── 화면·흐름·조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const coarse = matchMedia('(pointer: coarse)').matches;
+const tfmt = (ms, dec = true) => { const s = ms / 1000, m = Math.floor(s / 60), r = s - m * 60; return m ? `${m}:${(dec ? r.toFixed(1) : String(Math.floor(r))).padStart(dec ? 4 : 2, '0')}` : (dec ? r.toFixed(1) : String(Math.floor(r))); };
+
+// ── 저장
+const DEF = { music: 'A', mv: 0.3, sv: 0.7, fx: true, marks: false, level: 'easy', noGuess: true, cw: 20, ch: 14, cn: 45, muted: false };
+let ST = { set: { ...DEF }, best: {}, stats: {}, cur: null, daily: {}, curDaily: null };
+try { const d = JSON.parse(localStorage.getItem('wiiiv-mines') || '{}'); ST = { ...ST, ...d, set: { ...DEF, ...(d.set || {}) } }; } catch { /* 저장소 없이도 동작 */ }
+const SET = ST.set;
+const save = () => { try { localStorage.setItem('wiiiv-mines', JSON.stringify(ST)); } catch { /* 무시 */ } };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dateLabel = ds => { try { return new Intl.DateTimeFormat(LANG, { month: 'long', day: 'numeric' }).format(new Date(ds + 'T12:00:00')); } catch { return ds; } };
+const lvLabel = m => m.level === 'custom' ? `${T.levels.custom} ${m.w}×${m.h}·${m.n}` : `${T.levels[m.level]} ${m.w}×${m.h}·${m.n}`;
+
+const chip = new Chip(); chip.setVol(SET.mv, SET.sv); chip.muted = SET.muted;
+const view = new BoardView($('cv'));
+let game = null, mode = 'classic', dayKey = null, phase = 'menu', elapsed = 0, running = false, lastT = 0, finished = false;
+
+// ── 배치
+function layout() {
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (game) {
+    // 판을 뺀 나머지(머리줄·숫자판·단추·안내)가 차지하는 높이를 재서 남는 만큼 판에
+    const app = $('app'), cs = getComputedStyle(app), gap = parseFloat(cs.rowGap || cs.gap) || 10;
+    let other = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom) + 16 + 6;
+    for (const el of app.children) if (el.id !== 'wrap' && !el.hidden && el.offsetParent !== null) other += el.offsetHeight + gap;
+    const maxW = Math.min(W - 48, 1100), maxH = Math.max(160, H - other - gap);
+    view.fit(game, maxW, maxH, dpr);
+    const bw = Math.max(Math.min(W - 32, 420), view.W + 16); document.documentElement.style.setProperty('--bw', Math.min(W - 32, Math.max(300, Math.min(bw, 560))) + 'px');
+  } else document.documentElement.style.setProperty('--bw', Math.min(W - 32, 420) + 'px');
+  fx.width = W * dpr; fx.height = H * dpr; fx.style.width = W + 'px'; fx.style.height = H + 'px';
+}
+addEventListener('resize', layout);
+
+// ── 효과 (입자)
+const fx = $('fx'), fc = fx.getContext('2d'); let parts = [];
+function cellCenter(i) { const r = $('cv').getBoundingClientRect(), [cx, cy] = view.xy(i); return [r.left + (cx + 0.5) * view.cs, r.top + (cy + 0.5) * view.cs]; }
+function burst(x, y, cols, n, sp = 4) { if (!SET.fx) n = Math.ceil(n / 4); for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, s = sp * (0.3 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.5, life: 40 + Math.random() * 30, max: 70, col: cols[k % cols.length], sz: 2 + Math.random() * 3 }); } }
+function shake() { if (!SET.fx) return; const w = $('wrap'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); }
+function toast(text) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = text; document.body.appendChild(d); setTimeout(() => d.remove(), 1900); }
+
+// ── 얼굴 단추
+const FACES = {
+  ok: '<svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#ffd23f"/><circle cx="12" cy="14" r="2.2" fill="#2a1d00"/><circle cx="22" cy="14" r="2.2" fill="#2a1d00"/><path d="M11 21q6 5 12 0" stroke="#2a1d00" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+  oh: '<svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#ffd23f"/><circle cx="12" cy="13" r="2.2" fill="#2a1d00"/><circle cx="22" cy="13" r="2.2" fill="#2a1d00"/><ellipse cx="17" cy="22.5" rx="3" ry="3.6" fill="#2a1d00"/></svg>',
+  win: '<svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#ffd23f"/><path d="M6 13h22v2q-2 4-6 3l-5-3-5 3q-4 1-6-3z" fill="#141414"/><path d="M11 22q6 5 12 0" stroke="#2a1d00" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+  dead: '<svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="15" fill="#ffb35c"/><path d="M9.5 11.5l5 5M14.5 11.5l-5 5M19.5 11.5l5 5M24.5 11.5l-5 5" stroke="#2a1d00" stroke-width="2" stroke-linecap="round"/><path d="M11 25q6-5 12 0" stroke="#2a1d00" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+};
+let faceHold = false;
+function face() { const k = !game ? 'ok' : game.status === 'won' ? 'win' : game.status === 'lost' ? 'dead' : faceHold ? 'oh' : 'ok'; if ($('bFace').dataset.k !== k) { $('bFace').dataset.k = k; $('bFace').innerHTML = FACES[k]; } }
+
+// ── 사건
+function afterOpen(res, near) {
+  if (!res) return;
+  const now = performance.now();
+  if (res.opened && res.opened.length) {
+    for (const [c, d] of res.opened) view.revealAt[c] = now + d * 18;
+    if (res.opened.length > 1) chip.sfx('flood', { n: res.opened.length }); else chip.sfx('open', { n: game.adj[res.opened[0][0]] });
+    startClock();
+  }
+  if (game.status === 'lost') lose(); else if (game.status === 'won') win();
+  hud(); persist();
+}
+function startClock() { if (!running && game.status === 'play' && phase === 'play') { running = true; lastT = performance.now(); } }
+function lose() {
+  running = false; finished = true; chip.stop(); chip.sfx('boom'); shake();
+  const now = performance.now(), b = game.boom, bx = b % game.w, by = (b / game.w) | 0;
+  view.boomAt[b] = now; { const [x, y] = cellCenter(b); burst(x, y, ['#ffd23f', '#ff6a3d', '#ff3c55', '#ffffff'], 50, 6); }
+  const ms = []; for (let i = 0; i < game.N; i++) if (game.mine[i] && i !== b && game.st[i] !== FLAG) ms.push(i);
+  ms.sort((p, q) => Math.hypot(p % game.w - bx, ((p / game.w) | 0) - by) - Math.hypot(q % game.w - bx, ((q / game.w) | 0) - by));
+  const step = Math.min(70, 1600 / Math.max(1, ms.length));
+  ms.forEach((i, k) => { const at = now + 350 + k * step; view.boomAt[i] = at; setTimeout(() => { if (game && game.status === 'lost') { const [x, y] = cellCenter(i); burst(x, y, ['#ffb35c', '#ff6a3d'], 8, 3); if (k < 30 && k % 2 === 0) chip.sfx('pop', { k: 0.7 }); } }, at - now); });
+  setTimeout(() => { if (game && game.status === 'lost' && phase === 'play') finish(); }, 350 + ms.length * step + 700);
+}
+function win() {
+  running = false; finished = true; chip.stop(); chip.sfx('win'); view.winT = performance.now();
+  const r = $('cv').getBoundingClientRect();
+  for (let k = 0; k < 6; k++) setTimeout(() => burst(r.left + Math.random() * r.width, r.top + Math.random() * r.height * 0.6, ['#ffd23f', '#3fe0d0', '#ff6a6a', '#b07cff', '#ffffff'], 24, 5), k * 160);
+  setTimeout(() => { if (game && game.status === 'won' && phase === 'play') finish(); }, 1500);
+}
+function hud() {
+  if (!game) return;
+  $('vMines').textContent = game.n - game.flags; $('vTime').textContent = tfmt(totalMs(), false);
+  $('bHint').textContent = fmt(T.hintBtn, Math.max(0, 3 - game.hints)); $('bHint').disabled = mode === 'daily' || game.hints >= 3 || game.status !== 'play';
+  $('bHint').hidden = mode === 'daily';
+  $('bFlagMode').hidden = !coarse && innerWidth >= 560; $('bFlagMode').classList.toggle('on', flagMode);
+  $('modeName').innerHTML = ''; const b = document.createElement('b'); b.textContent = mode === 'daily' ? `${T.daily} · ${dateLabel(dayKey)}` : T.classic; $('modeName').appendChild(b);
+  $('modeInfo').textContent = lvLabel(game) + (game.noGuess ? '' : ' · ' + T.ngOff);
+  face();
+}
+const totalMs = () => elapsed + (game ? game.hints * 10000 : 0);
+function persist() {
+  if (!game) return;
+  const s = { g: game.save(), elapsed };
+  if (mode === 'daily') { ST.curDaily = { date: dayKey, ...s }; }
+  else ST.cur = game.status === 'play' ? s : null;
+  save();
+}
+
+// ── 시작·끝
+let flagMode = false;
+function startClassic(fresh) {
+  chip.init(); mode = 'classic';
+  if (!fresh && ST.cur && ST.cur.g.status === 'play') { game = Mines.load(ST.cur.g); elapsed = ST.cur.elapsed || 0; }
+  else { game = SET.level === 'custom' ? new Mines({ w: SET.cw, h: SET.ch, n: SET.cn, noGuess: SET.noGuess }) : new Mines({ level: SET.level, noGuess: SET.noGuess }); elapsed = 0; ST.cur = null; }
+  begin();
+}
+function startDaily() {
+  chip.init(); mode = 'daily'; dayKey = today(); const info = dailyInfo(dayKey), cur = ST.curDaily && ST.curDaily.date === dayKey ? ST.curDaily : null;
+  if (cur) { game = Mines.load(cur.g); elapsed = cur.elapsed || 0; }
+  else {
+    game = new Mines({ level: info.level, seed: info.seed, noGuess: true }); elapsed = 0;
+    const start = Math.floor(game.h / 2) * game.w + Math.floor(game.w / 2);
+    game.open(start); ST.curDaily = { date: dayKey, g: game.save(), elapsed: 0 };
+  }
+  begin();
+  if (game.status === 'won' || game.status === 'lost') { finished = true; finish(true); }
+}
+function begin() {
+  phase = 'play'; running = false; finished = false; flagMode = false; showOnly(null);
+  view.revealAt = null; view.winT = 0; view.hintCell = -1; layout();
+  const now = performance.now(); for (let i = 0; i < game.N; i++) if (game.st[i] === OPEN) view.revealAt[i] = now + Math.random() * 120;
+  hud(); persist();
+  if (SET.music !== 'off') chip.play(SET.music); else chip.stop();
+  chip.sfx('start');
+  $('hint').textContent = coarse ? T.hintTouch : T.hint;
+}
+function showOnly(id) { for (const k of ['menu', 'settings', 'records', 'help', 'result']) $(k).hidden = k !== id; }
+function toMenu() { running = false; if (game && game.status === 'play') persist(); phase = 'menu'; chip.stop(); buildMenu(); showOnly('menu'); }
+function streak() {
+  let n = 0; const d = new Date(); if (!(ST.daily[today()] || {}).done) d.setDate(d.getDate() - 1);
+  for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if ((ST.daily[k] || {}).done) { n++; d.setDate(d.getDate() - 1); } else break; }
+  return n;
+}
+function finish(quiet) {
+  phase = 'result'; running = false; const won = game.status === 'won', ms = totalMs();
+  const prog = Math.floor(game.opened / (game.N - game.n) * 100);
+  const rows = [[T.time, tfmt(ms)], [T.progress, prog + '%'], [T.flagsUsed, game.flags]];
+  if (game.hints) rows.push([T.hintsUsed, `${game.hints} (+${game.hints * 10}s)`]);
+  let isNew = false;
+  if (mode === 'daily') {
+    if (!(ST.daily[dayKey] || {}).done) ST.daily[dayKey] = { done: true, win: won, time: ms, progress: prog, level: game.level };
+    const rec = ST.daily[dayKey];
+    $('resTitle').textContent = `${T.daily} · ${dateLabel(dayKey)}`; $('resScore').textContent = rec.win ? tfmt(rec.time) : T.failed;
+    const s = streak(); $('resSub').textContent = `${lvLabel(game)}${s ? ' · ' + fmt(T.streak, s) : ''}`;
+    $('bShare').hidden = false; $('bAgain').disabled = true; $('bAgain').textContent = nextLabel();
+  } else {
+    const k = game.level === 'custom' ? `c${game.w}x${game.h}x${game.n}` : game.level, st = ST.stats[k] || { played: 0, won: 0 };
+    if (!quiet) { st.played++; if (won) st.won++; ST.stats[k] = st; }
+    if (won && !quiet) { const list = ST.best[k] || []; const rec = { t: ms, ng: game.noGuess, date: today() }; list.push(rec); list.sort((a, b) => a.t - b.t); list.splice(5); ST.best[k] = list; isNew = list[0] === rec; }
+    ST.cur = null;
+    $('resTitle').textContent = won ? T.win : T.lose; $('resScore').textContent = won ? tfmt(ms) : prog + '%';
+    $('resSub').textContent = `${lvLabel(game)} · ${T.winRate} ${Math.round(st.won / Math.max(1, st.played) * 100)}%`;
+    $('bShare').hidden = true; $('bAgain').disabled = false; $('bAgain').textContent = T.again;
+  }
+  save();
+  $('resNew').hidden = !isNew; $('resNew').textContent = T.newRec;
+  $('resGrid').innerHTML = ''; for (const [k, v] of rows) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; $('resGrid').append(a, b); }
+  showOnly('result');
+}
+function nextLabel() { const d = new Date(), t = new Date(d); t.setHours(24, 0, 0, 0); const s = Math.max(0, Math.floor((t - d) / 1000)); return fmt(T.nextIn, `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`); }
+setInterval(() => { if (phase === 'result' && mode === 'daily') $('bAgain').textContent = nextLabel(); }, 1000);
+function shareText() {
+  const rec = ST.daily[dayKey];
+  return `wiiiv ${T.title} · ${T.daily} ${dayKey} (${lvLabel(game)})\n${rec.win ? '⏱ ' + tfmt(rec.time) : '💥 ' + T.failed + ' · ' + T.progress + ' ' + rec.progress + '%'}`;
+}
+
+// ── 조작: 마우스 · 손가락
+const cv = $('cv'); let ptr = null;
+const cellAt = e => { const r = cv.getBoundingClientRect(); return view.at(e.clientX - r.left, e.clientY - r.top); };
+function doOpen(i) { if (!game || i < 0 || phase !== 'play') return; if (game.st[i] === OPEN) return doChord(i); if (game.st[i] === FLAG) return; afterOpen(game.open(i)); }
+function doChord(i) { const r = game.chord(i); if (!r) return; if (r.short) { chip.sfx('nope'); return; } if (!r.opened.length && r.boom == null) return; chip.sfx('chord'); afterOpen(r); }
+function doFlag(i) {
+  if (!game || i < 0 || phase !== 'play' || game.status !== 'play') return;
+  if (game.st[i] === OPEN) return doChord(i);
+  const s = game.flag(i, SET.marks); if (s == null) return; chip.sfx(s === FLAG ? 'flag' : 'unflag'); startClock();
+  if (s === FLAG && navigator.vibrate) try { navigator.vibrate(12); } catch { /* 무시 */ }
+  hud(); persist();
+}
+function pressFor(i) { if (i < 0 || !game) return []; if (game.st[i] === OPEN && game.adj[i]) return game.nb[i].filter(j => game.st[j] === HIDDEN || game.st[j] === MARK); return game.st[i] === HIDDEN || game.st[i] === MARK ? [i] : []; }
+cv.addEventListener('pointerdown', e => {
+  chip.init(); if (!game || phase !== 'play' || game.status === 'won' || game.status === 'lost') return; e.preventDefault();
+  const i = cellAt(e); try { cv.setPointerCapture(e.pointerId); } catch { /* 무시 */ }
+  if (e.pointerType === 'mouse') {
+    if (e.button === 2) { doFlag(i); return; }
+    if (e.button === 1) { ptr = { id: e.pointerId, i, chord: true }; view.press = pressFor(i); faceHold = true; face(); return; }
+    ptr = { id: e.pointerId, i }; view.press = pressFor(i); faceHold = true; face(); return;
+  }
+  // 손가락: 길게 누르면 깃발
+  ptr = { id: e.pointerId, i, x: e.clientX, y: e.clientY, touch: true, timer: setTimeout(() => { if (ptr && ptr.timer) { ptr.long = true; view.press = []; doFlag(ptr.i); } }, 330) };
+  view.press = pressFor(i); faceHold = true; face();
+});
+cv.addEventListener('pointermove', e => {
+  if (!game) return; const i = cellAt(e);
+  if (!ptr) { view.hover = coarse ? -1 : i; return; }
+  if (ptr.id !== e.pointerId) return;
+  if (ptr.touch) { if (Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > 12) { clearTimeout(ptr.timer); ptr.timer = null; ptr.cancel = true; view.press = []; } return; }
+  if (i !== ptr.i) { ptr.i = i; view.press = pressFor(i); }
+});
+const up = e => {
+  if (!ptr || ptr.id !== e.pointerId) return; const p = ptr; ptr = null; view.press = []; faceHold = false;
+  if (p.timer) clearTimeout(p.timer);
+  if (e.type === 'pointercancel' || p.cancel || p.long) { face(); return; }
+  const i = p.touch ? p.i : cellAt(e);
+  if (p.chord) { if (game.st[i] === OPEN) doChord(i); }
+  else if (p.touch && flagMode && game.st[i] !== OPEN) doFlag(i);
+  else doOpen(i);
+  face();
+};
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('pointerleave', () => { view.hover = -1; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+addEventListener('keydown', e => {
+  chip.init();
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (phase === 'play') toMenu(); else if (!$('settings').hidden || !$('records').hidden || !$('help').hidden) { showOnly(phase === 'menu' ? 'menu' : null); } return; }
+  if (e.key === 'F2') { e.preventDefault(); newBoard(); return; }
+  if ((e.key === 'h' || e.key === 'H') && phase === 'play') doHint();
+});
+addEventListener('blur', () => { if (running) { running = false; persist(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden && running) { running = false; persist(); } });
+function newBoard() { if (!game || mode === 'daily') return; if (phase === 'play' || phase === 'result') startClassic(true); }
+function doHint() {
+  if (!game || mode === 'daily') { if (mode === 'daily') toast(T.noHint); return; }
+  if (game.hints >= 3 || game.status !== 'play') return;
+  const i = game.hint(); if (i < 0) return; view.hintCell = i; view.hintT = performance.now(); chip.sfx('hint'); toast(T.hintPenalty); startClock(); hud(); persist();
+}
+
+// ── 반복
+function loop(now) {
+  if (running) { elapsed += now - lastT; lastT = now; if (game) $('vTime').textContent = tfmt(totalMs(), false); }
+  else if (game && phase === 'play' && game.status === 'play' && !finished && view.revealAt) { /* 시계는 첫 손길 뒤에 */ }
+  if (game) view.frame(now);
+  // 입자
+  const d = devicePixelRatio; fc.setTransform(d, 0, 0, d, 0, 0); fc.clearRect(0, 0, fx.width, fx.height);
+  if (parts.length) { fc.globalCompositeOperation = 'lighter'; for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy = p.vy * 0.95 + 0.12; p.life--; fc.globalAlpha = Math.max(0, p.life / p.max); fc.fillStyle = p.col; fc.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); } parts = parts.filter(p => p.life > 0); fc.globalAlpha = 1; fc.globalCompositeOperation = 'source-over'; }
+  requestAnimationFrame(loop);
+}
+
+// ── 메뉴
+function toggleMute() { SET.muted = !SET.muted; chip.setMuted(SET.muted); muteIcon(); save(); }
+function muteIcon() { $('bMute').innerHTML = SET.muted ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>'; }
+function chips(el, opts, cur, onPick) {
+  el.innerHTML = '';
+  for (const [v, txt] of opts) { const b = document.createElement('button'); b.className = 'chip' + (cur === v ? ' on' : ''); b.textContent = txt; b.onclick = () => { chip.init(); chip.sfx('menu'); onPick(v); el.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); }; el.appendChild(b); }
+}
+function stepper(parent, label, val, min, max, step, on) {
+  const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const st = document.createElement('div'); st.className = 'stepper';
+  const a = document.createElement('button'), v = document.createElement('span'), b = document.createElement('button'); a.textContent = '−'; b.textContent = '+'; v.textContent = val;
+  const set = d => { val = Math.max(min(), Math.min(max(), val + d)); v.textContent = val; on(val); };
+  a.onclick = () => set(-step); b.onclick = () => set(step); st.append(a, v, b); r.append(s, st); parent.appendChild(r); return { refresh: () => set(0) };
+}
+function buildCustom() {
+  const C = $('custom'); C.innerHTML = ''; if (SET.level !== 'custom') return;
+  let sn;
+  stepper(C, T.w, SET.cw, () => 8, () => 30, 1, v => { SET.cw = v; save(); sn && sn.refresh(); });
+  stepper(C, T.h, SET.ch, () => 8, () => 24, 1, v => { SET.ch = v; save(); sn && sn.refresh(); });
+  sn = stepper(C, T.n, SET.cn, () => 5, () => Math.floor(SET.cw * SET.ch * 0.3), 5, v => { SET.cn = v; save(); });
+}
+function buildMenu() {
+  $('hClassic').textContent = T.classic; $('pClassic').textContent = T.classicDesc;
+  chips($('lvChips'), ['easy', 'medium', 'hard', 'custom'].map(k => [k, T.levels[k]]), SET.level, v => { SET.level = v; save(); buildCustom(); classicBtn(); });
+  buildCustom();
+  $('lNG').textContent = T.noGuess; chips($('ngChips'), [[true, T.ngOn], [false, T.ngOff]], SET.noGuess, v => { SET.noGuess = v; save(); });
+  classicBtn();
+  const dk = today(), info = dailyInfo(dk), rec = ST.daily[dk], cur = ST.curDaily && ST.curDaily.date === dk ? ST.curDaily : null;
+  const [w, h, n] = LEVELS[info.level];
+  $('hDaily').textContent = `${T.daily} · ${dateLabel(dk)}`; $('pDaily').textContent = `${T.levels[info.level]} ${w}×${h}·${n} — ${T.dailyDesc}`;
+  const s = streak(); $('dStreak').textContent = s ? fmt(T.streak, s) : '';
+  $('dStatus').textContent = rec && rec.done ? (rec.win ? fmt(T.doneTime, tfmt(rec.time)) : T.failed) : cur ? T.inProgress : T.notYet;
+  $('bDaily').textContent = rec && rec.done ? T.viewResult : cur ? T.resume : T.play;
+}
+function classicBtn() { const c = ST.cur && ST.cur.g.status === 'play' ? ST.cur : null; $('bClassic').textContent = c ? fmt(T.cont, `${lvLabel(c.g)} · ${Math.floor((c.elapsed || 0) / 60000)}:${String(Math.floor((c.elapsed || 0) / 1000) % 60).padStart(2, '0')}`) : T.start; }
+function slider(parent, label, val, on) { const r = document.createElement('label'); r.className = 'sl'; const s = document.createElement('span'); s.textContent = label; const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = val; i.oninput = () => on(+i.value); r.append(s, i); parent.appendChild(r); return i; }
+function chipsRow(parent, label, opts, cur, onPick) { const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips'; chips(c, opts, cur, onPick); r.append(s, c); parent.appendChild(r); }
+function buildSettings() {
+  $('tSettings').textContent = T.settings; const B = $('setBody'); B.innerHTML = '';
+  chipsRow(B, T.music, ['A', 'off'].map(k => [k, T.musicNames[k]]), SET.music, v => { SET.music = v; save(); if (phase !== 'menu' && game && game.status === 'play') { if (v !== 'off') chip.play(v); else chip.stop(); } });
+  slider(B, T.mv, SET.mv, v => { SET.mv = v; chip.setVol(v, null); save(); });
+  const sv = slider(B, T.sv, SET.sv, v => { SET.sv = v; chip.setVol(null, v); save(); }); sv.onchange = () => { chip.init(); chip.sfx('flag'); };
+  chipsRow(B, T.fx, [[true, T.on], [false, T.off]], SET.fx, v => { SET.fx = v; save(); });
+  chipsRow(B, T.marks, [[true, T.on], [false, T.off]], SET.marks, v => { SET.marks = v; save(); });
+}
+function buildRecords() {
+  $('tRecords').textContent = T.records; const B = $('recBody'); B.innerHTML = '';
+  const h1 = document.createElement('h4'); h1.textContent = T.bestTimes; B.appendChild(h1);
+  const t1 = document.createElement('table'); let any = false;
+  for (const k of ['easy', 'medium', 'hard']) {
+    const list = ST.best[k] || [], st = ST.stats[k]; if (!list.length && !st) continue; any = true;
+    const tr = t1.insertRow(); tr.insertCell().textContent = T.levels[k]; tr.insertCell().textContent = list[0] ? tfmt(list[0].t) : '-';
+    tr.insertCell().textContent = st ? `${T.winRate} ${Math.round(st.won / Math.max(1, st.played) * 100)}% · ${st.won}/${st.played}` : '';
+  }
+  if (!any) { const td = t1.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#9aa3c7'; td.style.fontWeight = '400'; }
+  B.appendChild(t1);
+  const h2 = document.createElement('h4'); const s = streak(); h2.textContent = `${T.history}${s ? ' · ' + fmt(T.streak, s) : ''}`; B.appendChild(h2);
+  const t2 = document.createElement('table'); const days = Object.keys(ST.daily).filter(k => ST.daily[k].done).sort().reverse().slice(0, 10);
+  if (!days.length) { const td = t2.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#9aa3c7'; td.style.fontWeight = '400'; }
+  for (const k of days) { const r = ST.daily[k], tr = t2.insertRow(); tr.insertCell().textContent = dateLabel(k); tr.insertCell().textContent = r.win ? tfmt(r.time) : T.failed; tr.insertCell().textContent = `${T.levels[r.level] || ''}${r.win ? '' : ' · ' + r.progress + '%'}`; }
+  B.appendChild(t2);
+}
+function build() {
+  $('pageTitle').textContent = T.title; $('ttl').textContent = T.title; $('logo').textContent = T.title; $('tTag').textContent = T.tag;
+  $('lMines').textContent = T.mines; $('lTime').textContent = T.time; $('bFlagMode').textContent = '🚩 ' + T.flagMode;
+  $('bFlagMode').textContent = T.flagMode;
+  $('bClassic').onclick = () => startClassic(false); $('bDaily').onclick = startDaily;
+  $('bSettings').textContent = T.settings; $('bRecords').textContent = T.records; $('bHelp').textContent = T.help;
+  $('bSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bRecords').onclick = () => { buildRecords(); showOnly('records'); };
+  $('bHelp').onclick = () => {
+    $('tHelp').textContent = T.help; $('helpKeys').innerHTML = ''; $('helpTips').innerHTML = '';
+    for (const [k, v] of T.keys) { const a = document.createElement('kbd'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; $('helpKeys').append(a, b); }
+    for (const t of T.tips) { const d = document.createElement('div'); d.textContent = t; $('helpTips').appendChild(d); }
+    showOnly('help');
+  };
+  for (const id of ['bSetDone', 'bRecDone', 'bHelpDone']) { $(id).textContent = T.done; $(id).onclick = () => { showOnly(phase === 'menu' ? 'menu' : null); if (phase === 'menu') buildMenu(); }; }
+  $('bMenu').onclick = () => { chip.init(); if (phase === 'play') toMenu(); };
+  $('bMute').onclick = () => { chip.init(); toggleMute(); }; muteIcon();
+  $('bFace').onclick = () => { chip.init(); if (mode === 'daily') return; newBoard(); };
+  $('bHint').onclick = doHint;
+  $('bFlagMode').onclick = () => { flagMode = !flagMode; chip.sfx('menu'); hud(); };
+  $('bResMenu').textContent = T.menu; $('bResMenu').onclick = toMenu;
+  $('bAgain').onclick = () => { if (game && mode === 'classic') startClassic(true); };
+  $('bLook').textContent = T.look; $('bLook').onclick = () => { phase = 'play'; showOnly(null); };
+  $('bShare').textContent = T.share;
+  $('bShare').onclick = () => {
+    if (!game || !ST.daily[dayKey]) return; const txt = shareText();
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 무시 */ } ta.remove(); toast(T.copied); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(T.copied), fallback); else fallback();
+    chip.sfx('menu');
+  };
+}
+build(); buildMenu(); layout(); showOnly('menu'); face();
+addEventListener('pointerdown', () => chip.init(), { capture: true, once: true });
+requestAnimationFrame(loop);
+document.body.focus();
+window.__ms = { get game() { return game; }, get phase() { return phase; }, get mode() { return mode; }, get elapsed() { return elapsed; }, startClassic, startDaily, toMenu, view, ST, doOpen, doFlag, doChord, T };
+
 </script>
 </body>
 </html>
