@@ -2,353 +2,721 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title id="pageTitle">그림판</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0d0d1a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; outline: none; }
-.toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #161628; border-bottom: 1px solid #2a2a40; flex-wrap: wrap; flex-shrink: 0; }
-.tool-group { display: flex; gap: 3px; background: #1e1e35; border-radius: 8px; padding: 3px; }
-.tool-btn { width: 32px; height: 32px; border: none; border-radius: 6px; background: transparent; color: #aaa; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.tool-btn:hover { background: #2a2a45; color: #fff; }
-.tool-btn.active { background: #7c5cfc; color: #fff; }
-.color-palette { display: flex; gap: 3px; align-items: center; }
-.color-swatch { width: 22px; height: 22px; border-radius: 5px; border: 2px solid transparent; cursor: pointer; transition: all 0.15s; }
-.color-swatch:hover { transform: scale(1.15); }
-.color-swatch.active { border-color: #fff; transform: scale(1.15); }
-.color-custom { width: 22px; height: 22px; border: none; border-radius: 5px; cursor: pointer; background: transparent; padding: 0; }
-.color-custom::-webkit-color-swatch-wrapper { padding: 0; }
-.color-custom::-webkit-color-swatch { border: 1px solid #444; border-radius: 5px; }
-.slider-group { display: flex; align-items: center; gap: 6px; }
-.slider-group label { font-size: 11px; color: #888; white-space: nowrap; }
-.slider-group input[type="range"] { width: 70px; accent-color: #7c5cfc; height: 4px; }
-.slider-group .val { font-size: 11px; color: #aaa; min-width: 24px; text-align: center; }
-.action-btn { border: none; border-radius: 6px; background: #2a2a40; color: #aaa; cursor: pointer; font-size: 11px; padding: 6px 10px; transition: all 0.15s; white-space: nowrap; }
-.action-btn:hover { background: #3a3a55; color: #fff; }
-.action-btn.danger { color: #ff6b6b; }
-.action-btn.danger:hover { background: #3a1a1a; }
-.canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #0a0a15; overflow: hidden; position: relative; }
-canvas { background: #fff; cursor: crosshair; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-.indicator { position: fixed; bottom: 12px; left: 12px; display: flex; gap: 12px; align-items: center; font-size: 11px; color: #666; background: #161628; padding: 6px 12px; border-radius: 8px; }
-.indicator .ind-color { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #444; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+:root { --bg: #16181f; --panel: #20232c; --panel2: #2a2e39; --line: rgba(255, 255, 255, .09); --text: #e9ecf3; --sub: #9aa1b2; --acc: #6c8cff; --acc2: #ff6aa2; }
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: 14px 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; display: grid; grid-template-rows: auto 1fr; }
+button { font: inherit; color: inherit; }
+/* 위 막대 */
+.topbar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.topbar::-webkit-scrollbar { display: none; }
+.topbar .title { font-weight: 800; margin: 0 6px 0 2px; white-space: nowrap; background: linear-gradient(90deg, #ff6aa2, #ffb347, #6c8cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.tb { height: 34px; min-width: 34px; padding: 0 8px; border-radius: 9px; border: 1px solid transparent; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; flex: none; }
+.tb:hover { background: var(--panel2); } .tb:disabled { opacity: .35; cursor: default; background: transparent; }
+.tb svg { width: 19px; height: 19px; }
+.sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; flex: none; }
+.zoomv { min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; color: var(--sub); font-size: 12.5px; }
+.spacer { flex: 1; }
+/* 본문 */
+.main { display: grid; grid-template-columns: 52px 1fr 250px; min-height: 0; }
+.tools { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; overflow-y: auto; scrollbar-width: none; }
+.tools::-webkit-scrollbar { display: none; }
+.tool { width: 40px; height: 40px; border-radius: 10px; border: 1px solid transparent; background: transparent; cursor: pointer; display: grid; place-items: center; position: relative; flex: none; }
+.tool svg { width: 21px; height: 21px; }
+.tool:hover { background: var(--panel2); }
+.tool.on { background: linear-gradient(160deg, rgba(108, 140, 255, .35), rgba(255, 106, 162, .25)); border-color: rgba(140, 160, 255, .5); }
+.colorbtn { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.4); cursor: pointer; margin-top: 6px; flex: none; }
+.stage { position: relative; overflow: hidden; background: #0f1116; background-image: radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px); background-size: 16px 16px; touch-action: none; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cursor { position: absolute; pointer-events: none; border: 1px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.7); border-radius: 50%; transform: translate(-50%, -50%); display: none; }
+/* 오른쪽 판 */
+.side { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; scrollbar-width: thin; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+.sec h4 { font-size: 11.5px; letter-spacing: .08em; color: var(--sub); text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.sv { position: relative; width: 100%; aspect-ratio: 1.35; border-radius: 10px; overflow: hidden; cursor: crosshair; touch-action: none; }
+.sv canvas { width: 100%; height: 100%; display: block; }
+.knob { position: absolute; width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.6); transform: translate(-50%, -50%); pointer-events: none; }
+.slider { position: relative; height: 14px; border-radius: 7px; margin-top: 10px; cursor: pointer; touch-action: none; }
+.slider .knob { top: 50%; }
+.hue { background: linear-gradient(90deg, red, #ff0, lime, cyan, blue, #f0f, red); }
+.alpha { background-image: linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%), linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%); background-size: 10px 10px; background-position: 0 0, 5px 5px; background-color: #ccc; }
+.alpha .fillg { position: absolute; inset: 0; border-radius: 7px; }
+.hexrow { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.hexrow input { flex: 1; min-width: 0; background: var(--panel2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 6px 8px; font: 600 13px ui-monospace, monospace; }
+.swatch { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); flex: none; }
+.palette { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 10px; }
+.palette button { aspect-ratio: 1; border-radius: 5px; border: 1px solid rgba(255,255,255,.15); cursor: pointer; }
+.palette button:hover { transform: scale(1.12); }
+.recent { display: flex; gap: 4px; margin-top: 6px; min-height: 20px; flex-wrap: wrap; }
+.recent button { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); cursor: pointer; }
+.row { display: grid; grid-template-columns: max-content 1fr 38px; align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--sub); }
+.row input[type=range] { width: 100%; accent-color: var(--acc); }
+.row output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.chip { padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; }
+.chip.on { background: var(--acc); border-color: transparent; color: #fff; }
+.chip svg { width: 16px; height: 16px; }
+.layers { display: flex; flex-direction: column; gap: 4px; }
+.layer { display: grid; grid-template-columns: 26px 44px 1fr 26px; align-items: center; gap: 6px; padding: 4px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; }
+.layer.on { background: var(--panel2); border-color: rgba(140, 160, 255, .4); }
+.layer canvas { width: 44px; height: 33px; border-radius: 4px; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 4px 4px; background-color: #fff; }
+.layer .nm { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.layer button { width: 26px; height: 26px; border-radius: 6px; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--sub); }
+.layer button svg { width: 16px; height: 16px; }
+.lbar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.lbar .tb { height: 30px; min-width: 30px; background: var(--panel2); }
+/* 휴대폰: 도구는 아래, 오른쪽 판은 떠 있는 창 */
+@media (max-width: 760px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .tools { grid-row: 2; flex-direction: row; border-right: none; border-top: 1px solid var(--line); padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px)); overflow-x: auto; overflow-y: hidden; }
+  .stage { grid-row: 1; }
+  .side { position: fixed; left: 8px; right: 8px; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); max-height: 60vh; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,.6); z-index: 20; }
+  .side.closed { display: none; }
+  .colorbtn { margin: 0 4px 0 6px; }
+  .hide-m { display: none !important; }
+  .topbar .title { order: -3; } #bPanel { order: -2; background: var(--panel2); } #bHelp { display: none; } .topbar .spacer { display: none; }
+}
+@media (min-width: 761px) { .show-m { display: none !important; } }
+/* 대화 상자 */
+.ov { position: fixed; inset: 0; background: rgba(5, 6, 10, .6); display: flex; align-items: center; justify-content: center; z-index: 40; padding: 16px; }
+.dlg { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; width: min(400px, 100%); max-height: 100%; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+.dlg h3 { font-size: 18px; margin-bottom: 12px; }
+.dlg .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.dlg .grid button, .dlg .btn { padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel2); cursor: pointer; text-align: left; }
+.dlg .grid button small { display: block; color: var(--sub); font-size: 11.5px; }
+.dlg .grid button.on { border-color: var(--acc); }
+.dlg .foot { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+.btn.primary { background: linear-gradient(160deg, #6c8cff, #8a5cff); border-color: transparent; color: #fff; font-weight: 700; text-align: center; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; color: var(--sub); }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: var(--text); justify-self: start; white-space: nowrap; }
+.textbox { position: absolute; z-index: 15; min-width: 40px; background: rgba(255,255,255,.04); border: 1px dashed var(--acc); outline: none; padding: 2px; line-height: 1.2; white-space: pre; color: #000; caret-color: var(--acc2); }
+.toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); z-index: 50; background: rgba(20, 22, 30, .95); border: 1px solid var(--line); padding: 8px 16px; border-radius: 12px; font-weight: 700; animation: toast 1.8s ease forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; } 12%, 75% { opacity: 1; } 100% { opacity: 0; } }
 </style>
 </head>
 <body tabindex="0">
-
-<div class="toolbar">
-  <div class="tool-group" id="tools"></div>
-  <div class="color-palette" id="palette"></div>
-  <input type="color" class="color-custom" id="customColor" value="#ffffff">
-  <div class="slider-group">
-    <label id="lblSize">크기</label>
-    <input type="range" id="sizeSlider" min="1" max="50" value="3">
-    <span class="val" id="sizeVal">3</span>
-  </div>
-  <div class="slider-group">
-    <label id="lblOpacity">투명도</label>
-    <input type="range" id="opacitySlider" min="5" max="100" value="100">
-    <span class="val" id="opacityVal">100%</span>
-  </div>
-  <button class="action-btn" id="undoBtn" onclick="undo()">↩ 취소</button>
-  <button class="action-btn" id="redoBtn" onclick="redo()">↪ 복원</button>
-  <button class="action-btn danger" id="clearBtn" onclick="clearCanvas()">🗑 지우기</button>
-  <button class="action-btn" id="saveBtn" onclick="downloadPNG()">💾 저장</button>
+<div class="topbar" id="topbar"></div>
+<div class="main">
+  <div class="tools" id="tools"></div>
+  <div class="stage" id="stage"><canvas id="view"></canvas><div class="cursor" id="cursor"></div></div>
+  <div class="side" id="side"></div>
 </div>
-
-<div class="canvas-area">
-  <canvas id="canvas"></canvas>
-</div>
-
-<div class="indicator">
-  <div class="ind-color" id="indColor"></div>
-  <span id="indTool"></span>
-  <span id="indSize">3px</span>
-</div>
-
+<div class="ov" id="dlg" hidden><div class="dlg" id="dlgBox"></div></div>
+<input type="file" id="fileIn" accept="image/*" hidden>
 <script>
+// ───────────────────────── 그림판 도우미 (색 · 채우기 · 되돌리기) ─────────────────────────
+function hsv2rgb(h, s, v) { const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); }; return [Math.round(f(5) * 255), Math.round(f(3) * 255), Math.round(f(1) * 255)]; }
+function rgb2hsv(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return [h, mx ? d / mx : 0, mx]; }
+const hex2 = n => n.toString(16).padStart(2, '0');
+function rgb2hex([r, g, b]) { return '#' + hex2(r) + hex2(g) + hex2(b); }
+function hex2rgb(h) { const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(h.trim()); if (!m) return null; let s = m[1]; if (s.length === 3) s = s.split('').map(c => c + c).join(''); return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)]; }
+// 채우기: 누른 점과 비슷한 색(허용 오차)으로 이어진 영역 → 마스크와 경계 상자
+function floodMask(data, w, h, sx, sy, tol) {
+  const i0 = (sy * w + sx) * 4, r0 = data[i0], g0 = data[i0 + 1], b0 = data[i0 + 2], a0 = data[i0 + 3];
+  const T = tol * tol * 4, mask = new Uint8Array(w * h);
+  const same = i => { const p = i * 4, dr = data[p] - r0, dg = data[p + 1] - g0, db = data[p + 2] - b0, da = data[p + 3] - a0; return dr * dr + dg * dg + db * db + da * da <= T; };
+  let x0 = sx, x1 = sx, y0 = sy, y1 = sy; const st = [sx, sy];
+  while (st.length) {
+    const y = st.pop(), x = st.pop(); let l = x, r = x; const row = y * w;
+    if (mask[row + x] || !same(row + x)) continue;
+    while (l > 0 && !mask[row + l - 1] && same(row + l - 1)) l--;
+    while (r < w - 1 && !mask[row + r + 1] && same(row + r + 1)) r++;
+    for (let k = l; k <= r; k++) mask[row + k] = 1;
+    if (l < x0) x0 = l; if (r > x1) x1 = r; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    for (const ny of [y - 1, y + 1]) { if (ny < 0 || ny >= h) continue; const nr = ny * w; let k = l; while (k <= r) { if (!mask[nr + k] && same(nr + k)) { st.push(k, ny); while (k <= r && !mask[nr + k] && same(nr + k)) k++; } k++; } }
+  }
+  return { mask, x0, y0, x1, y1 };
+}
+// 되돌리기 기록: 바뀐 영역의 전·후만 담는다 (메모리 절약)
+class History {
+  constructor(limit = 60) { this.undo = []; this.redo = []; this.limit = limit; }
+  push(e) { this.undo.push(e); if (this.undo.length > this.limit) this.undo.shift(); this.redo = []; }
+}
+const clampRect = (x, y, w, h, W, H) => { const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y)), x1 = Math.min(W, Math.ceil(x + w)), y1 = Math.min(H, Math.ceil(y + h)); return x1 > x0 && y1 > y0 ? [x0, y0, x1 - x0, y1 - y0] : null; };
+
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+const TX = {
+  ko: { title: '그림판', tools: { brush: '붓 (B)', eraser: '지우개 (E)', fill: '채우기 (G)', picker: '스포이트 (I)', line: '직선 (L)', arrow: '화살표 (A)', rect: '사각형 (R)', ellipse: '원 (O)', text: '글자 (T)', select: '선택·이동 (V)', hand: '손 (Space)' },
+    brushes: { pen: '펜', marker: '마커', pencil: '연필', air: '에어브러시', calli: '붓글씨' }, color: '색', size: '굵기', opacity: '불투명도', smooth: '손떨림 보정', tolerance: '허용 오차', filled: '속 채우기', fontSize: '글자 크기', symmetry: '대칭', sym: { none: '없음', h: '좌우', v: '상하', quad: '4방향', kaleido: '만화경' },
+    layers: '레이어', layerN: '레이어 {n}', addLayer: '레이어 추가', delLayer: '레이어 삭제', dupLayer: '복제', up: '위로', down: '아래로', merge: '아래로 합치기', clearLayer: '레이어 비우기', recent: '최근 색', brushSet: '붓 설정', tool: '도구',
+    newDoc: '새 그림', open: '열기', save: 'PNG 저장', undo: '되돌리기', redo: '다시', fit: '화면에 맞추기', help: '도움말', panel: '패널', create: '만들기', cancel: '취소', ok: '확인', bg: '바탕', bgWhite: '흰색', bgClear: '투명',
+    sizes: { screen: '화면 크기', hd: 'HD 가로', square: '정사각형', story: '세로 (휴대폰)', small: '작게' }, confirmNew: '지금 그림을 지우고 새로 시작할까요?', saved: '저장했습니다', pasted: '붙여 넣었습니다', autosaved: '자동 저장된 그림을 불러왔습니다', textHint: '글자를 입력하고 바깥을 누르면 확정',
+    keys: [['B · E · G · I', '붓 · 지우개 · 채우기 · 스포이트'], ['L · A · R · O · T · V', '직선 · 화살표 · 사각형 · 원 · 글자 · 선택'], ['[ ]', '굵기 줄이기·키우기'], ['Shift', '직선·45°·정사각형·정원'], ['Alt + 클릭', '스포이트'], ['Space + 끌기', '그림 옮기기'], ['Ctrl + 휠 · + −', '확대·축소'], ['Ctrl+Z · Ctrl+Y', '되돌리기 · 다시'], ['Ctrl+V', '그림 붙여 넣기'], ['두 손가락', '확대·축소·옮기기 (휴대폰)']] },
+  en: { title: 'Paint', tools: { brush: 'Brush (B)', eraser: 'Eraser (E)', fill: 'Fill (G)', picker: 'Eyedropper (I)', line: 'Line (L)', arrow: 'Arrow (A)', rect: 'Rectangle (R)', ellipse: 'Ellipse (O)', text: 'Text (T)', select: 'Select & move (V)', hand: 'Hand (Space)' },
+    brushes: { pen: 'Pen', marker: 'Marker', pencil: 'Pencil', air: 'Airbrush', calli: 'Calligraphy' }, color: 'Color', size: 'Size', opacity: 'Opacity', smooth: 'Smoothing', tolerance: 'Tolerance', filled: 'Filled', fontSize: 'Font size', symmetry: 'Symmetry', sym: { none: 'Off', h: 'Mirror', v: 'Flip', quad: '4-way', kaleido: 'Kaleidoscope' },
+    layers: 'Layers', layerN: 'Layer {n}', addLayer: 'Add layer', delLayer: 'Delete layer', dupLayer: 'Duplicate', up: 'Move up', down: 'Move down', merge: 'Merge down', clearLayer: 'Clear layer', recent: 'Recent', brushSet: 'Brush', tool: 'Tool',
+    newDoc: 'New', open: 'Open', save: 'Save PNG', undo: 'Undo', redo: 'Redo', fit: 'Fit to screen', help: 'Help', panel: 'Panel', create: 'Create', cancel: 'Cancel', ok: 'OK', bg: 'Background', bgWhite: 'White', bgClear: 'Transparent',
+    sizes: { screen: 'Screen size', hd: 'HD landscape', square: 'Square', story: 'Portrait (phone)', small: 'Small' }, confirmNew: 'Clear this drawing and start a new one?', saved: 'Saved', pasted: 'Pasted', autosaved: 'Restored your autosaved drawing', textHint: 'Type, then tap outside to place',
+    keys: [['B · E · G · I', 'Brush · Eraser · Fill · Eyedropper'], ['L · A · R · O · T · V', 'Line · Arrow · Rect · Ellipse · Text · Select'], ['[ ]', 'Smaller · bigger'], ['Shift', 'Straight · 45° · square · circle'], ['Alt + click', 'Eyedropper'], ['Space + drag', 'Pan'], ['Ctrl + wheel · + −', 'Zoom'], ['Ctrl+Z · Ctrl+Y', 'Undo · Redo'], ['Ctrl+V', 'Paste image'], ['Two fingers', 'Zoom and pan (phone)']] },
+  ja: { title: 'お絵かき', tools: { brush: 'ブラシ (B)', eraser: '消しゴム (E)', fill: '塗りつぶし (G)', picker: 'スポイト (I)', line: '直線 (L)', arrow: '矢印 (A)', rect: '四角形 (R)', ellipse: '円 (O)', text: '文字 (T)', select: '選択・移動 (V)', hand: '手のひら (Space)' },
+    brushes: { pen: 'ペン', marker: 'マーカー', pencil: '鉛筆', air: 'エアブラシ', calli: '筆ペン' }, color: '色', size: '太さ', opacity: '不透明度', smooth: '手ぶれ補正', tolerance: '許容範囲', filled: '塗りつぶす', fontSize: '文字サイズ', symmetry: '対称', sym: { none: 'なし', h: '左右', v: '上下', quad: '4方向', kaleido: '万華鏡' },
+    layers: 'レイヤー', layerN: 'レイヤー {n}', addLayer: 'レイヤー追加', delLayer: 'レイヤー削除', dupLayer: '複製', up: '上へ', down: '下へ', merge: '下に結合', clearLayer: 'レイヤーを消去', recent: '最近の色', brushSet: 'ブラシ設定', tool: 'ツール',
+    newDoc: '新規', open: '開く', save: 'PNG 保存', undo: '元に戻す', redo: 'やり直し', fit: '画面に合わせる', help: 'ヘルプ', panel: 'パネル', create: '作成', cancel: 'キャンセル', ok: 'OK', bg: '背景', bgWhite: '白', bgClear: '透明',
+    sizes: { screen: '画面サイズ', hd: 'HD 横', square: '正方形', story: '縦 (スマホ)', small: '小さめ' }, confirmNew: '今の絵を消して新しく始めますか?', saved: '保存しました', pasted: '貼り付けました', autosaved: '自動保存した絵を読み込みました', textHint: '文字を入力して外側をタップで確定',
+    keys: [['B · E · G · I', 'ブラシ · 消しゴム · 塗りつぶし · スポイト'], ['L · A · R · O · T · V', '直線 · 矢印 · 四角 · 円 · 文字 · 選択'], ['[ ]', '細く · 太く'], ['Shift', '直線・45°・正方形・正円'], ['Alt + クリック', 'スポイト'], ['Space + ドラッグ', '絵を移動'], ['Ctrl + ホイール · + −', '拡大・縮小'], ['Ctrl+Z · Ctrl+Y', '元に戻す · やり直し'], ['Ctrl+V', '画像を貼り付け'], ['2本指', '拡大・縮小・移動 (スマホ)']] },
+  zh: { title: '画图', tools: { brush: '画笔 (B)', eraser: '橡皮 (E)', fill: '填充 (G)', picker: '取色 (I)', line: '直线 (L)', arrow: '箭头 (A)', rect: '矩形 (R)', ellipse: '椭圆 (O)', text: '文字 (T)', select: '选择移动 (V)', hand: '抓手 (Space)' },
+    brushes: { pen: '钢笔', marker: '马克笔', pencil: '铅笔', air: '喷枪', calli: '书法笔' }, color: '颜色', size: '粗细', opacity: '不透明度', smooth: '防抖', tolerance: '容差', filled: '填充形状', fontSize: '字号', symmetry: '对称', sym: { none: '关', h: '左右', v: '上下', quad: '四向', kaleido: '万花筒' },
+    layers: '图层', layerN: '图层 {n}', addLayer: '新建图层', delLayer: '删除图层', dupLayer: '复制', up: '上移', down: '下移', merge: '向下合并', clearLayer: '清空图层', recent: '最近颜色', brushSet: '画笔设置', tool: '工具',
+    newDoc: '新建', open: '打开', save: '保存 PNG', undo: '撤销', redo: '重做', fit: '适应屏幕', help: '帮助', panel: '面板', create: '创建', cancel: '取消', ok: '确定', bg: '背景', bgWhite: '白色', bgClear: '透明',
+    sizes: { screen: '屏幕大小', hd: 'HD 横版', square: '正方形', story: '竖版 (手机)', small: '小' }, confirmNew: '清除当前画作并新建吗？', saved: '已保存', pasted: '已粘贴', autosaved: '已恢复自动保存的画作', textHint: '输入文字后点外面确认',
+    keys: [['B · E · G · I', '画笔 · 橡皮 · 填充 · 取色'], ['L · A · R · O · T · V', '直线 · 箭头 · 矩形 · 椭圆 · 文字 · 选择'], ['[ ]', '变细 · 变粗'], ['Shift', '直线・45°・正方形・正圆'], ['Alt + 点击', '取色'], ['Space + 拖动', '移动画布'], ['Ctrl + 滚轮 · + −', '缩放'], ['Ctrl+Z · Ctrl+Y', '撤销 · 重做'], ['Ctrl+V', '粘贴图片'], ['双指', '缩放与移动 (手机)']] },
+  'zh-TW': { title: '小畫家', tools: { brush: '畫筆 (B)', eraser: '橡皮擦 (E)', fill: '填色 (G)', picker: '滴管 (I)', line: '直線 (L)', arrow: '箭頭 (A)', rect: '矩形 (R)', ellipse: '橢圓 (O)', text: '文字 (T)', select: '選取移動 (V)', hand: '手形 (Space)' },
+    brushes: { pen: '鋼筆', marker: '麥克筆', pencil: '鉛筆', air: '噴槍', calli: '書法筆' }, color: '顏色', size: '粗細', opacity: '不透明度', smooth: '防手震', tolerance: '容許度', filled: '填滿形狀', fontSize: '字級', symmetry: '對稱', sym: { none: '關', h: '左右', v: '上下', quad: '四向', kaleido: '萬花筒' },
+    layers: '圖層', layerN: '圖層 {n}', addLayer: '新增圖層', delLayer: '刪除圖層', dupLayer: '複製', up: '上移', down: '下移', merge: '向下合併', clearLayer: '清空圖層', recent: '最近顏色', brushSet: '畫筆設定', tool: '工具',
+    newDoc: '新增', open: '開啟', save: '儲存 PNG', undo: '復原', redo: '重做', fit: '符合螢幕', help: '說明', panel: '面板', create: '建立', cancel: '取消', ok: '確定', bg: '背景', bgWhite: '白色', bgClear: '透明',
+    sizes: { screen: '螢幕大小', hd: 'HD 橫向', square: '正方形', story: '直向 (手機)', small: '小' }, confirmNew: '清除目前的畫並重新開始嗎？', saved: '已儲存', pasted: '已貼上', autosaved: '已載入自動儲存的畫', textHint: '輸入文字後點外面確認',
+    keys: [['B · E · G · I', '畫筆 · 橡皮擦 · 填色 · 滴管'], ['L · A · R · O · T · V', '直線 · 箭頭 · 矩形 · 橢圓 · 文字 · 選取'], ['[ ]', '變細 · 變粗'], ['Shift', '直線・45°・正方形・正圓'], ['Alt + 點擊', '滴管'], ['Space + 拖曳', '移動畫布'], ['Ctrl + 滾輪 · + −', '縮放'], ['Ctrl+Z · Ctrl+Y', '復原 · 重做'], ['Ctrl+V', '貼上圖片'], ['雙指', '縮放與移動 (手機)']] },
+  es: { title: 'Pintar', tools: { brush: 'Pincel (B)', eraser: 'Borrador (E)', fill: 'Relleno (G)', picker: 'Cuentagotas (I)', line: 'Línea (L)', arrow: 'Flecha (A)', rect: 'Rectángulo (R)', ellipse: 'Elipse (O)', text: 'Texto (T)', select: 'Seleccionar y mover (V)', hand: 'Mano (Espacio)' },
+    brushes: { pen: 'Pluma', marker: 'Rotulador', pencil: 'Lápiz', air: 'Aerógrafo', calli: 'Caligrafía' }, color: 'Color', size: 'Tamaño', opacity: 'Opacidad', smooth: 'Suavizado', tolerance: 'Tolerancia', filled: 'Relleno', fontSize: 'Tamaño de letra', symmetry: 'Simetría', sym: { none: 'No', h: 'Espejo', v: 'Vertical', quad: '4 lados', kaleido: 'Caleidoscopio' },
+    layers: 'Capas', layerN: 'Capa {n}', addLayer: 'Añadir capa', delLayer: 'Borrar capa', dupLayer: 'Duplicar', up: 'Subir', down: 'Bajar', merge: 'Combinar abajo', clearLayer: 'Vaciar capa', recent: 'Recientes', brushSet: 'Pincel', tool: 'Herramienta',
+    newDoc: 'Nuevo', open: 'Abrir', save: 'Guardar PNG', undo: 'Deshacer', redo: 'Rehacer', fit: 'Ajustar a pantalla', help: 'Ayuda', panel: 'Panel', create: 'Crear', cancel: 'Cancelar', ok: 'OK', bg: 'Fondo', bgWhite: 'Blanco', bgClear: 'Transparente',
+    sizes: { screen: 'Tamaño de pantalla', hd: 'HD horizontal', square: 'Cuadrado', story: 'Vertical (móvil)', small: 'Pequeño' }, confirmNew: '¿Borrar este dibujo y empezar otro?', saved: 'Guardado', pasted: 'Pegado', autosaved: 'Se recuperó tu dibujo guardado', textHint: 'Escribe y toca fuera para colocar',
+    keys: [['B · E · G · I', 'Pincel · Borrador · Relleno · Cuentagotas'], ['L · A · R · O · T · V', 'Línea · Flecha · Rect · Elipse · Texto · Selección'], ['[ ]', 'Más fino · más grueso'], ['Shift', 'Recto · 45° · cuadrado · círculo'], ['Alt + clic', 'Cuentagotas'], ['Espacio + arrastrar', 'Mover lienzo'], ['Ctrl + rueda · + −', 'Zoom'], ['Ctrl+Z · Ctrl+Y', 'Deshacer · Rehacer'], ['Ctrl+V', 'Pegar imagen'], ['Dos dedos', 'Zoom y mover (móvil)']] },
+  fr: { title: 'Dessin', tools: { brush: 'Pinceau (B)', eraser: 'Gomme (E)', fill: 'Remplissage (G)', picker: 'Pipette (I)', line: 'Ligne (L)', arrow: 'Flèche (A)', rect: 'Rectangle (R)', ellipse: 'Ellipse (O)', text: 'Texte (T)', select: 'Sélection et déplacement (V)', hand: 'Main (Espace)' },
+    brushes: { pen: 'Stylo', marker: 'Feutre', pencil: 'Crayon', air: 'Aérographe', calli: 'Calligraphie' }, color: 'Couleur', size: 'Taille', opacity: 'Opacité', smooth: 'Lissage', tolerance: 'Tolérance', filled: 'Rempli', fontSize: 'Taille du texte', symmetry: 'Symétrie', sym: { none: 'Non', h: 'Miroir', v: 'Vertical', quad: '4 côtés', kaleido: 'Kaléidoscope' },
+    layers: 'Calques', layerN: 'Calque {n}', addLayer: 'Ajouter un calque', delLayer: 'Supprimer le calque', dupLayer: 'Dupliquer', up: 'Monter', down: 'Descendre', merge: 'Fusionner vers le bas', clearLayer: 'Vider le calque', recent: 'Récentes', brushSet: 'Pinceau', tool: 'Outil',
+    newDoc: 'Nouveau', open: 'Ouvrir', save: 'Enregistrer PNG', undo: 'Annuler', redo: 'Rétablir', fit: 'Ajuster à l’écran', help: 'Aide', panel: 'Panneau', create: 'Créer', cancel: 'Annuler', ok: 'OK', bg: 'Fond', bgWhite: 'Blanc', bgClear: 'Transparent',
+    sizes: { screen: 'Taille de l’écran', hd: 'HD paysage', square: 'Carré', story: 'Portrait (mobile)', small: 'Petit' }, confirmNew: 'Effacer ce dessin et en commencer un nouveau ?', saved: 'Enregistré', pasted: 'Collé', autosaved: 'Dessin enregistré automatiquement restauré', textHint: 'Tapez, puis touchez à l’extérieur pour valider',
+    keys: [['B · E · G · I', 'Pinceau · Gomme · Remplissage · Pipette'], ['L · A · R · O · T · V', 'Ligne · Flèche · Rect · Ellipse · Texte · Sélection'], ['[ ]', 'Plus fin · plus épais'], ['Shift', 'Droit · 45° · carré · cercle'], ['Alt + clic', 'Pipette'], ['Espace + glisser', 'Déplacer la toile'], ['Ctrl + molette · + −', 'Zoom'], ['Ctrl+Z · Ctrl+Y', 'Annuler · Rétablir'], ['Ctrl+V', 'Coller une image'], ['Deux doigts', 'Zoom et déplacement (mobile)']] },
+  de: { title: 'Malen', tools: { brush: 'Pinsel (B)', eraser: 'Radierer (E)', fill: 'Füllen (G)', picker: 'Pipette (I)', line: 'Linie (L)', arrow: 'Pfeil (A)', rect: 'Rechteck (R)', ellipse: 'Ellipse (O)', text: 'Text (T)', select: 'Auswählen & verschieben (V)', hand: 'Hand (Leertaste)' },
+    brushes: { pen: 'Stift', marker: 'Marker', pencil: 'Bleistift', air: 'Airbrush', calli: 'Kalligrafie' }, color: 'Farbe', size: 'Größe', opacity: 'Deckkraft', smooth: 'Glättung', tolerance: 'Toleranz', filled: 'Gefüllt', fontSize: 'Schriftgröße', symmetry: 'Symmetrie', sym: { none: 'Aus', h: 'Spiegeln', v: 'Kippen', quad: '4-fach', kaleido: 'Kaleidoskop' },
+    layers: 'Ebenen', layerN: 'Ebene {n}', addLayer: 'Ebene hinzufügen', delLayer: 'Ebene löschen', dupLayer: 'Duplizieren', up: 'Nach oben', down: 'Nach unten', merge: 'Nach unten vereinen', clearLayer: 'Ebene leeren', recent: 'Zuletzt', brushSet: 'Pinsel', tool: 'Werkzeug',
+    newDoc: 'Neu', open: 'Öffnen', save: 'PNG speichern', undo: 'Rückgängig', redo: 'Wiederholen', fit: 'An Bildschirm anpassen', help: 'Hilfe', panel: 'Bedienfeld', create: 'Erstellen', cancel: 'Abbrechen', ok: 'OK', bg: 'Hintergrund', bgWhite: 'Weiß', bgClear: 'Transparent',
+    sizes: { screen: 'Bildschirmgröße', hd: 'HD quer', square: 'Quadrat', story: 'Hochformat (Handy)', small: 'Klein' }, confirmNew: 'Dieses Bild löschen und neu beginnen?', saved: 'Gespeichert', pasted: 'Eingefügt', autosaved: 'Automatisch gespeichertes Bild wiederhergestellt', textHint: 'Text eingeben, dann außerhalb tippen',
+    keys: [['B · E · G · I', 'Pinsel · Radierer · Füllen · Pipette'], ['L · A · R · O · T · V', 'Linie · Pfeil · Rechteck · Ellipse · Text · Auswahl'], ['[ ]', 'Dünner · dicker'], ['Shift', 'Gerade · 45° · Quadrat · Kreis'], ['Alt + Klick', 'Pipette'], ['Leertaste + Ziehen', 'Leinwand verschieben'], ['Strg + Mausrad · + −', 'Zoom'], ['Strg+Z · Strg+Y', 'Rückgängig · Wiederholen'], ['Strg+V', 'Bild einfügen'], ['Zwei Finger', 'Zoomen und verschieben (Handy)']] },
+  pt: { title: 'Pintura', tools: { brush: 'Pincel (B)', eraser: 'Borracha (E)', fill: 'Balde (G)', picker: 'Conta-gotas (I)', line: 'Linha (L)', arrow: 'Seta (A)', rect: 'Retângulo (R)', ellipse: 'Elipse (O)', text: 'Texto (T)', select: 'Selecionar e mover (V)', hand: 'Mão (Espaço)' },
+    brushes: { pen: 'Caneta', marker: 'Marcador', pencil: 'Lápis', air: 'Aerógrafo', calli: 'Caligrafia' }, color: 'Cor', size: 'Tamanho', opacity: 'Opacidade', smooth: 'Suavização', tolerance: 'Tolerância', filled: 'Preenchido', fontSize: 'Tamanho da letra', symmetry: 'Simetria', sym: { none: 'Não', h: 'Espelho', v: 'Vertical', quad: '4 lados', kaleido: 'Caleidoscópio' },
+    layers: 'Camadas', layerN: 'Camada {n}', addLayer: 'Adicionar camada', delLayer: 'Apagar camada', dupLayer: 'Duplicar', up: 'Subir', down: 'Descer', merge: 'Mesclar abaixo', clearLayer: 'Limpar camada', recent: 'Recentes', brushSet: 'Pincel', tool: 'Ferramenta',
+    newDoc: 'Novo', open: 'Abrir', save: 'Salvar PNG', undo: 'Desfazer', redo: 'Refazer', fit: 'Ajustar à tela', help: 'Ajuda', panel: 'Painel', create: 'Criar', cancel: 'Cancelar', ok: 'OK', bg: 'Fundo', bgWhite: 'Branco', bgClear: 'Transparente',
+    sizes: { screen: 'Tamanho da tela', hd: 'HD paisagem', square: 'Quadrado', story: 'Retrato (celular)', small: 'Pequeno' }, confirmNew: 'Apagar este desenho e começar outro?', saved: 'Salvo', pasted: 'Colado', autosaved: 'Desenho salvo automaticamente restaurado', textHint: 'Digite e toque fora para fixar',
+    keys: [['B · E · G · I', 'Pincel · Borracha · Balde · Conta-gotas'], ['L · A · R · O · T · V', 'Linha · Seta · Retângulo · Elipse · Texto · Seleção'], ['[ ]', 'Mais fino · mais grosso'], ['Shift', 'Reto · 45° · quadrado · círculo'], ['Alt + clique', 'Conta-gotas'], ['Espaço + arrastar', 'Mover tela'], ['Ctrl + roda · + −', 'Zoom'], ['Ctrl+Z · Ctrl+Y', 'Desfazer · Refazer'], ['Ctrl+V', 'Colar imagem'], ['Dois dedos', 'Zoom e mover (celular)']] },
+  ru: { title: 'Рисовалка', tools: { brush: 'Кисть (B)', eraser: 'Ластик (E)', fill: 'Заливка (G)', picker: 'Пипетка (I)', line: 'Линия (L)', arrow: 'Стрелка (A)', rect: 'Прямоугольник (R)', ellipse: 'Эллипс (O)', text: 'Текст (T)', select: 'Выделить и двигать (V)', hand: 'Рука (пробел)' },
+    brushes: { pen: 'Перо', marker: 'Маркер', pencil: 'Карандаш', air: 'Аэрограф', calli: 'Каллиграфия' }, color: 'Цвет', size: 'Размер', opacity: 'Непрозрачность', smooth: 'Сглаживание', tolerance: 'Допуск', filled: 'С заливкой', fontSize: 'Размер шрифта', symmetry: 'Симметрия', sym: { none: 'Нет', h: 'Зеркало', v: 'Вертикально', quad: '4 стороны', kaleido: 'Калейдоскоп' },
+    layers: 'Слои', layerN: 'Слой {n}', addLayer: 'Добавить слой', delLayer: 'Удалить слой', dupLayer: 'Копия', up: 'Выше', down: 'Ниже', merge: 'Объединить вниз', clearLayer: 'Очистить слой', recent: 'Недавние', brushSet: 'Кисть', tool: 'Инструмент',
+    newDoc: 'Новый', open: 'Открыть', save: 'Сохранить PNG', undo: 'Отменить', redo: 'Повторить', fit: 'По размеру экрана', help: 'Справка', panel: 'Панель', create: 'Создать', cancel: 'Отмена', ok: 'ОК', bg: 'Фон', bgWhite: 'Белый', bgClear: 'Прозрачный',
+    sizes: { screen: 'Размер экрана', hd: 'HD альбомный', square: 'Квадрат', story: 'Портрет (телефон)', small: 'Маленький' }, confirmNew: 'Стереть рисунок и начать новый?', saved: 'Сохранено', pasted: 'Вставлено', autosaved: 'Восстановлен автосохранённый рисунок', textHint: 'Введите текст и коснитесь снаружи',
+    keys: [['B · E · G · I', 'Кисть · Ластик · Заливка · Пипетка'], ['L · A · R · O · T · V', 'Линия · Стрелка · Прямоугольник · Эллипс · Текст · Выделение'], ['[ ]', 'Тоньше · толще'], ['Shift', 'Прямая · 45° · квадрат · круг'], ['Alt + клик', 'Пипетка'], ['Пробел + перетаскивание', 'Двигать холст'], ['Ctrl + колесо · + −', 'Масштаб'], ['Ctrl+Z · Ctrl+Y', 'Отменить · Повторить'], ['Ctrl+V', 'Вставить картинку'], ['Два пальца', 'Масштаб и сдвиг (телефон)']] },
+  vi: { title: 'Vẽ tranh', tools: { brush: 'Cọ (B)', eraser: 'Tẩy (E)', fill: 'Đổ màu (G)', picker: 'Lấy màu (I)', line: 'Đường thẳng (L)', arrow: 'Mũi tên (A)', rect: 'Hình chữ nhật (R)', ellipse: 'Hình elip (O)', text: 'Chữ (T)', select: 'Chọn và di chuyển (V)', hand: 'Bàn tay (Space)' },
+    brushes: { pen: 'Bút mực', marker: 'Bút dạ', pencil: 'Bút chì', air: 'Bình xịt', calli: 'Thư pháp' }, color: 'Màu', size: 'Cỡ', opacity: 'Độ đục', smooth: 'Chống rung', tolerance: 'Dung sai', filled: 'Tô kín', fontSize: 'Cỡ chữ', symmetry: 'Đối xứng', sym: { none: 'Tắt', h: 'Trái phải', v: 'Trên dưới', quad: '4 hướng', kaleido: 'Kính vạn hoa' },
+    layers: 'Lớp', layerN: 'Lớp {n}', addLayer: 'Thêm lớp', delLayer: 'Xóa lớp', dupLayer: 'Nhân bản', up: 'Lên', down: 'Xuống', merge: 'Gộp xuống', clearLayer: 'Xóa trắng lớp', recent: 'Màu gần đây', brushSet: 'Cọ', tool: 'Công cụ',
+    newDoc: 'Mới', open: 'Mở', save: 'Lưu PNG', undo: 'Hoàn tác', redo: 'Làm lại', fit: 'Vừa màn hình', help: 'Trợ giúp', panel: 'Bảng', create: 'Tạo', cancel: 'Hủy', ok: 'OK', bg: 'Nền', bgWhite: 'Trắng', bgClear: 'Trong suốt',
+    sizes: { screen: 'Cỡ màn hình', hd: 'HD ngang', square: 'Vuông', story: 'Dọc (điện thoại)', small: 'Nhỏ' }, confirmNew: 'Xóa bức vẽ này và bắt đầu mới?', saved: 'Đã lưu', pasted: 'Đã dán', autosaved: 'Đã khôi phục bức vẽ tự lưu', textHint: 'Gõ chữ rồi chạm ra ngoài để đặt',
+    keys: [['B · E · G · I', 'Cọ · Tẩy · Đổ màu · Lấy màu'], ['L · A · R · O · T · V', 'Đường · Mũi tên · Chữ nhật · Elip · Chữ · Chọn'], ['[ ]', 'Nhỏ hơn · to hơn'], ['Shift', 'Thẳng · 45° · vuông · tròn'], ['Alt + nhấp', 'Lấy màu'], ['Space + kéo', 'Di chuyển tranh'], ['Ctrl + cuộn · + −', 'Phóng to thu nhỏ'], ['Ctrl+Z · Ctrl+Y', 'Hoàn tác · Làm lại'], ['Ctrl+V', 'Dán ảnh'], ['Hai ngón tay', 'Phóng to và di chuyển (điện thoại)']] },
+};
+
+// ───────────────────────── 그림판 본체 ─────────────────────────
 const LANG = 'ko';
-const T = {
-  ko: { title: '그림판', customColor: '사용자 색상', size: '크기', opacity: '투명도',
-        undo: '↩ 취소', undoTitle: '실행 취소 (Ctrl+Z)', redo: '↪ 복원', redoTitle: '다시 실행 (Ctrl+Y)',
-        clear: '🗑 지우기', save: '💾 저장', confirmClear: '캔버스를 지우시겠습니까?',
-        pencil: '연필', brush: '브러시', eraser: '지우개', line: '직선', rect: '사각형', circle: '원', fill: '채우기' },
-  en: { title: 'Paint', customColor: 'Custom Color', size: 'Size', opacity: 'Opacity',
-        undo: '↩ Undo', undoTitle: 'Undo (Ctrl+Z)', redo: '↪ Redo', redoTitle: 'Redo (Ctrl+Y)',
-        clear: '🗑 Clear', save: '💾 Save', confirmClear: 'Clear the canvas?',
-        pencil: 'Pencil', brush: 'Brush', eraser: 'Eraser', line: 'Line', rect: 'Rectangle', circle: 'Circle', fill: 'Fill' }
-}[LANG];
-document.getElementById('pageTitle').textContent = T.title;
-document.getElementById('customColor').title = T.customColor;
-document.getElementById('lblSize').textContent = T.size;
-document.getElementById('lblOpacity').textContent = T.opacity;
-document.getElementById('undoBtn').textContent = T.undo;
-document.getElementById('undoBtn').title = T.undoTitle;
-document.getElementById('redoBtn').textContent = T.redo;
-document.getElementById('redoBtn').title = T.redoTitle;
-document.getElementById('clearBtn').textContent = T.clear;
-document.getElementById('saveBtn').textContent = T.save;
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const DPR = Math.min(2, devicePixelRatio || 1);
+const ICON = {
+  brush: '<path d="M14.5 3.5l6 6-9 9c-1 1-2.5 1-3.5 0l-2.5-2.5c-1-1-1-2.5 0-3.5z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 16c-2 0-3 2-3 5 3 0 5-1 5-3" fill="currentColor"/>',
+  eraser: '<path d="M4 15l9-9 7 7-7 7H8z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5l7 7" stroke="currentColor" stroke-width="1.8"/><path d="M11 20h9" stroke="currentColor" stroke-width="1.8"/>',
+  fill: '<path d="M5 11l7-7 7 7-7 7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 11h14" stroke="currentColor" stroke-width="1.8"/><path d="M20 15c1 2 2 3 2 4a2 2 0 01-4 0c0-1 1-2 2-4z" fill="currentColor"/>',
+  picker: '<path d="M14 4l6 6-2 2-6-6z" fill="currentColor"/><path d="M13 7l-8 8-1 5 5-1 8-8" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  line: '<path d="M4 20L20 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  arrow: '<path d="M4 20L19 5M11 5h8v8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  rect: '<rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  ellipse: '<ellipse cx="12" cy="12" rx="8.5" ry="6.5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  text: '<path d="M5 6V4h14v2M12 4v16M9 20h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  select: '<path d="M4 4h4M12 4h4M20 4v4M20 12v4M20 20h-4M12 20H8M4 20v-4M4 12V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  hand: '<path d="M8 13V6a1.5 1.5 0 013 0v5V4.5a1.5 1.5 0 013 0V11V6a1.5 1.5 0 013 0v8c0 4-2.5 7-6 7s-5-1.5-7-5l-1.5-3a1.5 1.5 0 012.5-1.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  newDoc: '<path d="M6 3h8l4 4v14H6z M14 3v4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 11v6M9 14h6" stroke="currentColor" stroke-width="1.8"/>',
+  open: '<path d="M3 7h6l2 2h10v10H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  save: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  undo: '<path d="M9 7L4 12l5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12h10a6 6 0 010 12" fill="none" stroke="currentColor" stroke-width="2.2" transform="translate(0,-5)"/>',
+  redo: '<path d="M15 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12H10a6 6 0 000 12" fill="none" stroke="currentColor" stroke-width="2.2" transform="translate(0,-5)"/>',
+  zin: '<circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  zout: '<circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7.5 10.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  help: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  panel: '<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14 4v16" stroke="currentColor" stroke-width="1.8"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+  eyeoff: '<path d="M3 3l18 18M10.5 5.2C11 5.1 11.5 5 12 5c6 0 10 7 10 7a17 17 0 01-3.2 3.9M6.6 6.6C3.8 8.4 2 12 2 12s4 7 10 7c1.6 0 3-.4 4.3-1" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  trash: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  dup: '<rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  merge: '<path d="M7 4v5c0 3 5 3 5 6v5M17 4v5c0 3-5 3-5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  clear: '<path d="M4 4l16 16M20 4L4 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+};
+const svg = k => `<svg viewBox="0 0 24 24">${ICON[k]}</svg>`;
+const PALETTE = ['#000000', '#434343', '#7f7f7f', '#bfbfbf', '#ffffff', '#7a1f1f', '#e03131', '#ff8787', '#ffd8a8', '#f08c00', '#ffd43b', '#fff3bf', '#2f9e44', '#8ce99a', '#0b7285', '#3bc9db', '#1864ab', '#4dabf7', '#5f3dc4', '#b197fc', '#a61e4d', '#f783ac', '#7c5c3b', '#d9a066', '#e9c46a', '#264653', '#2a9d8f', '#f4a261', '#e76f51', '#14213d'];
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const COLORS = ['#000000','#ffffff','#ff0000','#ff6b00','#ffd700','#00cc00','#0088ff','#7c5cfc','#ff69b4','#8b4513','#808080','#00cccc'];
+// ── 상태
+const P = { tool: 'brush', brush: 'pen', color: [32, 32, 40], size: 12, opacity: 1, smooth: 0.35, tol: 32, filled: false, font: 36, sym: 'none' };
+try { Object.assign(P, JSON.parse(localStorage.getItem('wiiiv-paint-set') || '{}')); } catch { /* 무시 */ }
+const saveSet = () => { try { localStorage.setItem('wiiiv-paint-set', JSON.stringify(P)); } catch { /* 무시 */ } };
+let recent = []; try { recent = JSON.parse(localStorage.getItem('wiiiv-paint-recent') || '[]'); } catch { /* 무시 */ }
+const doc = { w: 1280, h: 960, bg: 'white', layers: [], active: 0, nextId: 1 };
+const hist = new History(60);
+const view = $('view'), vc = view.getContext('2d'), stage = $('stage');
+let Z = 1, OX = 0, OY = 0, dirty = true, VW = 0, VH = 0;
+const buf = document.createElement('canvas'), bc = buf.getContext('2d');      // 붓질 한 번을 모아 두는 판
 
-const TOOLS = [
-  { id: 'pencil', icon: '✏️', label: T.pencil },
-  { id: 'brush', icon: '🖌️', label: T.brush },
-  { id: 'eraser', icon: '🧹', label: T.eraser },
-  { id: 'line', icon: '📏', label: T.line },
-  { id: 'rect', icon: '⬜', label: T.rect },
-  { id: 'circle', icon: '⭕', label: T.circle },
-  { id: 'fill', icon: '🪣', label: T.fill },
-];
-
-let tool = 'pencil';
-let color = '#000000';
-let size = 3;
-let opacity = 1;
-let drawing = false;
-let lastX = 0, lastY = 0;
-let startX = 0, startY = 0;
-let undoStack = [];
-let redoStack = [];
-const MAX_UNDO = 20;
-let shapePreview = null;
-
-function initCanvas() {
-  const area = document.querySelector('.canvas-area');
-  const w = Math.min(area.clientWidth - 40, 800);
-  const h = Math.min(area.clientHeight - 40, 600);
-  canvas.width = w;
-  canvas.height = h;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, h);
-  saveState();
+function newLayer(name) { const cv = document.createElement('canvas'); cv.width = doc.w; cv.height = doc.h; return { id: doc.nextId++, name: name || fmt(T.layerN, doc.nextId - 1), cv, ctx: cv.getContext('2d', { willReadFrequently: true }), visible: true, opacity: 1 }; }
+const L = () => doc.layers[doc.active];
+function newDoc(w, h, bg) {
+  doc.w = w; doc.h = h; doc.bg = bg; doc.layers = []; doc.nextId = 1; doc.layers.push(newLayer()); doc.active = 0;
+  buf.width = w; buf.height = h; hist.undo = []; hist.redo = []; sel = null; fitView(); buildLayers(); dirty = true; autosave();
 }
+// ── 화면 배치 · 확대
+function resize() { const r = stage.getBoundingClientRect(); VW = r.width; VH = r.height; view.width = Math.round(VW * DPR); view.height = Math.round(VH * DPR); dirty = true; }
+function fitView() { resize(); const z = Math.min((VW - 40) / doc.w, (VH - 40) / doc.h, 2); Z = Math.max(0.05, z); OX = (VW - doc.w * Z) / 2; OY = (VH - doc.h * Z) / 2; updZoom(); dirty = true; }
+function zoomAt(f, sx, sy) { const nz = Math.max(0.05, Math.min(32, Z * f)); const dx = (sx - OX) / Z, dy = (sy - OY) / Z; Z = nz; OX = sx - dx * Z; OY = sy - dy * Z; updZoom(); dirty = true; }
+function updZoom() { const e = $('zoomv'); if (e) e.textContent = Math.round(Z * 100) + '%'; }
+const toDoc = (sx, sy) => [(sx - OX) / Z, (sy - OY) / Z];
+addEventListener('resize', () => { resize(); });
 
-function saveState() {
-  undoStack.push(canvas.toDataURL());
-  if (undoStack.length > MAX_UNDO) undoStack.shift();
-  redoStack = [];
-}
-
-function undo() {
-  if (undoStack.length <= 1) return;
-  redoStack.push(undoStack.pop());
-  const img = new Image();
-  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
-  img.src = undoStack[undoStack.length - 1];
-}
-
-function redo() {
-  if (redoStack.length === 0) return;
-  const data = redoStack.pop();
-  undoStack.push(data);
-  const img = new Image();
-  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
-  img.src = data;
-}
-
-function clearCanvas() {
-  if (!confirm(T.confirmClear)) return;
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  saveState();
-}
-
-function downloadPNG() {
-  const a = document.createElement('a');
-  a.download = 'drawing.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
-}
-
-function getPos(e) {
-  const r = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: clientX - r.left, y: clientY - r.top };
-}
-
-function floodFill(sx, sy, fillColor) {
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const w = canvas.width;
-  const targetIdx = (Math.round(sy) * w + Math.round(sx)) * 4;
-  const targetR = data[targetIdx], targetG = data[targetIdx+1], targetB = data[targetIdx+2], targetA = data[targetIdx+3];
-  const tmp = document.createElement('canvas');
-  tmp.width = 1; tmp.height = 1;
-  const tmpCtx = tmp.getContext('2d');
-  tmpCtx.fillStyle = fillColor;
-  tmpCtx.fillRect(0, 0, 1, 1);
-  const fc = tmpCtx.getImageData(0, 0, 1, 1).data;
-  if (targetR === fc[0] && targetG === fc[1] && targetB === fc[2] && targetA === fc[3]) return;
-  const stack = [[Math.round(sx), Math.round(sy)]];
-  const visited = new Set();
-  while (stack.length > 0) {
-    const [x, y] = stack.pop();
-    const idx = (y * w + x) * 4;
-    if (x < 0 || x >= w || y < 0 || y >= canvas.height) continue;
-    if (visited.has(idx)) continue;
-    if (Math.abs(data[idx] - targetR) > 20 || Math.abs(data[idx+1] - targetG) > 20 || Math.abs(data[idx+2] - targetB) > 20 || Math.abs(data[idx+3] - targetA) > 20) continue;
-    visited.add(idx);
-    data[idx] = fc[0]; data[idx+1] = fc[1]; data[idx+2] = fc[2]; data[idx+3] = fc[3];
-    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+// ── 그리기 (화면)
+let shapePrev = null, sel = null, antsT = 0;
+function checker(c, x, y, w, h) { const s = 10; c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip(); c.fillStyle = '#fff'; c.fillRect(x, y, w, h); c.fillStyle = '#d9dbe0'; for (let yy = 0; yy < h; yy += s) for (let xx = (Math.floor(yy / s) % 2) * s; xx < w; xx += 2 * s) c.fillRect(x + xx, y + yy, s, s); c.restore(); }
+function render() {
+  if (!dirty) return; dirty = false; const c = vc;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, VW, VH);
+  // 종이 그림자
+  c.fillStyle = 'rgba(0,0,0,.45)'; c.fillRect(OX + 4, OY + 6, doc.w * Z, doc.h * Z);
+  if (doc.bg === 'white') { c.fillStyle = '#fff'; c.fillRect(OX, OY, doc.w * Z, doc.h * Z); } else checker(c, OX, OY, doc.w * Z, doc.h * Z);
+  c.setTransform(DPR * Z, 0, 0, DPR * Z, DPR * OX, DPR * OY); c.imageSmoothingEnabled = Z < 2;
+  doc.layers.forEach((ly, i) => {
+    if (!ly.visible) return; c.globalAlpha = ly.opacity; c.drawImage(ly.cv, 0, 0);
+    if (i === doc.active && stroking && stroking.buf) { c.globalAlpha = ly.opacity * stroking.alpha; c.globalCompositeOperation = stroking.blend; c.drawImage(buf, 0, 0); c.globalCompositeOperation = 'source-over'; }
+    if (i === doc.active && sel && sel.float) { c.globalAlpha = ly.opacity; c.drawImage(sel.float, sel.x, sel.y); }
+    c.globalAlpha = 1;
+  });
+  // 도형 미리 보기
+  if (shapePrev) { c.save(); drawShape(c, shapePrev); c.restore(); }
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // 대칭 안내선
+  if (P.sym !== 'none' && (P.tool === 'brush' || P.tool === 'eraser')) {
+    c.strokeStyle = 'rgba(108,140,255,.55)'; c.setLineDash([6, 6]); c.lineWidth = 1; c.beginPath();
+    const cx = OX + doc.w * Z / 2, cy = OY + doc.h * Z / 2;
+    if (P.sym !== 'v') { c.moveTo(cx, OY); c.lineTo(cx, OY + doc.h * Z); }
+    if (P.sym !== 'h') { c.moveTo(OX, cy); c.lineTo(OX + doc.w * Z, cy); }
+    if (P.sym === 'kaleido') { const R = Math.max(doc.w, doc.h) * Z; c.moveTo(cx - R, cy - R); c.lineTo(cx + R, cy + R); c.moveTo(cx - R, cy + R); c.lineTo(cx + R, cy - R); }
+    c.stroke(); c.setLineDash([]);
   }
-  ctx.putImageData(imageData, 0, 0);
+  // 선택 영역 (개미 줄)
+  if (sel) { const x = OX + sel.x * Z, y = OY + sel.y * Z, w = sel.w * Z, h = sel.h * Z; c.lineWidth = 1; c.strokeStyle = '#fff'; c.strokeRect(x + 0.5, y + 0.5, w, h); c.strokeStyle = '#000'; c.setLineDash([5, 5]); c.lineDashOffset = -antsT; c.strokeRect(x + 0.5, y + 0.5, w, h); c.setLineDash([]); }
 }
+function loop() { if (sel) { antsT = (antsT + 0.4) % 10; dirty = true; } if (airTimer) airTick(); render(); requestAnimationFrame(loop); }
 
-function onStart(e) {
-  e.preventDefault();
-  const pos = getPos(e);
-  drawing = true;
-  lastX = pos.x; lastY = pos.y;
-  startX = pos.x; startY = pos.y;
-  if (tool === 'fill') {
-    floodFill(pos.x, pos.y, color);
-    saveState();
-    drawing = false;
-    return;
-  }
-  if (tool === 'line' || tool === 'rect' || tool === 'circle') {
-    shapePreview = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  }
-  if (tool === 'pencil' || tool === 'brush' || tool === 'eraser') {
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-  }
+// ── 색
+const rgba = (a = 1, col = P.color) => `rgba(${col[0]},${col[1]},${col[2]},${a})`;
+function setColor(rgb, keep) { P.color = rgb.slice(0, 3); if (!keep) { const h = rgb2hex(P.color); recent = [h, ...recent.filter(x => x !== h)].slice(0, 12); try { localStorage.setItem('wiiiv-paint-recent', JSON.stringify(recent)); } catch { /* 무시 */ } } saveSet(); syncColorUI(); }
+
+// ── 붓질
+let stroking = null, airTimer = null;
+function symPoints(x, y) {
+  const W = doc.w, H = doc.h, out = [[x, y, 0]];
+  if (P.sym === 'h') out.push([W - x, y, 1]);
+  else if (P.sym === 'v') out.push([x, H - y, 2]);
+  else if (P.sym === 'quad') out.push([W - x, y, 1], [x, H - y, 2], [W - x, H - y, 3]);
+  else if (P.sym === 'kaleido') { const cx = W / 2, cy = H / 2, dx = x - cx, dy = y - cy; for (let k = 1; k < 4; k++) { const a = k * Math.PI / 2, c = Math.cos(a), s = Math.sin(a); out.push([cx + dx * c - dy * s, cy + dx * s + dy * c, 4]); } for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2, c = Math.cos(a), s = Math.sin(a); out.push([cx - dx * c + dy * s, cy + dx * s + dy * c, 5]); } }
+  return out;
 }
-
-function onMove(e) {
-  if (!drawing) return;
-  e.preventDefault();
-  const pos = getPos(e);
-  ctx.globalAlpha = opacity;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  if (tool === 'pencil') {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = size;
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  } else if (tool === 'brush') {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = size * 2;
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  } else if (tool === 'eraser') {
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 1;
-    ctx.lineWidth = size * 3;
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-  } else if (tool === 'line' || tool === 'rect' || tool === 'circle') {
-    ctx.putImageData(shapePreview, 0, 0);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = size;
-    ctx.beginPath();
-    if (tool === 'line') {
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(pos.x, pos.y);
-    } else if (tool === 'rect') {
-      ctx.rect(startX, startY, pos.x - startX, pos.y - startY);
-    } else if (tool === 'circle') {
-      const rx = Math.abs(pos.x - startX) / 2;
-      const ry = Math.abs(pos.y - startY) / 2;
-      const cx = startX + (pos.x - startX) / 2;
-      const cy = startY + (pos.y - startY) / 2;
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+function grow(st, x, y, r) { st.x0 = Math.min(st.x0, x - r - 2); st.y0 = Math.min(st.y0, y - r - 2); st.x1 = Math.max(st.x1, x + r + 2); st.y1 = Math.max(st.y1, y + r + 2); }
+function stampAt(st, x, y, pr) {
+  const isEr = P.tool === 'eraser', r = Math.max(0.5, P.size / 2 * (st.pen ? 0.25 + 0.75 * pr : 1));
+  for (const [sx, sy] of symPoints(x, y)) {
+    grow(st, sx, sy, P.brush === 'calli' && !isEr ? P.size : r);
+    if (isEr) { const c = L().ctx; c.save(); c.globalCompositeOperation = 'destination-out'; c.globalAlpha = P.opacity; c.beginPath(); c.arc(sx, sy, r, 0, 7); c.fill(); c.restore(); continue; }
+    const c = bc;
+    switch (P.brush) {
+      case 'pen': c.fillStyle = rgba(1); c.beginPath(); c.arc(sx, sy, r, 0, 7); c.fill(); break;
+      case 'marker': c.fillStyle = rgba(1); c.fillRect(sx - r, sy - r * 0.55, r * 2, r * 1.1); break;
+      case 'pencil': { c.fillStyle = rgba(1); const n = Math.max(3, r * r * 0.9); for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, d = Math.sqrt(Math.random()) * r; c.globalAlpha = 0.35 + Math.random() * 0.5; c.fillRect(sx + Math.cos(a) * d, sy + Math.sin(a) * d, 1, 1); } c.globalAlpha = 1; break; }
+      case 'air': { const R = r * 1.6, g = c.createRadialGradient(sx, sy, 0, sx, sy, R); g.addColorStop(0, rgba(0.09 * (st.pen ? 0.4 + pr : 1))); g.addColorStop(1, rgba(0)); c.fillStyle = g; c.fillRect(sx - R, sy - R, R * 2, R * 2); grow(st, sx, sy, R); break; }
+      case 'calli': { c.save(); c.translate(sx, sy); c.rotate(-Math.PI / 4); c.fillStyle = rgba(1); c.beginPath(); c.ellipse(0, 0, P.size / 2 * (st.pen ? 0.4 + 0.6 * pr : 1), Math.max(0.6, P.size * 0.09), 0, 0, 7); c.fill(); c.restore(); break; }
     }
-    ctx.stroke();
   }
-  ctx.globalAlpha = 1;
-  lastX = pos.x; lastY = pos.y;
+  dirty = true;
+}
+function lineTo(st, x, y, pr) {
+  const dx = x - st.lx, dy = y - st.ly, d = Math.hypot(dx, dy), space = Math.max(0.6, P.tool === 'eraser' ? P.size * 0.12 : P.brush === 'calli' ? Math.min(1.2, P.size * 0.04) : P.size * (P.brush === 'pencil' ? 0.3 : P.brush === 'air' ? 0.2 : 0.12));
+  if (d < space) return;
+  const n = Math.floor(d / space); for (let i = 1; i <= n; i++) { const t = i / n; stampAt(st, st.lx + dx * t, st.ly + dy * t, st.lp + (pr - st.lp) * t); }
+  st.lx = x; st.ly = y; st.lp = pr;
+}
+function beginStroke(x, y, pr, pen) {
+  const ly = L(); if (!ly.visible) { toast('👁'); return; }
+  const before = ly.ctx.getImageData(0, 0, doc.w, doc.h);
+  const isEr = P.tool === 'eraser';
+  stroking = { before, x0: x, y0: y, x1: x, y1: y, lx: x, ly: y, lp: pr, sx: x, sy: y, pen, buf: !isEr, alpha: P.brush === 'marker' ? P.opacity * 0.6 : P.opacity, blend: P.brush === 'marker' ? 'multiply' : 'source-over' };
+  bc.clearRect(0, 0, doc.w, doc.h); stampAt(stroking, x, y, pr);
+  if (P.brush === 'air' && !isEr) airTimer = { x, y, pr };
+}
+function airTick() { if (!stroking || !airTimer) return; stampAt(stroking, airTimer.x, airTimer.y, airTimer.pr); }
+function moveStroke(x, y, pr) {
+  const st = stroking; if (!st) return;
+  // 손떨림 보정: 따라가는 점이 손가락을 천천히 쫓는다
+  const k = 1 - Math.min(0.92, P.smooth * 0.92); st.sx += (x - st.sx) * k; st.sy += (y - st.sy) * k;
+  lineTo(st, st.sx, st.sy, pr); if (airTimer) { airTimer.x = st.sx; airTimer.y = st.sy; airTimer.pr = pr; }
+}
+function endStroke(x, y, pr) {
+  const st = stroking; if (!st) return;
+  for (let i = 0; i < 6; i++) { st.sx += (x - st.sx) * 0.5; st.sy += (y - st.sy) * 0.5; lineTo(st, st.sx, st.sy, pr); }
+  airTimer = null;
+  const ly = L();
+  if (st.buf) { const c = ly.ctx; c.save(); c.globalAlpha = st.alpha; c.globalCompositeOperation = st.blend; c.drawImage(buf, 0, 0); c.restore(); bc.clearRect(0, 0, doc.w, doc.h); }
+  stroking = null; commitPx(ly, st.before, st.x0, st.y0, st.x1 - st.x0, st.y1 - st.y0); dirty = true;
+}
+// 바뀐 영역만 기록
+function cropData(full, r) { const out = new ImageData(r[2], r[3]); for (let y = 0; y < r[3]; y++) out.data.set(full.data.subarray(((r[1] + y) * full.width + r[0]) * 4, ((r[1] + y) * full.width + r[0] + r[2]) * 4), y * r[2] * 4); return out; }
+function commitPx(ly, beforeFull, x, y, w, h) {
+  const r = clampRect(x, y, w, h, doc.w, doc.h); if (!r) return;
+  hist.push({ t: 'px', id: ly.id, r, before: cropData(beforeFull, r), after: ly.ctx.getImageData(r[0], r[1], r[2], r[3]) });
+  afterChange();
+}
+function afterChange() { updHist(); thumbs(); autosave(); }
+
+// ── 도형
+function drawShape(c, s) {
+  let { x0, y0, x1, y1 } = s; c.lineWidth = s.size; c.strokeStyle = s.col; c.fillStyle = s.col; c.lineCap = 'round'; c.lineJoin = 'round'; c.globalAlpha = s.op;
+  if (s.k === 'line' || s.k === 'arrow') {
+    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
+    if (s.k === 'arrow') { const a = Math.atan2(y1 - y0, x1 - x0), L2 = Math.max(10, s.size * 3.2); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x1 - L2 * Math.cos(a - 0.45), y1 - L2 * Math.sin(a - 0.45)); c.lineTo(x1 - L2 * Math.cos(a + 0.45), y1 - L2 * Math.sin(a + 0.45)); c.closePath(); c.fill(); }
+  } else if (s.k === 'rect') { const x = Math.min(x0, x1), y = Math.min(y0, y1), w = Math.abs(x1 - x0), h = Math.abs(y1 - y0); if (s.filled) c.fillRect(x, y, w, h); else c.strokeRect(x, y, w, h); }
+  else if (s.k === 'ellipse') { c.beginPath(); c.ellipse((x0 + x1) / 2, (y0 + y1) / 2, Math.abs(x1 - x0) / 2, Math.abs(y1 - y0) / 2, 0, 0, 7); if (s.filled) c.fill(); else c.stroke(); }
+  c.globalAlpha = 1;
+}
+function constrain(s, shift) {
+  if (!shift) return;
+  const dx = s.x1 - s.x0, dy = s.y1 - s.y0;
+  if (s.k === 'line' || s.k === 'arrow') { const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4, d = Math.hypot(dx, dy); s.x1 = s.x0 + Math.cos(a) * d; s.y1 = s.y0 + Math.sin(a) * d; }
+  else { const m = Math.max(Math.abs(dx), Math.abs(dy)); s.x1 = s.x0 + Math.sign(dx || 1) * m; s.y1 = s.y0 + Math.sign(dy || 1) * m; }
+}
+function commitShape(s) {
+  const ly = L(), before = ly.ctx.getImageData(0, 0, doc.w, doc.h); drawShape(ly.ctx, s);
+  const pad = s.size * 3 + 4; commitPx(ly, before, Math.min(s.x0, s.x1) - pad, Math.min(s.y0, s.y1) - pad, Math.abs(s.x1 - s.x0) + pad * 2, Math.abs(s.y1 - s.y0) + pad * 2);
+}
+// ── 채우기 · 스포이트
+function fillAt(x, y) {
+  x = Math.floor(x); y = Math.floor(y); if (x < 0 || y < 0 || x >= doc.w || y >= doc.h) return;
+  const ly = L(), full = ly.ctx.getImageData(0, 0, doc.w, doc.h), { mask, x0, y0, x1, y1 } = floodMask(full.data, doc.w, doc.h, x, y, P.tol);
+  const before = new ImageData(new Uint8ClampedArray(full.data), doc.w, doc.h), d = full.data, a = Math.round(P.opacity * 255);
+  for (let i = 0; i < mask.length; i++) if (mask[i]) { const p = i * 4; if (a === 255) { d[p] = P.color[0]; d[p + 1] = P.color[1]; d[p + 2] = P.color[2]; d[p + 3] = 255; } else { const k = a / 255, ia = d[p + 3] / 255, oa = k + ia * (1 - k); d[p] = (P.color[0] * k + d[p] * ia * (1 - k)) / oa; d[p + 1] = (P.color[1] * k + d[p + 1] * ia * (1 - k)) / oa; d[p + 2] = (P.color[2] * k + d[p + 2] * ia * (1 - k)) / oa; d[p + 3] = oa * 255; } }
+  ly.ctx.putImageData(full, 0, 0); commitPx(ly, before, x0, y0, x1 - x0 + 1, y1 - y0 + 1); dirty = true;
+}
+function pickAt(x, y) {
+  x = Math.floor(x); y = Math.floor(y); if (x < 0 || y < 0 || x >= doc.w || y >= doc.h) return;
+  const c = document.createElement('canvas'); c.width = c.height = 1; const k = c.getContext('2d', { willReadFrequently: true });
+  if (doc.bg === 'white') { k.fillStyle = '#fff'; k.fillRect(0, 0, 1, 1); }
+  for (const ly of doc.layers) if (ly.visible) { k.globalAlpha = ly.opacity; k.drawImage(ly.cv, x, y, 1, 1, 0, 0, 1, 1); }
+  const d = k.getImageData(0, 0, 1, 1).data; if (d[3] === 0) return; setColor([d[0], d[1], d[2]]);
+}
+// ── 글자
+let textBox = null;
+function startText(dx, dy) {
+  endText(); const el = document.createElement('div'); el.className = 'textbox'; el.contentEditable = 'true'; el.spellcheck = false;
+  textBox = { el, x: dx, y: dy }; placeTextBox(); stage.appendChild(el); setTimeout(() => el.focus(), 0); toast(T.textHint);
+  el.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Escape') { textBox.cancel = true; endText(); } });
+}
+function placeTextBox() { if (!textBox) return; const el = textBox.el; Object.assign(el.style, { left: OX + textBox.x * Z + 'px', top: OY + textBox.y * Z + 'px', font: `600 ${P.font * Z}px 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif`, color: rgba(P.opacity) }); }
+function endText() {
+  if (!textBox) return; const tb = textBox; textBox = null; const txt = tb.el.innerText.replace(/\n$/, ''); tb.el.remove();
+  if (tb.cancel || !txt.trim()) return;
+  const ly = L(), before = ly.ctx.getImageData(0, 0, doc.w, doc.h), c = ly.ctx, lines = txt.split('\n');
+  c.save(); c.font = `600 ${P.font}px 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif`; c.fillStyle = rgba(P.opacity); c.textBaseline = 'top';
+  let w = 0; lines.forEach((ln, i) => { c.fillText(ln, tb.x + 2, tb.y + 2 + i * P.font * 1.2); w = Math.max(w, c.measureText(ln).width); }); c.restore();
+  commitPx(ly, before, tb.x - 4, tb.y - 4, w + 12, lines.length * P.font * 1.2 + 12); dirty = true;
+}
+// ── 선택 · 옮기기
+function liftSelection() {
+  if (!sel || sel.float) return; const ly = L(); sel.before = ly.ctx.getImageData(0, 0, doc.w, doc.h);
+  const f = document.createElement('canvas'); f.width = sel.w; f.height = sel.h; f.getContext('2d').drawImage(ly.cv, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
+  ly.ctx.clearRect(sel.x, sel.y, sel.w, sel.h); sel.float = f; sel.ox = sel.x; sel.oy = sel.y;
+}
+function dropSelection() {
+  if (!sel) return; const s = sel; sel = null;
+  if (s.float) {
+    const ly = L(); ly.ctx.drawImage(s.float, s.x, s.y);
+    const x0 = Math.min(s.ox ?? s.x, s.x), y0 = Math.min(s.oy ?? s.y, s.y), x1 = Math.max((s.ox ?? s.x) + s.w, s.x + s.w), y1 = Math.max((s.oy ?? s.y) + s.h, s.y + s.h);
+    commitPx(ly, s.before, x0, y0, x1 - x0, y1 - y0);
+  }
+  dirty = true;
+}
+function deleteSelection() { if (!sel) return; if (sel.float) { sel.float = null; const s = sel; sel = null; const ly = L(); commitPx(ly, s.before, Math.min(s.ox, s.x), Math.min(s.oy, s.y), s.w + Math.abs(s.x - s.ox), s.h + Math.abs(s.y - s.oy)); } else { const ly = L(), before = ly.ctx.getImageData(0, 0, doc.w, doc.h); ly.ctx.clearRect(sel.x, sel.y, sel.w, sel.h); commitPx(ly, before, sel.x, sel.y, sel.w, sel.h); sel = null; } dirty = true; }
+// 이미지 붙여 넣기 · 열기 → 떠 있는 선택으로
+function placeImage(img) {
+  dropSelection(); const ly = L(), k = Math.min(1, doc.w * 0.9 / img.width, doc.h * 0.9 / img.height), w = Math.round(img.width * k), h = Math.round(img.height * k);
+  const f = document.createElement('canvas'); f.width = w; f.height = h; f.getContext('2d').drawImage(img, 0, 0, w, h);
+  sel = { x: Math.round((doc.w - w) / 2), y: Math.round((doc.h - h) / 2), w, h, float: f, before: ly.ctx.getImageData(0, 0, doc.w, doc.h) }; sel.ox = sel.x; sel.oy = sel.y;
+  setTool('select'); dirty = true; toast(T.pasted);
 }
 
-function onEnd(e) {
-  if (!drawing) return;
-  drawing = false;
-  ctx.beginPath();
-  shapePreview = null;
-  saveState();
+// ── 되돌리기
+function snapshotLayers() { return { active: doc.active, layers: doc.layers.map(l => { const c = document.createElement('canvas'); c.width = doc.w; c.height = doc.h; c.getContext('2d').drawImage(l.cv, 0, 0); return { id: l.id, name: l.name, visible: l.visible, opacity: l.opacity, img: c }; }) }; }
+function applyLayers(s) { doc.layers = s.layers.map(o => { const ly = newLayer(o.name); doc.nextId--; ly.id = o.id; ly.visible = o.visible; ly.opacity = o.opacity; ly.ctx.drawImage(o.img, 0, 0); return ly; }); doc.nextId = Math.max(...doc.layers.map(l => l.id)) + 1; doc.active = Math.min(s.active, doc.layers.length - 1); buildLayers(); dirty = true; }
+function structural(fn) { dropSelection(); const before = snapshotLayers(); fn(); hist.push({ t: 'st', before, after: snapshotLayers() }); buildLayers(); afterChange(); dirty = true; }
+function undo() {
+  if (stroking) return; endText(); if (sel && !sel.float) sel = null; if (sel && sel.float) { dropSelection(); }
+  const e = hist.undo.pop(); if (!e) return; hist.redo.push(e);
+  if (e.t === 'px') { const ly = doc.layers.find(l => l.id === e.id); if (ly) ly.ctx.putImageData(e.before, e.r[0], e.r[1]); } else applyLayers(e.before);
+  dirty = true; updHist(); thumbs(); autosave();
 }
-
-canvas.addEventListener('mousedown', onStart);
-canvas.addEventListener('mousemove', onMove);
-canvas.addEventListener('mouseup', onEnd);
-canvas.addEventListener('mouseleave', onEnd);
-canvas.addEventListener('touchstart', onStart, { passive: false });
-canvas.addEventListener('touchmove', onMove, { passive: false });
-canvas.addEventListener('touchend', onEnd);
-
-function renderTools() {
-  const $tools = document.getElementById('tools');
-  $tools.innerHTML = TOOLS.map(t =>
-    `<button class="tool-btn ${tool === t.id ? 'active' : ''}" onclick="selectTool('${t.id}')" title="${t.label}">${t.icon}</button>`
-  ).join('');
+function redo() {
+  const e = hist.redo.pop(); if (!e) return; hist.undo.push(e);
+  if (e.t === 'px') { const ly = doc.layers.find(l => l.id === e.id); if (ly) ly.ctx.putImageData(e.after, e.r[0], e.r[1]); } else applyLayers(e.after);
+  dirty = true; updHist(); thumbs(); autosave();
 }
+function updHist() { const u = $('bUndo'), r = $('bRedo'); if (u) u.disabled = !hist.undo.length; if (r) r.disabled = !hist.redo.length; }
 
-function selectTool(id) {
-  tool = id;
-  renderTools();
-  updateIndicator();
-  canvas.style.cursor = tool === 'fill' ? 'cell' : tool === 'eraser' ? 'grab' : 'crosshair';
-}
-
-function renderPalette() {
-  const $palette = document.getElementById('palette');
-  $palette.innerHTML = COLORS.map(c =>
-    `<div class="color-swatch ${color === c ? 'active' : ''}" style="background:${c}" onclick="selectColor('${c}')"></div>`
-  ).join('');
-}
-
-function selectColor(c) {
-  color = c;
-  renderPalette();
-  document.getElementById('customColor').value = c;
-  updateIndicator();
-}
-
-document.getElementById('customColor').addEventListener('input', e => {
-  color = e.target.value;
-  renderPalette();
-  updateIndicator();
+// ── 입력: 손가락 하나는 그리기, 둘은 확대·옮기기
+const ptrs = new Map(); let pinch = null, panning = null, spaceDown = false, shapeDraw = null, selDrag = null;
+function pressureOf(e) { return e.pointerType === 'pen' ? (e.pressure || 0.5) : 0.6; }
+stage.addEventListener('pointerdown', e => {
+  if (e.target !== view) return; e.preventDefault(); stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (innerWidth <= 760) $('side').classList.add('closed');
+  if (ptrs.size === 2) { // 두 손가락: 하던 붓질 취소하고 확대
+    if (stroking) { L().ctx.putImageData(stroking.before, 0, 0); stroking = null; bc.clearRect(0, 0, doc.w, doc.h); airTimer = null; }
+    shapePrev = shapeDraw = null; const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, z: Z, ox: OX, oy: OY }; dirty = true; return;
+  }
+  const [x, y] = toDoc(e.offsetX, e.offsetY);
+  if (e.button === 1 || spaceDown || P.tool === 'hand') { panning = { sx: e.offsetX, sy: e.offsetY, ox: OX, oy: OY }; stage.style.cursor = 'grabbing'; return; }
+  if (e.button === 2) return;
+  if (e.altKey || P.tool === 'picker') { pickAt(x, y); return; }
+  if (textBox) { endText(); return; }        // 글자 상자 밖을 누르면 확정만
+  switch (P.tool) {
+    case 'brush': case 'eraser': dropSelection(); beginStroke(x, y, pressureOf(e), e.pointerType === 'pen'); break;
+    case 'fill': dropSelection(); fillAt(x, y); if (P.tool === 'fill') setColor(P.color); break;
+    case 'text': dropSelection(); startText(x, y); break;
+    case 'line': case 'arrow': case 'rect': case 'ellipse': dropSelection(); shapeDraw = { k: P.tool, x0: x, y0: y, x1: x, y1: y, size: P.size, col: rgba(1), op: P.opacity, filled: P.filled }; shapePrev = shapeDraw; break;
+    case 'select':
+      if (sel && x >= sel.x && y >= sel.y && x <= sel.x + sel.w && y <= sel.y + sel.h) { liftSelection(); selDrag = { mx: x - sel.x, my: y - sel.y }; }
+      else { dropSelection(); selDrag = { make: true, x0: x, y0: y }; sel = { x: Math.floor(x), y: Math.floor(y), w: 1, h: 1 }; }
+      break;
+  }
 });
-
-document.getElementById('sizeSlider').addEventListener('input', e => {
-  size = parseInt(e.target.value);
-  document.getElementById('sizeVal').textContent = size;
-  updateIndicator();
+stage.addEventListener('pointermove', e => {
+  cursorAt(e);
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+  if (pinch && ptrs.size >= 2) { const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2; const nz = Math.max(0.05, Math.min(32, pinch.z * d / pinch.d)); const dx = (pinch.cx - pinch.ox) / pinch.z, dy = (pinch.cy - pinch.oy) / pinch.z; Z = nz; OX = cx - dx * Z; OY = cy - dy * Z; updZoom(); placeTextBox(); dirty = true; return; }
+  if (panning) { OX = panning.ox + e.offsetX - panning.sx; OY = panning.oy + e.offsetY - panning.sy; placeTextBox(); dirty = true; return; }
+  const [x, y] = toDoc(e.offsetX, e.offsetY);
+  if (stroking) { const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e]; for (const ev of evs) { const [cx, cy] = toDoc(ev.offsetX, ev.offsetY); moveStroke(cx, cy, pressureOf(ev)); } return; }
+  if (shapeDraw) { shapeDraw.x1 = x; shapeDraw.y1 = y; constrain(shapeDraw, e.shiftKey); dirty = true; return; }
+  if (selDrag && sel) {
+    if (selDrag.make) { const x0 = Math.max(0, Math.min(selDrag.x0, x)), y0 = Math.max(0, Math.min(selDrag.y0, y)), x1 = Math.min(doc.w, Math.max(selDrag.x0, x)), y1 = Math.min(doc.h, Math.max(selDrag.y0, y)); sel.x = Math.floor(x0); sel.y = Math.floor(y0); sel.w = Math.max(1, Math.ceil(x1 - x0)); sel.h = Math.max(1, Math.ceil(y1 - y0)); }
+    else { sel.x = Math.round(x - selDrag.mx); sel.y = Math.round(y - selDrag.my); }
+    dirty = true;
+  }
 });
-
-document.getElementById('opacitySlider').addEventListener('input', e => {
-  opacity = parseInt(e.target.value) / 100;
-  document.getElementById('opacityVal').textContent = e.target.value + '%';
+const up = e => {
+  if (!ptrs.has(e.pointerId)) return; ptrs.delete(e.pointerId);
+  if (pinch) { if (ptrs.size < 2) pinch = null; return; }
+  if (panning) { panning = null; stage.style.cursor = toolCursor(e); return; }
+  const [x, y] = toDoc(e.offsetX, e.offsetY);
+  if (stroking) endStroke(x, y, pressureOf(e));
+  if (shapeDraw) { const s = shapeDraw; shapeDraw = shapePrev = null; if (Math.hypot(s.x1 - s.x0, s.y1 - s.y0) > 1) commitShape(s); dirty = true; }
+  if (selDrag) { if (selDrag.make && sel && sel.w < 3 && sel.h < 3) sel = null; selDrag = null; dirty = true; }
+};
+stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+stage.addEventListener('contextmenu', e => e.preventDefault());
+stage.addEventListener('wheel', e => {
+  e.preventDefault(); const r = stage.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.0022), sx, sy); else { OX -= e.deltaX; OY -= e.deltaY; dirty = true; }
+  placeTextBox();
+}, { passive: false });
+// 도구마다 마우스 커서: 붓·지우개는 굵기 원, 나머지는 도구 모양
+const curSvg = (body, hx, hy, fb) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><g fill='none' stroke='#fff' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'>${body}</g><g fill='none' stroke='#111' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>${body}</g></svg>`)}") ${hx} ${hy}, ${fb}`;
+const CURSOR = {
+  fill: curSvg('<path d="M9 5l7 7-6 6-7-7z"/><path d="M3 11h13"/><path d="M20 15c1 2 1.6 3 1.6 4a1.6 1.6 0 01-3.2 0c0-1 .6-2 1.6-4z"/>', 20, 21, 'crosshair'),
+  picker: curSvg('<path d="M15 3.5l5.5 5.5-2.5 2.5-5.5-5.5z"/><path d="M14 7l-9 9-1.5 4.5L8 19l9-9"/>', 3, 21, 'crosshair'),
+};
+function toolCursor(e) {
+  if (panning) return 'grabbing';
+  if (spaceDown || P.tool === 'hand') return 'grab';
+  if (e && e.altKey) return CURSOR.picker;
+  switch (P.tool) {
+    case 'brush': case 'eraser': return e && e.pointerType === 'mouse' ? 'none' : 'crosshair';
+    case 'fill': return CURSOR.fill;
+    case 'picker': return CURSOR.picker;
+    case 'text': return 'text';
+    case 'select': if (e && sel) { const [x, y] = toDoc(e.offsetX, e.offsetY); if (x >= sel.x && y >= sel.y && x <= sel.x + sel.w && y <= sel.y + sel.h) return 'move'; } return 'crosshair';
+    default: return 'crosshair';
+  }
+}
+function cursorAt(e) {
+  const c = toolCursor(e); if (stage.style.cursor !== c) stage.style.cursor = c;
+  const cu = $('cursor'), show = c === 'none';
+  cu.style.display = show ? 'block' : 'none'; if (!show) return; const d = Math.max(4, P.size * Z);
+  Object.assign(cu.style, { left: e.offsetX + 'px', top: e.offsetY + 'px', width: d + 'px', height: P.brush === 'calli' && P.tool === 'brush' ? d * 0.25 + 'px' : d + 'px' });
+}
+stage.addEventListener('pointerleave', () => { $('cursor').style.display = 'none'; });
+// 키보드
+const TOOLKEY = { b: 'brush', e: 'eraser', g: 'fill', i: 'picker', l: 'line', a: 'arrow', r: 'rect', o: 'ellipse', t: 'text', v: 'select', h: 'hand' };
+addEventListener('keydown', e => {
+  if (textBox || e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); exportPNG(); return; }
+  if (e.ctrlKey || e.metaKey) return;
+  if (e.key === ' ') { if (!spaceDown) { spaceDown = true; stage.style.cursor = 'grab'; $('cursor').style.display = 'none'; } e.preventDefault(); return; }
+  if (TOOLKEY[k]) { setTool(TOOLKEY[k]); return; }
+  if (e.key === '[') { P.size = Math.max(1, Math.round(P.size / 1.2)); syncSide(); }
+  if (e.key === ']') { P.size = Math.min(300, Math.round(P.size * 1.2 + 1)); syncSide(); }
+  if (e.key === '+' || e.key === '=') zoomAt(1.25, VW / 2, VH / 2);
+  if (e.key === '-') zoomAt(0.8, VW / 2, VH / 2);
+  if (e.key === '0') fitView();
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel) { e.preventDefault(); deleteSelection(); }
+  if (e.key === 'Enter' && sel) dropSelection();
+  if (e.key === 'Escape') { if (sel) dropSelection(); }
 });
+addEventListener('keyup', e => { if (e.key === ' ') { spaceDown = false; stage.style.cursor = toolCursor(null); } });
+// 붙여 넣기
+addEventListener('paste', e => { if (textBox) return; const it = [...(e.clipboardData || {}).items || []].find(i => i.type.startsWith('image/')); if (!it) return; e.preventDefault(); const img = new Image(); img.onload = () => placeImage(img); img.src = URL.createObjectURL(it.getAsFile()); });
+stage.addEventListener('dragover', e => e.preventDefault());
+stage.addEventListener('drop', e => { e.preventDefault(); const f = [...e.dataTransfer.files].find(f => f.type.startsWith('image/')); if (f) { const img = new Image(); img.onload = () => placeImage(img); img.src = URL.createObjectURL(f); } });
 
-function updateIndicator() {
-  document.getElementById('indColor').style.background = tool === 'eraser' ? '#fff' : color;
-  document.getElementById('indTool').textContent = TOOLS.find(t => t.id === tool)?.label || '';
-  document.getElementById('indSize').textContent = size + 'px';
+// ── 저장 · 열기
+function composite() { const c = document.createElement('canvas'); c.width = doc.w; c.height = doc.h; const k = c.getContext('2d'); if (doc.bg === 'white') { k.fillStyle = '#fff'; k.fillRect(0, 0, doc.w, doc.h); } for (const ly of doc.layers) if (ly.visible) { k.globalAlpha = ly.opacity; k.drawImage(ly.cv, 0, 0); } if (sel && sel.float) { k.globalAlpha = 1; k.drawImage(sel.float, sel.x, sel.y); } return c; }
+function exportPNG() {
+  endText(); const c = composite(), d = new Date(), name = `wiiiv-paint-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}.png`;
+  c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); toast(T.saved); });
+}
+$('fileIn').addEventListener('change', e => { const f = e.target.files[0]; if (!f) return; const img = new Image(); img.onload = () => placeImage(img); img.src = URL.createObjectURL(f); e.target.value = ''; });
+// 자동 저장 (IndexedDB)
+let saveTimer = null;
+function idb() { return new Promise((res, rej) => { const r = indexedDB.open('wiiiv-paint', 1); r.onupgradeneeded = () => r.result.createObjectStore('doc'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+function autosave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      const layers = await Promise.all(doc.layers.map(l => new Promise(r => l.cv.toBlob(b => r({ name: l.name, visible: l.visible, opacity: l.opacity, blob: b }))))); const db = await idb();
+      db.transaction('doc', 'readwrite').objectStore('doc').put({ w: doc.w, h: doc.h, bg: doc.bg, active: doc.active, layers }, 'current');
+    } catch { /* 저장소 없이도 동작 */ }
+  }, 1500);
+}
+async function restore() {
+  try {
+    const db = await idb(); const d = await new Promise((res, rej) => { const q = db.transaction('doc').objectStore('doc').get('current'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+    if (!d || !d.layers || !d.layers.length) return false;
+    doc.w = d.w; doc.h = d.h; doc.bg = d.bg; doc.layers = []; doc.nextId = 1; buf.width = d.w; buf.height = d.h;
+    for (const o of d.layers) { const ly = newLayer(o.name); ly.visible = o.visible; ly.opacity = o.opacity; if (o.blob) { const bmp = await createImageBitmap(o.blob); ly.ctx.drawImage(bmp, 0, 0); } doc.layers.push(ly); }
+    doc.active = Math.min(d.active || 0, doc.layers.length - 1); fitView(); buildLayers(); dirty = true; return true;
+  } catch { return false; }
 }
 
-document.addEventListener('keydown', e => {
-  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
-  if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
-});
+// ── 화면 구성
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1900); }
+function setTool(t) { if (t !== P.tool) { if (P.tool === 'select' && t !== 'select') dropSelection(); endText(); } P.tool = t; saveSet(); stage.style.cursor = toolCursor(null); $('cursor').style.display = 'none'; document.querySelectorAll('.tool').forEach(b => b.classList.toggle('on', b.dataset.t === t)); syncSide(); dirty = true; }
+function buildTop() {
+  const tb = $('topbar'); tb.innerHTML = '';
+  const add = (id, icon, title, fn, cls = '') => { const b = document.createElement('button'); b.className = 'tb ' + cls; b.id = id; b.title = title; b.innerHTML = svg(icon); b.onclick = fn; tb.appendChild(b); return b; };
+  const t = document.createElement('div'); t.className = 'title'; t.textContent = T.title; tb.appendChild(t);
+  add('bNew', 'newDoc', T.newDoc, newDialog); add('bOpen', 'open', T.open, () => $('fileIn').click()); add('bSave', 'save', T.save, exportPNG);
+  tb.appendChild(Object.assign(document.createElement('div'), { className: 'sep' }));
+  add('bUndo', 'undo', T.undo + ' (Ctrl+Z)', undo); add('bRedo', 'redo', T.redo + ' (Ctrl+Y)', redo);
+  tb.appendChild(Object.assign(document.createElement('div'), { className: 'sep' }));
+  add('bZo', 'zout', '−', () => zoomAt(0.8, VW / 2, VH / 2), 'hide-m');
+  const zv = document.createElement('span'); zv.className = 'zoomv'; zv.id = 'zoomv'; zv.title = T.fit; zv.onclick = fitView; tb.appendChild(zv);
+  add('bZi', 'zin', '+', () => zoomAt(1.25, VW / 2, VH / 2), 'hide-m'); add('bFit', 'fit', T.fit, fitView);
+  const sp = document.createElement('div'); sp.className = 'spacer'; tb.appendChild(sp);
+  add('bHelp', 'help', T.help, helpDialog); add('bPanel', 'panel', T.panel, () => $('side').classList.toggle('closed'), 'show-m');
+  updZoom(); updHist();
+}
+function buildTools() {
+  const box = $('tools'); box.innerHTML = '';
+  for (const t of ['brush', 'eraser', 'fill', 'picker', 'line', 'arrow', 'rect', 'ellipse', 'text', 'select', 'hand']) { const b = document.createElement('button'); b.className = 'tool' + (P.tool === t ? ' on' : ''); b.dataset.t = t; b.title = T.tools[t]; b.innerHTML = svg(t); b.onclick = () => { setTool(t); if (innerWidth <= 760) $('side').classList.remove('closed'); }; box.appendChild(b); }
+  const cb = document.createElement('button'); cb.className = 'colorbtn'; cb.id = 'colorBtn'; cb.title = T.color; cb.onclick = () => $('side').classList.toggle('closed'); box.appendChild(cb);
+}
+// 오른쪽 판: 색 · 붓 설정 · 레이어
+let svCv, hueK, svK, hexIn, sw;
+let HSV = rgb2hsv(...P.color);
+function buildSide() {
+  const S = $('side'); S.innerHTML = '';
+  // 색
+  const c = document.createElement('div'); c.className = 'sec'; c.innerHTML = `<h4>${T.color}</h4><div class="sv" id="sv"><canvas width="200" height="148"></canvas><div class="knob" id="svK"></div></div><div class="slider hue" id="hue"><div class="knob" id="hueK"></div></div><div class="hexrow"><div class="swatch" id="sw"></div><input id="hexIn" maxlength="7"></div><div class="palette" id="pal"></div><h4 style="margin-top:10px">${T.recent}</h4><div class="recent" id="rec"></div>`;
+  S.appendChild(c);
+  svCv = c.querySelector('canvas'); hueK = $('hueK'); svK = $('svK'); hexIn = $('hexIn'); sw = $('sw');
+  const drag = (el, fn) => { const h = e => { const r = el.getBoundingClientRect(); fn(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))); }; el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); h(e); const mv = ev => h(ev), u = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', u); setColor(P.color); }; el.addEventListener('pointermove', mv); el.addEventListener('pointerup', u); }); };
+  drag($('sv'), (x, y) => { HSV[1] = x; HSV[2] = 1 - y; P.color = hsv2rgb(...HSV); syncColorUI(true); });
+  drag($('hue'), x => { HSV[0] = x * 360; P.color = hsv2rgb(...HSV); syncColorUI(true); });
+  hexIn.addEventListener('change', () => { const v = hex2rgb(hexIn.value); if (v) { HSV = rgb2hsv(...v); setColor(v); } });
+  const pal = $('pal'); for (const h of PALETTE) { const b = document.createElement('button'); b.style.background = h; b.title = h; b.onclick = () => { const v = hex2rgb(h); HSV = rgb2hsv(...v); setColor(v); }; pal.appendChild(b); }
+  // 붓 설정
+  const b = document.createElement('div'); b.className = 'sec'; b.id = 'brushSec'; S.appendChild(b);
+  // 레이어
+  const l = document.createElement('div'); l.className = 'sec'; l.innerHTML = `<h4>${T.layers}</h4><div class="layers" id="layers"></div><div class="lbar" id="lbar"></div>`; S.appendChild(l);
+  const lb = $('lbar'); const addB = (icon, title, fn) => { const x = document.createElement('button'); x.className = 'tb'; x.title = title; x.innerHTML = svg(icon); x.onclick = fn; lb.appendChild(x); };
+  addB('plus', T.addLayer, () => structural(() => { doc.layers.splice(doc.active + 1, 0, newLayer()); doc.active++; }));
+  addB('dup', T.dupLayer, () => structural(() => { const s = L(), n = newLayer(s.name + ' +'); n.ctx.drawImage(s.cv, 0, 0); n.opacity = s.opacity; doc.layers.splice(doc.active + 1, 0, n); doc.active++; }));
+  addB('up', T.up, () => { if (doc.active < doc.layers.length - 1) structural(() => { const a = doc.active; [doc.layers[a], doc.layers[a + 1]] = [doc.layers[a + 1], doc.layers[a]]; doc.active++; }); });
+  addB('down', T.down, () => { if (doc.active > 0) structural(() => { const a = doc.active; [doc.layers[a], doc.layers[a - 1]] = [doc.layers[a - 1], doc.layers[a]]; doc.active--; }); });
+  addB('merge', T.merge, () => { if (doc.active > 0) structural(() => { const a = doc.active, top = doc.layers[a], bot = doc.layers[a - 1]; bot.ctx.save(); bot.ctx.globalAlpha = top.opacity; bot.ctx.drawImage(top.cv, 0, 0); bot.ctx.restore(); doc.layers.splice(a, 1); doc.active = a - 1; }); });
+  addB('clear', T.clearLayer, () => structural(() => { L().ctx.clearRect(0, 0, doc.w, doc.h); }));
+  addB('trash', T.delLayer, () => { if (doc.layers.length > 1) structural(() => { doc.layers.splice(doc.active, 1); doc.active = Math.max(0, doc.active - 1); }); });
+  syncColorUI(true); syncSide(); buildLayers();
+}
+function syncColorUI(noRecent) {
+  if (!svCv) return; const c = svCv.getContext('2d'), w = svCv.width, h = svCv.height;
+  const base = hsv2rgb(HSV[0], 1, 1); const g1 = c.createLinearGradient(0, 0, w, 0); g1.addColorStop(0, '#fff'); g1.addColorStop(1, rgb2hex(base)); c.fillStyle = g1; c.fillRect(0, 0, w, h);
+  const g2 = c.createLinearGradient(0, 0, 0, h); g2.addColorStop(0, 'rgba(0,0,0,0)'); g2.addColorStop(1, '#000'); c.fillStyle = g2; c.fillRect(0, 0, w, h);
+  svK.style.left = HSV[1] * 100 + '%'; svK.style.top = (1 - HSV[2]) * 100 + '%'; hueK.style.left = HSV[0] / 360 * 100 + '%';
+  const hex = rgb2hex(P.color); if (document.activeElement !== hexIn) hexIn.value = hex; sw.style.background = hex; const cb = $('colorBtn'); if (cb) cb.style.background = hex;
+  const rec = $('rec'); rec.innerHTML = ''; for (const h of recent) { const b = document.createElement('button'); b.style.background = h; b.title = h; b.onclick = () => { const v = hex2rgb(h); HSV = rgb2hsv(...v); setColor(v); }; rec.appendChild(b); }
+  if (textBox) placeTextBox();
+}
+function syncSide() {
+  const B = $('brushSec'); if (!B) return; B.innerHTML = `<h4>${T.tools[P.tool].replace(/\s*\(.*\)/, '')}</h4>`;
+  const chips = (opts, cur, on) => { const c = document.createElement('div'); c.className = 'chips'; for (const [v, txt] of opts) { const b = document.createElement('button'); b.className = 'chip' + (cur === v ? ' on' : ''); b.textContent = txt; b.onclick = () => { on(v); saveSet(); syncSide(); dirty = true; }; c.appendChild(b); } B.appendChild(c); };
+  const range = (label, min, max, step, val, show, on) => { const r = document.createElement('label'); r.className = 'row'; r.innerHTML = `<span>${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${val}"><output>${show(val)}</output>`; const i = r.querySelector('input'), o = r.querySelector('output'); i.oninput = () => { on(+i.value); o.textContent = show(+i.value); saveSet(); if (textBox) placeTextBox(); }; B.appendChild(r); };
+  const t = P.tool;
+  if (t === 'brush') chips(['pen', 'marker', 'pencil', 'air', 'calli'].map(k => [k, T.brushes[k]]), P.brush, v => P.brush = v);
+  if (['brush', 'eraser', 'line', 'arrow', 'rect', 'ellipse'].includes(t)) range(T.size, 1, 200, 1, P.size, v => v, v => P.size = v);
+  if (['brush', 'eraser', 'fill', 'line', 'arrow', 'rect', 'ellipse', 'text'].includes(t)) range(T.opacity, 0.05, 1, 0.05, P.opacity, v => Math.round(v * 100) + '%', v => P.opacity = v);
+  if (t === 'brush' || t === 'eraser') { range(T.smooth, 0, 1, 0.05, P.smooth, v => Math.round(v * 100) + '%', v => P.smooth = v); const h = document.createElement('h4'); h.style.marginTop = '12px'; h.textContent = T.symmetry; B.appendChild(h); chips(['none', 'h', 'v', 'quad', 'kaleido'].map(k => [k, T.sym[k]]), P.sym, v => P.sym = v); }
+  if (t === 'fill') range(T.tolerance, 0, 128, 1, P.tol, v => v, v => P.tol = v);
+  if (t === 'rect' || t === 'ellipse') chips([[false, '□'], [true, '■ ' + T.filled]], P.filled, v => P.filled = v);
+  if (t === 'text') range(T.fontSize, 8, 240, 1, P.font, v => v, v => P.font = v);
+}
+function buildLayers() {
+  const box = $('layers'); if (!box) return; box.innerHTML = '';
+  for (let i = doc.layers.length - 1; i >= 0; i--) {
+    const ly = doc.layers[i], row = document.createElement('div'); row.className = 'layer' + (i === doc.active ? ' on' : '');
+    const eye = document.createElement('button'); eye.innerHTML = svg(ly.visible ? 'eye' : 'eyeoff'); eye.title = 'visible'; eye.onclick = e => { e.stopPropagation(); structural(() => { ly.visible = !ly.visible; }); };
+    const th = document.createElement('canvas'); th.width = 88; th.height = 66; ly.thumb = th;
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = ly.name;
+    const op = document.createElement('button'); op.textContent = Math.round(ly.opacity * 100); op.style.fontSize = '10.5px'; op.title = T.opacity; op.onclick = e => { e.stopPropagation(); structural(() => { ly.opacity = ly.opacity > 0.3 ? Math.round((ly.opacity - 0.25) * 100) / 100 : 1; }); };
+    row.append(eye, th, nm, op); row.onclick = () => { dropSelection(); doc.active = i; buildLayers(); };
+    box.appendChild(row);
+  }
+  thumbs();
+}
+let thumbTimer = null;
+function thumbs() { clearTimeout(thumbTimer); thumbTimer = setTimeout(() => { for (const ly of doc.layers) if (ly.thumb) { const c = ly.thumb.getContext('2d'); c.clearRect(0, 0, 88, 66); const k = Math.min(88 / doc.w, 66 / doc.h); c.drawImage(ly.cv, (88 - doc.w * k) / 2, (66 - doc.h * k) / 2, doc.w * k, doc.h * k); } }, 120); }
+// 대화 상자
+function dialog(html, bind) { $('dlgBox').innerHTML = html; $('dlg').hidden = false; bind && bind(); }
+function closeDlg() { $('dlg').hidden = true; }
+$('dlg').addEventListener('pointerdown', e => { if (e.target === $('dlg')) closeDlg(); });
+function newDialog() {
+  const r = stage.getBoundingClientRect(), sizes = [['screen', Math.round(r.width * DPR), Math.round(r.height * DPR)], ['hd', 1920, 1080], ['square', 1080, 1080], ['story', 1080, 1920], ['small', 800, 600]];
+  let pick = 0, bg = 'white';
+  dialog(`<h3>${T.newDoc}</h3><div class="grid" id="szs">${sizes.map((s, i) => `<button data-i="${i}" class="${i ? '' : 'on'}">${T.sizes[s[0]]}<small>${s[1]} × ${s[2]}</small></button>`).join('')}</div><h3 style="margin-top:14px;font-size:14px">${T.bg}</h3><div class="chips" id="bgs"><button class="chip on" data-b="white">${T.bgWhite}</button><button class="chip" data-b="clear">${T.bgClear}</button></div><p style="color:var(--sub);font-size:12.5px;margin-top:12px">${T.confirmNew}</p><div class="foot"><button class="btn" id="dCancel">${T.cancel}</button><button class="btn primary" id="dOk">${T.create}</button></div>`, () => {
+    $('szs').onclick = e => { const b = e.target.closest('button'); if (!b) return; pick = +b.dataset.i; $('szs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+    $('bgs').onclick = e => { const b = e.target.closest('button'); if (!b) return; bg = b.dataset.b; $('bgs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+    $('dCancel').onclick = closeDlg; $('dOk').onclick = () => { closeDlg(); const s = sizes[pick]; newDoc(Math.min(4096, s[1]), Math.min(4096, s[2]), bg); };
+  });
+}
+function helpDialog() { dialog(`<h3>${T.help}</h3><div class="keys">${T.keys.map(([k, v]) => `<kbd>${k}</kbd><span>${v}</span>`).join('')}</div><div class="foot"><button class="btn primary" id="dOk">${T.ok}</button></div>`, () => { $('dOk').onclick = closeDlg; }); }
 
-renderTools();
-renderPalette();
-updateIndicator();
-window.addEventListener('load', initCanvas);
-window.addEventListener('resize', () => {
-  const data = canvas.toDataURL();
-  initCanvas();
-  const img = new Image();
-  img.onload = () => { ctx.drawImage(img, 0, 0); };
-  img.src = data;
-});
+// ── 시작
+$('pageTitle').textContent = T.title;
+buildTop(); buildTools(); buildSide(); resize();
+if (innerWidth <= 760) $('side').classList.add('closed');
+(async () => { if (await restore()) toast(T.autosaved); else { const r = stage.getBoundingClientRect(); newDoc(Math.max(640, Math.round(r.width * DPR)), Math.max(480, Math.round(r.height * DPR)), 'white'); } updHist(); })();
+requestAnimationFrame(loop);
 document.body.focus();
+window.__pt = { doc, P, hist, get Z() { return Z; }, setTool, undo, redo, newDoc, fitView, exportPNG, composite, get sel() { return sel; } };
+
 </script>
 </body>
 </html>
