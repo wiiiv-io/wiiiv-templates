@@ -4,7 +4,7 @@
   "templates": [
     { "id": "tetris", "label": { "ko": "테트리스", "en": "Tetris" }, "keywords": ["테트리스", "tetris"], "category": "game" },
     { "id": "snake", "label": { "ko": "뱀 게임", "en": "Snake Game" }, "keywords": ["뱀 게임", "뱀게임", "snake", "지렁이 게임", "slither"], "category": "game" },
-    { "id": "2048", "label": { "ko": "2048", "en": "2048" }, "keywords": ["2048"], "category": "game" },
+    { "id": "2048", "label": { "ko": "2048", "en": "2048" }, "keywords": ["2048", "2048 게임", "숫자 퍼즐", "오늘의 퍼즐", "number puzzle"], "category": "game" },
     { "id": "minesweeper", "label": { "ko": "지뢰찾기", "en": "Minesweeper" }, "keywords": ["지뢰찾기", "지뢰 찾기", "minesweeper"], "category": "game" },
     { "id": "breakout", "label": { "ko": "벽돌깨기", "en": "Breakout" }, "keywords": ["벽돌깨기", "벽돌 깨기", "breakout", "아르카노이드", "arkanoid"], "category": "game" },
     { "id": "gomoku", "label": { "ko": "오목", "en": "Gomoku" }, "keywords": ["오목", "gomoku", "five in a row"], "category": "game" },

@@ -2,326 +2,874 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>2048</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title id="pageTitle">2048</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0d0d1a; color: #fff; font-family: 'Segoe UI', sans-serif;
-  display: flex; align-items: center; justify-content: center;
-  height: 100vh; overflow: hidden; user-select: none; outline: none;
-}
-.game-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.header {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 340px;
-}
-.title { font-size: 32px; font-weight: 800; color: #7c5cfc; }
-.scores { display: flex; gap: 8px; }
-.score-box {
-  background: rgba(124,92,252,0.12); border: 1px solid rgba(124,92,252,0.3);
-  border-radius: 8px; padding: 4px 14px; text-align: center; min-width: 70px;
-}
-.score-box .label { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-.score-box .val { font-size: 18px; font-weight: 700; color: #7c5cfc; }
-.board-wrap { position: relative; }
-.board {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 8px; padding: 8px;
-  background: rgba(124,92,252,0.08); border: 2px solid rgba(124,92,252,0.25);
-  border-radius: 10px; width: 340px; height: 340px;
-}
-.cell {
-  border-radius: 6px; display: flex; align-items: center; justify-content: center;
-  font-weight: 700; transition: all 0.12s ease;
-  background: rgba(255,255,255,0.04);
-}
-.cell[data-value]:not([data-value="0"]) { animation: pop 0.15s ease; }
-@keyframes pop { 0% { transform: scale(0.8); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
-.bottom-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; max-width: 340px;
-}
-.btn {
-  padding: 8px 20px; border: none; border-radius: 8px;
-  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-  background: #7c5cfc; color: #fff;
-}
-.btn:hover { background: #6a4ce0; }
-.keys { font-size: 10px; color: #666; }
-.keys span { color: #888; }
-.overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 10px;
-  background: rgba(13,13,26,0.9); border-radius: 10px; z-index: 10;
-}
-.overlay h2 { font-size: 28px; color: #7c5cfc; }
-.overlay .sub { font-size: 14px; color: #ccc; }
-.overlay button {
-  padding: 10px 24px; border: none; border-radius: 8px;
-  background: #7c5cfc; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
-}
-.overlay button:hover { background: #6a4ce0; }
-.overlay .btn-row { display: flex; gap: 8px; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body { background: radial-gradient(120% 80% at 50% 0%, #1c2346 0%, #0b0e1d 60%, #070912 100%); font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK KR', system-ui, sans-serif; color: #eef1ff; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 8; }
+.app { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: calc(10px + env(safe-area-inset-top, 0px)) 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+.top { width: var(--bw); display: flex; align-items: center; gap: 8px; }
+.top .ttl { font-weight: 900; font-size: 26px; letter-spacing: .02em; background: linear-gradient(90deg, #5cc8ff, #b06bff, #ff6b9a); -webkit-background-clip: text; background-clip: text; color: transparent; margin-right: auto; }
+.ib { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: #dfe3ff; cursor: pointer; display: grid; place-items: center; flex: none; }
+.ib svg { width: 18px; height: 18px; }
+.modeline { width: var(--bw); font-size: 13px; color: #9aa3c7; display: flex; justify-content: space-between; gap: 8px; min-height: 18px; }
+.modeline b { color: #dfe3ff; font-weight: 700; }
+.stats { width: var(--bw); display: flex; gap: 8px; }
+.stat { flex: 1; min-width: 0; background: rgba(255, 255, 255, .05); border: 1px solid rgba(160, 170, 255, .14); border-radius: 12px; padding: 6px 10px; position: relative; }
+.stat small { display: block; font-size: 11px; letter-spacing: .03em; color: #9aa3c7; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat b { display: block; font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.stat .plus { position: absolute; right: 10px; top: 4px; font-weight: 900; color: #7dffb0; animation: plus .8s ease-out forwards; pointer-events: none; }
+@keyframes plus { to { transform: translateY(-26px); opacity: 0; } }
+.actions { width: var(--bw); display: flex; gap: 8px; }
+.btn { flex: 1 1 auto; padding: 10px 12px; font: inherit; font-size: 14px; font-weight: 700; border-radius: 12px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; white-space: nowrap; }
+.btn:hover { filter: brightness(1.15); } .btn:disabled { opacity: .35; cursor: default; filter: none; }
+.btn.primary { background: linear-gradient(160deg, #6c7cff, #a05cff); border-color: transparent; color: #fff; box-shadow: 0 8px 20px -8px rgba(140, 100, 255, .7); }
+.btn.wide { display: block; width: 100%; margin-top: 10px; }
+.board { position: relative; width: var(--bw); height: var(--bw); border-radius: calc(var(--g) * 1.6); background: rgba(14, 18, 40, .85); border: 1px solid rgba(160, 170, 255, .16); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .9), inset 0 0 40px rgba(90, 110, 255, .08); flex: none; }
+.board.shake { animation: shake .28s; }
+@keyframes shake { 20% { transform: translate(-4px, 2px); } 40% { transform: translate(4px, -3px); } 60% { transform: translate(-3px, -2px); } 80% { transform: translate(2px, 3px); } }
+.cell { position: absolute; border-radius: calc(var(--g) * 1.1); background: rgba(255, 255, 255, .045); box-shadow: inset 0 2px 6px rgba(0, 0, 0, .35); }
+.tile { position: absolute; left: 0; top: 0; width: var(--cs); height: var(--cs); transition: transform var(--sp) cubic-bezier(.2, .8, .3, 1); will-change: transform; z-index: 2; }
+.tile .in { width: 100%; height: 100%; border-radius: calc(var(--g) * 1.1); display: grid; place-items: center; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -.02em; background: var(--bg); color: var(--fg); box-shadow: inset 0 calc(var(--cs) * .06) 0 rgba(255, 255, 255, .18), inset 0 calc(var(--cs) * -.07) 0 rgba(0, 0, 0, .25), 0 calc(var(--cs) * .05) calc(var(--cs) * .12) rgba(0, 0, 0, .35); }
+.tile.glow .in { box-shadow: inset 0 calc(var(--cs) * .06) 0 rgba(255, 255, 255, .25), inset 0 calc(var(--cs) * -.07) 0 rgba(0, 0, 0, .25), 0 0 calc(var(--cs) * .35) var(--gl); }
+.tile.new .in { animation: appear .2s ease-out both; animation-delay: calc(var(--sp) * .6); }
+.tile.pop { z-index: 3; } .tile.pop .in { animation: pop .22s ease-out; }
+.tile.stone .in { background: repeating-linear-gradient(135deg, #2a2f45 0 8px, #232838 8px 16px); color: #5d6684; box-shadow: inset 0 0 0 2px #3a4160, inset 0 -6px 0 rgba(0, 0, 0, .3); }
+@keyframes appear { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pop { 0% { transform: scale(.85); } 45% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.hint { font-size: 12.5px; color: #7d86ad; text-align: center; width: var(--bw); }
+.ov { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 16px; background: rgba(5, 7, 16, .6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ov[hidden] { display: none; }
+.card { background: linear-gradient(160deg, rgba(30, 34, 64, .9), rgba(12, 14, 30, .95)); border: 1px solid rgba(160, 170, 255, .18); border-radius: 22px; padding: 22px 22px 18px; width: min(420px, 100%); max-height: 100%; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); }
+.card::-webkit-scrollbar { display: none; }
+.logo { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+.logo span { width: 50px; height: 50px; border-radius: 12px; display: grid; place-items: center; font-weight: 900; font-size: 28px; color: #fff; box-shadow: inset 0 4px 0 rgba(255, 255, 255, .2), inset 0 -5px 0 rgba(0, 0, 0, .25), 0 0 18px var(--gl); background: var(--bg); animation: bob 2.6s ease-in-out infinite; }
+.logo span:nth-child(2) { animation-delay: .15s; } .logo span:nth-child(3) { animation-delay: .3s; } .logo span:nth-child(4) { animation-delay: .45s; }
+@keyframes bob { 50% { transform: translateY(-5px); } }
+.tag { text-align: center; color: #9aa3c7; font-size: 13px; letter-spacing: .08em; margin-bottom: 16px; }
+.mbox { border: 1px solid rgba(160, 170, 255, .16); background: rgba(255, 255, 255, .04); border-radius: 16px; padding: 14px; margin-top: 10px; }
+.mbox h3 { font-size: 17px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mbox h3 small { font-size: 12px; color: #ffb35c; font-weight: 800; white-space: nowrap; }
+.mbox p { font-size: 12.5px; color: #9aa3c7; margin-top: 4px; line-height: 1.45; }
+.mbox .status { font-size: 13px; color: #c5cbea; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { padding: 6px 11px; font: inherit; font-size: 13px; font-weight: 700; border-radius: 10px; border: 1px solid rgba(160, 170, 255, .2); background: rgba(255, 255, 255, .06); color: inherit; cursor: pointer; }
+.chip.on { background: linear-gradient(160deg, #6c7cff, #a05cff); border-color: transparent; color: #fff; }
+.foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+h2 { font-size: 22px; text-align: center; margin-bottom: 10px; }
+.big { text-align: center; font-size: 46px; font-weight: 900; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, #5cc8ff, #b06bff, #ff6b9a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { text-align: center; color: #9aa3c7; font-size: 13px; }
+.newrec { text-align: center; color: #ffd23f; font-weight: 800; letter-spacing: .1em; font-size: 13px; margin-top: 4px; animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.grid2 { display: grid; grid-template-columns: 1fr auto; gap: 7px 14px; margin-top: 14px; font-size: 14px; color: #c5cbea; font-variant-numeric: tabular-nums; }
+.grid2 b { color: #fff; text-align: right; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.row > span:first-child { white-space: nowrap; }
+.row .chips { margin-top: 0; justify-content: flex-end; }
+.sl { display: grid; grid-template-columns: 1fr 120px; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; color: #c5cbea; }
+.sl input { width: 100%; accent-color: #8a7cff; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, .06); } td:last-child { text-align: right; color: #9aa3c7; font-size: 12.5px; }
+td:first-child { color: #b9a6ff; font-weight: 800; }
+h4 { font-size: 13px; color: #9aa3c7; letter-spacing: .08em; margin-top: 14px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 13.5px; color: #c5cbea; align-items: center; }
+.keys kbd { font: 700 12px ui-monospace, monospace; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .15); border-bottom-width: 2px; border-radius: 6px; padding: 2px 7px; color: #fff; justify-self: start; white-space: nowrap; }
+.tips { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: #9aa3c7; line-height: 1.45; }
+.tips div::before { content: '•'; color: #a05cff; margin-right: 6px; }
+.toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 12; background: rgba(20, 24, 50, .92); border: 1px solid rgba(160, 170, 255, .3); padding: 10px 18px; border-radius: 14px; font-weight: 800; animation: toast 1.8s ease forwards; pointer-events: none; white-space: nowrap; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, 10px); } 12%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+.mini { display: grid; gap: 3px; margin: 12px auto 0; width: 132px; }
+.mini i { aspect-ratio: 1; border-radius: 4px; background: var(--bg); display: block; }
 </style>
 </head>
 <body tabindex="0">
-<div class="game-wrap">
-  <div class="header">
-    <div class="title">2048</div>
-    <div class="scores">
-      <div class="score-box"><div class="label" id="lScore">점수</div><div class="val" id="score">0</div></div>
-      <div class="score-box"><div class="label" id="lBest">최고</div><div class="val" id="best">0</div></div>
-    </div>
-  </div>
-  <div class="board-wrap">
-    <div class="board" id="board"></div>
-    <div class="overlay" id="winOverlay" style="display:none">
-      <h2 id="winTitle">축하합니다!</h2>
-      <div class="sub" id="winSub">2048 달성!</div>
-      <div class="btn-row">
-        <button id="continueBtn" onclick="continueGame()">계속하기</button>
-        <button id="winNewBtn" onclick="newGame()">새 게임</button>
-      </div>
-    </div>
-    <div class="overlay" id="overOverlay" style="display:none">
-      <h2 id="gameOverText">게임 오버</h2>
-      <div class="sub" id="finalScore">점수: 0</div>
-      <button id="restartBtn" onclick="newGame()">다시 시작</button>
-    </div>
-  </div>
-  <div class="bottom-bar">
-    <button class="btn" id="newGameBtn" onclick="newGame()">새 게임</button>
-    <div class="keys" id="keysHint"><span>←→↑↓</span> 또는 스와이프</div>
-  </div>
+<canvas id="fx"></canvas>
+<div class="app" id="app">
+  <div class="top"><button class="ib" id="bMenu" title="Esc"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="16" height="2.4" rx="1.2"/><rect x="4" y="10.8" width="16" height="2.4" rx="1.2"/><rect x="4" y="16.6" width="16" height="2.4" rx="1.2"/></svg></button><div class="ttl">2048</div><button class="ib" id="bMute" title="M"></button></div>
+  <div class="modeline"><span id="modeName"></span><span id="modeInfo"></span></div>
+  <div class="stats"><div class="stat" id="sScore"><small id="lScore"></small><b id="vScore">0</b></div><div class="stat"><small id="lBest"></small><b id="vBest">0</b></div><div class="stat"><small id="lThird"></small><b id="vThird">0</b></div></div>
+  <div class="actions"><button class="btn" id="bNew"></button><button class="btn" id="bUndo"></button></div>
+  <div class="board" id="board"></div>
+  <div class="hint" id="hint"></div>
 </div>
-
+<div class="ov" id="menu"><div class="card">
+  <div class="logo" id="logo"></div><div class="tag" id="tTag"></div>
+  <div class="mbox" id="boxClassic"><h3 id="hClassic"></h3><p id="pClassic"></p><div class="chips" id="sizeChips"></div><button class="btn primary wide" id="bClassic"></button></div>
+  <div class="mbox" id="boxDaily"><h3><span id="hDaily"></span><small id="dStreak"></small></h3><p id="pDaily"></p><div class="status" id="dStatus"></div><button class="btn primary wide" id="bDaily"></button></div>
+  <div class="foot"><button class="btn" id="bSettings"></button><button class="btn" id="bRecords"></button><button class="btn" id="bHelp"></button></div>
+</div></div>
+<div class="ov" id="settings" hidden><div class="card"><h2 id="tSettings"></h2><div id="setBody"></div><div class="foot"><button class="btn primary" id="bSetDone"></button></div></div></div>
+<div class="ov" id="records" hidden><div class="card"><h2 id="tRecords"></h2><div id="recBody"></div><div class="foot"><button class="btn primary" id="bRecDone"></button></div></div></div>
+<div class="ov" id="help" hidden><div class="card"><h2 id="tHelp"></h2><div class="keys" id="helpKeys"></div><div class="tips" id="helpTips"></div><div class="foot"><button class="btn primary" id="bHelpDone"></button></div></div></div>
+<div class="ov" id="win" hidden><div class="card"><h2 id="winTitle"></h2><div class="big" id="winScore"></div><div class="foot"><button class="btn" id="bWinNew"></button><button class="btn primary" id="bWinGo"></button></div></div></div>
+<div class="ov" id="confirm" hidden><div class="card"><h2 id="cfTitle"></h2><div class="foot"><button class="btn" id="bCfNo"></button><button class="btn primary" id="bCfYes"></button></div></div></div>
+<div class="ov" id="result" hidden><div class="card"><h2 id="resTitle"></h2><div class="big" id="resScore"></div><div class="sub" id="resSub"></div><div class="newrec" id="resNew" hidden></div><div class="mini" id="resMini"></div><div class="grid2" id="resGrid"></div><button class="btn wide" id="bShare" hidden></button><div class="foot"><button class="btn" id="bResMenu"></button><button class="btn primary" id="bAgain"></button></div></div></div>
 <script>
-const LANG = 'ko';
-const T = {
+// ───────────────────────── 2048 엔진 (화면과 무관, Node 에서도 시험) ─────────────────────────
+// 난수: 상태를 꺼내 저장할 수 있어야 되돌리기·이어하기가 같은 결과를 낸다
+class Rng {
+  constructor(seed) { this.s = seed >>> 0; }
+  next() { let t = (this.s = (this.s + 0x6D2B79F5) >>> 0); t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+}
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const GOALS = { 3: 512, 4: 2048, 5: 4096, 6: 8192 };
+const STONE = -1;
+const DAILY_RULES = ['classic', 'moves100', 'stone'];
+// 오늘의 퍼즐: 날짜 → 씨앗 · 규칙 (모두에게 같다)
+function dailyInfo(date) {
+  const seed = hashStr('wiiiv-2048-' + date), day = Math.floor(Date.parse(date + 'T00:00:00Z') / 86400000);
+  return { date, seed, rule: DAILY_RULES[((day % 3) + 3) % 3] };
+}
+
+class Game2048 {
+  constructor(o = {}) {
+    this.size = o.size || 4; this.mode = o.mode || 'classic'; this.rule = o.rule || 'classic';
+    this.rng = new Rng(o.seed ?? (Math.random() * 2 ** 32));
+    this.cells = new Array(this.size * this.size).fill(null);
+    this.score = 0; this.moves = 0; this.nextId = 1; this.won = false; this.keepGoing = false; this.over = false;
+    this.undoLeft = o.undo ?? (this.mode === 'daily' ? 0 : 3); this.hist = [];
+    this.moveLimit = this.rule === 'moves100' ? 100 : 0;
+    this.goal = GOALS[this.size] || 2048;
+    if (this.rule === 'stone') { const n = this.size, k = Math.floor(this.rng.next() * 4), pos = [[1, 1], [1, n - 2], [n - 2, 1], [n - 2, n - 2]][k]; this.cells[pos[0] * n + pos[1]] = { id: this.nextId++, v: STONE }; }
+    this.spawn(); this.spawn();
+  }
+  get best() { return this.cells.reduce((m, t) => Math.max(m, t && t.v > 0 ? t.v : 0), 0); }
+  get movesLeft() { return this.moveLimit ? this.moveLimit - this.moves : Infinity; }
+  at(r, c) { return this.cells[r * this.size + c]; }
+  empties() { const e = []; this.cells.forEach((t, i) => { if (!t) e.push(i); }); return e; }
+  spawn() {
+    const e = this.empties(); if (!e.length) return null;
+    const i = e[Math.floor(this.rng.next() * e.length)], v = this.rng.next() < 0.9 ? 2 : 4;
+    const t = { id: this.nextId++, v, born: true }; this.cells[i] = t; return { ...t, i };
+  }
+  // 한 줄(앞쪽부터 칸 번호들)을 민다 — 돌은 벽처럼 줄을 나눈다
+  slideLine(idx, out) {
+    let seg = [];
+    const flush = () => {
+      const tiles = seg.map(i => this.cells[i]).filter(Boolean); let w = 0;
+      for (let k = 0; k < tiles.length; k++) {
+        const a = tiles[k], b = tiles[k + 1], to = seg[w];
+        if (b && b.v === a.v) {
+          const m = { id: this.nextId++, v: a.v * 2, merged: true };
+          out.moves.push({ id: a.id, to }, { id: b.id, to }); out.merges.push({ id: m.id, from: [a.id, b.id], v: m.v, at: to });
+          out.next[to] = m; out.gained += m.v; k++;
+        } else { out.moves.push({ id: a.id, to }); out.next[to] = { id: a.id, v: a.v }; }
+        w++;
+      }
+      seg = [];
+    };
+    for (const i of idx) { const t = this.cells[i]; if (t && t.v === STONE) { flush(); out.next[i] = { id: t.id, v: STONE }; } else seg.push(i); }
+    flush();
+  }
+  lines(dir) {
+    const n = this.size, L = [];
+    for (let a = 0; a < n; a++) {
+      const line = [];
+      for (let b = 0; b < n; b++) {
+        if (dir === 'left') line.push(a * n + b); else if (dir === 'right') line.push(a * n + (n - 1 - b));
+        else if (dir === 'up') line.push(b * n + a); else line.push((n - 1 - b) * n + a);
+      }
+      L.push(line);
+    }
+    return L;
+  }
+  snapshot() { return { cells: this.cells.map(t => t && { id: t.id, v: t.v }), score: this.score, moves: this.moves, rng: this.rng.s, won: this.won, nextId: this.nextId }; }
+  restore(s) { this.cells = s.cells.map(t => t && { ...t }); this.score = s.score; this.moves = s.moves; this.rng.s = s.rng; this.won = s.won; this.nextId = s.nextId; this.over = false; }
+  // dir: up/down/left/right → 무엇이 어떻게 움직였는지 (화면 연출용)
+  move(dir) {
+    if (this.over) return null;
+    const out = { moves: [], merges: [], next: new Array(this.cells.length).fill(null), gained: 0 };
+    for (const line of this.lines(dir)) this.slideLine(line, out);
+    const before = this.cells.map(t => t && t.id).join(','), after = out.next.map(t => t && t.id).join(',');
+    if (before === after && !out.merges.length) return { moved: false };
+    if (this.mode !== 'daily') { this.hist.push(this.snapshot()); if (this.hist.length > 20) this.hist.shift(); }
+    this.cells = out.next; this.score += out.gained; this.moves++;
+    const spawned = this.spawn();
+    const res = { moved: true, moves: out.moves, merges: out.merges, gained: out.gained, spawned };
+    if (!this.won && this.best >= this.goal) { this.won = true; res.win = true; }
+    if (!this.canMove() || (this.moveLimit && this.moves >= this.moveLimit)) { this.over = true; res.over = true; res.outOfMoves = this.moveLimit && this.moves >= this.moveLimit && this.canMove(); }
+    return res;
+  }
+  canMove() {
+    const n = this.size;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const t = this.at(r, c); if (!t) return true; if (t.v === STONE) continue;
+      const R = c + 1 < n && this.at(r, c + 1), D = r + 1 < n && this.at(r + 1, c);
+      if ((R && R.v === t.v) || (D && D.v === t.v)) return true;
+    }
+    return false;
+  }
+  undo() {
+    if (this.undoLeft <= 0 || !this.hist.length) return false;
+    this.restore(this.hist.pop()); this.undoLeft--; return true;
+  }
+  // 이어하기용 저장
+  save() { return { ...this.snapshot(), size: this.size, mode: this.mode, rule: this.rule, undoLeft: this.undoLeft, keepGoing: this.keepGoing, over: this.over, moveLimit: this.moveLimit, goal: this.goal }; }
+  static load(s) {
+    const g = new Game2048({ size: s.size, mode: s.mode, rule: s.rule, seed: 1 }); g.restore(s); g.undoLeft = s.undoLeft; g.keepGoing = s.keepGoing; g.over = s.over; g.hist = [];
+    return g;
+  }
+}
+
+// ───────────────────────── 8비트 소리 장치 (펄스 2 · 삼각 1 · 잡음 1, 옛 게임기 방식) ─────────────────────────
+const NOTE_IX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function noteMidi(n) { const m = /^([A-G])([#b]?)(-?\d)$/.exec(n); if (!m) throw new Error('note ' + n); return 12 * (+m[3] + 1) + NOTE_IX[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); }
+const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+// 악보 한 채널: "E5:4 B4:2 | r:2 …" (길이 단위 = 16분음표, | 는 마디 경계 표시일 뿐)
+function parseTrack(src) {
+  const ev = []; let t = 0;
+  for (const tok of src.split(/\s+/)) {
+    if (!tok || tok === '|') continue;
+    const [n, l] = tok.split(':'); const len = +(l || 1);
+    if (n !== 'r') ev.push({ t, len, n });
+    t += len;
+  }
+  return { ev, len: t };
+}
+// 화음으로 반주 만들기: 마디마다 화음 이름 (예: 'Am', 'E', 'Bb', 'F#', 'C#7')
+const CH_Q = { '': [0, 4, 7], m: [0, 3, 7], 7: [0, 4, 10], m7: [0, 3, 10], dim: [0, 3, 6] };
+function chordNotes(name) { const m = /^([A-G][#b]?)(m7|m|7|dim)?$/.exec(name); const root = noteMidi(m[1] + '3'); return CH_Q[m[2] || ''].map(i => root + i); }
+const MN = m => ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][m % 12] + (Math.floor(m / 12) - 1);
+// 베이스: 근음 옥타브 왕복 (8분), 3박자 곡은 근음·5음·5음
+function bassLine(chords, bar, style) {
+  return chords.map(c => {
+    const [r, , f] = chordNotes(c); const R = r - 12, F5 = f - 12;
+    if (bar === 12) return `${MN(R)}:4 ${MN(F5)}:4 ${MN(F5 + 0)}:4`;
+    if (style === 'pizz') return `${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2 ${MN(R)}:2 r:2 ${MN(F5 - 12 < 36 ? F5 : F5 - 12)}:2 r:2`;
+    return Array.from({ length: bar / 2 }, (_, i) => `${MN(i % 2 ? R + 12 : R)}:2`).join(' ');
+  }).join(' | ');
+}
+// 반주: 뒷박에 짧게 끊는 화음 (3음·5음)
+function compLine(chords, bar) {
+  return chords.map(c => {
+    const [, th, fi] = chordNotes(c).map(m => m + 12);
+    if (bar === 12) return `r:4 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2`;
+    return `r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2 r:2 ${MN(th)}:2 r:2 ${MN(fi)}:2`;
+  }).join(' | ');
+}
+const rep = (s, n) => Array(n).fill(s).join(' | ');
+
+// ── 곡 (자작곡)
+const SONGS = {
+  // A: 「타일 정원」 — 차분하게 생각하기 좋은 곡
+  A: (() => {
+    const m = 'E5:4 G5:4 C6:6 B5:2 | A5:6 G5:2 E5:8 | F5:4 A5:4 C6:4 A5:4 | G5:12 r:4 | B4:4 E5:4 G5:4 B5:4 | C6:6 B5:2 A5:8 | F5:4 A5:4 D6:4 C6:4 | B5:8 G5:4 r:4 | '
+      + 'C6:4 B5:2 A5:2 G5:8 | E5:4 G5:4 A5:8 | A5:4 G5:2 F5:2 E5:4 F5:4 | D5:4 G5:4 B5:8 | G5:4 E5:4 B4:8 | C5:4 E5:4 A5:8 | F5:4 E5:2 D5:2 A5:4 F5:4 | G5:8 r:8';
+    const ch = ['C', 'Am', 'F', 'G', 'Em', 'Am', 'Dm', 'G', 'C', 'Am', 'F', 'G', 'Em', 'Am', 'Dm', 'G'];
+    return { name: 'Tile Garden', bpm: 92, bar: 16, duty: [0.125, 0.25], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16, 'pizz'), noi: rep('k:4 h:4 s:4 h:4', 16) };
+  })(),
+  // B: 「숫자 달리기」 — 오늘의 퍼즐
+  B: (() => {
+    const m = 'F#5:2 A5:2 D6:4 C#6:2 B5:2 A5:4 | E5:2 A5:2 C#6:4 B5:2 A5:2 E5:4 | D5:2 F#5:2 B5:4 A5:2 F#5:2 D5:4 | G5:4 F#5:2 E5:2 D5:4 B4:4 | '
+      + 'A5:4 F#5:4 A5:2 B5:2 A5:4 | E5:4 C#5:4 E5:2 F#5:2 E5:4 | D5:2 E5:2 F#5:2 G5:2 B5:4 G5:4 | A5:8 C#6:4 E6:4 | '
+      + 'F#6:4 D6:4 B5:4 D6:4 | E6:4 D6:2 B5:2 G5:8 | A5:2 D6:2 F#6:4 E6:2 D6:2 A5:4 | C#6:4 E6:4 A5:8 | '
+      + 'B5:2 C#6:2 D6:4 C#6:2 B5:2 F#5:4 | G5:2 A5:2 B5:4 A5:2 G5:2 D5:4 | E5:2 F#5:2 G5:2 A5:2 C#6:4 E6:4 | D6:8 r:8';
+    const ch = ['D', 'A', 'Bm', 'G', 'D', 'A', 'G', 'A', 'Bm', 'G', 'D', 'A', 'Bm', 'G', 'A', 'D'];
+    return { name: 'Number Rush', bpm: 138, bar: 16, duty: [0.5, 0.25], p1: m, p2: compLine(ch, 16), tri: bassLine(ch, 16), noi: rep('k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2', 16) };
+  })(),
+};
+
+class Chip {
+  constructor() { this.ctx = null; this.musicVol = 0.55; this.sfxVol = 0.7; this.song = null; this.tempo = 1; this.beatCbs = []; this.muted = false; }
+  init() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const c = this.ctx = new AC();
+    this.out = c.createDynamicsCompressor(); this.out.threshold.value = -12; this.out.ratio.value = 4; this.out.connect(c.destination);
+    this.master = c.createGain(); this.master.gain.value = this.muted ? 0 : 1; this.master.connect(this.out);
+    this.mus = c.createGain(); this.mus.gain.value = this.musicVol; this.mus.connect(this.master);
+    this.fx = c.createGain(); this.fx.gain.value = this.sfxVol; this.fx.connect(this.master);
+    // 펄스파 (듀티 12.5·25·50%)
+    this.pw = {};
+    for (const d of [0.125, 0.25, 0.5]) { const N = 48, re = new Float32Array(N), im = new Float32Array(N); for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * d) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * d)) / (n * Math.PI); } this.pw[d] = c.createPeriodicWave(re, im); }
+    // 4비트 계단 삼각파
+    { const S = 32, N = 40, re = new Float32Array(N), im = new Float32Array(N); const v = i => { const k = i < 16 ? i : 31 - i; return (k / 7.5) - 1; };
+      for (let n = 1; n < N; n++) { let a = 0, b = 0; for (let i = 0; i < S; i++) { const t0 = i / S, t1 = (i + 1) / S, w = 2 * Math.PI * n; a += v(i) * (Math.sin(w * t1) - Math.sin(w * t0)) / w; b += v(i) * (Math.cos(w * t0) - Math.cos(w * t1)) / w; } re[n] = 2 * a; im[n] = 2 * b; }
+      this.tw = c.createPeriodicWave(re, im); }
+    // 잡음 (15비트 LFSR)
+    const mk = short => { const len = c.sampleRate; const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0); let r = 1, v = 0; const step = Math.max(1, Math.round(c.sampleRate / 22000));
+      for (let i = 0; i < len; i++) { if (i % step === 0) { const bit = ((r & 1) ^ ((r >> (short ? 6 : 1)) & 1)); r = (r >> 1) | (bit << 14); v = (r & 1) ? 0.8 : -0.8; } d[i] = v; } return b; };
+    this.nz = mk(false); this.nzs = mk(true);
+    this.timer = setInterval(() => this.pump(), 25);
+  }
+  setVol(music, sfx) { if (music != null) this.musicVol = music; if (sfx != null) this.sfxVol = sfx; if (this.ctx) { this.mus.gain.setTargetAtTime(this.musicVol, this.ctx.currentTime, 0.05); this.fx.gain.setTargetAtTime(this.sfxVol, this.ctx.currentTime, 0.05); } }
+  setMuted(m) { this.muted = m; if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.03); }
+  // ── 한 음
+  tone(dest, wave, f, t, dur, vol, o = {}) {
+    const c = this.ctx, os = c.createOscillator(), g = c.createGain();
+    if (wave === 'tri') os.setPeriodicWave(this.tw); else os.setPeriodicWave(this.pw[wave] || this.pw[0.5]);
+    os.frequency.setValueAtTime(f, t);
+    if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + (o.sweep || dur));
+    if (o.vib && dur > 0.25) { const l = c.createOscillator(), lg = c.createGain(); l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + 0.25); l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t + dur + 0.05); }
+    const a = 0.004, rel = o.rel ?? 0.03, sus = o.decay ? vol * o.decay : vol;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + a);
+    if (o.decay != null) g.gain.exponentialRampToValueAtTime(Math.max(0.0001, sus), t + Math.max(a + 0.01, dur));
+    g.gain.setValueAtTime(o.decay != null ? Math.max(0.0001, sus) : vol, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + rel);
+    os.connect(g); g.connect(dest); os.start(t); os.stop(t + dur + rel + 0.02);
+  }
+  noise(dest, t, dur, vol, o = {}) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain(), f = c.createBiquadFilter();
+    s.buffer = o.short ? this.nzs : this.nz; s.playbackRate.value = o.rate || 1; s.loop = true;
+    f.type = o.type || 'highpass'; f.frequency.value = o.freq || 1000; if (o.fto) f.frequency.exponentialRampToValueAtTime(o.fto, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    s.connect(f); f.connect(g); g.connect(dest); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
+  }
+  // ── 음악 순서기
+  play(id) {
+    this.init(); if (!this.ctx) return;
+    this.stop();
+    const S = SONGS[id]; if (!S) return;
+    const ch = ['p1', 'p2', 'tri', 'noi'].map(k => ({ k, ...parseTrack(S[k]) }));
+    const L = ch[0].len; const at = {}; ch.forEach(c => { if (c.len !== L) console.warn('track length', S.name, c.k, c.len, L); c.ev.forEach(e => { (at[e.t] = at[e.t] || []).push({ ...e, k: c.k }); }); });
+    this.song = { S, at, L, step: 0, next: this.ctx.currentTime + 0.08, loops: 0, id };
+  }
+  stop() { this.song = null; }
+  pause(p) { this.paused = p; if (!p && this.song && this.ctx) this.song.next = this.ctx.currentTime + 0.05; }
+  pump() {
+    const sg = this.song; if (!sg || this.paused || !this.ctx) return;
+    const c = this.ctx, ahead = c.currentTime + 0.12;
+    if (sg.next < c.currentTime - 0.25) sg.next = c.currentTime + 0.02;     // 탭이 잠들었다 깨면 따라잡지 않고 이어서
+    while (sg.next < ahead) {
+      const S = sg.S, accel = S.accel ? Math.min(1.6, Math.pow(S.accel, sg.loops)) : 1;
+      const sp = 60 / (S.bpm * this.tempo * accel) / 4;      // 16분음표 길이(초)
+      const evs = sg.at[sg.step];
+      if (evs) for (const e of evs) {
+        const d = e.len * sp;
+        if (e.k === 'noi') {
+          if (e.n === 'k') { this.noise(this.mus, sg.next, 0.09, 0.32, { type: 'lowpass', freq: 900, fto: 120 }); this.tone(this.mus, 'tri', 140, sg.next, 0.07, 0.35, { to: 50, sweep: 0.07, rel: 0.01 }); }
+          else if (e.n === 's') this.noise(this.mus, sg.next, 0.12, 0.2, { type: 'bandpass', freq: 2200 });
+          else if (e.n === 'h') this.noise(this.mus, sg.next, 0.035, 0.07, { type: 'highpass', freq: 7000 });
+        } else {
+          const f = midiHz(noteMidi(e.n));
+          if (e.k === 'p1') this.tone(this.mus, S.duty[0], f, sg.next, d * 0.92, 0.13, { vib: true, decay: 0.75 });
+          else if (e.k === 'p2') this.tone(this.mus, S.duty[1], f, sg.next, d * 0.8, 0.065, { decay: 0.5 });
+          else this.tone(this.mus, 'tri', f, sg.next, d * 0.85, 0.3, {});
+        }
+      }
+      if (sg.step % 4 === 0) { const when = sg.next; this.beatCbs.forEach(cb => cb(when, sg.step % (S.bar) === 0)); }
+      sg.next += sp; sg.step++;
+      if (sg.step >= sg.L) { sg.step = 0; sg.loops++; }
+    }
+  }
+  onBeat(cb) { this.beatCbs.push(cb); }
+  // ── 효과음
+  sfx(name, a = {}) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + 0.005, F = this.fx;
+    const arp = (notes, step, wave = 0.5, vol = 0.16, len) => notes.forEach((n, i) => this.tone(F, wave, midiHz(typeof n === 'number' ? n : noteMidi(n)), t + i * step, len || step * 1.6, vol, { decay: 0.4 }));
+    const PENTA = [0, 2, 4, 7, 9];
+    switch (name) {
+      case 'slide': this.noise(F, t, 0.07, 0.05, { type: 'bandpass', freq: 1800, fto: 900 }); break;
+      case 'merge': { const k = Math.max(1, Math.log2(a.v || 4) - 1), m = 60 + 12 * Math.floor((k - 1) / 5) + PENTA[(k - 1) % 5];
+        this.tone(F, 0.25, midiHz(m), t, 0.09, 0.12, { decay: 0.4 }); this.tone(F, 0.125, midiHz(m + 12), t + 0.03, 0.08, 0.06, { decay: 0.3 });
+        if (a.v >= 128) arp([m + 12, m + 16, m + 19, m + 24], 0.045, 0.5, 0.1); break; }
+      case 'spawn': this.tone(F, 0.125, 1600, t + 0.06, 0.015, 0.025, { rel: 0.004 }); break;
+      case 'nope': this.tone(F, 0.5, 140, t, 0.08, 0.1, { to: 110, sweep: 0.08 }); break;
+      case 'undo': this.tone(F, 0.25, 900, t, 0.08, 0.08, { to: 450, sweep: 0.08 }); break;
+      case 'win': arp(['C5', 'E5', 'G5', 'C6', 'G5', 'C6', 'E6', 'G6', 'C7'], 0.08, 0.5, 0.14, 0.3); this.noise(F, t, 0.6, 0.15, { type: 'highpass', freq: 3000, fto: 8000 }); break;
+      case 'over': [76, 72, 69, 64, 60, 57, 52, 48].forEach((m, i) => this.tone(F, 0.5, midiHz(m), t + i * 0.11, 0.12, 0.12, { decay: 0.5 })); break;
+      case 'done': arp(['G5', 'C6', 'E6', 'G6', 'E6', 'G6'], 0.07, 0.5, 0.14); break;
+      case 'menu': this.tone(F, 0.25, 1000, t, 0.03, 0.06, { rel: 0.01 }); break;
+      case 'select': arp([76, 83], 0.05, 0.25, 0.1); break;
+      case 'warn': arp([84, 84], 0.12, 0.125, 0.06, 0.06); break;
+    }
+  }
+}
+
+// ───────────────────────── 화면 글자 (언어별) ─────────────────────────
+// 서버가 const LANG 에 사용자 언어를 넣는다. 없는 언어는 영어로.
+const TX = {
   ko: {
-    score: '점수', best: '최고',
-    congrats: '축하합니다!', reached: '2048 달성!',
-    continue: '계속하기', newGame: '새 게임',
-    gameOver: '게임 오버', restart: '다시 시작',
-    finalScore: s => '최종 점수: ' + s,
-    keysHint: '←→↑↓ 또는 스와이프',
+    tag: '같은 숫자를 밀어 합쳐라', classic: '클래식', classicDesc: '판 크기를 골라 끝까지. 되돌리기 3번', daily: '오늘의 퍼즐', dailyDesc: '오늘은 모두가 같은 판. 공식 기록은 하루 한 번',
+    rules: { classic: ['표준', '움직일 수 없을 때까지 최고 점수'], moves100: ['100수', '딱 100번 밀어서 최고 점수'], stone: ['돌 블록', '움직이지 않는 돌 하나를 피해 쌓아라'] },
+    start: '시작', cont: '이어하기 · {n}점', play: '도전하기', resume: '이어서 도전', viewResult: '결과 보기', notYet: '아직 도전하지 않았어요', doneScore: '완료 · {n}점', inProgress: '진행 중 · {n}점', streak: '연속 {n}일',
+    settings: '설정', records: '기록', help: '조작법', done: '확인', newGame: '새 게임', undo: '되돌리기 {n}',
+    score: '점수', best: '최고', movesLeft: '남은 수', moves: '수', bestTile: '최고 타일', goal: '목표 {n}',
+    menu: '메뉴', again: '다시 하기', newRec: '★ 새 기록 ★', none: '아직 기록이 없습니다',
+    win: '{n} 달성!', keepGoing: '계속하기', reached: '{n} 타일을 만들었다!', over: '더 이상 움직일 수 없어요', outOfMoves: '100수 끝!',
+    share: '결과 복사하기', copied: '복사했습니다', nextIn: '다음 퍼즐까지 {t}', confirmNew: '지금 판을 버리고 새로 시작할까요?', yes: '새로 시작', no: '취소', noUndo: '오늘의 퍼즐은 되돌릴 수 없어요',
+    hint: '방향키나 화면 밀기로 같은 숫자를 합치세요',
+    music: '음악', musicNames: { auto: '자동', A: '타일 정원', B: '숫자 달리기', off: '끔' }, mv: '음악 볼륨', sv: '효과음 볼륨', fx: '효과', speed: '움직임', speeds: ['보통', '빠름'], on: '켬', off: '끔',
+    played: '판 수', history: '최근 오늘의 퍼즐', bySize: '판 크기별 최고',
+    keys: [['← ↑ → ↓ / WASD', '밀기'], ['화면 밀기', '밀기 (휴대폰)'], ['U / Ctrl+Z', '되돌리기 (클래식)'], ['N', '새 게임 (클래식)'], ['Esc', '메뉴'], ['M', '소리 끄기·켜기']],
+    tips: ['가장 큰 숫자를 한쪽 구석에 두고, 그 줄을 크기 순으로 채우면 오래 버틴다', '한 방향(예: 위)은 꼭 필요할 때만 밀자', '오늘의 퍼즐은 날마다 규칙이 바뀐다: 표준 · 100수 · 돌 블록'],
   },
   en: {
-    score: 'SCORE', best: 'BEST',
-    congrats: 'You Win!', reached: '2048 reached!',
-    continue: 'Continue', newGame: 'New Game',
-    gameOver: 'GAME OVER', restart: 'Restart',
-    finalScore: s => 'Final Score: ' + s,
-    keysHint: '←→↑↓ or Swipe',
-  }
-}[LANG] || {
-  score: 'SCORE', best: 'BEST',
-  congrats: 'You Win!', reached: '2048 reached!',
-  continue: 'Continue', newGame: 'New Game',
-  gameOver: 'GAME OVER', restart: 'Restart',
-  finalScore: s => 'Final Score: ' + s,
-  keysHint: '←→↑↓ or Swipe',
+    tag: 'SLIDE · MERGE · DOUBLE', classic: 'Classic', classicDesc: 'Pick a board size and go all the way. 3 undos', daily: 'Daily Puzzle', dailyDesc: 'Everyone gets the same board today. One official run per day',
+    rules: { classic: ['Standard', 'Highest score until you are stuck'], moves100: ['100 Moves', 'Best score in exactly 100 moves'], stone: ['Stone Block', 'Build around one stone that never moves'] },
+    start: 'Start', cont: 'Continue · {n}', play: 'Play', resume: 'Resume', viewResult: 'See result', notYet: 'Not played yet', doneScore: 'Done · {n}', inProgress: 'In progress · {n}', streak: '{n}-day streak',
+    settings: 'Settings', records: 'Records', help: 'Controls', done: 'Done', newGame: 'New game', undo: 'Undo {n}',
+    score: 'SCORE', best: 'BEST', movesLeft: 'MOVES LEFT', moves: 'MOVES', bestTile: 'BEST TILE', goal: 'Goal {n}',
+    menu: 'Menu', again: 'Play again', newRec: '★ NEW RECORD ★', none: 'No records yet',
+    win: 'You made {n}!', keepGoing: 'Keep going', reached: 'You made a {n} tile!', over: 'No more moves', outOfMoves: '100 moves done!',
+    share: 'Copy result', copied: 'Copied', nextIn: 'Next puzzle in {t}', confirmNew: 'Throw away this game and start over?', yes: 'Start over', no: 'Cancel', noUndo: 'No undo in the Daily Puzzle',
+    hint: 'Use arrow keys or swipe to merge equal numbers',
+    music: 'Music', musicNames: { auto: 'Auto', A: 'Tile Garden', B: 'Number Rush', off: 'Off' }, mv: 'Music volume', sv: 'Sound volume', fx: 'Effects', speed: 'Animation', speeds: ['Normal', 'Fast'], on: 'On', off: 'Off',
+    played: 'Games', history: 'Recent daily puzzles', bySize: 'Best by board size',
+    keys: [['← ↑ → ↓ / WASD', 'Slide'], ['Swipe', 'Slide (phone)'], ['U / Ctrl+Z', 'Undo (Classic)'], ['N', 'New game (Classic)'], ['Esc', 'Menu'], ['M', 'Mute']],
+    tips: ['Keep your biggest tile in a corner and fill that row in order', 'Use one direction (say, up) only when you must', 'The Daily Puzzle rule changes every day: Standard · 100 Moves · Stone Block'],
+  },
+  ja: {
+    tag: 'スライドして同じ数字を合わせよう', classic: 'クラシック', classicDesc: '盤の大きさを選んで最後まで。取り消し3回', daily: '今日のパズル', dailyDesc: '今日は全員が同じ盤。公式記録は1日1回',
+    rules: { classic: ['標準', '動けなくなるまでのハイスコア'], moves100: ['100手', 'ちょうど100手でハイスコア'], stone: ['石ブロック', '動かない石を避けて積み上げよう'] },
+    start: 'スタート', cont: '続きから · {n}点', play: '挑戦する', resume: '続きから挑戦', viewResult: '結果を見る', notYet: 'まだ挑戦していません', doneScore: '完了 · {n}点', inProgress: '挑戦中 · {n}点', streak: '{n}日連続',
+    settings: '設定', records: '記録', help: '操作方法', done: 'OK', newGame: '新しいゲーム', undo: '取り消し {n}',
+    score: 'スコア', best: 'ベスト', movesLeft: '残り手数', moves: '手数', bestTile: '最大タイル', goal: '目標 {n}',
+    menu: 'メニュー', again: 'もう一度', newRec: '★ 新記録 ★', none: 'まだ記録がありません',
+    win: '{n} 達成!', keepGoing: '続ける', reached: '{n} のタイルを作った!', over: 'もう動かせません', outOfMoves: '100手終了!',
+    share: '結果をコピー', copied: 'コピーしました', nextIn: '次のパズルまで {t}', confirmNew: '今のゲームを捨てて新しく始めますか?', yes: '新しく始める', no: 'キャンセル', noUndo: '今日のパズルは取り消しできません',
+    hint: '矢印キーかスワイプで同じ数字を合わせよう',
+    music: '音楽', musicNames: { auto: '自動', A: 'タイルの庭', B: 'ナンバーラッシュ', off: 'オフ' }, mv: '音楽の音量', sv: '効果音の音量', fx: 'エフェクト', speed: 'アニメーション', speeds: ['ふつう', '速い'], on: 'オン', off: 'オフ',
+    played: 'プレイ数', history: '最近の今日のパズル', bySize: '盤の大きさ別ベスト',
+    keys: [['← ↑ → ↓ / WASD', 'スライド'], ['スワイプ', 'スライド (スマホ)'], ['U / Ctrl+Z', '取り消し (クラシック)'], ['N', '新しいゲーム (クラシック)'], ['Esc', 'メニュー'], ['M', '消音']],
+    tips: ['一番大きいタイルを隅に置き、その列を大きさ順に並べると長持ちする', '一つの方向(例: 上)はどうしても必要な時だけ', '今日のパズルは毎日ルールが変わる: 標準 · 100手 · 石ブロック'],
+  },
+  zh: {
+    tag: '滑动合并相同的数字', classic: '经典', classicDesc: '选择棋盘大小，一直玩到底。可撤销 3 次', daily: '每日谜题', dailyDesc: '今天所有人都是同一盘。正式记录每天一次',
+    rules: { classic: ['标准', '直到无法移动时的最高分'], moves100: ['100 步', '正好 100 步内拿最高分'], stone: ['石块', '绕开一块不会动的石头来堆叠'] },
+    start: '开始', cont: '继续 · {n} 分', play: '挑战', resume: '继续挑战', viewResult: '查看结果', notYet: '还没有挑战', doneScore: '完成 · {n} 分', inProgress: '进行中 · {n} 分', streak: '连续 {n} 天',
+    settings: '设置', records: '记录', help: '操作说明', done: '确定', newGame: '新游戏', undo: '撤销 {n}',
+    score: '分数', best: '最高', movesLeft: '剩余步数', moves: '步数', bestTile: '最大方块', goal: '目标 {n}',
+    menu: '菜单', again: '再玩一次', newRec: '★ 新纪录 ★', none: '还没有记录',
+    win: '达成 {n}!', keepGoing: '继续', reached: '合成了 {n} 方块!', over: '无法再移动', outOfMoves: '100 步结束!',
+    share: '复制结果', copied: '已复制', nextIn: '距离下一题 {t}', confirmNew: '放弃当前这局重新开始吗？', yes: '重新开始', no: '取消', noUndo: '每日谜题不能撤销',
+    hint: '用方向键或滑动屏幕合并相同的数字',
+    music: '音乐', musicNames: { auto: '自动', A: '方块花园', B: '数字冲刺', off: '关' }, mv: '音乐音量', sv: '音效音量', fx: '特效', speed: '动画', speeds: ['普通', '快'], on: '开', off: '关',
+    played: '局数', history: '最近的每日谜题', bySize: '各棋盘大小最高分',
+    keys: [['← ↑ → ↓ / WASD', '滑动'], ['滑动屏幕', '滑动 (手机)'], ['U / Ctrl+Z', '撤销 (经典)'], ['N', '新游戏 (经典)'], ['Esc', '菜单'], ['M', '静音']],
+    tips: ['把最大的方块放在角落，并按大小顺序填满那一行，就能坚持更久', '某一个方向（比如上）只在不得已时才用', '每日谜题的规则每天都会变：标准 · 100 步 · 石块'],
+  },
+  'zh-TW': {
+    tag: '滑動合併相同的數字', classic: '經典', classicDesc: '選擇棋盤大小，一直玩到底。可復原 3 次', daily: '每日謎題', dailyDesc: '今天所有人都是同一盤。正式紀錄每天一次',
+    rules: { classic: ['標準', '直到無法移動時的最高分'], moves100: ['100 步', '剛好 100 步內拿最高分'], stone: ['石塊', '繞開一塊不會動的石頭來堆疊'] },
+    start: '開始', cont: '繼續 · {n} 分', play: '挑戰', resume: '繼續挑戰', viewResult: '查看結果', notYet: '還沒有挑戰', doneScore: '完成 · {n} 分', inProgress: '進行中 · {n} 分', streak: '連續 {n} 天',
+    settings: '設定', records: '紀錄', help: '操作說明', done: '確定', newGame: '新遊戲', undo: '復原 {n}',
+    score: '分數', best: '最高', movesLeft: '剩餘步數', moves: '步數', bestTile: '最大方塊', goal: '目標 {n}',
+    menu: '選單', again: '再玩一次', newRec: '★ 新紀錄 ★', none: '還沒有紀錄',
+    win: '達成 {n}!', keepGoing: '繼續', reached: '合成了 {n} 方塊!', over: '無法再移動', outOfMoves: '100 步結束!',
+    share: '複製結果', copied: '已複製', nextIn: '距離下一題 {t}', confirmNew: '放棄目前這局重新開始嗎？', yes: '重新開始', no: '取消', noUndo: '每日謎題不能復原',
+    hint: '用方向鍵或滑動螢幕合併相同的數字',
+    music: '音樂', musicNames: { auto: '自動', A: '方塊花園', B: '數字衝刺', off: '關' }, mv: '音樂音量', sv: '音效音量', fx: '特效', speed: '動畫', speeds: ['普通', '快'], on: '開', off: '關',
+    played: '局數', history: '最近的每日謎題', bySize: '各棋盤大小最高分',
+    keys: [['← ↑ → ↓ / WASD', '滑動'], ['滑動螢幕', '滑動 (手機)'], ['U / Ctrl+Z', '復原 (經典)'], ['N', '新遊戲 (經典)'], ['Esc', '選單'], ['M', '靜音']],
+    tips: ['把最大的方塊放在角落，並依大小順序填滿那一行，就能撐更久', '某一個方向（例如上）只在不得已時才用', '每日謎題的規則每天都會變：標準 · 100 步 · 石塊'],
+  },
+  es: {
+    tag: 'DESLIZA · UNE · DUPLICA', classic: 'Clásico', classicDesc: 'Elige el tamaño del tablero y llega lejos. 3 deshacer', daily: 'Reto diario', dailyDesc: 'Hoy todos juegan el mismo tablero. Un intento oficial al día',
+    rules: { classic: ['Estándar', 'La mejor puntuación hasta quedarte sin jugadas'], moves100: ['100 movimientos', 'La mejor puntuación en 100 movimientos'], stone: ['Bloque de piedra', 'Construye alrededor de una piedra que nunca se mueve'] },
+    start: 'Empezar', cont: 'Continuar · {n}', play: 'Jugar', resume: 'Continuar reto', viewResult: 'Ver resultado', notYet: 'Aún no lo has jugado', doneScore: 'Hecho · {n}', inProgress: 'En curso · {n}', streak: 'Racha de {n} días',
+    settings: 'Ajustes', records: 'Récords', help: 'Controles', done: 'Listo', newGame: 'Nueva partida', undo: 'Deshacer {n}',
+    score: 'PUNTOS', best: 'MEJOR', movesLeft: 'QUEDAN', moves: 'MOVIMIENTOS', bestTile: 'MEJOR FICHA', goal: 'Meta {n}',
+    menu: 'Menú', again: 'Jugar otra vez', newRec: '★ NUEVO RÉCORD ★', none: 'Aún no hay récords',
+    win: '¡Lograste {n}!', keepGoing: 'Seguir', reached: '¡Hiciste una ficha de {n}!', over: 'No quedan movimientos', outOfMoves: '¡100 movimientos hechos!',
+    share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo reto en {t}', confirmNew: '¿Descartar esta partida y empezar de nuevo?', yes: 'Empezar de nuevo', no: 'Cancelar', noUndo: 'En el reto diario no se puede deshacer',
+    hint: 'Usa las flechas o desliza para unir números iguales',
+    music: 'Música', musicNames: { auto: 'Auto', A: 'Jardín de fichas', B: 'Carrera numérica', off: 'No' }, mv: 'Volumen de música', sv: 'Volumen de efectos', fx: 'Efectos', speed: 'Animación', speeds: ['Normal', 'Rápida'], on: 'Sí', off: 'No',
+    played: 'Partidas', history: 'Retos diarios recientes', bySize: 'Mejor por tamaño',
+    keys: [['← ↑ → ↓ / WASD', 'Deslizar'], ['Deslizar el dedo', 'Deslizar (móvil)'], ['U / Ctrl+Z', 'Deshacer (Clásico)'], ['N', 'Nueva partida (Clásico)'], ['Esc', 'Menú'], ['M', 'Silenciar']],
+    tips: ['Deja tu ficha más grande en una esquina y llena esa fila en orden', 'Usa una dirección (por ejemplo, arriba) solo cuando no quede otra', 'La regla del reto diario cambia cada día: Estándar · 100 movimientos · Bloque de piedra'],
+  },
+  fr: {
+    tag: 'GLISSER · FUSIONNER · DOUBLER', classic: 'Classique', classicDesc: 'Choisissez la taille du plateau et allez le plus loin possible. 3 annulations', daily: 'Défi du jour', dailyDesc: 'Aujourd’hui, tout le monde a le même plateau. Un essai officiel par jour',
+    rules: { classic: ['Standard', 'Meilleur score jusqu’au blocage'], moves100: ['100 coups', 'Meilleur score en exactement 100 coups'], stone: ['Bloc de pierre', 'Construisez autour d’une pierre qui ne bouge jamais'] },
+    start: 'Jouer', cont: 'Continuer · {n}', play: 'Relever le défi', resume: 'Reprendre', viewResult: 'Voir le résultat', notYet: 'Pas encore joué', doneScore: 'Terminé · {n}', inProgress: 'En cours · {n}', streak: 'Série de {n} jours',
+    settings: 'Réglages', records: 'Records', help: 'Commandes', done: 'OK', newGame: 'Nouvelle partie', undo: 'Annuler {n}',
+    score: 'SCORE', best: 'RECORD', movesLeft: 'RESTANTS', moves: 'COUPS', bestTile: 'TUILE MAX', goal: 'Objectif {n}',
+    menu: 'Menu', again: 'Rejouer', newRec: '★ NOUVEAU RECORD ★', none: 'Pas encore de record',
+    win: '{n} atteint !', keepGoing: 'Continuer', reached: 'Vous avez fait une tuile {n} !', over: 'Plus aucun coup possible', outOfMoves: '100 coups joués !',
+    share: 'Copier le résultat', copied: 'Copié', nextIn: 'Prochain défi dans {t}', confirmNew: 'Abandonner cette partie et recommencer ?', yes: 'Recommencer', no: 'Annuler', noUndo: 'Pas d’annulation dans le défi du jour',
+    hint: 'Flèches ou glissement pour fusionner les nombres égaux',
+    music: 'Musique', musicNames: { auto: 'Auto', A: 'Jardin de tuiles', B: 'Course aux nombres', off: 'Non' }, mv: 'Volume musique', sv: 'Volume effets', fx: 'Effets', speed: 'Animation', speeds: ['Normale', 'Rapide'], on: 'Oui', off: 'Non',
+    played: 'Parties', history: 'Défis du jour récents', bySize: 'Meilleur par taille',
+    keys: [['← ↑ → ↓ / WASD', 'Glisser'], ['Glisser le doigt', 'Glisser (mobile)'], ['U / Ctrl+Z', 'Annuler (Classique)'], ['N', 'Nouvelle partie (Classique)'], ['Échap', 'Menu'], ['M', 'Couper le son']],
+    tips: ['Gardez la plus grande tuile dans un coin et remplissez cette rangée dans l’ordre', 'N’utilisez une direction (par exemple le haut) qu’en dernier recours', 'La règle du défi du jour change chaque jour : Standard · 100 coups · Bloc de pierre'],
+  },
+  de: {
+    tag: 'SCHIEBEN · VEREINEN · VERDOPPELN', classic: 'Klassisch', classicDesc: 'Feldgröße wählen und so weit wie möglich kommen. 3× rückgängig', daily: 'Tagesrätsel', dailyDesc: 'Heute spielen alle dasselbe Feld. Ein offizieller Versuch pro Tag',
+    rules: { classic: ['Standard', 'Höchste Punktzahl, bis nichts mehr geht'], moves100: ['100 Züge', 'Höchste Punktzahl in genau 100 Zügen'], stone: ['Steinblock', 'Baue um einen Stein herum, der sich nie bewegt'] },
+    start: 'Start', cont: 'Weiter · {n}', play: 'Spielen', resume: 'Weiterspielen', viewResult: 'Ergebnis ansehen', notYet: 'Noch nicht gespielt', doneScore: 'Fertig · {n}', inProgress: 'Läuft · {n}', streak: '{n} Tage in Folge',
+    settings: 'Einstellungen', records: 'Rekorde', help: 'Steuerung', done: 'Fertig', newGame: 'Neues Spiel', undo: 'Zurück {n}',
+    score: 'PUNKTE', best: 'BESTWERT', movesLeft: 'ZÜGE ÜBRIG', moves: 'ZÜGE', bestTile: 'BESTE KACHEL', goal: 'Ziel {n}',
+    menu: 'Menü', again: 'Nochmal', newRec: '★ NEUER REKORD ★', none: 'Noch keine Rekorde',
+    win: '{n} geschafft!', keepGoing: 'Weiterspielen', reached: 'Du hast eine {n} gebaut!', over: 'Keine Züge mehr', outOfMoves: '100 Züge gespielt!',
+    share: 'Ergebnis kopieren', copied: 'Kopiert', nextIn: 'Nächstes Rätsel in {t}', confirmNew: 'Dieses Spiel verwerfen und neu beginnen?', yes: 'Neu beginnen', no: 'Abbrechen', noUndo: 'Im Tagesrätsel gibt es kein Zurück',
+    hint: 'Mit Pfeiltasten oder Wischen gleiche Zahlen vereinen',
+    music: 'Musik', musicNames: { auto: 'Auto', A: 'Kachelgarten', B: 'Zahlenrausch', off: 'Aus' }, mv: 'Musiklautstärke', sv: 'Effektlautstärke', fx: 'Effekte', speed: 'Animation', speeds: ['Normal', 'Schnell'], on: 'An', off: 'Aus',
+    played: 'Spiele', history: 'Letzte Tagesrätsel', bySize: 'Bestwert je Feldgröße',
+    keys: [['← ↑ → ↓ / WASD', 'Schieben'], ['Wischen', 'Schieben (Handy)'], ['U / Strg+Z', 'Zurück (Klassisch)'], ['N', 'Neues Spiel (Klassisch)'], ['Esc', 'Menü'], ['M', 'Ton aus']],
+    tips: ['Halte die größte Kachel in einer Ecke und fülle diese Reihe der Größe nach', 'Nutze eine Richtung (z. B. oben) nur im Notfall', 'Die Regel des Tagesrätsels wechselt täglich: Standard · 100 Züge · Steinblock'],
+  },
+  pt: {
+    tag: 'DESLIZE · JUNTE · DOBRE', classic: 'Clássico', classicDesc: 'Escolha o tamanho do tabuleiro e vá até o fim. 3 desfazer', daily: 'Desafio do dia', dailyDesc: 'Hoje todos jogam o mesmo tabuleiro. Uma tentativa oficial por dia',
+    rules: { classic: ['Padrão', 'Maior pontuação até não ter mais jogadas'], moves100: ['100 jogadas', 'Maior pontuação em exatamente 100 jogadas'], stone: ['Bloco de pedra', 'Monte em volta de uma pedra que nunca se move'] },
+    start: 'Jogar', cont: 'Continuar · {n}', play: 'Desafiar', resume: 'Continuar desafio', viewResult: 'Ver resultado', notYet: 'Ainda não jogado', doneScore: 'Feito · {n}', inProgress: 'Em andamento · {n}', streak: '{n} dias seguidos',
+    settings: 'Configurações', records: 'Recordes', help: 'Controles', done: 'OK', newGame: 'Novo jogo', undo: 'Desfazer {n}',
+    score: 'PONTOS', best: 'MELHOR', movesLeft: 'RESTAM', moves: 'JOGADAS', bestTile: 'MAIOR PEÇA', goal: 'Meta {n}',
+    menu: 'Menu', again: 'Jogar de novo', newRec: '★ NOVO RECORDE ★', none: 'Ainda não há recordes',
+    win: 'Você fez {n}!', keepGoing: 'Continuar', reached: 'Você fez uma peça {n}!', over: 'Sem mais jogadas', outOfMoves: '100 jogadas feitas!',
+    share: 'Copiar resultado', copied: 'Copiado', nextIn: 'Próximo desafio em {t}', confirmNew: 'Descartar este jogo e começar de novo?', yes: 'Começar de novo', no: 'Cancelar', noUndo: 'Não dá para desfazer no desafio do dia',
+    hint: 'Use as setas ou deslize para juntar números iguais',
+    music: 'Música', musicNames: { auto: 'Automática', A: 'Jardim de peças', B: 'Corrida dos números', off: 'Desligada' }, mv: 'Volume da música', sv: 'Volume dos efeitos', fx: 'Efeitos', speed: 'Animação', speeds: ['Normal', 'Rápida'], on: 'Ligado', off: 'Desligado',
+    played: 'Jogos', history: 'Desafios do dia recentes', bySize: 'Melhor por tamanho',
+    keys: [['← ↑ → ↓ / WASD', 'Deslizar'], ['Deslizar o dedo', 'Deslizar (celular)'], ['U / Ctrl+Z', 'Desfazer (Clássico)'], ['N', 'Novo jogo (Clássico)'], ['Esc', 'Menu'], ['M', 'Silenciar']],
+    tips: ['Deixe a maior peça num canto e preencha essa fileira em ordem', 'Use uma direção (por exemplo, para cima) só quando não houver jeito', 'A regra do desafio do dia muda todo dia: Padrão · 100 jogadas · Bloco de pedra'],
+  },
+  ru: {
+    tag: 'СДВИГАЙ · СОЕДИНЯЙ · УДВАИВАЙ', classic: 'Классика', classicDesc: 'Выбери размер поля и играй до конца. 3 отмены', daily: 'Задача дня', dailyDesc: 'Сегодня у всех одно и то же поле. Одна официальная попытка в день',
+    rules: { classic: ['Обычная', 'Максимум очков, пока есть ходы'], moves100: ['100 ходов', 'Максимум очков ровно за 100 ходов'], stone: ['Камень', 'Строй вокруг камня, который никогда не двигается'] },
+    start: 'Начать', cont: 'Продолжить · {n}', play: 'Играть', resume: 'Продолжить', viewResult: 'Посмотреть итог', notYet: 'Ещё не сыграно', doneScore: 'Готово · {n}', inProgress: 'Идёт · {n}', streak: '{n} дн. подряд',
+    settings: 'Настройки', records: 'Рекорды', help: 'Управление', done: 'Готово', newGame: 'Новая игра', undo: 'Отмена {n}',
+    score: 'ОЧКИ', best: 'РЕКОРД', movesLeft: 'ОСТАЛОСЬ', moves: 'ХОДЫ', bestTile: 'МАКС. ПЛИТКА', goal: 'Цель {n}',
+    menu: 'Меню', again: 'Ещё раз', newRec: '★ НОВЫЙ РЕКОРД ★', none: 'Рекордов пока нет',
+    win: '{n} собрано!', keepGoing: 'Продолжить', reached: 'Ты собрал плитку {n}!', over: 'Ходов больше нет', outOfMoves: '100 ходов сделано!',
+    share: 'Скопировать итог', copied: 'Скопировано', nextIn: 'Следующая задача через {t}', confirmNew: 'Бросить эту игру и начать заново?', yes: 'Начать заново', no: 'Отмена', noUndo: 'В задаче дня отмены нет',
+    hint: 'Стрелки или свайп — соединяй одинаковые числа',
+    music: 'Музыка', musicNames: { auto: 'Авто', A: 'Сад плиток', B: 'Числовой рывок', off: 'Выкл' }, mv: 'Громкость музыки', sv: 'Громкость эффектов', fx: 'Эффекты', speed: 'Анимация', speeds: ['Обычная', 'Быстрая'], on: 'Вкл', off: 'Выкл',
+    played: 'Игры', history: 'Недавние задачи дня', bySize: 'Лучшее по размеру поля',
+    keys: [['← ↑ → ↓ / WASD', 'Сдвиг'], ['Свайп', 'Сдвиг (телефон)'], ['U / Ctrl+Z', 'Отмена (классика)'], ['N', 'Новая игра (классика)'], ['Esc', 'Меню'], ['M', 'Звук']],
+    tips: ['Держи самую большую плитку в углу и заполняй этот ряд по порядку', 'Одно направление (например, вверх) используй только в крайнем случае', 'Правило задачи дня меняется каждый день: обычная · 100 ходов · камень'],
+  },
+  vi: {
+    tag: 'TRƯỢT · GỘP · NHÂN ĐÔI', classic: 'Cổ điển', classicDesc: 'Chọn cỡ bàn và chơi đến cùng. Hoàn tác 3 lần', daily: 'Câu đố hôm nay', dailyDesc: 'Hôm nay mọi người chơi cùng một bàn. Mỗi ngày một lượt chính thức',
+    rules: { classic: ['Tiêu chuẩn', 'Điểm cao nhất cho đến khi hết nước'], moves100: ['100 nước', 'Điểm cao nhất trong đúng 100 nước'], stone: ['Khối đá', 'Xếp quanh một khối đá không bao giờ di chuyển'] },
+    start: 'Bắt đầu', cont: 'Chơi tiếp · {n}', play: 'Thử thách', resume: 'Chơi tiếp', viewResult: 'Xem kết quả', notYet: 'Chưa chơi', doneScore: 'Xong · {n}', inProgress: 'Đang chơi · {n}', streak: 'Chuỗi {n} ngày',
+    settings: 'Cài đặt', records: 'Kỷ lục', help: 'Điều khiển', done: 'Xong', newGame: 'Ván mới', undo: 'Hoàn tác {n}',
+    score: 'ĐIỂM', best: 'CAO NHẤT', movesLeft: 'CÒN LẠI', moves: 'SỐ NƯỚC', bestTile: 'Ô LỚN NHẤT', goal: 'Mục tiêu {n}',
+    menu: 'Menu', again: 'Chơi lại', newRec: '★ KỶ LỤC MỚI ★', none: 'Chưa có kỷ lục',
+    win: 'Đạt {n}!', keepGoing: 'Chơi tiếp', reached: 'Bạn đã tạo ô {n}!', over: 'Hết nước đi', outOfMoves: 'Đã đi 100 nước!',
+    share: 'Sao chép kết quả', copied: 'Đã sao chép', nextIn: 'Câu đố mới sau {t}', confirmNew: 'Bỏ ván này và bắt đầu lại?', yes: 'Bắt đầu lại', no: 'Hủy', noUndo: 'Câu đố hôm nay không được hoàn tác',
+    hint: 'Dùng phím mũi tên hoặc vuốt để gộp số giống nhau',
+    music: 'Nhạc', musicNames: { auto: 'Tự động', A: 'Vườn ô số', B: 'Đua số', off: 'Tắt' }, mv: 'Âm lượng nhạc', sv: 'Âm lượng hiệu ứng', fx: 'Hiệu ứng', speed: 'Hoạt ảnh', speeds: ['Vừa', 'Nhanh'], on: 'Bật', off: 'Tắt',
+    played: 'Số ván', history: 'Câu đố hôm nay gần đây', bySize: 'Cao nhất theo cỡ bàn',
+    keys: [['← ↑ → ↓ / WASD', 'Trượt'], ['Vuốt', 'Trượt (điện thoại)'], ['U / Ctrl+Z', 'Hoàn tác (Cổ điển)'], ['N', 'Ván mới (Cổ điển)'], ['Esc', 'Menu'], ['M', 'Tắt tiếng']],
+    tips: ['Giữ ô lớn nhất ở một góc và xếp hàng đó theo thứ tự', 'Chỉ dùng một hướng (ví dụ: lên) khi thật cần', 'Luật của câu đố hôm nay đổi mỗi ngày: Tiêu chuẩn · 100 nước · Khối đá'],
+  },
 };
 
-(function applyLabels() {
-  document.getElementById('lScore').textContent = T.score;
-  document.getElementById('lBest').textContent = T.best;
-  document.getElementById('winTitle').textContent = T.congrats;
-  document.getElementById('winSub').textContent = T.reached;
-  document.getElementById('continueBtn').textContent = T.continue;
-  document.getElementById('winNewBtn').textContent = T.newGame;
-  document.getElementById('gameOverText').textContent = T.gameOver;
-  document.getElementById('restartBtn').textContent = T.restart;
-  document.getElementById('newGameBtn').textContent = T.newGame;
-  document.getElementById('keysHint').innerHTML = '<span>←→↑↓</span> ' + (LANG === 'ko' ? '또는 스와이프' : 'or Swipe');
-})();
+// ───────────────────────── 화면·흐름·조작 ─────────────────────────
+const LANG = 'ko';
+const T = (() => { const l = String(LANG || 'en'); if (/^zh-(TW|HK|MO|Hant)/i.test(l)) return TX['zh-TW']; return TX[l] || TX[l.split('-')[0].toLowerCase()] || TX.en; })();
+document.documentElement.lang = LANG;
+const $ = id => document.getElementById(id);
+const fmt = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => (typeof o === 'object' ? o[k] : o));
+const num = n => Number(n).toLocaleString(LANG);
+// 타일 색 [바탕, 글자, 빛]
+const PAL = { 2: ['#3a4670', '#e6ebff'], 4: ['#465a94', '#eef2ff'], 8: ['#2f7ddb', '#fff'], 16: ['#139fca', '#fff'], 32: ['#11b48a', '#fff'], 64: ['#4cbf33', '#fff'],
+  128: ['#d9ae17', '#1d1500', '#ffd23f'], 256: ['#ef8a1c', '#fff', '#ff9a3d'], 512: ['#ec5a2e', '#fff', '#ff6a3d'], 1024: ['#e2336b', '#fff', '#ff4f86'], 2048: ['#a93be6', '#fff', '#c46bff'],
+  4096: ['#6b3bff', '#fff', '#8a6bff'], 8192: ['#1b1f3a', '#ffd23f', '#ffd23f'] };
+const pal = v => PAL[v] || PAL[8192];
+const tileBg = v => { const [b] = pal(v); return `linear-gradient(160deg, ${lighten(b, 0.18)}, ${b} 55%, ${lighten(b, -0.18)})`; };
+function lighten(hex, k) { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; if (k > 0) { r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; } else { r *= 1 + k; g *= 1 + k; b *= 1 + k; } return `rgb(${r | 0},${g | 0},${b | 0})`; }
 
-const SIZE = 4;
-let grid, score, bestScore, won, continued;
+// ── 저장
+const DEF = { music: 'auto', mv: 0.35, sv: 0.7, fx: true, speed: 0, size: 4, muted: false };
+let ST = { set: { ...DEF }, best: {}, cur: {}, daily: {}, played: 0 };
+try { const d = JSON.parse(localStorage.getItem('wiiiv-2048') || '{}'); ST = { ...ST, ...d, set: { ...DEF, ...(d.set || {}) } }; } catch { /* 저장소 없이도 동작 */ }
+const SET = ST.set;
+const save = () => { try { localStorage.setItem('wiiiv-2048', JSON.stringify(ST)); } catch { /* 무시 */ } };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const dateLabel = ds => { try { return new Intl.DateTimeFormat(LANG, { month: 'long', day: 'numeric' }).format(new Date(ds + 'T12:00:00')); } catch { return ds; } };
 
-try { bestScore = parseInt(localStorage.getItem('2048_best') || '0'); } catch(e) { bestScore = 0; }
-document.getElementById('best').textContent = bestScore;
+const chip = new Chip(); chip.setVol(SET.mv, SET.sv); chip.muted = SET.muted;
+let game = null, mode = 'classic', dayKey = null, busy = null, phase = 'menu';
+const els = new Map();
+const board = $('board');
 
-const TILE_COLORS = {
-  0: {bg: 'rgba(255,255,255,0.04)', fg: '#444', size: '20px'},
-  2: {bg: '#2d2b55', fg: '#eee', size: '28px'},
-  4: {bg: '#3d3a6e', fg: '#eee', size: '28px'},
-  8: {bg: '#e07020', fg: '#fff', size: '28px'},
-  16: {bg: '#e85830', fg: '#fff', size: '26px'},
-  32: {bg: '#e04040', fg: '#fff', size: '26px'},
-  64: {bg: '#c02020', fg: '#fff', size: '26px'},
-  128: {bg: '#edcf72', fg: '#fff', size: '24px'},
-  256: {bg: '#edcc61', fg: '#fff', size: '24px'},
-  512: {bg: '#edc850', fg: '#fff', size: '22px'},
-  1024: {bg: '#edc53f', fg: '#fff', size: '20px'},
-  2048: {bg: '#7c5cfc', fg: '#fff', size: '20px'},
-  4096: {bg: '#6a4ce0', fg: '#fff', size: '18px'},
-  8192: {bg: '#5a3cc0', fg: '#fff', size: '16px'},
-};
-
-function getColor(v) { return TILE_COLORS[v] || {bg: '#4a2ca0', fg: '#fff', size: '14px'}; }
-
-function createBoard() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-  for (let i = 0; i < SIZE * SIZE; i++) {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
-    board.appendChild(cell);
+// ── 배치
+let L = { n: 4, bw: 400, g: 10, cs: 88 };
+function layout() {
+  const W = innerWidth, H = innerHeight, n = game ? game.size : SET.size;
+  const avail = H - 250 - (H < 640 ? -30 : 0);
+  const bw = Math.floor(Math.max(240, Math.min(520, W - 32, avail)));
+  const g = Math.max(5, Math.round(bw * (n >= 6 ? 0.018 : n === 5 ? 0.022 : 0.026))), cs = (bw - g * (n + 1)) / n;
+  L = { n, bw, g, cs };
+  const R = document.documentElement.style;
+  R.setProperty('--bw', bw + 'px'); R.setProperty('--g', g + 'px'); R.setProperty('--cs', cs + 'px'); R.setProperty('--sp', (SET.speed ? 75 : 115) + 'ms');
+  if (board.dataset.n !== String(n) || board.dataset.bw !== String(bw)) {
+    board.dataset.n = n; board.dataset.bw = bw; board.querySelectorAll('.cell').forEach(e => e.remove());
+    for (let i = 0; i < n * n; i++) { const c = document.createElement('div'); c.className = 'cell'; const [x, y] = pos(i); Object.assign(c.style, { left: x + 'px', top: y + 'px', width: cs + 'px', height: cs + 'px' }); board.appendChild(c); }
   }
+  if (game) for (const [id, el] of els) { const i = game.cells.findIndex(t => t && t.id === id); if (i >= 0) { el.style.transition = 'none'; place(el, i); fontFor(el, game.cells[i].v); void el.offsetWidth; el.style.transition = ''; } }
+  fx.width = W * devicePixelRatio; fx.height = H * devicePixelRatio; fx.style.width = W + 'px'; fx.style.height = H + 'px';
 }
-
-function render() {
-  const cells = document.querySelectorAll('.cell');
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      const cell = cells[r * SIZE + c];
-      const val = grid[r][c];
-      const color = getColor(val);
-      cell.textContent = val || '';
-      cell.style.background = color.bg;
-      cell.style.color = color.fg;
-      cell.style.fontSize = color.size;
-      cell.setAttribute('data-value', val);
-    }
+addEventListener('resize', layout);
+const pos = i => [L.g + (i % L.n) * (L.cs + L.g), L.g + Math.floor(i / L.n) * (L.cs + L.g)];
+function place(el, i) { const [x, y] = pos(i); el.style.transform = `translate(${x}px,${y}px)`; }
+function fontFor(el, v) { const d = String(Math.abs(v)).length; el.firstChild.style.fontSize = (L.cs * (d <= 2 ? 0.48 : d === 3 ? 0.4 : d === 4 ? 0.32 : 0.26)) + 'px'; }
+function makeTile(t, i, cls = '') {
+  const el = document.createElement('div'), inn = document.createElement('div'); inn.className = 'in'; el.appendChild(inn);
+  if (t.v === -1) { el.className = 'tile stone ' + cls; inn.innerHTML = '<svg viewBox="0 0 24 24" width="40%" height="40%" fill="#4a5374"><path d="M4 16l4-8 4 5 3-4 5 7z"/></svg>'; }
+  else {
+    const [, fg, gl] = pal(t.v); el.className = 'tile ' + cls + (gl ? ' glow' : ''); inn.textContent = t.v;
+    el.style.setProperty('--bg', tileBg(t.v)); el.style.setProperty('--fg', fg); if (gl) el.style.setProperty('--gl', gl + '99');
+    fontFor(el, t.v);
   }
-  document.getElementById('score').textContent = score;
-  if (score > bestScore) {
-    bestScore = score;
-    try { localStorage.setItem('2048_best', bestScore); } catch(e) {}
-    document.getElementById('best').textContent = bestScore;
+  el.style.transition = 'none'; place(el, i); board.appendChild(el); void el.offsetWidth; el.style.transition = '';
+  els.set(t.id, el); return el;
+}
+// 화면 타일을 엔진 상태와 똑같이 (연출 없이)
+function sync() {
+  if (busy) { clearTimeout(busy); busy = null; }
+  const want = new Set();
+  game.cells.forEach((t, i) => { if (!t) return; want.add(t.id); let el = els.get(t.id); if (!el) el = makeTile(t, i); else { el.classList.remove('new'); place(el, i); } });
+  for (const [id, el] of els) if (!want.has(id)) { el.remove(); els.delete(id); }
+}
+function clearTiles() { for (const el of els.values()) el.remove(); els.clear(); }
+
+// ── 효과 (입자)
+const fx = $('fx'), fc = fx.getContext('2d'); let parts = [];
+function burst(i, v) {
+  if (!SET.fx) return;
+  const r = board.getBoundingClientRect(), [x, y] = pos(i), cx = r.left + x + L.cs / 2, cy = r.top + y + L.cs / 2, col = (pal(v)[2] || pal(v)[0]);
+  const n = v >= 512 ? 36 : v >= 128 ? 22 : 12;
+  for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, s = (1.5 + Math.random() * 4) * (v >= 512 ? 1.4 : 1); parts.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, life: 40 + Math.random() * 25, max: 65, col, sz: 2 + Math.random() * 3 }); }
+}
+function fxLoop() {
+  const d = devicePixelRatio; fc.setTransform(d, 0, 0, d, 0, 0); fc.clearRect(0, 0, fx.width, fx.height);
+  if (parts.length) {
+    fc.globalCompositeOperation = 'lighter';
+    for (const p of parts) { p.x += p.vx; p.y += p.vy; p.vx *= 0.95; p.vy = p.vy * 0.95 + 0.12; p.life--; fc.globalAlpha = Math.max(0, p.life / p.max); fc.fillStyle = p.col; fc.fillRect(p.x - p.sz / 2, p.y - p.sz / 2, p.sz, p.sz); }
+    parts = parts.filter(p => p.life > 0); fc.globalAlpha = 1; fc.globalCompositeOperation = 'source-over';
   }
+  requestAnimationFrame(fxLoop);
 }
+function toast(text) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = text; document.body.appendChild(d); setTimeout(() => d.remove(), 1900); }
 
-function addRandom() {
-  const empty = [];
-  for (let r = 0; r < SIZE; r++)
-    for (let c = 0; c < SIZE; c++)
-      if (grid[r][c] === 0) empty.push({r, c});
-  if (empty.length === 0) return;
-  const {r, c} = empty[Math.floor(Math.random() * empty.length)];
-  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
-}
-
-function slide(row) {
-  let arr = row.filter(v => v !== 0);
-  let merged = 0;
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] === arr[i + 1]) {
-      arr[i] *= 2;
-      merged += arr[i];
-      arr.splice(i + 1, 1);
+// ── 움직이기
+function doMove(dir) {
+  if (!game || phase !== 'play') return;
+  if (busy) sync();
+  const res = game.move(dir);
+  if (!res) return;
+  if (!res.moved) { chip.sfx('nope'); return; }
+  chip.sfx('slide');
+  for (const m of res.moves) { const el = els.get(m.id); if (el) place(el, m.to); }
+  const sp = SET.speed ? 75 : 115;
+  busy = setTimeout(() => {
+    busy = null;
+    let top = 0;
+    for (const m of res.merges) {
+      for (const id of m.from) { const el = els.get(id); if (el) { el.remove(); els.delete(id); } }
+      makeTile({ id: m.id, v: m.v }, m.at, 'pop'); top = Math.max(top, m.v);
+      if (m.v >= 64) burst(m.at, m.v);
     }
+    if (res.spawned) makeTile(res.spawned, res.spawned.i, 'new');
+    if (top) chip.sfx('merge', { v: top });
+    if (top >= 512 && SET.fx) { board.classList.remove('shake'); void board.offsetWidth; board.classList.add('shake'); }
+    sync();
+  }, sp);
+  if (res.gained) { const p = document.createElement('span'); p.className = 'plus'; p.textContent = '+' + res.gained; $('sScore').appendChild(p); setTimeout(() => p.remove(), 800); }
+  hud(); persist();
+  if (game.moveLimit && game.movesLeft === 10) chip.sfx('warn');
+  if (res.win) {
+    chip.sfx('win');
+    if (mode === 'classic') setTimeout(() => { if (game && game.won && !game.over) showWin(); }, sp + 250);
+    else toast(fmt(T.reached, game.goal));
   }
-  while (arr.length < SIZE) arr.push(0);
-  return {result: arr, merged};
+  if (res.over) setTimeout(finish, sp + 650);
 }
-
-function move(direction) {
-  let moved = false, earned = 0;
-  const oldGrid = grid.map(r => [...r]);
-
-  if (direction === 'left') {
-    for (let r = 0; r < SIZE; r++) {
-      const {result, merged} = slide(grid[r]);
-      earned += merged; grid[r] = result;
-    }
-  } else if (direction === 'right') {
-    for (let r = 0; r < SIZE; r++) {
-      const {result, merged} = slide([...grid[r]].reverse());
-      earned += merged; grid[r] = result.reverse();
-    }
-  } else if (direction === 'up') {
-    for (let c = 0; c < SIZE; c++) {
-      const col = [grid[0][c], grid[1][c], grid[2][c], grid[3][c]];
-      const {result, merged} = slide(col);
-      earned += merged;
-      for (let r = 0; r < SIZE; r++) grid[r][c] = result[r];
-    }
-  } else if (direction === 'down') {
-    for (let c = 0; c < SIZE; c++) {
-      const col = [grid[3][c], grid[2][c], grid[1][c], grid[0][c]];
-      const {result, merged} = slide(col);
-      earned += merged;
-      const rev = result.reverse();
-      for (let r = 0; r < SIZE; r++) grid[r][c] = rev[r];
-    }
+function hud() {
+  if (!game) return;
+  $('vScore').textContent = num(game.score);
+  if (mode === 'daily') {
+    $('lBest').textContent = T.bestTile; $('vBest').textContent = num(game.best);
+    $('lThird').textContent = game.moveLimit ? T.movesLeft : T.moves; $('vThird').textContent = game.moveLimit ? game.movesLeft : game.moves;
+    $('vThird').style.color = game.moveLimit && game.movesLeft <= 10 ? '#ff6b8a' : '';
+  } else {
+    const b = ST.best[game.size] || { score: 0 }; $('lBest').textContent = T.best; $('vBest').textContent = num(Math.max(b.score, game.score));
+    $('lThird').textContent = T.bestTile; $('vThird').textContent = num(game.best); $('vThird').style.color = '';
   }
+  $('bUndo').textContent = fmt(T.undo, game.undoLeft); $('bUndo').disabled = mode === 'daily' || game.undoLeft <= 0 || !game.hist.length;
+  $('bUndo').hidden = mode === 'daily'; $('bNew').hidden = mode === 'daily';
+  $('modeName').innerHTML = ''; const b = document.createElement('b'); b.textContent = mode === 'daily' ? `${T.daily} · ${dateLabel(dayKey)}` : `${T.classic} ${game.size}×${game.size}`; $('modeName').appendChild(b);
+  $('modeInfo').textContent = mode === 'daily' ? T.rules[game.rule][0] : fmt(T.goal, num(game.goal));
+}
+function persist() {
+  if (!game) return;
+  if (mode === 'daily') { ST.cur.daily = { date: dayKey, g: game.save() }; const d = ST.daily[dayKey] || {}; if (!d.done) ST.daily[dayKey] = { ...d, score: game.score, tile: game.best, moves: game.moves, done: false }; }
+  else ST.cur['c' + game.size] = game.over ? null : game.save();
+  save();
+}
 
-  for (let r = 0; r < SIZE; r++)
-    for (let c = 0; c < SIZE; c++)
-      if (grid[r][c] !== oldGrid[r][c]) moved = true;
-
-  if (moved) {
-    score += earned;
-    addRandom();
-    render();
-    if (!won && !continued && grid.some(row => row.some(v => v === 2048))) {
-      won = true;
-      document.getElementById('winOverlay').style.display = 'flex';
-    }
-    if (isGameOver()) {
-      document.getElementById('finalScore').textContent = T.finalScore(score);
-      document.getElementById('overOverlay').style.display = 'flex';
-    }
+// ── 시작·끝
+function startClassic(fresh) {
+  chip.init(); mode = 'classic'; const n = SET.size, saved = ST.cur['c' + n];
+  game = !fresh && saved && !saved.over ? Game2048.load(saved) : new Game2048({ size: n });
+  if (fresh || !saved) { ST.played++; }
+  begin();
+}
+function startDaily() {
+  chip.init(); mode = 'daily'; dayKey = today(); const info = dailyInfo(dayKey), saved = ST.cur.daily;
+  game = saved && saved.date === dayKey ? Game2048.load(saved.g) : new Game2048({ mode: 'daily', seed: info.seed, rule: info.rule });
+  if (!(saved && saved.date === dayKey)) ST.played++;
+  begin();
+  if (game.over) finish(true);
+}
+function begin() {
+  phase = 'play'; clearTiles(); showOnly(null); layout(); sync(); hud(); persist();
+  board.querySelectorAll('.tile').forEach(e => e.classList.add('new'));
+  const s = SET.music === 'off' ? null : SET.music === 'auto' ? (mode === 'daily' ? 'B' : 'A') : SET.music; if (s) chip.play(s); else chip.stop();
+}
+function showOnly(id) { for (const k of ['menu', 'settings', 'records', 'help', 'win', 'confirm', 'result']) $(k).hidden = k !== id; }
+function toMenu() { if (busy) sync(); phase = 'menu'; chip.stop(); buildMenu(); showOnly('menu'); }
+function showWin() { phase = 'win'; $('winTitle').textContent = fmt(T.win, num(game.goal)); $('winScore').textContent = num(game.score); showOnly('win'); setTimeout(() => $('bWinGo').focus(), 30); }
+function streak() {
+  let n = 0; const d = new Date(); if (!(ST.daily[today()] || {}).done) d.setDate(d.getDate() - 1);
+  for (;;) { const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; if ((ST.daily[k] || {}).done) { n++; d.setDate(d.getDate() - 1); } else break; }
+  return n;
+}
+function finish(quiet) {
+  if (!game) return; phase = 'result'; chip.stop(); if (!quiet) chip.sfx(game.moveLimit && game.moves >= game.moveLimit ? 'done' : 'over');
+  const rows = [[T.score, num(game.score)], [T.bestTile, num(game.best)], [T.moves, game.moves]];
+  let isNew = false;
+  if (mode === 'daily') {
+    const first = !(ST.daily[dayKey] || {}).done;
+    if (first) { ST.daily[dayKey] = { score: game.score, tile: game.best, moves: game.moves, done: true, rule: game.rule, board: game.cells.map(t => t ? t.v : 0) }; }
+    const rec = ST.daily[dayKey]; rows.length = 0; rows.push([T.score, num(rec.score)], [T.bestTile, num(rec.tile)], [T.moves, rec.moves]);
+    const s = streak();
+    $('resTitle').textContent = `${T.daily} · ${dateLabel(dayKey)}`; $('resScore').textContent = num(rec.score);
+    $('resSub').textContent = `${T.rules[game.rule][0]} · ${game.moveLimit && rec.moves >= game.moveLimit ? T.outOfMoves : T.over}${s ? ' · ' + fmt(T.streak, s) : ''}`;
+    $('bShare').hidden = false; $('bAgain').textContent = nextLabel(); $('bAgain').disabled = true;
+    mini(rec.board || game.cells.map(t => t ? t.v : 0), game.size);
+    if (first && !quiet) chip.sfx('done');
+  } else {
+    const b = ST.best[game.size] || { score: 0, tile: 0 }; isNew = game.score > b.score;
+    ST.best[game.size] = { score: Math.max(b.score, game.score), tile: Math.max(b.tile, game.best) }; ST.cur['c' + game.size] = null;
+    $('resTitle').textContent = T.over; $('resScore').textContent = num(game.score); $('resSub').textContent = `${T.classic} ${game.size}×${game.size}`;
+    $('bShare').hidden = true; $('bAgain').textContent = T.again; $('bAgain').disabled = false; mini(game.cells.map(t => t ? t.v : 0), game.size);
   }
+  save();
+  $('resNew').hidden = !isNew; $('resNew').textContent = T.newRec;
+  $('resGrid').innerHTML = ''; for (const [k, v] of rows) { const a = document.createElement('span'); a.textContent = k; const b = document.createElement('b'); b.textContent = v; $('resGrid').append(a, b); }
+  showOnly('result');
+}
+function mini(vals, n) {
+  const m = $('resMini'); m.innerHTML = ''; m.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  for (const v of vals) { const i = document.createElement('i'); i.style.setProperty('--bg', v > 0 ? tileBg(v) : v < 0 ? '#2a2f45' : 'rgba(255,255,255,.06)'); m.appendChild(i); }
+}
+function nextLabel() {
+  const d = new Date(), t = new Date(d); t.setHours(24, 0, 0, 0); const s = Math.max(0, Math.floor((t - d) / 1000));
+  return fmt(T.nextIn, `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`);
+}
+setInterval(() => { if (phase === 'result' && mode === 'daily') $('bAgain').textContent = nextLabel(); }, 1000);
+// 결과 글 (남과 비교할 수 있게)
+function shareText() {
+  const rec = ST.daily[dayKey], n = game.size, sq = v => v <= 0 ? (v < 0 ? '⬛' : '⬜') : v >= 2048 ? '🟪' : v >= 512 ? '🟥' : v >= 128 ? '🟧' : v >= 32 ? '🟨' : v >= 8 ? '🟩' : '🟦';
+  const grid = []; const vals = rec.board || game.cells.map(t => t ? t.v : 0); for (let r = 0; r < n; r++) grid.push(vals.slice(r * n, r * n + n).map(sq).join(''));
+  return `wiiiv 2048 · ${T.daily} ${dayKey} (${T.rules[rec.rule || game.rule][0]})\n${T.score} ${num(rec.score)} · ${T.bestTile} ${num(rec.tile)} · ${T.moves} ${rec.moves}\n${grid.join('\n')}`;
 }
 
-function isGameOver() {
-  for (let r = 0; r < SIZE; r++)
-    for (let c = 0; c < SIZE; c++) {
-      if (grid[r][c] === 0) return false;
-      if (c < SIZE - 1 && grid[r][c] === grid[r][c + 1]) return false;
-      if (r < SIZE - 1 && grid[r][c] === grid[r + 1][c]) return false;
-    }
-  return true;
-}
-
-function newGame() {
-  grid = Array.from({length: SIZE}, () => new Array(SIZE).fill(0));
-  score = 0; won = false; continued = false;
-  addRandom(); addRandom();
-  document.getElementById('winOverlay').style.display = 'none';
-  document.getElementById('overOverlay').style.display = 'none';
-  render();
-  document.body.focus();
-}
-
-function continueGame() {
-  continued = true;
-  document.getElementById('winOverlay').style.display = 'none';
-}
-
-// Keyboard
-document.addEventListener('keydown', e => {
-  switch (e.key) {
-    case 'ArrowLeft': e.preventDefault(); move('left'); break;
-    case 'ArrowRight': e.preventDefault(); move('right'); break;
-    case 'ArrowUp': e.preventDefault(); move('up'); break;
-    case 'ArrowDown': e.preventDefault(); move('down'); break;
-  }
+// ── 키보드 · 밀기
+const KEY = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+addEventListener('keydown', e => {
+  chip.init();
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (phase === 'play') toMenu(); else if (!$('settings').hidden || !$('records').hidden || !$('help').hidden) showOnly(phase === 'menu' ? 'menu' : null); return; }
+  if (phase !== 'play') return;
+  if (KEY[e.key]) { e.preventDefault(); doMove(KEY[e.key]); return; }
+  if (e.key === 'u' || e.key === 'U' || ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z'))) { e.preventDefault(); doUndo(); return; }
+  if ((e.key === 'n' || e.key === 'N') && mode === 'classic') askNew();
 });
+let sw = null;
+addEventListener('pointerdown', e => { chip.init(); if (phase !== 'play' || e.target.closest('button')) return; sw = { id: e.pointerId, x: e.clientX, y: e.clientY }; });
+addEventListener('pointermove', e => {
+  if (!sw || sw.id !== e.pointerId) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) > 26) { doMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up')); sw = null; }
+});
+addEventListener('pointerup', () => { sw = null; }); addEventListener('pointercancel', () => { sw = null; });
+function doUndo() {
+  if (!game || phase !== 'play') return;
+  if (mode === 'daily') { toast(T.noUndo); return; }
+  if (busy) sync();
+  if (game.undo()) { chip.sfx('undo'); clearTiles(); sync(); hud(); persist(); } else chip.sfx('nope');
+}
+function askNew() { if (!game || phase !== 'play' || mode !== 'classic') return; phase = 'confirm'; $('cfTitle').textContent = T.confirmNew; showOnly('confirm'); }
 
-// Touch/swipe
-let touchStartX, touchStartY;
-document.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, {passive: true});
-document.addEventListener('touchend', e => {
-  if (touchStartX === undefined) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  const absDx = Math.abs(dx), absDy = Math.abs(dy);
-  if (Math.max(absDx, absDy) < 30) return;
-  if (absDx > absDy) move(dx > 0 ? 'right' : 'left');
-  else move(dy > 0 ? 'down' : 'up');
-  touchStartX = undefined;
-}, {passive: true});
-
-createBoard();
-newGame();
+// ── 메뉴
+function toggleMute() { SET.muted = !SET.muted; chip.setMuted(SET.muted); muteIcon(); save(); }
+function muteIcon() { $('bMute').innerHTML = SET.muted ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2"/></svg>' : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8a5 5 0 010 8" stroke="currentColor" stroke-width="2" fill="none"/></svg>'; }
+function buildMenu() {
+  $('hClassic').textContent = T.classic; $('pClassic').textContent = T.classicDesc;
+  const sc = $('sizeChips'); sc.innerHTML = '';
+  for (const n of [3, 4, 5, 6]) { const b = document.createElement('button'); b.className = 'chip' + (SET.size === n ? ' on' : ''); b.textContent = `${n}×${n}`; b.onclick = () => { chip.init(); chip.sfx('menu'); SET.size = n; save(); buildMenu(); }; sc.appendChild(b); }
+  const saved = ST.cur['c' + SET.size]; $('bClassic').textContent = saved && !saved.over ? fmt(T.cont, num(saved.score)) : T.start;
+  const dk = today(), info = dailyInfo(dk), rec = ST.daily[dk], cur = ST.cur.daily && ST.cur.daily.date === dk ? ST.cur.daily : null;
+  $('hDaily').textContent = `${T.daily} · ${dateLabel(dk)}`; $('pDaily').textContent = `${T.rules[info.rule][0]} — ${T.rules[info.rule][1]}`;
+  const s = streak(); $('dStreak').textContent = s ? fmt(T.streak, s) : '';
+  $('dStatus').textContent = rec && rec.done ? fmt(T.doneScore, num(rec.score)) : cur ? fmt(T.inProgress, num(cur.g.score)) : T.notYet;
+  $('bDaily').textContent = rec && rec.done ? T.viewResult : cur ? T.resume : T.play;
+}
+function build() {
+  $('pageTitle').textContent = '2048';
+  $('logo').innerHTML = ''; for (const [ch, v] of [['2', 2048], ['0', 512], ['4', 128], ['8', 32]]) { const s = document.createElement('span'); s.textContent = ch; s.style.setProperty('--bg', tileBg(v)); s.style.setProperty('--gl', (pal(v)[2] || pal(v)[0]) + '88'); $('logo').appendChild(s); }
+  $('tTag').textContent = T.tag; $('hint').textContent = T.hint;
+  $('lScore').textContent = T.score; $('bNew').textContent = T.newGame;
+  $('bClassic').onclick = () => startClassic(false);
+  $('bDaily').onclick = startDaily;
+  $('bSettings').textContent = T.settings; $('bRecords').textContent = T.records; $('bHelp').textContent = T.help;
+  $('bSettings').onclick = () => { buildSettings(); showOnly('settings'); };
+  $('bRecords').onclick = () => { buildRecords(); showOnly('records'); };
+  $('bHelp').onclick = () => {
+    $('tHelp').textContent = T.help; $('helpKeys').innerHTML = ''; $('helpTips').innerHTML = '';
+    for (const [k, v] of T.keys) { const a = document.createElement('kbd'); a.textContent = k; const b = document.createElement('span'); b.textContent = v; $('helpKeys').append(a, b); }
+    for (const t of T.tips) { const d = document.createElement('div'); d.textContent = t; $('helpTips').appendChild(d); }
+    showOnly('help');
+  };
+  for (const id of ['bSetDone', 'bRecDone', 'bHelpDone']) { $(id).textContent = T.done; $(id).onclick = () => { showOnly(phase === 'menu' ? 'menu' : null); if (phase === 'menu') buildMenu(); }; }
+  $('bMenu').onclick = () => { chip.init(); phase === 'play' ? toMenu() : null; };
+  $('bMute').onclick = () => { chip.init(); toggleMute(); }; muteIcon();
+  $('bNew').onclick = askNew; $('bUndo').onclick = doUndo;
+  $('bCfNo').textContent = T.no; $('bCfYes').textContent = T.yes;
+  $('bCfNo').onclick = () => { if (!game) return; phase = 'play'; showOnly(null); };
+  $('bCfYes').onclick = () => { if (!game) return; ST.cur['c' + game.size] = null; SET.size = game.size; startClassic(true); };
+  $('bWinGo').textContent = T.keepGoing; $('bWinNew').textContent = T.newGame;
+  $('bWinGo').onclick = () => { if (!game) return; game.keepGoing = true; phase = 'play'; showOnly(null); persist(); };
+  $('bWinNew').onclick = () => { if (!game) return; const b = ST.best[game.size] || { score: 0, tile: 0 }; ST.best[game.size] = { score: Math.max(b.score, game.score), tile: Math.max(b.tile, game.best) }; ST.cur['c' + game.size] = null; startClassic(true); };
+  $('bResMenu').textContent = T.menu; $('bResMenu').onclick = toMenu;
+  $('bAgain').onclick = () => { if (game && mode === 'classic') { SET.size = game.size; startClassic(true); } };
+  $('bShare').textContent = T.share;
+  $('bShare').onclick = () => {
+    if (!game || !ST.daily[dayKey]) return;
+    const txt = shareText();
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 무시 */ } ta.remove(); toast(T.copied); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast(T.copied), fallback); else fallback();
+    chip.sfx('select');
+  };
+}
+function chipsRow(parent, label, opts, cur, onPick) {
+  const r = document.createElement('div'); r.className = 'row'; const s = document.createElement('span'); s.textContent = label; const c = document.createElement('div'); c.className = 'chips';
+  for (const [v, txt] of opts) { const b = document.createElement('button'); b.className = 'chip' + (cur === v ? ' on' : ''); b.textContent = txt; b.onclick = () => { chip.init(); chip.sfx('menu'); onPick(v); c.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === b)); }; c.appendChild(b); }
+  r.append(s, c); parent.appendChild(r);
+}
+function slider(parent, label, val, on) { const r = document.createElement('label'); r.className = 'sl'; const s = document.createElement('span'); s.textContent = label; const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 1; i.step = 0.05; i.value = val; i.oninput = () => on(+i.value); r.append(s, i); parent.appendChild(r); return i; }
+function buildSettings() {
+  $('tSettings').textContent = T.settings; const B = $('setBody'); B.innerHTML = '';
+  chipsRow(B, T.music, ['auto', 'A', 'B', 'off'].map(k => [k, T.musicNames[k]]), SET.music, v => { SET.music = v; save(); if (phase !== 'menu' && game) { const s = v === 'off' ? null : v === 'auto' ? (mode === 'daily' ? 'B' : 'A') : v; if (s) chip.play(s); else chip.stop(); } });
+  slider(B, T.mv, SET.mv, v => { SET.mv = v; chip.setVol(v, null); save(); });
+  const sv = slider(B, T.sv, SET.sv, v => { SET.sv = v; chip.setVol(null, v); save(); }); sv.onchange = () => { chip.init(); chip.sfx('merge', { v: 64 }); };
+  chipsRow(B, T.fx, [[true, T.on], [false, T.off]], SET.fx, v => { SET.fx = v; save(); });
+  chipsRow(B, T.speed, T.speeds.map((s, i) => [i, s]), SET.speed, v => { SET.speed = v; save(); layout(); });
+}
+function buildRecords() {
+  $('tRecords').textContent = T.records; const B = $('recBody'); B.innerHTML = '';
+  const h1 = document.createElement('h4'); h1.textContent = T.bySize; B.appendChild(h1);
+  const t1 = document.createElement('table'); let any = false;
+  for (const n of [3, 4, 5, 6]) { const b = ST.best[n]; if (!b) continue; any = true; const tr = t1.insertRow(); tr.insertCell().textContent = `${n}×${n}`; tr.insertCell().textContent = num(b.score); tr.insertCell().textContent = `${T.bestTile} ${num(b.tile)}`; }
+  if (!any) { const td = t1.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#9aa3c7'; td.style.fontWeight = '400'; }
+  B.appendChild(t1);
+  const h2 = document.createElement('h4'); h2.textContent = `${T.history}${streak() ? ' · ' + fmt(T.streak, streak()) : ''}`; B.appendChild(h2);
+  const t2 = document.createElement('table'); const days = Object.keys(ST.daily).filter(k => ST.daily[k].done).sort().reverse().slice(0, 10);
+  if (!days.length) { const td = t2.insertRow().insertCell(); td.textContent = T.none; td.style.color = '#9aa3c7'; td.style.fontWeight = '400'; }
+  for (const k of days) { const r = ST.daily[k], tr = t2.insertRow(); tr.insertCell().textContent = dateLabel(k); tr.insertCell().textContent = num(r.score); tr.insertCell().textContent = `${T.rules[r.rule || dailyInfo(k).rule][0]} · ${num(r.tile)}`; }
+  B.appendChild(t2);
+  const p = document.createElement('div'); p.className = 'sub'; p.style.marginTop = '10px'; p.textContent = `${T.played} ${ST.played}`; B.appendChild(p);
+}
+build(); buildMenu(); layout(); showOnly('menu'); fxLoop();
+addEventListener('pointerdown', () => chip.init(), { capture: true, once: true });
 document.body.focus();
+window.__g48 = { get game() { return game; }, get phase() { return phase; }, get mode() { return mode; }, move: doMove, startClassic, startDaily, toMenu, ST, sync, T };
+
 </script>
 </body>
 </html>
