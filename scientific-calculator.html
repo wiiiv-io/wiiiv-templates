@@ -10,7 +10,7 @@
 html,body{height:100%}
 body{background:radial-gradient(ellipse at 50% 40%,#1b1b2e,#0d0d1a 70%);display:flex;align-items:center;justify-content:center;font-family:'Segoe UI','Malgun Gothic',Arial,sans-serif;user-select:none;-webkit-user-select:none;overflow:hidden;outline:none}
 /* 본체: 실물 비율 77 × 165.5 mm */
-.calc{--u:calc(min(420px, 96vw, (100vh - 16px) / 2.15) / 77);width:calc(var(--u) * 77);height:calc(var(--u) * 165.5);position:relative;border-radius:calc(var(--u) * 7) calc(var(--u) * 7) calc(var(--u) * 9) calc(var(--u) * 9);
+.calc{--u:calc(min(420px, 96vw - var(--tut-w, 0px), (100vh - 16px - var(--tut-h, 0px)) / 2.15) / 77);flex:none;width:calc(var(--u) * 77);height:calc(var(--u) * 165.5);position:relative;border-radius:calc(var(--u) * 7) calc(var(--u) * 7) calc(var(--u) * 9) calc(var(--u) * 9);
   background:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='17.32'%3E%3Cpath d='M5 0l5 2.89v5.77L5 11.55 0 8.66V2.89z M0 14.43l5 2.89 5-2.89' fill='none' stroke='%23ffffff' stroke-opacity='0.045' stroke-width='0.8'/%3E%3C/svg%3E") 0 0/calc(var(--u) * 2.2) auto,
     linear-gradient(180deg,#3a3e3f,var(--body) 30%,var(--body2));
@@ -55,6 +55,85 @@ i.v{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:70
 .dpad .left{left:6%;top:24%;bottom:24%;width:24%;clip-path:polygon(0 15%,100% 0,100% 100%,0 85%);border-radius:50% 0 0 50%}
 .dpad .right{right:6%;top:24%;bottom:24%;width:24%;clip-path:polygon(0 0,100% 15%,100% 85%,0 100%);border-radius:0 50% 50% 0}
 .dpad .hub{position:absolute;left:32%;right:32%;top:34%;bottom:34%;border-radius:30%;background:#1a1c1d;box-shadow:inset 0 calc(var(--u) * .3) calc(var(--u) * .5) rgba(0,0,0,.8)}
+/* 배우기 패널 (tutor.js) */
+:root{--tbg:rgba(19,20,38,.94);--tline:rgba(150,152,210,.2);--tfg:#e9e9f2;--tdim:#9c9ec4;--tacc:#e8c547}
+#tutBtn{position:fixed;top:12px;right:12px;display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:99px;border:1px solid var(--tline);background:var(--tbg);color:var(--tfg);font:600 13px/1 'Segoe UI','Malgun Gothic',sans-serif;cursor:pointer;z-index:5}
+#tutBtn svg{width:17px;height:17px;color:var(--tacc)}
+#tutBtn:hover{border-color:var(--tacc)}
+#tutBtn[hidden]{display:none}
+body.tut-open .hint{display:none}
+#tut{width:370px;height:min(700px,calc(100vh - 32px));display:flex;flex-direction:column;background:var(--tbg);border:1px solid var(--tline);border-radius:16px;color:var(--tfg);font:14px/1.55 'Segoe UI','Malgun Gothic',sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.5);user-select:text;-webkit-user-select:text;flex:none}
+#tut[hidden]{display:none}
+#tut header{display:flex;align-items:center;gap:10px;padding:14px 14px 12px 18px;border-bottom:1px solid var(--tline)}
+#tut header>div{flex:1;min-width:0}
+#tut header b{display:block;font-size:17px}
+#tut header small{color:var(--tdim);font-size:12px}
+#tut header .crumb{flex:1;color:var(--tdim);font-size:12.5px;text-align:center}
+#tut button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#tut .x{width:32px;height:32px;border-radius:8px;font-size:22px;line-height:1;color:var(--tdim)}
+#tut .x:hover,#tut .back:hover{color:var(--tfg);background:rgba(255,255,255,.06)}
+#tut .back{padding:6px 8px;border-radius:8px;color:var(--tdim);font-size:13px}
+#tut .tb{flex:1;overflow:auto;padding:14px 18px 18px;min-height:0}
+#tut h3{margin:6px 0 8px;font-size:12px;letter-spacing:.06em;color:var(--tacc);display:flex;justify-content:space-between}
+#tut h3 span{color:var(--tdim);font-weight:500;font-variant-numeric:tabular-nums}
+#tut section+section{margin-top:18px}
+#tut ol{list-style:none;margin:0;padding:0}
+#tut section li button{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:9px 8px;border-radius:10px}
+#tut section li button:hover{background:rgba(255,255,255,.06)}
+#tut section li i{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700;background:rgba(255,255,255,.08);color:var(--tdim)}
+#tut section li b{display:block;font-size:14px;font-weight:600}
+#tut section li small{display:block;color:var(--tdim);font-size:12.5px}
+#tut .note{margin:18px 0 0;color:var(--tdim);font-size:12px}
+#tut h2{margin:2px 0 4px;font-size:19px;line-height:1.3;text-wrap:balance}
+#tut .goal{margin:0 0 14px;color:var(--tdim);font-size:13px}
+#tut .steps{display:flex;flex-direction:column;gap:10px}
+#tut .steps li{padding:11px 12px;border-radius:12px;border:1px solid var(--tline)}
+#tut .steps li.cur{border-color:rgba(232,197,71,.55);background:rgba(232,197,71,.06)}
+#tut .steps li.past{opacity:.62}
+#tut .steps .kseq{display:flex;flex-wrap:wrap;gap:6px 5px;margin-top:9px;align-items:flex-end}
+#tut .after{margin-top:8px;padding-top:8px;border-top:1px dashed var(--tline);color:#cfd0ea}
+#tut .nudge{margin-top:8px;color:#ffb3c0;font-size:13px}
+#tut .row{display:flex;gap:8px;flex-wrap:wrap}
+#tut .ctl,#tut .done{margin-top:14px}
+#tut .row button{padding:8px 14px;border-radius:9px;border:1px solid var(--tline);font-size:13px}
+#tut .row button:hover{border-color:var(--tdim)}
+#tut .row button[disabled]{opacity:.45;cursor:default}
+#tut .row .pri{background:var(--tacc);border-color:var(--tacc);color:#1b1a10;font-weight:700;margin-left:auto}
+#tut .done p{margin:0 0 10px;color:var(--tacc);font-weight:600}
+/* 키 칩: 본체 키와 같은 색 */
+#tut .kw{display:inline-flex;border-radius:7px;padding:2px;border:1.5px solid transparent}
+#tut .kw.ok{opacity:.45}
+#tut .kw.now{border-color:var(--tacc);animation:tutglow 1.1s ease-in-out infinite}
+#tut .kc{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:24px;padding:0 6px;border-radius:5px 5px 7px 7px;font-size:12.5px;font-weight:600;line-height:1;white-space:nowrap;vertical-align:middle;margin:0 1px}
+#tut .say .kc{margin:1px 2px}
+#tut .kc.fn{background:linear-gradient(#3a3f42,#1d2022);color:#f2f2ee;box-shadow:0 2px 0 #0a0b0c}
+#tut .kc.nm{background:linear-gradient(#fff,#d8d8d0);color:#1b1b1b;box-shadow:0 2px 0 #8b8b84;font-size:14px}
+#tut .kc.nm.blue{background:linear-gradient(#5c8fe0,#2b5aa6);color:#fff;box-shadow:0 2px 0 #173a72;font-size:12px}
+#tut .kc.mt{background:radial-gradient(circle at 50% 35%,#f4f4f2,#a9acad);color:#222;border-radius:99px;font-size:10.5px;font-weight:800;box-shadow:0 2px 0 #4a4d4f}
+#tut .kc.mt span{color:inherit!important}
+#tut .kc.shift{background:var(--yellow);}#tut .kc.alpha{background:var(--red);color:#fff}
+#tut .kc.dp{background:linear-gradient(#f7f7f5,#b4b8b9);color:#333;border-radius:99px;font-size:10px;min-width:26px}
+#tut .kc em{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font-style:normal;font-size:10.5px;font-weight:700}
+#tut .kc em.s{color:var(--yellow)}#tut .kc em.a{color:var(--red)}
+#tut .kw:has(em){margin-top:14px}
+#tut .kc .bx{width:.7em;height:.7em}
+#tut .kc .fr i{width:.5em;height:.36em}
+/* 계산기 위의 다음 키 */
+.k.tut-on{outline:calc(var(--u) * .55) solid var(--tacc);outline-offset:calc(var(--u) * .45);animation:tutglow 1.1s ease-in-out infinite;z-index:2}
+.dpad .d.tut-on{background:linear-gradient(180deg,#fff2a8,var(--tacc));animation:tutglow 1.1s ease-in-out infinite}
+.tut-shake{animation:tutshake .35s}
+@keyframes tutglow{50%{outline-color:rgba(232,197,71,.25);border-color:rgba(232,197,71,.25)}}
+@keyframes tutshake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+body.tut-open{gap:28px}
+@media (max-width:899px){
+  body.tut-open{flex-direction:column;justify-content:flex-start;gap:12px;padding-top:8px}
+  #tut{width:calc(100% - 16px);max-width:560px;height:38vh;border-radius:14px}
+  #tut header{padding:8px 8px 8px 14px}
+  #tut .tb{padding:10px 14px 12px}
+  #tut h2{font-size:16px}
+  #tut .goal{margin-bottom:8px}
+}
+@media (prefers-reduced-motion:reduce){.k.tut-on,#tut .kw.now,.dpad .d.tut-on{animation:none}}
 .hint{position:fixed;left:12px;bottom:10px;color:#6f6e93;font-size:11px;max-width:260px;line-height:1.5}
 @media (max-width:640px){.hint{display:none}}
 </style>
@@ -1772,6 +1851,8 @@ function layLine(row, f, curI) {
 }
 
 // ───────────────────────── 본체·키·화면 흐름 ─────────────────────────
+// 배우기(tutor.js) 가 수업 중 키를 거를 수 있게: TUT_HOOK 이 false 를 돌려주면 그 키는 무시, TUT_NOSAVE 면 연습 상태를 저장하지 않는다
+let TUT_HOOK = null, TUT_NOSAVE = false;
 const $ = id => document.getElementById(id);
 const LANG = 'ko';
 const HINT = { ko: 'PC 키보드: 숫자·+−*/·( )·^ 거듭제곱·Enter =·Backspace DEL·Esc AC·방향키·s/c/t 삼각·q √·p π·l log·n ln·f 분수·Shift=SHIFT·Alt=ALPHA', en: 'Keyboard: digits, + − * /, ( ), ^ power, Enter =, Backspace DEL, Esc AC, arrows, s/c/t trig, q √, p π, l log, n ln, f fraction, Shift = SHIFT, Alt = ALPHA' }[LANG];
@@ -1782,7 +1863,7 @@ const VARN = ['A', 'B', 'C', 'D', 'E', 'F', 'M', 'x', 'y'];
 let SET = JSON.parse(JSON.stringify(DEF)), VARS = {}, ANS = VQ(Q(0));
 function ser(v) { return v ? { v: v.v, e: v.e ? (v.e.k === 'p' ? { k: 'p', c: [String(v.e.c.n), String(v.e.c.d)] } : { k: 's', t: [...v.e.t].map(([r, q]) => [String(r), String(q.n), String(q.d)]) }) : null } : null; }
 function deser(o) { if (!o) return null; let e = null; if (o.e) e = o.e.k === 'p' ? { k: 'p', c: Q(BigInt(o.e.c[0]), BigInt(o.e.c[1])) } : { k: 's', t: new Map(o.e.t.map(([r, n, d]) => [BigInt(r), Q(BigInt(n), BigInt(d))])) }; return V(o.v, e); }
-function save() { try { localStorage.setItem('wiiiv-scicalc', JSON.stringify({ SET, VARS: Object.fromEntries(Object.entries(VARS).map(([k, v]) => [k, ser(v)])), ANS: ser(ANS) })); } catch { /* 저장 못 해도 동작 */ } }
+function save() { if (TUT_NOSAVE) return; try { localStorage.setItem('wiiiv-scicalc', JSON.stringify({ SET, VARS: Object.fromEntries(Object.entries(VARS).map(([k, v]) => [k, ser(v)])), ANS: ser(ANS) })); } catch { /* 저장 못 해도 동작 */ } }
 try { const o = JSON.parse(localStorage.getItem('wiiiv-scicalc') || 'null'); if (o) { SET = { ...DEF, ...o.SET }; for (const [k, v] of Object.entries(o.VARS || {})) VARS[k] = deser(v); ANS = deser(o.ANS) || ANS; } } catch { /* */ }
 function applySet() { ST.angle = SET.angle; ST.numFmt = SET.numFmt; ST.digitSep = SET.digitSep; ST.decComma = SET.decComma; $('lcd').style.setProperty('--contrast', String(SET.contrast)); }
 
@@ -1889,6 +1970,7 @@ const VARKEY = { neg: 'A', dms: 'B', inv: 'C', sin: 'D', cos: 'E', tan: 'F', mpl
 // 결과 화면에서 이 키로 시작하면 앞에 Ans 를 붙인다 (실물 동작)
 const ANS_LEAD = new Set(['add', 'sub', 'mul', 'div', 'sq', 'inv', 'pow']);
 function press(id) {
+  if (TUT_HOOK && TUT_HOOK(id) === false) return;
   audioTick();
   if (!U.on) { if (id === 'on') powerOn(); return; }
   if (id === 'on') { powerOn(); return; }
@@ -3122,8 +3204,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Shift') { press('shift'); flash('shift'); return; }
   if (e.key === 'Alt') { e.preventDefault(); press('alpha'); flash('alpha'); return; }
   let id = /^\d$/.test(e.key) ? 'n' + e.key : KB[e.key];
-  if (e.key === 'p') { U.shift = true; id = 'exp'; }
-  if (e.key === '!') { U.shift = true; id = 'inv'; }
+  if (e.key === 'p' || e.key === '!') { flash('shift'); press('shift'); id = e.key === 'p' ? 'exp' : 'inv'; }
   if (!id) return;
   e.preventDefault(); flash(id); press(id);
 });
@@ -3135,6 +3216,561 @@ new ResizeObserver(layoutLCD).observe($('lcd'));
 setInterval(() => { U.blink = !U.blink; if (U.scr === 'edit') draw(); }, 530);
 layoutLCD();
 window.__calc = { U, ed, press, get VARS() { return VARS; }, get ANS() { return ANS; }, scr, SET: () => SET };
+
+// ───────────────────────── 배우기: 옆 패널 + 따라 누르는 수업 ─────────────────────────
+// 수업 = 단계 목록. 단계마다 눌러야 할 키 순서가 있고, 다음 키가 계산기에서 빛난다.
+// 다른 키는 막고(TUT_HOOK), '보여주기' 는 계산기가 직접 누른다. 수업 동안 설정·변수·통계 자료는
+// 따로 두었다가(TUT_NOSAVE) 패널을 닫으면 원래대로 돌린다. 예제는 모두 자체 작성, 답은 test/t-tutor.py 로 확인.
+const TL = /^ko/i.test(navigator.language || '') ? 'ko' : 'en';
+const T = (ko, en) => ({ ko, en });
+const tx = o => (o && (o[TL] || o.ko)) || '';
+const near = (a, b) => Number.isFinite(a) && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
+const resIs = v => U.scr === 'result' && U.res && near(U.res.val.v, v);
+const statIs = (name, v) => { const it = U.scr === 'slist' && U.slist.items.find(x => x[0] === name); return !!it && near(it[1], v); };
+const rep = (keys, n) => Array(n).fill(keys).flat();
+const DATA1 = ['n4', 'eq', 'n7', 'eq', 'n9', 'eq', 'n6', 'eq', 'n4', 'eq'];
+const DATA2X = ['n1', 'eq', 'n2', 'eq', 'n3', 'eq', 'n4', 'eq', 'n5', 'eq'], DATA2Y = ['n2', 'eq', 'n4', 'eq', 'n5', 'eq', 'n4', 'eq', 'n5', 'eq'];
+
+const distIs = v => U.scr === 'dist' && U.dist.phase === 'res' && near(U.dist.out, v);
+const gridIs = (store, want) => { const g = U.scr === 'grid' && store.Ans; if (!g) return false; const m = g.mat || [g.vec]; return JSON.stringify(m.map(r => r.map(v => Math.round(v.v * 1e9) / 1e9))) === JSON.stringify(want); };
+const MAT_A = ['menu', 'n4', 'n1', 'n2', 'n2', 'n2', 'eq', 'n1', 'eq', 'n5', 'eq', 'n3', 'eq'];
+const VCT_AB = ['menu', 'n5', 'n1', 'n3', 'n1', 'eq', 'n2', 'eq', 'n3', 'eq', 'optn', 'n1', 'n2', 'n3', 'n4', 'eq', 'n5', 'eq', 'n6', 'eq'];
+
+const tblIs = want => U.scr === 'tbl' && U.tbl.phase === 'view' && JSON.stringify(U.tbl.rows.map(r => [r.x.v, r.f && r.f.v, ...(r.g === undefined ? [] : [r.g && r.g.v])])) === JSON.stringify(want);
+const baseIs = (n, b) => U.scr === 'result' && U.mode === 'base' && U.base === b && U.res.val.int !== undefined && Number(U.res.val.int) === n;
+const cxIs = (re, im) => U.scr === 'result' && U.res.val.cx && near(U.res.val.re.v, re) && near(U.res.val.im.v, im);
+
+const ineqIs = parts => U.scr === 'sol' && JSON.stringify(U.sol.list[0].val.ineq.parts.map(q => [q.lo, q.hi].map(b => b && b.v !== undefined ? b.v : b))) === JSON.stringify(parts);
+const cellIs = (name, v) => { try { const x = ssValue(SS_COLS.indexOf(name[0]), +name.slice(1) - 1); return !!x && near(x.v, v); } catch { return false; } };
+const SS_DATA = ['menu', 'n8', 'n1', 'n2', 'n0', 'n0', 'eq', 'n8', 'n0', 'n0', 'eq', 'n1', 'n5', 'n0', 'n0', 'eq', 'right', 'up', 'up', 'up', 'n2', 'eq', 'n5', 'eq', 'n1', 'eq', 'right', 'up', 'up', 'up'];
+const SS_C1 = ['alpha', 'calc', 'alpha', 'neg', 'n1', 'mul', 'alpha', 'dms', 'n1', 'eq'];
+
+const COURSES = [
+  { id: 'basic', t: T('기초', 'Basics'), lessons: [
+    { id: 'b1', t: T('기본 계산과 계산 순서', 'Arithmetic and order of operations'), goal: T('2+3×4 와 3×(2+5) 를 계산합니다.', 'Compute 2+3×4 and 3×(2+5).'),
+      steps: [
+        { say: T('2+3×4 를 차례로 누르세요. 식이 화면에 쓴 그대로 나타납니다.', 'Type 2+3×4. The expression appears just as you would write it.'), keys: ['n2', 'add', 'n3', 'mul', 'n4'], after: T('아직 계산 전입니다. 식을 끝까지 넣은 다음 계산합니다.', 'Nothing is computed yet. You enter the whole expression first.') },
+        { say: T('{eq} 를 누르면 계산합니다.', 'Press {eq} to compute.'), keys: ['eq'], after: T('답은 14입니다. 곱셈을 덧셈보다 먼저 하기 때문입니다(3×4=12, 그다음 2+12).', 'The answer is 14: multiplication comes before addition (3×4=12, then 2+12).') },
+        { say: T('{ac} 는 화면의 식을 지웁니다. 저장해 둔 값과 설정은 그대로 남습니다.', '{ac} clears the expression. Stored values and settings stay.'), keys: ['ac'], after: T('빈 화면이 되었습니다.', 'The screen is empty.') },
+        { say: T('덧셈을 먼저 하려면 괄호를 씁니다. 3×(2+5) 를 넣고 계산하세요.', 'Use brackets to add first. Enter 3×(2+5) and compute.'), keys: ['n3', 'mul', 'lp', 'n2', 'add', 'n5', 'rp', 'eq'], after: T('답은 21입니다. 괄호 안을 먼저 계산했습니다.', 'The answer is 21. The brackets were computed first.') },
+      ], check: () => resIs(21) },
+    { id: 'b2', t: T('틀린 곳 고치기', 'Fixing mistakes'), goal: T('DEL 과 ◀ 로 식을 고칩니다.', 'Edit an expression with DEL and ◀.'),
+      steps: [
+        { say: T('2+5 를 넣으세요.', 'Enter 2+5.'), keys: ['n2', 'add', 'n5'] },
+        { say: T('5 를 잘못 넣었다고 해 봅시다. {del} 은 커서 바로 앞 글자를 지웁니다.', 'Say the 5 was a mistake. {del} deletes the character before the cursor.'), keys: ['del'], after: T('5 가 지워졌습니다.', 'The 5 is gone.') },
+        { say: T('6 을 넣고 계산하세요.', 'Enter 6 and compute.'), keys: ['n6', 'eq'], after: T('2+6=8 입니다.', '2+6=8.') },
+        { say: T('계산한 뒤에도 식을 고칠 수 있습니다. {left} 를 누르면 식으로 돌아가고 커서가 맨 끝에 놓입니다.', 'You can still edit after computing. {left} brings the expression back with the cursor at the end.'), keys: ['left'], after: T('다시 식을 고치는 화면입니다.', 'You are editing the expression again.') },
+        { say: T('끝의 6 을 지우고 9 를 넣어 다시 계산하세요.', 'Delete the 6, enter 9 and compute again.'), keys: ['del', 'n9', 'eq'], after: T('2+9=11. 긴 식도 처음부터 다시 칠 필요가 없습니다.', '2+9=11. No need to retype long expressions.') },
+      ], check: () => resIs(11) },
+    { id: 'b3', t: T('음수 넣기', 'Negative numbers'), goal: T('(−) 키와 빼기 키의 차이, 음수의 제곱을 익힙니다.', 'Learn the (−) key versus minus, and squaring negatives.'),
+      steps: [
+        { say: T('음수에는 빼기 {sub} 가 아니라 {neg} 를 씁니다. (−)3×4 를 계산하세요.', 'For a negative number use {neg}, not minus {sub}. Compute (−)3×4.'), keys: ['neg', 'n3', 'mul', 'n4', 'eq'], after: T('−12 입니다.', 'The result is −12.') },
+        { say: T('−3² 을 그대로 넣어 봅니다. 제곱은 {sq} 입니다.', 'Now enter −3² as written. Squaring is {sq}.'), keys: ['neg', 'n3', 'sq', 'eq'], after: T('−9 가 나옵니다. 제곱을 먼저 하고 음수를 붙이기 때문이며, 수학의 규칙과 같습니다.', 'You get −9: the square is taken first, then the sign, just like in maths.') },
+        { say: T('(−3)² 을 원하면 괄호로 묶으세요.', 'For (−3)², wrap it in brackets.'), keys: ['lp', 'neg', 'n3', 'rp', 'sq', 'eq'], after: T('답은 9입니다.', 'The answer is 9.') },
+      ], check: () => resIs(9) },
+    { id: 'b4', t: T('분수와 소수 바꾸기', 'Fractions and decimals'), goal: T('2/3 + 1/4 을 분수로 계산하고 소수로 바꿉니다.', 'Compute 2/3 + 1/4 as a fraction, then as a decimal.'),
+      steps: [
+        { say: T('{frac} 를 누르면 분수 틀이 생기고 커서가 분자 칸에 있습니다. 2 를 넣으세요.', '{frac} makes a fraction box with the cursor in the numerator. Enter 2.'), keys: ['frac', 'n2'] },
+        { say: T('{down} 으로 분모 칸에 내려가 3 을 넣으세요.', 'Go down to the denominator with {down} and enter 3.'), keys: ['down', 'n3'] },
+        { say: T('{right} 로 분수 밖으로 나온 뒤 + 를 누르세요.', 'Leave the fraction with {right}, then press +.'), keys: ['right', 'add'] },
+        { say: T('같은 방법으로 1/4 을 넣으세요.', 'Enter 1/4 the same way.'), keys: ['frac', 'n1', 'down', 'n4'] },
+        { say: T('계산하세요.', 'Compute.'), keys: ['eq'], after: T('11/12 처럼 분수로 나옵니다. 통분과 약분은 계산기가 합니다.', 'You get the fraction 11/12. The calculator finds the common denominator and reduces.') },
+        { say: T('{sd} 는 분수와 소수를 서로 바꿉니다.', '{sd} switches between fraction and decimal.'), keys: ['sd'], after: T('0.9166666667 입니다. 한 번 더 누르면 분수로 돌아갑니다.', '0.9166666667. Press it again to get the fraction back.') },
+      ], check: () => resIs(11 / 12) },
+    { id: 'b5', t: T('제곱근과 거듭제곱', 'Roots and powers'), goal: T('√8, 2¹⁰, ∛27 을 계산하고 SHIFT 쓰는 법을 익힙니다.', 'Compute √8, 2¹⁰ and ∛27, and learn SHIFT.'),
+      steps: [
+        { say: T('{sqrt} 를 누르고 8 을 넣어 계산하세요.', 'Press {sqrt}, enter 8 and compute.'), keys: ['sqrt', 'n8', 'eq'], after: T('2√2 로 나옵니다. 소수 대신 정확한 꼴을 보여 줍니다. 소수가 필요하면 S⇔D 를 누르면 됩니다.', 'You get 2√2, the exact form. Press S⇔D if you want the decimal.') },
+        { say: T('거듭제곱은 {pow} 입니다. 2 를 넣고 이 키를 누르면 지수 칸이 생깁니다. 이어서 10 을 넣으세요.', 'Powers use {pow}. Enter 2, press it to get the exponent box, then enter 10.'), keys: ['n2', 'pow', 'n1', 'n0'] },
+        { say: T('{right} 로 지수 칸에서 나와 계산하세요.', 'Leave the exponent with {right} and compute.'), keys: ['right', 'eq'], after: T('2¹⁰ = 1024 입니다.', '2¹⁰ = 1024.') },
+        { say: T('키 위의 노란 글씨는 {shift} 를 먼저 누르고 씁니다. SHIFT 다음 {sqrt} 는 ∛ 입니다. ∛27 을 계산하세요.', 'Yellow labels above the keys need {shift} first. SHIFT then {sqrt} gives ∛. Compute ∛27.'), keys: ['shift', 'sqrt', 'n2', 'n7', 'eq'], after: T('답은 3입니다. SHIFT 를 누르면 화면 위에 S 가 켜집니다.', 'The answer is 3. An S lights up on screen while SHIFT is active.') },
+      ], check: () => resIs(3) },
+    { id: 'b6', t: T('삼각함수와 각도 단위', 'Trigonometry and angle units'), goal: T('sin 30° 와 sin⁻¹(0.5) 를 계산합니다.', 'Compute sin 30° and sin⁻¹(0.5).'),
+      steps: [
+        { say: T('화면 위쪽의 D 는 각도 단위가 도(°)라는 뜻입니다. {sin} 를 누르면 sin( 이 들어갑니다. sin(30) 을 계산하세요.', 'The D at the top means degrees. {sin} enters sin(. Compute sin(30).'), keys: ['sin', 'n3', 'n0', 'rp', 'eq'], after: T('1/2 입니다.', 'The result is 1/2.') },
+        { say: T('역함수는 SHIFT 와 함께 누릅니다. sin⁻¹(0.5) 를 계산하세요.', 'Inverse functions use SHIFT. Compute sin⁻¹(0.5).'), keys: ['shift', 'sin', 'n0', 'dot', 'n5', 'rp', 'eq'], after: T('30 입니다. sin 값이 0.5 인 각은 30° 입니다. 라디안으로 바꾸려면 SHIFT, MENU(SETUP) 다음 2:Angle Unit 에서 고릅니다.', '30: the angle whose sine is 0.5. To switch to radians use SHIFT, MENU (SETUP), then 2:Angle Unit.') },
+      ], check: () => resIs(30) },
+    { id: 'b7', t: T('로그', 'Logarithms'), goal: T('log₂8, log 100, ln e 를 계산합니다.', 'Compute log₂8, log 100 and ln e.'),
+      steps: [
+        { say: T('{logb} 는 밑을 정하는 로그입니다. 밑 칸에 2 를 넣고 {right} 로 옮겨 8 을 넣은 뒤 계산하세요.', '{logb} is a log with a chosen base. Enter base 2, move with {right}, enter 8 and compute.'), keys: ['logb', 'n2', 'right', 'n8', 'eq'], after: T('log₂8 = 3 입니다.', 'log₂8 = 3.') },
+        { say: T('밑이 10 인 상용로그는 SHIFT 와 {neg} 입니다. log(100) 을 계산하세요.', 'The common log (base 10) is SHIFT and {neg}. Compute log(100).'), keys: ['shift', 'neg', 'n1', 'n0', 'n0', 'rp', 'eq'], after: T('2 입니다.', 'The result is 2.') },
+        { say: T('자연로그는 {ln} 입니다. e 는 {alpha} 다음 {exp} 로 넣습니다. ln(e) 를 계산하세요.', 'The natural log is {ln}. Enter e with {alpha} then {exp}. Compute ln(e).'), keys: ['ln', 'alpha', 'exp', 'rp', 'eq'], after: T('1 입니다. 키 옆의 빨간 글씨는 ALPHA 를 먼저 누르고 씁니다.', 'The result is 1. Red labels need ALPHA first.') },
+      ], check: () => resIs(1) },
+    { id: 'b8', t: T('Ans 와 변수 저장', 'Ans and variables'), goal: T('방금 나온 답을 이어 쓰고, 값을 A 에 저장해 다시 씁니다.', 'Reuse the last answer and store a value in A.'),
+      steps: [
+        { say: T('12×3 을 계산하세요.', 'Compute 12×3.'), keys: ['n1', 'n2', 'mul', 'n3', 'eq'], after: T('36 입니다.', 'The result is 36.') },
+        { say: T('답이 떠 있을 때 바로 {div} 를 누르면 앞에 Ans 가 붙습니다. Ans 는 방금 나온 답입니다. ÷4 를 이어서 계산하세요.', 'With a result showing, pressing {div} starts with Ans, the last answer. Continue with ÷4.'), keys: ['div', 'n4', 'eq'], after: T('Ans÷4 = 9 입니다.', 'Ans÷4 = 9.') },
+        { say: T('값을 두고두고 쓰려면 변수에 저장합니다. 7 을 넣고 {sto} 다음 {neg} 를 누르세요. 이 키의 빨간 글씨가 A 입니다.', 'To keep a value, store it in a variable. Enter 7, press {sto}, then {neg} (its red label is A).'), keys: ['n7', 'sto', 'neg'], after: T('A 에 7 이 저장되었습니다.', '7 is stored in A.') },
+        { say: T('ALPHA 와 {neg} 로 A 를 불러 A×2 를 계산하세요.', 'Recall A with ALPHA and {neg}, and compute A×2.'), keys: ['alpha', 'neg', 'mul', 'n2', 'eq'], after: T('14 입니다. 변수는 새 값을 저장할 때까지 남아 있습니다.', '14. A variable keeps its value until you store a new one.') },
+      ], check: () => resIs(14) },
+    { id: 'b9', t: T('아주 큰 수 ×10ˣ', 'Scientific notation ×10ˣ'), goal: T('3×10⁸ × 2 를 계산합니다.', 'Compute 3×10⁸ × 2.'),
+      steps: [
+        { say: T('3×10⁸ 은 {exp} 로 넣습니다. 3 을 넣고 이 키를 누르면 지수 칸이 생깁니다. 8 을 넣으세요.', 'Enter 3×10⁸ with {exp}: type 3, press it to get the exponent box, then enter 8.'), keys: ['n3', 'exp', 'n8'] },
+        { say: T('{right} 로 지수 칸에서 나온 뒤 ×2 를 계산하세요.', 'Leave the exponent with {right}, then compute ×2.'), keys: ['right', 'mul', 'n2', 'eq'], after: T('600000000 입니다. 지수 칸에서 나오지 않으면 ×2 까지 지수에 들어가 전혀 다른 값이 됩니다.', '600000000. Without leaving the exponent, ×2 would go into the exponent and give a very different number.') },
+      ], check: () => resIs(6e8) },
+  ] },
+  { id: 'eqn', t: T('방정식', 'Equations'), lessons: [
+    { id: 'e1', t: T('식에 값 넣기 CALC', 'Substituting values with CALC'), goal: T('x²+3x 에 x=2, x=5 를 넣어 계산합니다.', 'Evaluate x²+3x at x=2 and x=5.'),
+      steps: [
+        { say: T('x²+3x 를 넣으세요. x 는 {x} 키, 제곱은 {sq} 입니다.', 'Enter x²+3x. x is the {x} key, squaring is {sq}.'), keys: ['x', 'sq', 'add', 'n3', 'x'] },
+        { say: T('{calc} 는 식에 값을 넣어 계산합니다. 누르세요.', '{calc} evaluates the expression for a value you give. Press it.'), keys: ['calc'], after: T('x 값을 묻습니다.', 'It asks for x.') },
+        { say: T('2 를 넣고 {eq} 를 누르세요.', 'Enter 2 and press {eq}.'), keys: ['n2', 'eq'], after: T('x=2 일 때 10 입니다(4+6).', 'At x=2 the value is 10 (4+6).') },
+        { say: T('{calc} 를 다시 누르면 같은 식에 다른 값을 넣을 수 있습니다. 5 를 넣어 계산하세요.', 'Press {calc} again to try another value. Enter 5 and compute.'), keys: ['calc', 'n5', 'eq'], after: T('x=5 일 때 40 입니다. 식을 다시 칠 필요가 없어 표를 채울 때 편합니다.', 'At x=5 it is 40. Handy for filling in a table without retyping.') },
+      ], check: () => resIs(40) },
+    { id: 'e2', t: T('SOLVE 로 방정식 풀기', 'Solving with SOLVE'), goal: T('2x+3=11 을 SOLVE 로 풉니다.', 'Solve 2x+3=11 with SOLVE.'),
+      steps: [
+        { say: T('SOLVE 는 계산 화면에 넣은 식을 그대로 풉니다. 2x+3 을 넣으세요.', 'SOLVE works on any equation typed on the calculation screen. Enter 2x+3.'), keys: ['n2', 'x', 'add', 'n3'] },
+        { say: T('식의 등호는 {alpha} 다음 {calc} 입니다(빨간 =). 이어서 =11 을 넣으세요.', 'The equals sign of an equation is {alpha} then {calc} (red =). Add =11.'), keys: ['alpha', 'calc', 'n1', 'n1'], after: T('2x+3=11 이 되었습니다. 계산하는 = 키와는 다른, 식 안의 등호입니다.', 'Now it reads 2x+3=11. This equals sign is part of the equation, not the compute key.') },
+        { say: T('{shift} 다음 {calc}(SOLVE) 를 누르세요.', 'Press {shift} then {calc} (SOLVE).'), keys: ['shift', 'calc'], after: T('x 의 시작값을 묻습니다. 지금 x 에 들어 있는 값에서 찾기 시작합니다.', 'It asks for a starting value of x; the search starts from the value x holds now.') },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('x=4 입니다. 아래의 L−R=0 은 좌변과 우변의 차이가 0, 곧 해가 정확하다는 뜻입니다.', 'x=4. L−R=0 underneath means left side minus right side is 0: the solution is exact.') },
+      ], check: () => U.scr === 'solve' && U.solve.phase === 'result' && near(VARS.x.v, 4) },
+    { id: 'e3', t: T('SOLVE 시작값 정하기', 'Choosing a starting value'), goal: T('해가 두 개인 x²=2 에서 음수 해를 찾습니다.', 'Find the negative root of x²=2.'),
+      steps: [
+        { say: T('x²=2 를 넣으세요. 등호는 ALPHA 와 {calc} 입니다.', 'Enter x²=2. The equals sign is ALPHA and {calc}.'), keys: ['x', 'sq', 'alpha', 'calc', 'n2'] },
+        { say: T('SHIFT 와 {calc} 로 SOLVE 를 여세요.', 'Open SOLVE with SHIFT and {calc}.'), keys: ['shift', 'calc'] },
+        { say: T('해가 ±√2 두 개이면 SOLVE 는 시작값에 가까운 해 하나를 찾습니다. 시작값으로 −1 을 넣고 {eq} 를 누르세요.', 'With two roots (±√2), SOLVE finds the one near the starting value. Enter −1 as the start and press {eq}.'), keys: ['neg', 'n1', 'eq'], after: T('x 의 시작값이 −1 이 되었습니다.', 'The starting value is now −1.') },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('x=−1.414213562(−√2) 입니다. 시작값을 1 로 두면 +√2 를 찾습니다. 해가 여러 개인 식은 시작값을 바꿔 가며 찾으세요.', 'x=−1.414213562 (−√2). Start from 1 and you get +√2. For several roots, try different starting values.') },
+      ], check: () => U.scr === 'solve' && U.solve.phase === 'result' && near(VARS.x.v, -Math.SQRT2) },
+    { id: 'e4', t: T('연립방정식', 'Simultaneous equations'), goal: T('2x+3y=8, x−y=−1 을 풉니다.', 'Solve 2x+3y=8 and x−y=−1.'),
+      steps: [
+        { say: T('{menu} 를 누르세요. Equation/Func 는 10번째 앱이라 숫자 대신 {neg} 키(빨간 A)로 고릅니다.', 'Press {menu}. Equation/Func is the 10th app, so choose it with the {neg} key (red A).'), keys: ['menu', 'neg'], after: T('방정식 종류를 고르는 목록입니다.', 'Now choose the kind of equation.') },
+        { say: T('1:Simul Equation(연립방정식)을 고르고 미지수 개수 2 를 누르세요.', 'Choose 1:Simul Equation, then 2 unknowns.'), keys: ['n1', 'n2'], after: T('ax+by=c 꼴의 계수 표가 나옵니다.', 'A coefficient table for ax+by=c appears.') },
+        { say: T('첫 식 2x+3y=8 의 계수 2, 3, 8 을 넣으세요. {eq} 를 누를 때마다 오른쪽 칸으로 옮겨 갑니다.', 'Enter 2, 3, 8 for 2x+3y=8. Each {eq} moves one cell right.'), keys: ['n2', 'eq', 'n3', 'eq', 'n8', 'eq'], after: T('줄 끝에서는 다음 줄로 내려갑니다.', 'At the end of a row it moves to the next one.') },
+        { say: T('둘째 식 x−y=−1 의 계수는 1, −1, −1 입니다. 음수는 {neg} 로 넣으세요.', 'For x−y=−1 the coefficients are 1, −1, −1. Use {neg} for negatives.'), keys: ['n1', 'eq', 'neg', 'n1', 'eq', 'neg', 'n1', 'eq'], after: T('계수를 모두 넣었습니다.', 'All coefficients are in.') },
+        { say: T('칸을 고치는 중이 아닐 때 {eq} 를 누르면 풉니다.', 'When no cell is being edited, {eq} solves.'), keys: ['eq'], after: T('x=1 입니다.', 'x=1.') },
+        { say: T('{eq} 를 한 번 더 누르면 다음 해가 나옵니다.', 'Press {eq} again for the next unknown.'), keys: ['eq'], after: T('y=2 입니다. 두 식에 넣어 보면 2+6=8, 1−2=−1 로 맞습니다.', 'y=2. Check: 2+6=8 and 1−2=−1.') },
+      ], check: () => U.scr === 'sol' && near(U.sol.list[0].val.v, 1) && near(U.sol.list[1].val.v, 2) },
+    { id: 'e5', t: T('이차방정식과 꼭짓점', 'Quadratics and the vertex'), goal: T('x²−5x+6=0 의 해와 포물선의 꼭짓점을 구합니다.', 'Solve x²−5x+6=0 and find the vertex of the parabola.'),
+      steps: [
+        { say: T('{menu}, {neg} 다음 2:Polynomial(다항식)을 고르고 차수 2 를 누르세요.', 'Press {menu}, {neg}, then 2:Polynomial and degree 2.'), keys: ['menu', 'neg', 'n2', 'n2'], after: T('ax²+bx+c=0 의 계수 표입니다.', 'This is the table for ax²+bx+c=0.') },
+        { say: T('계수 1, −5, 6 을 넣으세요.', 'Enter the coefficients 1, −5, 6.'), keys: ['n1', 'eq', 'neg', 'n5', 'eq', 'n6', 'eq'] },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('x₁=3 입니다.', 'x₁=3.') },
+        { say: T('{eq} 로 다음 해를 보세요.', 'Press {eq} for the other root.'), keys: ['eq'], after: T('x₂=2 입니다.', 'x₂=2.') },
+        { say: T('{eq} 를 두 번 더 누르면 포물선 y=x²−5x+6 의 꼭짓점이 나옵니다.', 'Press {eq} twice more for the vertex of y=x²−5x+6.'), keys: ['eq', 'eq'], after: T('꼭짓점은 x=2.5, y=−0.25 입니다. 이 점에서 최솟값을 가지므로 그래프의 모양을 그릴 때 씁니다.', 'The vertex is x=2.5, y=−0.25, the minimum: useful for sketching the graph.') },
+      ], check: () => U.scr === 'sol' && near(U.sol.list[0].val.v, 3) && near(U.sol.list[1].val.v, 2) && U.sol.i === 3 },
+    { id: 'e6', t: T('실수 해가 없을 때', 'When there are no real roots'), goal: T('x²+2x+5=0 의 복소수 해를 봅니다.', 'See the complex roots of x²+2x+5=0.'),
+      steps: [
+        { say: T('{menu}, {neg}, 2, 2 로 이차방정식 표를 여세요.', 'Open the quadratic table with {menu}, {neg}, 2, 2.'), keys: ['menu', 'neg', 'n2', 'n2'] },
+        { say: T('계수 1, 2, 5 를 넣으세요.', 'Enter the coefficients 1, 2, 5.'), keys: ['n1', 'eq', 'n2', 'eq', 'n5', 'eq'] },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('x₁=−1+2i 입니다. 판별식 b²−4ac=−16 이 음수라 실수 해가 없고, 허수 i 가 들어간 해가 나옵니다.', 'x₁=−1+2i. The discriminant b²−4ac=−16 is negative, so the roots are complex.') },
+        { say: T('{eq} 로 다음 해를 보세요.', 'Press {eq} for the other root.'), keys: ['eq'], after: T('x₂=−1−2i 입니다. 복소수 해 대신 "실수 해 없음"만 보려면 SETUP 의 Equation/Func 를 Off 로 두세요.', 'x₂=−1−2i. To see just "no real roots" instead, set Equation/Func to Off in SETUP.') },
+      ], check: () => { const z = U.scr === 'sol' && U.sol.i === 1 && U.sol.list[1].val; return !!(z && z.cx && near(z.re.v, -1) && near(Math.abs(z.im.v), 2)); } },
+  ] },
+  { id: 'calc', t: T('미적분과 합', 'Calculus and sums'), lessons: [
+    { id: 'c1', t: T('정적분', 'Definite integrals'), goal: T('∫₀² x² dx 를 계산합니다.', 'Compute ∫₀² x² dx.'),
+      steps: [
+        { say: T('{int} 를 누르면 적분 틀이 생기고 커서는 적분할 식 칸에 있습니다. x² 을 넣으세요.', '{int} makes an integral box with the cursor in the integrand. Enter x².'), keys: ['int', 'x', 'sq'] },
+        { say: T('{right} 로 아래끝 칸에 가서 0, 다시 {right} 로 위끝 칸에 가서 2 를 넣으세요.', 'Move with {right} to the lower limit and enter 0, then {right} again to the upper limit and enter 2.'), keys: ['right', 'n0', 'right', 'n2'] },
+        { say: T('계산하세요.', 'Compute.'), keys: ['eq'], after: T('8/3(약 2.667) 입니다. 손으로 풀면 x³/3 에 2 와 0 을 넣은 값의 차입니다.', '8/3 (about 2.667): by hand, x³/3 evaluated from 0 to 2.') },
+      ], check: () => resIs(8 / 3) },
+    { id: 'c2', t: T('삼각함수 적분은 라디안으로', 'Integrating trig functions in radians'), goal: T('∫₀^π sin x dx 를 계산합니다.', 'Compute ∫₀^π sin x dx.'),
+      steps: [
+        { say: T('미적분에서 삼각함수는 라디안으로 계산합니다. {shift} {menu}(SETUP) 다음 2:Angle Unit 을 고르세요.', 'Calculus with trig functions uses radians. Press {shift}, {menu} (SETUP), then 2:Angle Unit.'), keys: ['shift', 'menu', 'n2'] },
+        { say: T('2:Radian 을 고르세요.', 'Choose 2:Radian.'), keys: ['n2'], after: T('화면 위의 표시가 D 에서 R 로 바뀌었습니다.', 'The indicator at the top changed from D to R.') },
+        { say: T('{int} 다음 sin(x) 를 넣으세요.', 'Press {int} and enter sin(x).'), keys: ['int', 'sin', 'x', 'rp'] },
+        { say: T('아래끝 0, 위끝 π 를 넣고 계산하세요. π 는 SHIFT 다음 {exp} 입니다.', 'Enter 0 and π as the limits and compute. π is SHIFT then {exp}.'), keys: ['right', 'n0', 'right', 'shift', 'exp', 'eq'], after: T('2 입니다. 도(D) 단위로 두면 sin 30 처럼 각을 도로 읽어 전혀 다른 값이 나오니 주의하세요.', '2. In degree mode the angle would be read in degrees and the answer would be wrong.') },
+      ], check: () => resIs(2) },
+    { id: 'c3', t: T('미분계수', 'Derivatives at a point'), goal: T('x³ 의 x=2 에서의 미분계수를 구합니다.', 'Find the derivative of x³ at x=2.'),
+      steps: [
+        { say: T('SHIFT 다음 {int} 은 미분입니다. 식 칸에 x³ 을 넣으세요. x³ 은 SHIFT 다음 {sq} 입니다.', 'SHIFT then {int} gives the derivative. Enter x³ (SHIFT then {sq}).'), keys: ['shift', 'int', 'x', 'shift', 'sq'] },
+        { say: T('{right} 로 x= 칸에 가서 2 를 넣고 계산하세요.', 'Move with {right} to x=, enter 2 and compute.'), keys: ['right', 'n2', 'eq'], after: T('12 입니다. x³ 을 미분하면 3x² 이고, x=2 를 넣으면 12 가 됩니다.', '12. The derivative of x³ is 3x², which is 12 at x=2.') },
+      ], check: () => resIs(12) },
+    { id: 'c4', t: T('Σ 로 합 구하기', 'Sums with Σ'), goal: T('1부터 10까지의 합과 제곱의 합을 구합니다.', 'Sum 1 to 10, then the squares.'),
+      steps: [
+        { say: T('SHIFT 다음 {x} 는 Σ(합)입니다. 더할 식 칸에 x 를 넣으세요.', 'SHIFT then {x} gives Σ. Enter x as the term.'), keys: ['shift', 'x', 'x'] },
+        { say: T('{right} 로 시작값 1, 다시 {right} 로 끝값 10 을 넣고 계산하세요.', 'Move with {right} to enter the start 1, then {right} again for the end 10, and compute.'), keys: ['right', 'n1', 'right', 'n1', 'n0', 'eq'], after: T('1+2+…+10 = 55 입니다.', '1+2+…+10 = 55.') },
+        { say: T('식 칸만 바꾸면 다른 합도 바로 구합니다. x² 의 합을 같은 범위로 계산하세요.', 'Change only the term to get other sums. Sum x² over the same range.'), keys: ['shift', 'x', 'x', 'sq', 'right', 'n1', 'right', 'n1', 'n0', 'eq'], after: T('1²+2²+…+10² = 385 입니다. 공식 n(n+1)(2n+1)/6 으로 확인해 보세요.', '1²+2²+…+10² = 385. Check it with n(n+1)(2n+1)/6.') },
+      ], check: () => resIs(385) },
+  ] },
+  { id: 'stat', t: T('통계', 'Statistics'), lessons: [
+    { id: 's1', t: T('자료 넣고 평균 구하기', 'Enter data and find the mean'), goal: T('자료 4, 7, 9, 6, 4 의 평균을 구합니다.', 'Find the mean of 4, 7, 9, 6, 4.'),
+      steps: [
+        { say: T('{menu} 를 누르면 앱 목록이 나옵니다.', '{menu} opens the app list.'), keys: ['menu'], after: T('앱이 12개 있습니다.', 'There are 12 apps.') },
+        { say: T('6 을 눌러 Statistics 를 엽니다.', 'Press 6 to open Statistics.'), keys: ['n6'], after: T('어떤 통계를 할지 고르는 목록입니다.', 'Now choose the kind of statistics.') },
+        { say: T('1:1-Variable 은 자료가 한 줄인 통계입니다. 1 을 누르세요.', '1:1-Variable is for a single list of data. Press 1.'), keys: ['n1'], after: T('자료를 넣는 표가 열렸습니다.', 'The data table is open.') },
+        { say: T('첫 자료 4 를 넣고 {eq} 를 누르세요.', 'Enter the first value 4 and press {eq}.'), keys: ['n4', 'eq'], after: T('4 가 1행에 들어가고 커서가 다음 행으로 내려갔습니다.', '4 is in row 1 and the cursor moved down.') },
+        { say: T('나머지 7, 9, 6, 4 도 같은 방법으로 넣으세요.', 'Enter 7, 9, 6 and 4 the same way.'), keys: DATA1.slice(2), after: T('자료 5개가 들어갔습니다.', 'All 5 values are in.') },
+        { say: T('{optn} 을 누르면 통계 메뉴가 나옵니다.', '{optn} opens the statistics menu.'), keys: ['optn'], after: T('3:1-Variable Calc 가 결과 보기입니다.', '3:1-Variable Calc shows the results.') },
+        { say: T('3 을 누르세요.', 'Press 3.'), keys: ['n3'], after: T('x̄=6 이 평균, Σx=30 이 합계입니다. 다음 수업에서 목록을 더 읽어 봅니다.', 'x̄=6 is the mean and Σx=30 the sum. The next lesson reads the rest of the list.') },
+      ], check: () => statIs('x̄', 6) },
+    { id: 's2', t: T('결과 목록 읽기', 'Reading the results'), goal: T('표준편차 두 가지와 중앙값·사분위수를 찾습니다.', 'Find both standard deviations, the median and quartiles.'),
+      setup: ['menu', 'n6', 'n1', ...DATA1, 'optn', 'n3'],
+      steps: [
+        { say: T('자료 4, 7, 9, 6, 4 의 결과가 떠 있습니다. 한 화면에 4줄씩 보이므로 {down} 을 네 번 눌러 넘기세요.', 'Results for 4, 7, 9, 6, 4 are showing, 4 lines at a time. Press {down} four times.'), keys: rep(['down'], 4), after: T('σx 는 모집단 표준편차(n 으로 나눔), sx 는 표본 표준편차(n−1 로 나눔)입니다. 문제가 어느 쪽을 묻는지 꼭 확인하세요.', 'σx is the population standard deviation (divide by n); sx is the sample one (divide by n−1). Check which one a question asks for.') },
+        { say: T('네 번 더 내려 보세요.', 'Go down four more times.'), keys: rep(['down'], 4), after: T('Med=6 이 중앙값, Q1=4 와 Q3=8 이 1·3사분위수입니다.', 'Med=6 is the median; Q1=4 and Q3=8 are the quartiles.') },
+        { say: T('{ac} 로 자료 표로 돌아가세요.', 'Press {ac} to go back to the data table.'), keys: ['ac'], after: T('자료는 그대로 있어서 고친 뒤 다시 계산할 수 있습니다.', 'The data is still there, ready to edit and recompute.') },
+      ], check: () => U.scr === 'sedit' && STAT.rows.length === 5 },
+    { id: 's3', t: T('자료 고치기와 지우기', 'Editing and deleting data'), goal: T('자료 하나를 바꾸고 하나를 지운 뒤 다시 계산합니다.', 'Change one value, delete another and recompute.'),
+      setup: ['menu', 'n6', 'n1', ...DATA1],
+      steps: [
+        { say: T('자료 4, 7, 9, 6, 4 가 들어 있고 커서는 빈 6행에 있습니다. {up} 을 두 번 눌러 4행의 6 으로 가세요.', 'The table holds 4, 7, 9, 6, 4 and the cursor is on empty row 6. Press {up} twice to reach the 6 in row 4.'), keys: ['up', 'up'], after: T('4행이 반전되어 보입니다.', 'Row 4 is highlighted.') },
+        { say: T('8 을 넣고 {eq} 를 누르면 6 이 8 로 바뀝니다.', 'Enter 8 and press {eq} to replace 6 with 8.'), keys: ['n8', 'eq'], after: T('바뀌었고 커서는 5행으로 내려갔습니다.', 'Done. The cursor moved to row 5.') },
+        { say: T('{del} 은 커서가 있는 행을 통째로 지웁니다. 5행의 4 를 지우세요.', '{del} deletes the whole row under the cursor. Delete the 4 in row 5.'), keys: ['del'], after: T('자료가 4, 7, 9, 8 네 개가 되었습니다.', 'The data is now 4, 7, 9, 8.') },
+        { say: T('{optn} 다음 3 으로 다시 계산하세요.', 'Recompute with {optn} then 3.'), keys: ['optn', 'n3'], after: T('x̄=7, n=4 입니다. 자료를 고치면 결과도 바로 바뀝니다.', 'x̄=7 and n=4. Results follow the edited data.') },
+      ], check: () => statIs('x̄', 7) && statIs('n', 4) },
+    { id: 's4', t: T('빈도(Freq) 쓰기', 'Using frequencies'), goal: T('10점 3명, 20점 5명, 30점 2명의 평균을 구합니다.', 'Mean of 3 people scoring 10, 5 scoring 20, 2 scoring 30.'),
+      steps: [
+        { say: T('같은 값이 여러 번 나오면 빈도(Freq) 칸을 쓰는 것이 빠릅니다. 먼저 설정을 엽니다. {shift} 다음 {menu}(SETUP).', 'Repeated values are quicker with a Freq column. Open the setup first: {shift} then {menu} (SETUP).'), keys: ['shift', 'menu'], after: T('설정 목록입니다.', 'This is the setup list.') },
+        { say: T('{down} 으로 다음 쪽에 가서 3:Statistics 를 고르세요.', 'Go to the next page with {down} and pick 3:Statistics.'), keys: ['down', 'n3'], after: T('빈도 칸을 켤지 묻습니다.', 'It asks whether to show the frequency column.') },
+        { say: T('1:On 을 고르세요.', 'Choose 1:On.'), keys: ['n1'], after: T('빈도 칸을 켰습니다.', 'The Freq column is on.') },
+        { say: T('{menu}, 6, 1 로 1-Variable 표를 여세요.', 'Open the 1-Variable table with {menu}, 6, 1.'), keys: ['menu', 'n6', 'n1'], after: T('x 옆에 Freq 칸이 생겼습니다.', 'A Freq column now sits next to x.') },
+        { say: T('점수 10, 20, 30 을 넣으세요.', 'Enter the scores 10, 20, 30.'), keys: ['n1', 'n0', 'eq', 'n2', 'n0', 'eq', 'n3', 'n0', 'eq'], after: T('Freq 는 처음에 모두 1 입니다.', 'Each Freq starts at 1.') },
+        { say: T('{right} 로 Freq 칸에 가서 {up} 세 번으로 1행에 가세요.', 'Move to Freq with {right}, then up three times with {up} to row 1.'), keys: ['right', 'up', 'up', 'up'] },
+        { say: T('사람 수 3, 5, 2 를 넣으세요.', 'Enter the counts 3, 5, 2.'), keys: ['n3', 'eq', 'n5', 'eq', 'n2', 'eq'], after: T('10점 3명, 20점 5명, 30점 2명입니다.', '3 people scored 10, 5 scored 20, 2 scored 30.') },
+        { say: T('{optn} 다음 3 으로 계산하세요.', 'Compute with {optn} then 3.'), keys: ['optn', 'n3'], after: T('x̄=19 가 평균 점수, n=10 이 전체 사람 수입니다.', 'x̄=19 is the mean score; n=10 is the number of people.') },
+      ], check: () => statIs('x̄', 19) && statIs('n', 10) },
+    { id: 's5', t: T('두 변수와 회귀식', 'Two variables and regression'), goal: T('공부 시간과 점수 자료로 회귀식 y=a+bx 를 구합니다.', 'Fit y=a+bx to study hours and scores.'),
+      steps: [
+        { say: T('{menu}, 6 을 누른 뒤 2:y=a+bx 를 고르세요. 두 변수 자료입니다.', 'Press {menu}, 6, then choose 2:y=a+bx for paired data.'), keys: ['menu', 'n6', 'n2'], after: T('x, y 두 칸짜리 표입니다.', 'The table has x and y columns.') },
+        { say: T('공부 시간 x 로 1, 2, 3, 4, 5 를 넣으세요.', 'Enter study hours x: 1, 2, 3, 4, 5.'), keys: DATA2X },
+        { say: T('{right} 로 y 칸에 가서 {up} 다섯 번으로 1행에 가세요.', 'Move to y with {right}, then press {up} five times to reach row 1.'), keys: ['right', ...rep(['up'], 5)] },
+        { say: T('점수 y 로 2, 4, 5, 4, 5 를 넣으세요.', 'Enter scores y: 2, 4, 5, 4, 5.'), keys: DATA2Y },
+        { say: T('{optn} 다음 4:Regression Calc 를 고르세요.', 'Press {optn}, then 4:Regression Calc.'), keys: ['optn', 'n4'], after: T('a=2.2, b=0.6 이므로 회귀식은 y=2.2+0.6x 입니다. r≈0.775 는 상관계수로, ±1 에 가까울수록 자료가 직선에 가깝습니다.', 'a=2.2 and b=0.6, so y=2.2+0.6x. r≈0.775 is the correlation; the closer to ±1, the straighter the data.') },
+      ], check: () => statIs('a', 2.2) && statIs('b', 0.6) },
+    { id: 's6', t: T('회귀식으로 예측하기 ŷ', 'Predicting with ŷ'), goal: T('x=6 일 때 예상 점수 ŷ 를 구합니다.', 'Predict the score ŷ for x=6.'),
+      setup: ['menu', 'n6', 'n2', ...DATA2X, 'right', ...rep(['up'], 5), ...DATA2Y],
+      steps: [
+        { say: T('지난 수업의 자료가 들어 있습니다. {ac} 로 계산 화면으로 나가세요. 자료와 회귀식은 남아 있습니다.', 'Last lesson\'s data is loaded. Press {ac} for the calculation screen; the data and fit stay.'), keys: ['ac'] },
+        { say: T('6 을 넣고 {optn} 을 누르세요.', 'Enter 6 and press {optn}.'), keys: ['n6', 'optn'] },
+        { say: T('{down} 으로 다음 쪽에 가서 4:Regression 을 고르세요.', 'Go to the next page with {down} and choose 4:Regression.'), keys: ['down', 'n4'] },
+        { say: T('{down} 다음 1 을 눌러 ŷ 를 넣으세요.', 'Press {down}, then 1 to insert ŷ.'), keys: ['down', 'n1'], after: T('식이 6ŷ 가 되었습니다. "x 가 6 일 때의 y" 라는 뜻입니다.', 'The expression reads 6ŷ: "y when x is 6".') },
+        { say: T('계산하세요.', 'Compute.'), keys: ['eq'], after: T('5.8 = 2.2+0.6×6 입니다. x̂ 를 쓰면 거꾸로 y 값에서 x 를 구합니다.', '5.8 = 2.2+0.6×6. x̂ works the other way, from y to x.') },
+      ], check: () => resIs(5.8) },
+  ] },
+  { id: 'dist', t: T('확률분포', 'Distributions'), lessons: [
+    { id: 'd1', t: T('정규분포 구간 확률', 'Normal probability between two values'), goal: T('평균 170cm, 표준편차 6cm 인 키가 165~180cm 일 확률을 구합니다.', 'Heights average 170 cm with SD 6 cm: find P(165 ≤ X ≤ 180).'),
+      steps: [
+        { say: T('{menu}, 7 로 Distribution(분포) 앱을 여세요.', 'Open the Distribution app with {menu}, 7.'), keys: ['menu', 'n7'], after: T('분포 종류를 고르는 목록입니다.', 'Choose a distribution.') },
+        { say: T('2:Normal CD 는 정규분포에서 두 값 사이의 확률입니다. 2 를 누르세요.', '2:Normal CD gives the probability between two values. Press 2.'), keys: ['n2'], after: T('Lower(아래 값), Upper(위 값), σ(표준편차), μ(평균)를 차례로 묻습니다.', 'It asks for Lower, Upper, σ (standard deviation) and μ (mean).') },
+        { say: T('아래 값 165, 위 값 180 을 넣으세요. {eq} 를 누를 때마다 다음 줄로 갑니다.', 'Enter Lower 165 and Upper 180; each {eq} moves to the next line.'), keys: ['n1', 'n6', 'n5', 'eq', 'n1', 'n8', 'n0', 'eq'] },
+        { say: T('σ=6, μ=170 을 넣으세요.', 'Enter σ=6 and μ=170.'), keys: ['n6', 'eq', 'n1', 'n7', 'n0', 'eq'] },
+        { say: T('값을 다 넣었으면 {eq} 로 계산합니다.', 'With every value in, press {eq} to compute.'), keys: ['eq'], after: T('P≈0.7499, 곧 약 75% 가 165~180cm 사이입니다. 표준정규분포표를 찾을 필요가 없습니다.', 'P≈0.7499: about 75% are between 165 and 180 cm. No z-table needed.') },
+      ], check: () => distIs(0.7498812667635422) },
+    { id: 'd2', t: T('상위 몇 % 의 기준값', 'Cut-off for the top few percent'), goal: T('같은 키 분포에서 상위 5% 에 드는 키를 구합니다.', 'Find the height that marks the top 5%.'),
+      steps: [
+        { say: T('{menu}, 7 다음 3:Inverse Normal(역정규)을 고르세요.', 'Press {menu}, 7, then 3:Inverse Normal.'), keys: ['menu', 'n7', 'n3'], after: T('넓이(Area)에서 거꾸로 x 값을 구합니다.', 'It works backwards from an area to x.') },
+        { say: T('Area 는 왼쪽 끝부터의 넓이입니다. 상위 5% 의 경계는 아래쪽 95% 이므로 0.95 를 넣으세요.', 'Area is measured from the left. The top 5% starts where the lower 95% ends, so enter 0.95.'), keys: ['n0', 'dot', 'n9', 'n5', 'eq'] },
+        { say: T('σ=6, μ=170 을 넣고 계산하세요.', 'Enter σ=6, μ=170 and compute.'), keys: ['n6', 'eq', 'n1', 'n7', 'n0', 'eq', 'eq'], after: T('약 179.87cm 입니다. 이보다 크면 상위 5% 에 듭니다.', 'About 179.87 cm: taller than that is the top 5%.') },
+      ], check: () => distIs(179.86912176170884) },
+    { id: 'd3', t: T('이항분포', 'Binomial distribution'), goal: T('동전을 10번 던져 앞면이 3번 나올 확률과 3번 이하일 확률을 구합니다.', 'Toss a coin 10 times: P(exactly 3 heads) and P(at most 3).'),
+      steps: [
+        { say: T('{menu}, 7 다음 4:Binomial PD 를 고르세요. PD 는 "정확히 x 번" 의 확률입니다.', 'Press {menu}, 7, then 4:Binomial PD. PD means "exactly x times".'), keys: ['menu', 'n7', 'n4'], after: T('List 는 여러 x 를 한꺼번에, Variable 은 x 하나를 계산합니다.', 'List handles many x values at once; Variable handles one.') },
+        { say: T('2:Variable 을 고르세요.', 'Choose 2:Variable.'), keys: ['n2'] },
+        { say: T('x=3(앞면 횟수), N=10(던진 횟수), p=0.5(앞면 확률)를 넣으세요.', 'Enter x=3 (heads), N=10 (tosses), p=0.5 (chance of heads).'), keys: ['n3', 'eq', 'n1', 'n0', 'eq', 'n0', 'dot', 'n5', 'eq'] },
+        { say: T('{eq} 로 계산하세요.', 'Press {eq} to compute.'), keys: ['eq'], after: T('0.1171875, 약 11.7% 입니다.', '0.1171875, about 11.7%.') },
+        { say: T('"3번 이하" 는 누적 확률 Binomial CD 입니다. {optn} 으로 분포 목록에 돌아가 5, 2 를 고르세요.', '"At most 3" is the cumulative Binomial CD. Press {optn} for the list, then 5 and 2.'), keys: ['optn', 'n5', 'n2'] },
+        { say: T('같은 값 3, 10, 0.5 를 넣고 계산하세요.', 'Enter 3, 10, 0.5 again and compute.'), keys: ['n3', 'eq', 'n1', 'n0', 'eq', 'n0', 'dot', 'n5', 'eq', 'eq'], after: T('0.171875 입니다. 0, 1, 2, 3 번이 나올 확률을 모두 더한 값입니다.', '0.171875: the chances of 0, 1, 2 and 3 heads added together.') },
+      ], check: () => distIs(0.171875) },
+  ] },
+  { id: 'mat', t: T('행렬', 'Matrices'), lessons: [
+    { id: 'm1', t: T('행렬 넣기와 행렬식', 'Entering a matrix and its determinant'), goal: T('A=[[2,1],[5,3]] 을 넣고 행렬식을 구합니다.', 'Enter A=[[2,1],[5,3]] and find its determinant.'),
+      steps: [
+        { say: T('{menu}, 4 로 Matrix 앱을 여세요.', 'Open the Matrix app with {menu}, 4.'), keys: ['menu', 'n4'], after: T('어느 행렬을 정할지 묻습니다. MatA~MatD 네 개를 쓸 수 있습니다.', 'Choose which matrix to define: MatA to MatD.') },
+        { say: T('1:MatA 를 고르고 행 수 2, 열 수 2 를 누르세요.', 'Choose 1:MatA, then 2 rows and 2 columns.'), keys: ['n1', 'n2', 'n2'], after: T('2×2 칸이 생겼습니다.', 'A 2×2 grid appears.') },
+        { say: T('2, 1, 5, 3 을 차례로 넣으세요. {eq} 를 누를 때마다 오른쪽으로, 줄 끝에서는 다음 줄로 갑니다.', 'Enter 2, 1, 5, 3. Each {eq} moves right, then down to the next row.'), keys: ['n2', 'eq', 'n1', 'eq', 'n5', 'eq', 'n3', 'eq'], after: T('A=[[2,1],[5,3]] 입니다.', 'A=[[2,1],[5,3]].') },
+        { say: T('{ac} 로 계산 화면에 나가세요.', 'Go to the calculation screen with {ac}.'), keys: ['ac'], after: T('행렬은 그대로 저장되어 있습니다.', 'The matrix stays stored.') },
+        { say: T('{optn} 다음 {down} 으로 둘째 쪽에 가서 2:Determinant 를 고르세요.', 'Press {optn}, go to the second page with {down}, choose 2:Determinant.'), keys: ['optn', 'down', 'n2'], after: T('Det( 가 들어갔습니다.', 'Det( is entered.') },
+        { say: T('{optn} 다음 3 으로 MatA 를 넣고, 괄호를 닫아 계산하세요.', 'Insert MatA with {optn} then 3, close the bracket and compute.'), keys: ['optn', 'n3', 'rp', 'eq'], after: T('det A = 2×3 − 1×5 = 1 입니다.', 'det A = 2×3 − 1×5 = 1.') },
+      ], check: () => resIs(1) },
+    { id: 'm2', t: T('역행렬', 'Inverse matrix'), goal: T('A=[[2,1],[5,3]] 의 역행렬을 구합니다.', 'Find the inverse of A=[[2,1],[5,3]].'),
+      setup: MAT_A,
+      steps: [
+        { say: T('행렬 A 가 들어 있습니다. {ac} 로 계산 화면에 나가세요.', 'Matrix A is already defined. Press {ac} for the calculation screen.'), keys: ['ac'] },
+        { say: T('{optn} 다음 3 으로 MatA 를 넣으세요.', 'Insert MatA with {optn} then 3.'), keys: ['optn', 'n3'] },
+        { say: T('{inv} 를 누르면 역행렬이 됩니다. 누르고 계산하세요.', '{inv} gives the inverse. Press it and compute.'), keys: ['inv', 'eq'], after: T('A⁻¹=[[3,−1],[−5,2]] 입니다. 행렬식이 1 이라 정수로 나옵니다. 행렬식이 0 이면 역행렬이 없어 Math ERROR 가 됩니다.', 'A⁻¹=[[3,−1],[−5,2]]; integers because det A = 1. With det 0 there is no inverse and you get Math ERROR.') },
+      ], check: () => gridIs(MAT, [[3, -1], [-5, 2]]) },
+    { id: 'm3', t: T('행렬 곱하기', 'Multiplying matrices'), goal: T('B=[[1],[2]] 를 만들고 A×B 를 구합니다.', 'Define B=[[1],[2]] and compute A×B.'),
+      setup: MAT_A,
+      steps: [
+        { say: T('A 는 이미 있습니다. B 를 새로 정합니다. {optn} 다음 1:Define Matrix, 2:MatB 를 고르세요.', 'A is defined. Now define B: {optn}, 1:Define Matrix, 2:MatB.'), keys: ['optn', 'n1', 'n2'] },
+        { say: T('행 2, 열 1 을 고르세요.', 'Choose 2 rows and 1 column.'), keys: ['n2', 'n1'] },
+        { say: T('1, 2 를 넣으세요.', 'Enter 1 and 2.'), keys: ['n1', 'eq', 'n2', 'eq'] },
+        { say: T('{ac} 로 나가서 MatA×MatB 를 넣으세요. MatA 는 {optn} 3, MatB 는 {optn} 4 입니다.', 'Press {ac} and enter MatA×MatB: MatA is {optn} 3, MatB is {optn} 4.'), keys: ['ac', 'optn', 'n3', 'mul', 'optn', 'n4'] },
+        { say: T('계산하세요.', 'Compute.'), keys: ['eq'], after: T('MatAns=[[4],[11]] 입니다(2×1+1×2=4, 5×1+3×2=11). 앞 행렬의 열 수와 뒤 행렬의 행 수가 같아야 곱할 수 있습니다.', 'MatAns=[[4],[11]] (2×1+1×2=4, 5×1+3×2=11). The first matrix\'s columns must match the second\'s rows.') },
+      ], check: () => gridIs(MAT, [[4], [11]]) },
+  ] },
+  { id: 'vct', t: T('벡터', 'Vectors'), lessons: [
+    { id: 'v1', t: T('벡터 넣기와 내적', 'Entering vectors and the dot product'), goal: T('A=(1,2,3), B=(4,5,6) 의 내적을 구합니다.', 'Find the dot product of A=(1,2,3) and B=(4,5,6).'),
+      steps: [
+        { say: T('{menu}, 5 로 Vector 앱을 여세요.', 'Open the Vector app with {menu}, 5.'), keys: ['menu', 'n5'] },
+        { say: T('1:VctA 를 고르고 차원 3 을 누르세요.', 'Choose 1:VctA and dimension 3.'), keys: ['n1', 'n3'] },
+        { say: T('1, 2, 3 을 넣으세요.', 'Enter 1, 2, 3.'), keys: ['n1', 'eq', 'n2', 'eq', 'n3', 'eq'] },
+        { say: T('B 도 정합니다. {optn} 다음 1:Define Vector, 2:VctB, 차원 3 을 고르세요.', 'Now define B: {optn}, 1:Define Vector, 2:VctB, dimension 3.'), keys: ['optn', 'n1', 'n2', 'n3'] },
+        { say: T('4, 5, 6 을 넣으세요.', 'Enter 4, 5, 6.'), keys: ['n4', 'eq', 'n5', 'eq', 'n6', 'eq'] },
+        { say: T('{ac} 로 나가서 {optn} 3 으로 VctA 를 넣으세요.', 'Press {ac}, then insert VctA with {optn} 3.'), keys: ['ac', 'optn', 'n3'] },
+        { say: T('내적 기호는 {optn} 의 둘째 쪽 2:Dot Product 입니다.', 'The dot is on the second page of {optn}: 2:Dot Product.'), keys: ['optn', 'down', 'n2'] },
+        { say: T('{optn} 4 로 VctB 를 넣고 계산하세요.', 'Insert VctB with {optn} 4 and compute.'), keys: ['optn', 'n4', 'eq'], after: T('32 입니다(1×4+2×5+3×6). 내적이 0 이면 두 벡터는 수직입니다.', '32 (1×4+2×5+3×6). A dot product of 0 means the vectors are perpendicular.') },
+      ], check: () => resIs(32) },
+    { id: 'v2', t: T('외적과 사잇각', 'Cross product and angle'), goal: T('A=(1,2,3), B=(4,5,6) 의 외적과 두 벡터가 이루는 각을 구합니다.', 'Find the cross product of A and B and the angle between them.'),
+      setup: VCT_AB,
+      steps: [
+        { say: T('A, B 가 들어 있습니다. {ac} 로 나가서 VctA×VctB 를 넣으세요. 벡터끼리 {mul} 는 외적입니다.', 'A and B are defined. Press {ac} and enter VctA×VctB; {mul} between vectors is the cross product.'), keys: ['ac', 'optn', 'n3', 'mul', 'optn', 'n4'] },
+        { say: T('계산하세요.', 'Compute.'), keys: ['eq'], after: T('(−3, 6, −3) 입니다. A 와 B 모두에 수직인 벡터입니다.', '(−3, 6, −3), perpendicular to both A and B.') },
+        { say: T('{ac} 로 나가서 {optn} 둘째 쪽의 3:Angle 을 고르세요.', 'Press {ac}, then 3:Angle on the second page of {optn}.'), keys: ['ac', 'optn', 'down', 'n3'] },
+        { say: T('VctA, 쉼표, VctB 를 넣고 괄호를 닫아 계산하세요. 쉼표는 SHIFT 다음 {rp} 입니다.', 'Enter VctA, a comma, VctB, close the bracket and compute. The comma is SHIFT then {rp}.'), keys: ['optn', 'n3', 'shift', 'rp', 'optn', 'n4', 'rp', 'eq'], after: T('약 12.93° 입니다. 각도 단위 설정(D/R)에 따라 도 또는 라디안으로 나옵니다.', 'About 12.93°. It follows the angle unit setting (D or R).') },
+      ], check: () => resIs(Math.acos(32 / Math.sqrt(14 * 77)) * 180 / Math.PI) && VCT.Ans.vec.map(v => v.v).join() === '-3,6,-3' },
+  ] },
+  { id: 'tbl', t: T('함수표', 'Function tables'), lessons: [
+    { id: 't1', t: T('함수값 표 만들기', 'Making a table of values'), goal: T('f(x)=x²−2x 의 값을 x=−2 부터 4 까지 표로 봅니다.', 'Tabulate f(x)=x²−2x for x from −2 to 4.'),
+      steps: [
+        { say: T('{menu}, 9 로 Table(함수표) 앱을 여세요.', 'Open the Table app with {menu}, 9.'), keys: ['menu', 'n9'], after: T('f(x)= 를 넣는 화면입니다.', 'Enter f(x)= here.') },
+        { say: T('x²−2x 를 넣고 {eq} 를 누르세요.', 'Enter x²−2x and press {eq}.'), keys: ['x', 'sq', 'sub', 'n2', 'x', 'eq'], after: T('g(x)= 도 묻습니다. 함수를 하나만 볼 때는 비워 둡니다.', 'It also asks for g(x)=. Leave it empty for a single function.') },
+        { say: T('g(x) 는 비운 채 {eq} 를 누르세요.', 'Leave g(x) empty and press {eq}.'), keys: ['eq'], after: T('표의 범위를 정합니다. Start(시작), End(끝), Step(간격)입니다.', 'Now set the range: Start, End and Step.') },
+        { say: T('Start −2, End 4, Step 1 을 넣으세요.', 'Enter Start −2, End 4, Step 1.'), keys: ['neg', 'n2', 'eq', 'n4', 'eq', 'n1', 'eq'] },
+        { say: T('{eq} 로 표를 만드세요.', 'Press {eq} to build the table.'), keys: ['eq'], after: T('x=0 과 x=2 에서 f(x)=0 이므로 그래프가 x 축과 만나는 곳입니다. x=1 에서 −1 로 가장 작습니다. {up}{down} 으로 줄을 옮겨 보세요.', 'f(x)=0 at x=0 and x=2, where the graph meets the x-axis; the minimum −1 is at x=1. Scroll with {up}{down}.') },
+      ], check: () => tblIs([[-2, 8], [-1, 3], [0, 0], [1, -1], [2, 0], [3, 3], [4, 8]]) },
+    { id: 't2', t: T('두 함수 비교하기', 'Comparing two functions'), goal: T('2ˣ 과 x² 이 같아지는 x 를 표에서 찾습니다.', 'Find where 2ˣ and x² are equal.'),
+      steps: [
+        { say: T('{menu}, 9 로 함수표를 열고 f(x)=2ˣ 을 넣으세요. 지수는 {pow} 로 넣고 {right} 로 빠져나옵니다.', 'Open Table with {menu}, 9 and enter f(x)=2ˣ: use {pow} for the exponent and leave it with {right}.'), keys: ['menu', 'n9', 'n2', 'pow', 'x', 'right', 'eq'] },
+        { say: T('이번에는 g(x)=x² 도 넣으세요.', 'This time also enter g(x)=x².'), keys: ['x', 'sq', 'eq'] },
+        { say: T('Start 1, End 5, Step 1 로 두고 표를 만드세요.', 'Use Start 1, End 5, Step 1 and build the table.'), keys: ['n1', 'eq', 'n5', 'eq', 'n1', 'eq', 'eq'], after: T('x=2 와 x=4 에서 두 값이 같습니다(4=4, 16=16). 그 사이 x=3 에서는 x² 이 더 크고, x=5 부터는 2ˣ 이 앞섭니다.', 'They match at x=2 and x=4 (4=4, 16=16). At x=3, x² is bigger; from x=5, 2ˣ pulls ahead.') },
+      ], check: () => tblIs([[1, 2, 1], [2, 4, 4], [3, 8, 9], [4, 16, 16], [5, 32, 25]]) },
+  ] },
+  { id: 'base', t: T('진법 계산', 'Number bases'), lessons: [
+    { id: 'n1', t: T('10진수를 16진·2진수로', 'Decimal to hex and binary'), goal: T('255 를 16진수와 2진수로 바꿉니다.', 'Convert 255 to hexadecimal and binary.'),
+      steps: [
+        { say: T('{menu}, 3 으로 Base-N(진법) 앱을 여세요.', 'Open the Base-N app with {menu}, 3.'), keys: ['menu', 'n3'], after: T('화면 아래의 Dec 는 지금 10진수라는 뜻입니다.', 'Dec at the bottom means decimal.') },
+        { say: T('255 를 넣고 {eq} 를 누르세요.', 'Enter 255 and press {eq}.'), keys: ['n2', 'n5', 'n5', 'eq'] },
+        { say: T('파란 글씨 HEX 가 있는 {pow} 를 누르세요.', 'Press {pow}, the key with blue HEX.'), keys: ['pow'], after: T('FF 입니다. 진법 앱에서는 파란 글씨가 키의 뜻입니다.', 'FF. In Base-N the blue labels are what the keys do.') },
+        { say: T('파란 BIN 이 있는 {logb} 를 누르세요.', 'Press {logb}, the key with blue BIN.'), keys: ['logb'], after: T('11111111 입니다. 같은 값을 진법만 바꿔 보여 줍니다. DEC({sq})를 누르면 다시 255 입니다.', '11111111: the same value in another base. DEC ({sq}) gets 255 back.') },
+      ], check: () => baseIs(255, 'bin') },
+    { id: 'n2', t: T('16진수 계산', 'Hexadecimal arithmetic'), goal: T('1F + A 를 16진수로 계산합니다.', 'Compute 1F + A in hexadecimal.'),
+      steps: [
+        { say: T('{menu}, 3 다음 {pow}(HEX)로 16진수로 바꾸세요.', 'Press {menu}, 3, then {pow} (HEX).'), keys: ['menu', 'n3', 'pow'], after: T('화면 아래가 Hex 가 되었습니다.', 'The screen shows Hex.') },
+        { say: T('A~F 는 빨간 글씨 키로 바로 넣습니다. 1F 는 1 다음 {tan}(F) 입니다.', 'A to F are the red-label keys, typed directly. 1F is 1 then {tan} (F).'), keys: ['n1', 'tan'] },
+        { say: T('+A 를 넣고 계산하세요. A 는 {neg} 입니다.', 'Add A ({neg}) and compute.'), keys: ['add', 'neg', 'eq'], after: T('29 입니다. 10진수로는 31+10=41 입니다.', '29, which is 31+10=41 in decimal.') },
+      ], check: () => baseIs(41, 'hex') },
+    { id: 'n3', t: T('2진수 논리 연산', 'Binary logic operations'), goal: T('1100 and 1010 을 계산합니다.', 'Compute 1100 and 1010.'),
+      steps: [
+        { say: T('{menu}, 3 다음 {logb}(BIN)로 2진수로 바꾸세요.', 'Press {menu}, 3, then {logb} (BIN).'), keys: ['menu', 'n3', 'logb'] },
+        { say: T('1100 을 넣으세요.', 'Enter 1100.'), keys: ['n1', 'n1', 'n0', 'n0'] },
+        { say: T('{optn} 에서 1:and 를 고르세요.', 'Choose 1:and from {optn}.'), keys: ['optn', 'n1'] },
+        { say: T('1010 을 넣고 계산하세요.', 'Enter 1010 and compute.'), keys: ['n1', 'n0', 'n1', 'n0', 'eq'], after: T('1000 입니다. 두 수에서 모두 1 인 자리만 1 로 남습니다. or, xor, Not 도 같은 메뉴에 있습니다.', '1000: only bits set in both stay 1. or, xor and Not are in the same menu.') },
+      ], check: () => baseIs(8, 'bin') },
+  ] },
+  { id: 'cplx', t: T('복소수', 'Complex numbers'), lessons: [
+    { id: 'x1', t: T('복소수 계산', 'Complex arithmetic'), goal: T('(2+3i)(1−i) 를 계산합니다.', 'Compute (2+3i)(1−i).'),
+      steps: [
+        { say: T('{menu}, 2 로 Complex(복소수) 앱을 여세요.', 'Open the Complex app with {menu}, 2.'), keys: ['menu', 'n2'], after: T('이 앱에서는 {eng} 키가 허수 i 입니다(보라 글씨).', 'Here the {eng} key types i (purple label).') },
+        { say: T('(2+3i) 를 넣으세요.', 'Enter (2+3i).'), keys: ['lp', 'n2', 'add', 'n3', 'eng', 'rp'] },
+        { say: T('(1−i) 를 이어 넣고 계산하세요.', 'Add (1−i) and compute.'), keys: ['lp', 'n1', 'sub', 'eng', 'rp', 'eq'], after: T('5+i 입니다. i²=−1 을 써서 2−2i+3i−3i² = 5+i 가 됩니다.', '5+i, since 2−2i+3i−3i² = 5+i with i²=−1.') },
+      ], check: () => cxIs(5, 1) },
+    { id: 'x2', t: T('크기·켤레·극형식', 'Modulus, conjugate and polar form'), goal: T('3+4i 의 크기와 켤레, 1+i 의 극형식을 구합니다.', 'Find |3+4i|, its conjugate, and 1+i in polar form.'),
+      steps: [
+        { say: T('{menu}, 2 로 복소수 앱을 여세요.', 'Open the Complex app with {menu}, 2.'), keys: ['menu', 'n2'] },
+        { say: T('크기는 절댓값입니다. SHIFT 다음 {lp}(Abs) 를 누르고 3+4i 를 넣은 뒤 {right} 로 나와 계산하세요.', 'The modulus is the absolute value: SHIFT then {lp} (Abs), enter 3+4i, leave with {right} and compute.'), keys: ['shift', 'lp', 'n3', 'add', 'n4', 'eng', 'right', 'eq'], after: T('5 입니다(√(3²+4²)).', '5, which is √(3²+4²).') },
+        { say: T('켤레복소수는 {optn} 의 2:Conjugate 입니다. Conjg(3+4i) 를 계산하세요.', 'The conjugate is 2:Conjugate in {optn}. Compute Conjg(3+4i).'), keys: ['optn', 'n2', 'n3', 'add', 'n4', 'eng', 'rp', 'eq'], after: T('3−4i 입니다. 허수부의 부호만 바뀝니다.', '3−4i: only the sign of the imaginary part flips.') },
+        { say: T('이번에는 1+i 를 넣고 {optn} 의 5:▶r∠θ 를 고른 뒤 계산하세요.', 'Now enter 1+i, choose 5:▶r∠θ from {optn}, and compute.'), keys: ['n1', 'add', 'eng', 'optn', 'n5', 'eq'], after: T('√2∠45 입니다. 원점에서 거리 √2, 각도 45° 라는 뜻입니다. 늘 극형식으로 보려면 SETUP 의 Complex 를 r∠θ 로 둡니다.', '√2∠45: distance √2 from the origin at 45°. To always see polar form, set Complex to r∠θ in SETUP.') },
+      ], check: () => cxIs(1, 1) && U.res.val.show === '▶r∠θ' },
+  ] },
+  { id: 'ineq', t: T('부등식과 비례식', 'Inequalities and ratios'), lessons: [
+    { id: 'q1', t: T('이차부등식', 'Quadratic inequalities'), goal: T('x²−5x+6<0 과 x²−5x+6>0 의 해를 구합니다.', 'Solve x²−5x+6<0 and x²−5x+6>0.'),
+      steps: [
+        { say: T('{menu} 를 누르세요. Inequality 는 11번째 앱이라 {dms} 키(빨간 B)로 고릅니다.', 'Press {menu}. Inequality is the 11th app, chosen with the {dms} key (red B).'), keys: ['menu', 'dms'], after: T('차수를 묻습니다.', 'It asks for the degree.') },
+        { say: T('차수 2 를 누르세요.', 'Press 2 for degree 2.'), keys: ['n2'], after: T('부등호 모양 네 가지가 나옵니다.', 'Four inequality forms appear.') },
+        { say: T('2:ax²+bx+c<0 을 고르세요.', 'Choose 2:ax²+bx+c<0.'), keys: ['n2'] },
+        { say: T('계수 1, −5, 6 을 넣으세요.', 'Enter the coefficients 1, −5, 6.'), keys: ['n1', 'eq', 'neg', 'n5', 'eq', 'n6', 'eq'] },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('2<x<3 입니다. 포물선이 x 축 아래에 있는 구간입니다.', '2<x<3: where the parabola is below the x-axis.') },
+        { say: T('부등호를 바꿔 봅니다. {ac} 로 계수 표에 돌아간 뒤 {optn} 을 누르면 처음부터 고릅니다. 이어서 2, 1:>0 을 고르세요.', 'Now flip the sign: {ac} returns to the table, then {optn} starts over. Choose 2, then 1:>0.'), keys: ['ac', 'optn', 'n2', 'n1'] },
+        { say: T('같은 계수 1, −5, 6 을 넣고 푸세요.', 'Enter 1, −5, 6 again and solve.'), keys: ['n1', 'eq', 'neg', 'n5', 'eq', 'n6', 'eq', 'eq'], after: T('x<2, 3<x 입니다. 앞의 답과 정확히 반대쪽 구간입니다.', 'x<2, 3<x: exactly the other side.') },
+      ], check: () => ineqIs([[null, 2], [3, null]]) },
+    { id: 'q2', t: T('비례식', 'Proportions'), goal: T('3:4 = X:12 에서 X 를 구합니다.', 'Find X in 3:4 = X:12.'),
+      steps: [
+        { say: T('{menu} 다음 {inv} 키(빨간 C)로 12번째 앱 Ratio(비례식)를 고르세요.', 'Press {menu}, then the {inv} key (red C) for the 12th app, Ratio.'), keys: ['menu', 'inv'], after: T('X 의 자리가 다른 두 꼴이 있습니다.', 'Two forms, with X in different places.') },
+        { say: T('1:A:B=X:D 를 고르세요.', 'Choose 1:A:B=X:D.'), keys: ['n1'] },
+        { say: T('A=3, B=4, D=12 를 넣으세요.', 'Enter A=3, B=4, D=12.'), keys: ['n3', 'eq', 'n4', 'eq', 'n1', 'n2', 'eq'] },
+        { say: T('{eq} 로 푸세요.', 'Press {eq} to solve.'), keys: ['eq'], after: T('X=9 입니다. 3×12=4×X 이므로 X=36÷4=9. 요리 분량이나 지도 축척을 바꿀 때 씁니다.', 'X=9, since 3×12=4×X. Handy for scaling recipes or map distances.') },
+      ], check: () => U.scr === 'sol' && near(U.sol.list[0].val.v, 9) },
+  ] },
+  { id: 'sprd', t: T('스프레드시트', 'Spreadsheet'), lessons: [
+    { id: 'p1', t: T('값과 수식 넣기', 'Values and formulas'), goal: T('단가와 수량을 넣고 금액 수식 =A1×B1 을 만듭니다.', 'Enter prices and quantities, then the formula =A1×B1.'),
+      steps: [
+        { say: T('{menu}, 8 로 Spreadsheet 앱을 여세요.', 'Open the Spreadsheet app with {menu}, 8.'), keys: ['menu', 'n8'], after: T('A~E 열, 1~45 행의 표입니다. 커서는 A1 에 있습니다.', 'Columns A–E, rows 1–45. The cursor is on A1.') },
+        { say: T('A 열에 단가 1200, 800, 1500 을 넣으세요. {eq} 를 누르면 아래 칸으로 갑니다.', 'Enter prices 1200, 800, 1500 down column A; {eq} moves down.'), keys: ['n1', 'n2', 'n0', 'n0', 'eq', 'n8', 'n0', 'n0', 'eq', 'n1', 'n5', 'n0', 'n0', 'eq'] },
+        { say: T('{right} 로 B 열에 가서 {up} 세 번으로 B1 에 가세요.', 'Move to column B with {right}, then {up} three times to B1.'), keys: ['right', 'up', 'up', 'up'] },
+        { say: T('수량 2, 5, 1 을 넣으세요.', 'Enter quantities 2, 5, 1.'), keys: ['n2', 'eq', 'n5', 'eq', 'n1', 'eq'] },
+        { say: T('{right}, {up} 세 번으로 C1 에 가세요.', 'Go to C1 with {right} and {up} three times.'), keys: ['right', 'up', 'up', 'up'] },
+        { say: T('수식은 = 로 시작합니다(ALPHA {calc}). 칸 이름 A1 은 ALPHA {neg}(A) 다음 1, B1 은 ALPHA {dms}(B) 다음 1 입니다. =A1×B1 을 넣으세요.', 'Formulas start with = (ALPHA {calc}). A1 is ALPHA {neg} (A) then 1; B1 is ALPHA {dms} (B) then 1. Enter =A1×B1.'), keys: ['alpha', 'calc', 'alpha', 'neg', 'n1', 'mul', 'alpha', 'dms', 'n1'] },
+        { say: T('{eq} 로 넣으세요.', 'Press {eq} to enter it.'), keys: ['eq'], after: T('C1 이 2400 이 되었습니다. A1 이나 B1 을 고치면 C1 도 저절로 다시 계산됩니다.', 'C1 shows 2400. Change A1 or B1 and C1 recalculates by itself.') },
+      ], check: () => cellIs('C1', 2400) },
+    { id: 'p2', t: T('수식 채우기와 합계', 'Filling formulas and totals'), goal: T('C1 의 수식을 C3 까지 채우고 합계를 C4 에 냅니다.', 'Fill C1\'s formula down to C3 and total it in C4.'),
+      setup: [...SS_DATA, ...SS_C1],
+      steps: [
+        { say: T('지난 수업의 표가 들어 있습니다. {up} 으로 C1 에 가세요.', 'Last lesson\'s sheet is loaded. Go up to C1 with {up}.'), keys: ['up'] },
+        { say: T('{optn} 의 1:Fill Formula 는 여러 칸에 수식을 한꺼번에 넣습니다. 고르세요.', '1:Fill Formula in {optn} fills many cells at once. Choose it.'), keys: ['optn', 'n1'], after: T('Form(수식)과 Range(범위)를 묻습니다.', 'It asks for Form and Range.') },
+        { say: T('Form 에 A1×B1 을 넣고 {eq} 로 Range 줄에 가세요.', 'Enter A1×B1 as the Form and press {eq} to go to Range.'), keys: ['alpha', 'neg', 'n1', 'mul', 'alpha', 'dms', 'n1', 'eq'] },
+        { say: T('범위는 C1:C1 로 되어 있습니다. {del} 로 끝의 1 을 지우고 3 을 넣어 C1:C3 으로 만든 뒤 {eq}.', 'The range reads C1:C1. Delete the last 1 with {del}, type 3 for C1:C3, then {eq}.'), keys: ['del', 'n3', 'eq'], after: T('C2=4000, C3=1500 이 되었습니다. 수식이 줄마다 A2×B2, A3×B3 으로 알아서 바뀌어 들어갑니다.', 'C2=4000 and C3=1500: the formula shifts to A2×B2 and A3×B3 row by row.') },
+        { say: T('{down} 세 번으로 C4 에 가세요.', 'Go down to C4 with {down} three times.'), keys: ['down', 'down', 'down'] },
+        { say: T('=Sum( 을 넣습니다. ALPHA {calc} 다음 {optn}, {down}, 4:Sum 입니다.', 'Enter =Sum(: ALPHA {calc}, then {optn}, {down}, 4:Sum.'), keys: ['alpha', 'calc', 'optn', 'down', 'n4'] },
+        { say: T('범위 C1:C3 을 넣고 괄호를 닫아 {eq}. C 는 ALPHA {inv}, 쌍점(:)은 ALPHA {int} 입니다.', 'Enter C1:C3, close the bracket and press {eq}. C is ALPHA {inv}; the colon is ALPHA {int}.'), keys: ['alpha', 'inv', 'n1', 'alpha', 'int', 'alpha', 'inv', 'n3', 'rp', 'eq'], after: T('C4 = 7900 입니다. 같은 메뉴의 Mean(평균), Min, Max 도 같은 방법으로 씁니다.', 'C4 = 7900. Mean, Min and Max in the same menu work the same way.') },
+      ], check: () => cellIs('C4', 7900) && cellIs('C2', 4000) },
+  ] },
+];
+const LESSONS = COURSES.flatMap(c => c.lessons.map(l => ({ ...l, course: c })));
+
+// ── 키 모양 칩 (본체 키 그림을 그대로 빌림)
+const KEYMAP = Object.fromEntries(KEYS.map(k => [k.id, k]));
+const ARROW = { up: '▲', down: '▼', left: '◀', right: '▶' };
+function chip(id, mod) {
+  if (ARROW[id]) return `<span class="kc dp">${ARROW[id]}</span>`;
+  const k = KEYMAP[id]; if (!k) return id;
+  if (k.t === 'metal') return `<span class="kc mt ${id}">${k.top.replace(/<span class="s">.*?<\/span>/, '')}</span>`;
+  const extra = mod === 'shift' && k.s ? `<em class="s">${k.s}</em>` : mod === 'alpha' && k.a ? `<em class="a">${k.a}</em>` : '';
+  return `<span class="kc ${k.t === 'fn' ? 'fn' : 'nm ' + k.t.replace('num', '').trim()}">${extra}${k.m || ''}</span>`;
+}
+const say = s => s.replace(/\{(\w+)\}/g, (_, id) => chip(id));
+function keysRow(keys, done) {
+  let html = '', mod = null;
+  keys.forEach((id, i) => { html += `<span class="kw ${i < done ? 'ok' : i === done ? 'now' : ''}">${chip(id, mod)}</span>`; mod = id === 'shift' || id === 'alpha' ? id : null; });
+  return html;
+}
+
+// ── 상태
+const TUT = { open: false, L: null, si: 0, ki: 0, phase: 'keys', saved: null, auto: false, playing: false, nudge: '', done: new Set() };
+try { const o = JSON.parse(localStorage.getItem('wiiiv-scicalc-tut') || '{}'); (o.done || []).forEach(d => TUT.done.add(d)); } catch { /* 없어도 된다 */ }
+function tutSave() { try { localStorage.setItem('wiiiv-scicalc-tut', JSON.stringify({ done: [...TUT.done] })); } catch { /* 저장 못 해도 동작 */ } }
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const swapStore = (o, n) => { for (const k of Object.keys(o)) delete o[k]; Object.assign(o, n); };
+function snapshot() { return { SET: clone(SET), VARS: { ...VARS }, ANS, rows: STAT.rows.slice(), type: STAT.type, mode: U.mode, MAT: { ...MAT }, VCT: { ...VCT }, f: clone(fEd.root), g: clone(gEd.root), ss: SS.cells }; }
+function restore() {
+  const s = TUT.saved; if (!s) return; TUT.saved = null; TUT_NOSAVE = false;
+  SET = s.SET; VARS = s.VARS; ANS = s.ANS; STAT.rows = s.rows; STAT.type = s.type; swapStore(MAT, s.MAT); swapStore(VCT, s.VCT); fEd.load(s.f); gEd.load(s.g); SS.cells = s.ss; SS.cache = {}; applySet();
+  powerOn(); const i = MODE_OF.indexOf(s.mode); if (i > 0) pickApp(i); else U.mode = 'calc';
+  save(); draw();
+}
+function autoPress(keys) { TUT.auto = true; try { for (const k of keys) press(k); } finally { TUT.auto = false; } }
+function startLesson(L) {
+  if (!TUT.saved) TUT.saved = snapshot();
+  TUT_NOSAVE = true;
+  SET = { ...clone(DEF), contrast: SET.contrast, font: SET.font }; VARS = {}; ANS = VQ(Q(0)); STAT.rows = []; STAT.type = 0; swapStore(MAT, {}); swapStore(VCT, {}); fEd.clear(); gEd.clear(); SS.cells = {}; SS.cache = {}; applySet();
+  U.sto = false; powerOn(); pickApp(0);
+  autoPress(L.setup || []);
+  Object.assign(TUT, { L, si: 0, ki: 0, phase: 'keys', nudge: '', playing: false });
+  draw(); render();
+}
+function stepOf() { return TUT.L && TUT.L.steps[TUT.si]; }
+function advance() {        // 키 하나를 맞게 누른 뒤
+  const st = stepOf(); TUT.ki++; TUT.nudge = '';
+  if (TUT.ki >= st.keys.length) {
+    if (TUT.si === TUT.L.steps.length - 1) { TUT.phase = 'done'; TUT.done.add(TUT.L.id); tutSave(); }
+    else if (st.after) TUT.phase = 'after';
+    else { TUT.si++; TUT.ki = 0; }
+  }
+  render();
+}
+function nextStep() { if (TUT.phase !== 'after') return; TUT.si++; TUT.ki = 0; TUT.phase = 'keys'; render(); }
+TUT_HOOK = id => {
+  if (!TUT.L || TUT.auto || TUT.phase === 'done') return true;
+  if (TUT.playing) return false;
+  if (TUT.phase === 'after') { nextStep(); }
+  const st = stepOf(), want = st.keys[TUT.ki];
+  if (id === want) { advance(); return true; }
+  TUT.nudge = id; render(); shake(want); return false;
+};
+async function play() {      // 보여주기: 남은 키를 계산기가 직접 누른다
+  if (TUT.playing || !TUT.L || TUT.phase === 'done') return;
+  if (TUT.phase === 'after') nextStep();
+  TUT.playing = true; render();
+  const st = stepOf();
+  while (TUT.L && stepOf() === st && TUT.ki < st.keys.length && TUT.playing) {
+    const id = st.keys[TUT.ki];
+    await new Promise(r => setTimeout(r, 380));
+    if (!TUT.playing) break;
+    flash(id); autoPress([id]); advance();
+  }
+  TUT.playing = false; render();
+}
+
+// ── 계산기 위 표시
+function mark() {
+  document.querySelectorAll('.tut-on').forEach(e => e.classList.remove('tut-on'));
+  if (!TUT.open || !TUT.L || TUT.phase !== 'keys') return;
+  const el = document.querySelector(`#keys [data-id="${stepOf().keys[TUT.ki]}"]`); if (el) el.classList.add('tut-on');
+}
+function shake(id) { const el = document.querySelector(`#keys [data-id="${id}"]`); if (!el) return; el.classList.remove('tut-shake'); void el.offsetWidth; el.classList.add('tut-shake'); }
+
+// ── 패널
+const W = {
+  title: T('배우기', 'Learn'), sub: T('키를 직접 눌러 보며 익힙니다', 'Learn by pressing the keys yourself'),
+  note: T('수업 중에 바뀐 설정·변수·통계 자료는 패널을 닫으면 원래대로 돌아옵니다.', 'Settings, variables and data changed during a lesson are restored when you close this panel.'),
+  list: T('목록', 'Lessons'), show: T('보여주기', 'Show me'), again: T('처음부터', 'Restart'), next: T('다음', 'Next'), nextL: T('다음 수업', 'Next lesson'),
+  wrong: T('이번에는 이 키입니다', 'This time, press'), well: T('잘하셨습니다! 이제 자유롭게 눌러 보셔도 됩니다.', 'Well done! Feel free to keep experimenting.'),
+  open: T('배우기', 'Learn'), close: T('닫기', 'Close'), lessons: T('수업', 'lessons'),
+};
+const pane = document.createElement('aside'); pane.id = 'tut'; pane.hidden = true;
+document.body.appendChild(pane);
+const btn = document.createElement('button'); btn.id = 'tutBtn'; btn.type = 'button';
+btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg><span>${tx(W.open)}</span>`;
+document.body.appendChild(btn);
+btn.addEventListener('click', () => setOpen(true));
+function setOpen(on) {
+  TUT.open = on; pane.hidden = !on; btn.hidden = on; document.body.classList.toggle('tut-open', on);
+  if (!on) { TUT.playing = false; TUT.L = null; restore(); }
+  render(); fit();
+}
+function homeView() {
+  let h = `<header><div><b>${tx(W.title)}</b><small>${tx(W.sub)}</small></div><button class="x" data-a="close" aria-label="${tx(W.close)}">×</button></header><div class="tb">`;
+  for (const c of COURSES) {
+    const n = c.lessons.filter(l => TUT.done.has(l.id)).length;
+    h += `<section><h3>${tx(c.t)} <span>${n}/${c.lessons.length}</span></h3><ol>`;
+    c.lessons.forEach((l, i) => { h += `<li><button data-a="go" data-l="${l.id}"><i>${TUT.done.has(l.id) ? '✓' : i + 1}</i><span><b>${tx(l.t)}</b><small>${tx(l.goal)}</small></span></button></li>`; });
+    h += '</ol></section>';
+  }
+  return h + `<p class="note">${tx(W.note)}</p></div>`;
+}
+function lessonView() {
+  const L = TUT.L, idx = L.course.lessons.findIndex(x => x.id === L.id) + 1;
+  let h = `<header><button class="back" data-a="home">◀ ${tx(W.list)}</button><span class="crumb">${tx(L.course.t)} · ${idx}/${L.course.lessons.length}</span><button class="x" data-a="close" aria-label="${tx(W.close)}">×</button></header><div class="tb">`;
+  h += `<h2>${tx(L.t)}</h2><p class="goal">${tx(L.goal)}</p><ol class="steps">`;
+  L.steps.forEach((st, i) => {
+    if (i > TUT.si) return;
+    const cur = i === TUT.si, fin = i < TUT.si || TUT.phase !== 'keys';
+    h += `<li class="${cur ? 'cur' : 'past'}${fin ? ' fin' : ''}"><div class="say">${say(tx(st.say))}</div><div class="kseq">${keysRow(st.keys, cur && TUT.phase === 'keys' ? TUT.ki : st.keys.length)}</div>`;
+    if (cur && TUT.nudge && TUT.phase === 'keys') { const st2 = stepOf(); h += `<div class="nudge">${tx(W.wrong)} ${chip(st2.keys[TUT.ki], TUT.ki ? (['shift', 'alpha'].includes(st2.keys[TUT.ki - 1]) ? st2.keys[TUT.ki - 1] : null) : null)}</div>`; }
+    if (st.after && fin) h += `<div class="after">${say(tx(st.after))}</div>`;
+    h += '</li>';
+  });
+  h += '</ol>';
+  if (TUT.phase === 'done') {
+    const all = LESSONS, j = all.findIndex(x => x.id === L.id), nx = all[j + 1];
+    h += `<div class="done"><p>${tx(W.well)}</p><div class="row"><button data-a="again">${tx(W.again)}</button>${nx ? `<button class="pri" data-a="go" data-l="${nx.id}">${tx(W.nextL)} ▶</button>` : `<button class="pri" data-a="home">${tx(W.list)}</button>`}</div></div>`;
+  } else {
+    h += `<div class="row ctl"><button data-a="again">${tx(W.again)}</button><button data-a="play" ${TUT.playing ? 'disabled' : ''}>▶ ${tx(W.show)}</button>${TUT.phase === 'after' ? `<button class="pri" data-a="next">${tx(W.next)} ▶</button>` : ''}</div>`;
+  }
+  return h + '</div>';
+}
+function render() {
+  if (TUT.open) {
+    const keepTop = pane.querySelector('.tb') ? pane.querySelector('.tb').scrollTop : 0;
+    pane.innerHTML = TUT.L ? lessonView() : homeView();
+    const tb = pane.querySelector('.tb');
+    if (tb) { if (TUT.L) { const c = tb.querySelector('.steps li.cur, .done'); tb.scrollTop = keepTop; if (c) c.scrollIntoView({ block: 'nearest' }); const d = tb.querySelector('.done'); if (d) d.scrollIntoView({ block: 'nearest' }); } }
+  }
+  mark();
+}
+pane.addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]'); if (!b) return;
+  const a = b.dataset.a;
+  if (a === 'close') setOpen(false);
+  else if (a === 'home') { TUT.playing = false; TUT.L = null; restore(); render(); }
+  else if (a === 'go') startLesson(LESSONS.find(l => l.id === b.dataset.l));
+  else if (a === 'again') startLesson(TUT.L);
+  else if (a === 'play') play();
+  else if (a === 'next') nextStep();
+  document.body.focus();
+});
+// 좁은 화면: 패널이 위에 오고, 계산기는 남은 높이에 맞춘다. 넓은 화면: 패널이 오른쪽.
+const wide = matchMedia('(min-width: 900px)');
+function fit() {
+  const r = document.documentElement.style;
+  if (!TUT.open) { r.setProperty('--tut-h', '0px'); r.setProperty('--tut-w', '0px'); return; }
+  if (wide.matches) { r.setProperty('--tut-h', '0px'); r.setProperty('--tut-w', (pane.offsetWidth + 40) + 'px'); }
+  else { r.setProperty('--tut-w', '0px'); r.setProperty('--tut-h', (pane.offsetHeight + 12) + 'px'); }
+}
+new ResizeObserver(fit).observe(pane);
+wide.addEventListener('change', fit);
+// 시험용 (test/t-tutor.py)
+window.__tut = { MAT, COURSES, LESSONS, TUT, startLesson, autoPress, setOpen, advance };
 
 </script>
 </body>
