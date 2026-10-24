@@ -128,7 +128,7 @@ body.light .math{text-shadow:none}
  * - 매개변수 a, b 는 슬라이더, t 는 시간 — 식에 쓰면 아래에 조절 막대가 나타난다
  */
 const LANG = 'ko';
-const T = {
+const T_ALL = {
   ko: {
     title: '3D 함수 그래프', sub: 'FUNCTION SURFACE STUDIO',
     gallery: '함수 갤러리', formula: '수식', look: '모양',
@@ -167,9 +167,12 @@ const T = {
       range: 'Invalid range', noSurface: 'No point with f = 0 in this range — try a wider range',
     },
   },
-}[LANG];
+};
+// 서버·웹이 넣는 LANG(예: ja, zh-CN, en-US)에 표가 없으면 기본 언어 → 영어 순으로 (없는 언어에서 앱이 깨지던 결함)
+const LG = T_ALL[LANG] ? LANG : T_ALL[String(LANG).split('-')[0]] ? String(LANG).split('-')[0] : 'en';
+const T = T_ALL[LG];
 const fmt = (s, ...a) => s.replace(/\{(\d)\}/g, (_, i) => a[i]);
-const L2 = (o) => o[LANG] || o.ko;
+const L2 = (o) => o[LG] || o.en || o.ko;
 
 // ───────────────────────── 수식 해석기 ─────────────────────────
 const F1 = { sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan, sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,

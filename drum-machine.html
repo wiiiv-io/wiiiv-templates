@@ -100,7 +100,7 @@ h1 { font-size: 18px; margin-bottom: 8px; color: #c4b5fd; letter-spacing: 1px; }
 
 <script>
 const LANG = 'ko';
-const T = {
+const T_ALL = {
   ko: {
     title: '🥁 드럼 머신',
     play: '▶ 재생', stop: '⏸ 정지', swing: '스윙', clear: '지우기',
@@ -115,7 +115,10 @@ const T = {
     rock: 'Basic Rock', disco: 'Disco', hiphop: 'Hip Hop', reggae: 'Reggae',
     info: 'Click to edit patterns · Use presets for quick start'
   }
-}[LANG];
+};
+// 서버·웹이 넣는 LANG(예: ja, zh-CN, en-US)에 표가 없으면 기본 언어 → 영어 순으로 (없는 언어에서 앱이 깨지던 결함)
+const LG = T_ALL[LANG] ? LANG : T_ALL[String(LANG).split('-')[0]] ? String(LANG).split('-')[0] : 'en';
+const T = T_ALL[LG];
 
 document.querySelector('h1').textContent=T.title;
 document.title=T.title.replace('🥁 ','');

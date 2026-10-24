@@ -54,7 +54,7 @@ input[type=range]{accent-color:#7c5cfc;width:80px}
 <div class="piano" id="piano"></div>
 <script>
 const LANG = 'ko';
-const T = {
+const T_ALL = {
   ko: {
     title: '피아노 건반',
     waveform: '음색:', sine: '사인파', triangle: '삼각파', square: '사각파', sawtooth: '톱니파',
@@ -67,7 +67,10 @@ const T = {
     volume: 'Volume:', sustainOn: 'Sustain: On', sustainOff: 'Sustain: Off',
     record: '● Record', stopRec: '■ Stop', play: '▶ Play'
   }
-}[LANG];
+};
+// 서버·웹이 넣는 LANG(예: ja, zh-CN, en-US)에 표가 없으면 기본 언어 → 영어 순으로 (없는 언어에서 앱이 깨지던 결함)
+const LG = T_ALL[LANG] ? LANG : T_ALL[String(LANG).split('-')[0]] ? String(LANG).split('-')[0] : 'en';
+const T = T_ALL[LG];
 
 document.querySelector('h1').textContent=T.title;
 document.title=T.title;

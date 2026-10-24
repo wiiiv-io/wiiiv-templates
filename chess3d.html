@@ -107,7 +107,7 @@ button,select{font:inherit;color:inherit}
  * 컴퓨터: 알파베타 탐색(반복 심화·정지 탐색·킬러 수), 별도 작업 스레드(Web Worker)에서 생각해 화면이 멈추지 않는다.
  */
 const LANG = 'ko';
-const T = {
+const T_ALL = {
   ko: {
     title: '3D 체스', start: '대국 시작', opp: '상대', level: '난이도', color: '내 색', theme: '판', sound: '소리',
     opps: { ai: '컴퓨터', pvp: '두 사람' }, levels: ['쉬움', '보통', '어려움'], colors: { w: '백', b: '흑', r: '무작위' },
@@ -140,7 +140,10 @@ const T = {
     youWin: 'You won! Congratulations 🎉', youLose: 'The computer won. Try again!',
     again: 'Play again', review: 'View board', files: 'abcdefgh',
   },
-}[LANG];
+};
+// 서버·웹이 넣는 LANG(예: ja, zh-CN, en-US)에 표가 없으면 기본 언어 → 영어 순으로 (없는 언어에서 앱이 깨지던 결함)
+const LG = T_ALL[LANG] ? LANG : T_ALL[String(LANG).split('-')[0]] ? String(LANG).split('-')[0] : 'en';
+const T = T_ALL[LG];
 
 // ───────────────────────── 규칙·탐색 엔진 (작업 스레드에서도 그대로 쓴다) ─────────────────────────
 function ENGINE() {
