@@ -1854,17 +1854,12 @@ function layLine(row, f, curI) {
 // 배우기(tutor.js) 가 수업 중 키를 거를 수 있게: TUT_HOOK 이 false 를 돌려주면 그 키는 무시, TUT_NOSAVE 면 연습 상태를 저장하지 않는다
 let TUT_HOOK = null, TUT_NOSAVE = false;
 const $ = id => document.getElementById(id);
-// 언어: 브라우저 언어 목록에서 11개 중 첫 일치 (중국어 번체는 zh-TW), 없으면 영어
+// 언어: wiiiv 서버가 아래 줄의 'ko' 를 사용자 언어로 바꿔 넣는다(WiiivAppTemplateResolver, 줄 모양을 바꾸지 말 것).
+// 11개 중 하나로 맞추고(중국어 번체는 zh-TW), 없으면 영어
+const LANG = 'ko';
 const LANGS = ['ko', 'en', 'ja', 'zh', 'zh-TW', 'es', 'fr', 'de', 'pt', 'ru', 'vi'];
-const LANG = (() => {
-  for (const raw of (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'])) {
-    const l = String(raw).toLowerCase();
-    if (/^zh-(tw|hk|mo|hant)/.test(l)) return 'zh-TW';
-    const b = l.split('-')[0]; if (LANGS.includes(b)) return b;
-  }
-  return 'en';
-})();
-document.documentElement.lang = LANG;
+const LG = (() => { const l = String(LANG).toLowerCase(); if (/^zh-(tw|hk|mo|hant)/.test(l)) return 'zh-TW'; const b = l.split(/[-_]/)[0]; return LANGS.includes(b) ? b : 'en'; })();
+document.documentElement.lang = LG;
 const HINT = {
   ko: 'PC 키보드: 숫자·+−*/·( )·^ 거듭제곱·Enter =·Backspace DEL·Esc AC·방향키·s/c/t 삼각·q √·p π·l log·n ln·f 분수·Shift=SHIFT·Alt=ALPHA',
   en: 'Keyboard: digits, + − * /, ( ), ^ power, Enter =, Backspace DEL, Esc AC, arrows, s/c/t trig, q √, p π, l log, n ln, f fraction, Shift = SHIFT, Alt = ALPHA',
@@ -1877,7 +1872,7 @@ const HINT = {
   pt: 'Teclado: dígitos, + − * /, ( ), ^ potência, Enter =, Backspace DEL, Esc AC, setas, s/c/t trigonometria, q √, p π, l log, n ln, f fração, Shift = SHIFT, Alt = ALPHA',
   ru: 'Клавиатура: цифры, + − * /, ( ), ^ степень, Enter =, Backspace DEL, Esc AC, стрелки, s/c/t тригонометрия, q √, p π, l log, n ln, f дробь, Shift = SHIFT, Alt = ALPHA',
   vi: 'Bàn phím: chữ số, + − * /, ( ), ^ lũy thừa, Enter =, Backspace DEL, Esc AC, phím mũi tên, s/c/t lượng giác, q √, p π, l log, n ln, f phân số, Shift = SHIFT, Alt = ALPHA',
-}[LANG];
+}[LG];
 
 // ── 설정·기억 (실물처럼 전원을 꺼도 남는다)
 const DEF = { io: 'MM', angle: 'deg', numFmt: { t: 'norm', n: 1 }, engSym: false, fracRes: 'dc', complex: 'abi', stat: false, decComma: false, digitSep: false, font: 'N', contrast: 1, table: 'fg', autoCalc: true, showCell: 'formula', eqCplx: true };
@@ -3244,7 +3239,7 @@ const TUT_I18N = {"de":{"Learn":"Lernen","Learn by pressing the keys yourself":"
 // 수업 = 단계 목록. 단계마다 눌러야 할 키 순서가 있고, 다음 키가 계산기에서 빛난다.
 // 다른 키는 막고(TUT_HOOK), '보여주기' 는 계산기가 직접 누른다. 수업 동안 설정·변수·통계 자료는
 // 따로 두었다가(TUT_NOSAVE) 패널을 닫으면 원래대로 돌린다. 예제는 모두 자체 작성, 답은 test/t-tutor.py 로 확인.
-const TL = LANG;   // ui.js 에서 고른 11개 언어 중 하나. ko·en 은 수업 정의에, 나머지는 TUT_I18N(i18n/*.json, 영어 문장이 열쇠)에
+const TL = LG;   // ui.js 에서 고른 11개 언어 중 하나. ko·en 은 수업 정의에, 나머지는 TUT_I18N(i18n/*.json, 영어 문장이 열쇠)에
 const T = (ko, en) => ({ ko, en });
 const tx = o => (o && (o[TL] || (TUT_I18N[TL] && TUT_I18N[TL][o.en]) || o.en)) || '';
 const near = (a, b) => Number.isFinite(a) && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
