@@ -129,12 +129,13 @@
      "sources": 10,
      "model": "qwen3.7-flash",
      "date": "2026-10-25",
-     "build": "aa76f615d+",
+     "build": "e594123c7",
      "sessionId": "64e2f088-5406-412b-ae37-279ea93e98cf",
      "by": "beta",
      "followUps": [
       "The cumulative return and Sharpe ratio charts appear twice (once labeled NVDA, once NVIDIA). Keep the first pair and remove the repeated pair.",
       "Please add one sentence at the end of the first paragraph noting that all figures come from the analysis of daily closing prices in this conversation.",
+      "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text.",
       "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text."
      ]
     }
