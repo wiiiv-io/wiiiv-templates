@@ -7,35 +7,38 @@
    "category": "기술·AI",
    "title": {
     "ko": "생성형 AI 시장 경쟁 구도와 2027년 전망: 심층 보고서",
-    "en": "The Generative AI Competitive Landscape: Strategic Analysis and Outlook to 2027"
+    "en": "The Generative AI Competitive Landscape: Strategic Analysis and Outlook to 2027",
+    "ja": "生成AI市場の競争構図と2027年の展望：詳細分析レポート"
    },
    "prompt": {
     "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘.",
-    "en": "Write a 20-page in-depth report on the competitive landscape of the generative AI market and its outlook for 2027. Compare OpenAI, Anthropic, Google, Meta, xAI and Chinese models (DeepSeek, Qwen and others) on revenue, investment, user base and model performance, and cover the enterprise and consumer markets, chip and data-center investment, and regulation. Show the key figures in charts and include illustrations that suit the topic."
+    "en": "Write a 20-page in-depth report on the competitive landscape of the generative AI market and its outlook for 2027. Compare OpenAI, Anthropic, Google, Meta, xAI and Chinese models (DeepSeek, Qwen and others) on revenue, investment, user base and model performance, and cover the enterprise and consumer markets, chip and data-center investment, and regulation. Show the key figures in charts and include illustrations that suit the topic.",
+    "ja": "生成AI市場の競争構図と2027年の展望について、20ページの詳細なレポートを作成してください。OpenAI、Anthropic、Google、Meta、xAI、中国のモデル(DeepSeek、Qwenなど)の売上・投資・ユーザー規模・モデル性能の競争を比較し、企業向け市場と消費者市場、半導体・データセンター投資、規制の動向まで扱ってください。主要な数値はグラフで示し、テーマに合ったイラストも入れてください。"
    },
    "url": {
     "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ko.html",
-    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/en.html"
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/en.html",
+    "ja": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ja.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/thumb.png",
    "params": {
     "pages": 20,
     "theme": "pearl",
-    "images": 6,
+    "images": 8,
     "research": "web",
-    "language": "en"
+    "language": "ja"
    },
    "run": {
     "credits": null,
-    "minutes": 8.8,
+    "minutes": 11.6,
     "sources": 22,
     "model": "qwen3.7-flash",
     "date": "2026-10-25",
     "build": "0e2-latest",
-    "sessionId": "7192a6b5-bd78-4049-84e5-70561aee1e1f",
+    "sessionId": "cd70063a-a486-438d-b195-66ec1a2540dc",
     "by": "beta",
     "followUps": [
-     "Please fix two charts: remove the 'Net Loss/Cost' chart because OpenAI's value is missing (shown as 0), and change the series label 'Valuation (USD)' to 'Valuation ()'."
+     "グラフを2つ直してください。「B2B重視度・B2C重視度(%)」のグラフは根拠のない点数なので外し、事実の説明に置き換えてください。売上ランレートのグラフの英語表記(Early 2025、Run-rate Revenue ($ Billion)など)は日本語にしてください。"
     ]
    }
   },
