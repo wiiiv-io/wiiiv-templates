@@ -88,21 +88,24 @@
    "kind": "report",
    "category": "금융·데이터 분석",
    "title": {
-    "ko": "반도체 3사 투자 분석: NVDA·TSMC·삼성전자 3년 주가와 AI 반도체 전망"
+    "ko": "반도체 3사 투자 분석: NVDA·TSMC·삼성전자 3년 주가와 AI 반도체 전망",
+    "en": "The AI Triad: Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)"
    },
    "prompt": {
-    "ko": "엔비디아(NVDA), TSMC(TSM), 삼성전자(005930.KS)의 최근 3년 주가 데이터를 받아서 분석해줘. 누적 수익률, 연간 변동성, 최대 낙폭(MDD), 샤프 비율, 세 종목 간 상관관계를 계산하고 주요 구간을 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 반도체 3사 투자 분석 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 각 사의 실적·사업 동향과 AI 반도체 수요 전망도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘."
+    "ko": "엔비디아(NVDA), TSMC(TSM), 삼성전자(005930.KS)의 최근 3년 주가 데이터를 받아서 분석해줘. 누적 수익률, 연간 변동성, 최대 낙폭(MDD), 샤프 비율, 세 종목 간 상관관계를 계산하고 주요 구간을 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 반도체 3사 투자 분석 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 각 사의 실적·사업 동향과 AI 반도체 수요 전망도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘.",
+    "en": "Download the last three years of stock price data for NVIDIA (NVDA), TSMC (TSM) and Samsung Electronics (005930.KS) and analyze it. Calculate cumulative return, annual volatility, maximum drawdown (MDD), Sharpe ratio and the correlation between the three stocks, and show the key periods in charts.\n→ Based on the analysis above, write a 15-page investment analysis report on the three chipmakers. Use the calculated figures and charts as they are, and also cover each company's earnings and business developments and the outlook for AI chip demand. Include illustrations that suit the topic."
    },
    "url": {
-    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/ko.html"
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/ko.html",
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/en.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/thumb.png",
    "params": {
     "pages": 15,
     "theme": "ocean",
-    "images": 8,
+    "images": 10,
     "research": "analysis+web",
-    "language": "ko",
+    "language": "en",
     "flow": "Da→AIA"
    },
    "run": {
@@ -118,6 +121,23 @@
      "보고서에서 두 군데를 고쳐 줘. '변동성이showing 하듯'처럼 영어가 섞여 깨진 문장을 자연스러운 한국어로 바로잡고, TSMC를 '파운드리(Fab-lite)'라고 한 부분은 틀렸으니 '순수 파운드리(전문 위탁생산)'로 고쳐 줘.",
      "최대 낙폭(MDD) 차트에서 TSMC 값이 -32.15%로 되어 있는데 분석 결과는 -36.82%다. 차트와 본문의 해당 값을 분석 결과대로 바로잡아 줘."
     ]
+   },
+   "runs": {
+    "en": {
+     "credits": null,
+     "minutes": 11.5,
+     "sources": 10,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "aa76f615d+",
+     "sessionId": "64e2f088-5406-412b-ae37-279ea93e98cf",
+     "by": "beta",
+     "followUps": [
+      "The cumulative return and Sharpe ratio charts appear twice (once labeled NVDA, once NVIDIA). Keep the first pair and remove the repeated pair.",
+      "Please add one sentence at the end of the first paragraph noting that all figures come from the analysis of daily closing prices in this conversation.",
+      "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text."
+     ]
+    }
    }
   },
   {
