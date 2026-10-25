@@ -231,13 +231,16 @@
    "kind": "slides",
    "category": "기술·AI",
    "title": {
-    "ko": "2026 AI 기술 트렌드: 자율성과 통합의 시대"
+    "ko": "2026 AI 기술 트렌드: 자율성과 통합의 시대",
+    "en": "12 AI Technology Trends for 2026"
    },
    "prompt": {
-    "ko": "2026년 AI 기술 트렌드 12가지를 정리한 프레젠테이션을 16장 분량으로 만들어줘. 에이전트 AI, 멀티모달, 추론 모델, 온디바이스 AI, AI 반도체, 로보틱스 같은 핵심 흐름마다 무엇이 바뀌었는지, 대표 사례와 수치, 기업이 준비할 일을 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘."
+    "ko": "2026년 AI 기술 트렌드 12가지를 정리한 프레젠테이션을 16장 분량으로 만들어줘. 에이전트 AI, 멀티모달, 추론 모델, 온디바이스 AI, AI 반도체, 로보틱스 같은 핵심 흐름마다 무엇이 바뀌었는지, 대표 사례와 수치, 기업이 준비할 일을 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘.",
+    "en": "Make a 16-slide presentation on 12 AI technology trends for 2026. For each key shift — agentic AI, multimodal models, reasoning models, on-device AI, AI chips, robotics and more — explain what changed, with representative examples and figures, and what companies should prepare. Put an image that suits the topic on the slides."
    },
    "url": {
-    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/ko.html"
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/ko.html",
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/en.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/thumb.png",
    "params": {
@@ -245,7 +248,7 @@
     "theme": "midnight",
     "images": 5,
     "research": "web",
-    "language": "ko"
+    "language": "en"
    },
    "run": {
     "credits": null,
@@ -259,6 +262,19 @@
     "followUps": [
      "두 군데를 고쳐 줘. 마지막 장의 contact@company.com 과 www.company.com/ai-insights 는 실제가 아닌 자리표시이니 지워 줘. 10번 슬라이드 차트에서 값이 없는 항목이 0으로 떨어지는 선 계열은 빼 줘."
     ]
+   },
+   "runs": {
+    "en": {
+     "credits": null,
+     "minutes": 6.7,
+     "sources": 0,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "e594123c7",
+     "sessionId": "2aceab0c-9554-4b0c-9a74-ce6b16cc40e5",
+     "by": "beta",
+     "followUps": []
+    }
    }
   },
   {
