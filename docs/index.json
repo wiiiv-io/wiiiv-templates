@@ -388,6 +388,53 @@
      "followUps": []
     }
    }
+  },
+  {
+   "id": "aging-growth",
+   "kind": "report",
+   "category": "경제·사회",
+   "title": {
+    "ko": "고령화와 경제성장: 6개국 비교 분석 보고서"
+   },
+   "prompt": {
+    "ko": "세계은행(World Bank) 공개 데이터에서 한국·일본·중국·미국·독일·인도의 65세 이상 인구 비율과 실질 GDP 성장률을 1990년부터 최근까지 받아서 분석해줘. 나라별 고령화 속도, 성장률 추세, 두 지표의 관계를 계산하고 차트로 보여줘. → 위 분석 결과를 바탕으로 '고령화와 경제성장' 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 나라별 대응 정책과 한국에 주는 시사점도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/aging-growth/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/aging-growth/thumb.png",
+   "params": {
+    "pages": 15,
+    "theme": "frost",
+    "images": 10,
+    "research": "analysis+web",
+    "language": "ko",
+    "flow": "Da→AIA"
+   },
+   "run": {
+    "credits": 692,
+    "minutes": 14.7,
+    "sources": 10,
+    "model": "qwen3.7-flash",
+    "date": "2026-10-25",
+    "build": "776e4a5be",
+    "sessionId": "8311b170-e9af-4770-969a-3c0af9c8361a",
+    "by": "beta",
+    "followUps": []
+   },
+   "runs": {
+    "ko": {
+     "credits": 692,
+     "minutes": 14.7,
+     "sources": 10,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "776e4a5be",
+     "sessionId": "8311b170-e9af-4770-969a-3c0af9c8361a",
+     "by": "beta",
+     "followUps": []
+    }
+   }
   }
  ]
 }
