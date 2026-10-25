@@ -35,6 +35,43 @@
      "'이 시나리오는scaling law' 처럼 띄어쓰기 없이 영어가 붙은 곳을 자연스러운 한국어 문장으로 바로잡아 줘."
     ]
    }
+  },
+  {
+   "id": "semis-3y",
+   "kind": "report",
+   "category": "금융·데이터 분석",
+   "title": {
+    "ko": "반도체 3사 투자 분석: NVDA·TSMC·삼성전자 3년 주가와 AI 반도체 전망"
+   },
+   "prompt": {
+    "ko": "엔비디아(NVDA), TSMC(TSM), 삼성전자(005930.KS)의 최근 3년 주가 데이터를 받아서 분석해줘. 누적 수익률, 연간 변동성, 최대 낙폭(MDD), 샤프 비율, 세 종목 간 상관관계를 계산하고 주요 구간을 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 반도체 3사 투자 분석 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 각 사의 실적·사업 동향과 AI 반도체 수요 전망도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/thumb.png",
+   "params": {
+    "pages": 15,
+    "theme": "ocean",
+    "images": 8,
+    "research": "analysis+web",
+    "language": "ko",
+    "flow": "Da→AIA"
+   },
+   "run": {
+    "credits": null,
+    "minutes": 11.4,
+    "sources": 7,
+    "model": "qwen3.7-flash",
+    "date": "2026-10-25",
+    "build": "314cd3f46",
+    "sessionId": "dac240e8-c7c2-4df9-826a-38ed96359cf9",
+    "by": "beta",
+    "followUps": [
+     "보고서에서 두 군데를 고쳐 줘. '변동성이showing 하듯'처럼 영어가 섞여 깨진 문장을 자연스러운 한국어로 바로잡고, TSMC를 '파운드리(Fab-lite)'라고 한 부분은 틀렸으니 '순수 파운드리(전문 위탁생산)'로 고쳐 줘.",
+     "최대 낙폭(MDD) 차트에서 TSMC 값이 -32.15%로 되어 있는데 분석 결과는 -36.82%다. 차트와 본문의 해당 값을 분석 결과대로 바로잡아 줘."
+    ]
+   }
   }
  ]
 }
