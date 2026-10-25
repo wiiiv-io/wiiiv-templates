@@ -312,7 +312,7 @@
    "kind": "report",
    "category": "환경·에너지",
    "title": {
-    "ko": "세계 탄소 배출과 재생에너지 전환: 주요국 현황 및 한국의 대응 방안",
+    "ko": "세계 탄소 배출과 재생에너지 전환: 1990~2025 주요국 분석",
     "en": "Global Carbon Emissions and the Renewable Energy Transition",
     "ja": "世界の炭素排出と再生可能エネルギーへの転換：1990年〜2025年分析"
    },
@@ -337,17 +337,14 @@
    },
    "run": {
     "credits": null,
-    "minutes": 11.2,
-    "sources": 8,
+    "minutes": 13.4,
+    "sources": 40,
     "model": "qwen3.7-flash",
-    "date": "2026-10-25",
-    "build": "19209bb91+",
-    "sessionId": "0fda6a44-fca6-4485-8ddd-e08a60ada274",
+    "date": "2026-10-26",
+    "build": "aaf6fbb06+d583801f0",
+    "sessionId": "5f9febe7-9a5f-4112-b3cb-eb7a96670fdf",
     "by": "beta",
-    "followUps": [
-     "보고서를 고쳐 줘. 세계 CO2 배출량이 '378 Gt', 온실가스가 '532 Gt'으로 10배 크게 적혀 있다. 실제는 37.8 Gt, 53.2 Gt 이니 본문·카드·차트 모두 바로잡아 줘. 마지막 가로 막대 차트 이름은 1인당 값이므로 '1인당 CO2 배출량 (t)'로, '천연가스은'은 '천연가스는'으로 고쳐 줘. 분석 차트 아래 'co2 emissions trend' 설명도 한국어로 바꿔 줘.",
-     "두 군데만 더 고쳐 줘. '천연가스은'을 '천연가스는'으로, 분석 차트 아래 설명 'co2 emissions trend'를 '세계와 주요국의 CO2 배출 추이'로 바꿔 줘."
-    ]
+    "followUps": []
    },
    "runs": {
     "en": {
@@ -373,6 +370,17 @@
      "date": "2026-10-26",
      "build": "aaf6fbb06+d583801f0",
      "sessionId": "353e8c02-65ab-4e49-ad0d-853631cd4cb1",
+     "by": "beta",
+     "followUps": []
+    },
+    "ko": {
+     "credits": null,
+     "minutes": 13.4,
+     "sources": 40,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "5f9febe7-9a5f-4112-b3cb-eb7a96670fdf",
      "by": "beta",
      "followUps": []
     }
