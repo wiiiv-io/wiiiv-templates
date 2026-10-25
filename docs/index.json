@@ -7,7 +7,7 @@
    "category": "기술·AI",
    "title": {
     "ko": "생성형 AI 시장 경쟁 구도 및 2027년 심층 전망",
-    "en": "The Generative AI Competitive Landscape: Strategic Analysis and Outlook to 2027",
+    "en": "Generative AI Competitive Landscape & 2027 Outlook",
     "ja": "生成AI市場の競争構図と2027年の展望：詳細分析レポート"
    },
    "prompt": {
@@ -53,16 +53,14 @@
     },
     "en": {
      "credits": null,
-     "minutes": 8.8,
-     "sources": 22,
+     "minutes": 8.7,
+     "sources": 67,
      "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "0e2-latest",
-     "sessionId": "7192a6b5-bd78-4049-84e5-70561aee1e1f",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "15c1b6ef-fe87-48a1-93f3-e094e353b28d",
      "by": "beta",
-     "followUps": [
-      "Please fix two charts: remove the 'Net Loss/Cost' chart because OpenAI's value is missing (shown as 0), and change the series label 'Valuation (USD)' to 'Valuation ()'."
-     ]
+     "followUps": []
     },
     "ja": {
      "credits": null,
