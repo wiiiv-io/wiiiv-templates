@@ -1,38 +1,40 @@
 {
-  "version": 1,
-  "docs": [
-    {
-      "id": "genai-2027",
-      "kind": "report",
-      "category": "기술·AI",
-      "title": {
-        "ko": "2027 생성형 AI 시장 경쟁 구도 및 전망 심층 보고서"
-      },
-      "prompt": {
-        "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘."
-      },
-      "url": {
-        "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ko.html"
-      },
-      "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/thumb.png",
-      "params": {
-        "pages": 20,
-        "theme": "pearl",
-        "images": 3,
-        "research": "web",
-        "language": "ko"
-      },
-      "run": {
-        "credits": 571,
-        "minutes": 12.9,
-        "sources": 5,
-        "model": "qwen3.7-flash",
-        "date": "2026-10-25",
-        "build": 5339,
-        "sessionId": "8f2732a5-de5d-496f-8762-88d2956a347f",
-        "by": "beta",
-        "followUps": []
-      }
-    }
-  ]
+ "version": 1,
+ "docs": [
+  {
+   "id": "genai-2027",
+   "kind": "report",
+   "category": "기술·AI",
+   "title": {
+    "ko": "생성형 AI 시장 경쟁 구도와 2027년 전망: 심층 보고서"
+   },
+   "prompt": {
+    "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/thumb.png",
+   "params": {
+    "pages": 20,
+    "theme": "pearl",
+    "images": 8,
+    "research": "web",
+    "language": "ko"
+   },
+   "run": {
+    "credits": null,
+    "minutes": 12.0,
+    "sources": 22,
+    "model": "qwen3.7-flash",
+    "date": "2026-10-25",
+    "build": "314cd3f46",
+    "sessionId": "6daa9428-05d3-4c29-afac-390f456e9c0a",
+    "by": "beta",
+    "followUps": [
+     "'이 시나리오는scaling law' 처럼 띄어쓰기 없이 영어가 붙은 곳을 자연스러운 한국어 문장으로 바로잡아 줘."
+    ]
+   }
+  }
+ ]
 }
