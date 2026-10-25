@@ -349,18 +349,14 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 12.8,
-     "sources": 24,
+     "minutes": 10.3,
+     "sources": 44,
      "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "e594123c7",
-     "sessionId": "424abf5a-1d02-420a-8492-667731a64702",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "fda86afd-7091-46cc-8c50-f6ca5c1e9a3f",
      "by": "beta",
-     "followUps": [
-      "Please fix two charts. The global CO2 trend chart must use only the values from the analysis (1990: 22,732 Mt, 2024: 38,599 Mt) — remove the made-up intermediate years. Remove the chart comparing '2030 Target (1.5°C)' with 'Current NDC Projection' because it mixes different measures.",
-      "In the electricity mix chart, show solar, wind, hydro and fossil fuels as one 'Share of global electricity (%)' series.",
-      "The electricity mix values are wrong. According to Our World in Data for 2024, the world's electricity came from solar 6.9%, wind 8.1%, hydro 14.3%, nuclear 9.0% and fossil fuels 59.1%. Correct the chart and any text that uses the old solar (15%), wind (13%) and hydro (12.9%) figures."
-     ]
+     "followUps": []
     },
     "ja": {
      "credits": null,
