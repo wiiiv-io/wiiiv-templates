@@ -249,15 +249,18 @@
    "category": "기술·AI",
    "title": {
     "ko": "2026 AI 기술 트렌드: 자율성과 통합의 시대",
-    "en": "12 AI Technology Trends for 2026"
+    "en": "12 AI Technology Trends for 2026",
+    "ja": "2026年 AI技術トレンド12選"
    },
    "prompt": {
     "ko": "2026년 AI 기술 트렌드 12가지를 정리한 프레젠테이션을 16장 분량으로 만들어줘. 에이전트 AI, 멀티모달, 추론 모델, 온디바이스 AI, AI 반도체, 로보틱스 같은 핵심 흐름마다 무엇이 바뀌었는지, 대표 사례와 수치, 기업이 준비할 일을 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘.",
-    "en": "Make a 16-slide presentation on 12 AI technology trends for 2026. For each key shift — agentic AI, multimodal models, reasoning models, on-device AI, AI chips, robotics and more — explain what changed, with representative examples and figures, and what companies should prepare. Put an image that suits the topic on the slides."
+    "en": "Make a 16-slide presentation on 12 AI technology trends for 2026. For each key shift — agentic AI, multimodal models, reasoning models, on-device AI, AI chips, robotics and more — explain what changed, with representative examples and figures, and what companies should prepare. Put an image that suits the topic on the slides.",
+    "ja": "2026年のAI技術トレンド12選をまとめた16枚のプレゼンテーションを作成してください。エージェントAI、マルチモーダル、推論モデル、オンデバイスAI、AI半導体、ロボティクスなどの主要な流れごとに、何が変わったのか、代表的な事例と数値、企業が準備すべきことを盛り込み、スライドにはテーマに合った画像を入れてください。"
    },
    "url": {
     "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/ko.html",
-    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/en.html"
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/en.html",
+    "ja": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/ja.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-trends-2026/thumb.png",
    "params": {
@@ -265,7 +268,7 @@
     "theme": "midnight",
     "images": 5,
     "research": "web",
-    "language": "en"
+    "language": "ja"
    },
    "run": {
     "credits": null,
@@ -291,6 +294,27 @@
      "sessionId": "2aceab0c-9554-4b0c-9a74-ce6b16cc40e5",
      "by": "beta",
      "followUps": []
+    },
+    "ja": {
+     "credits": null,
+     "minutes": 8.2,
+     "sources": 0,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "cf2828a41+",
+     "sessionId": "0e8d09b1-54d7-489a-ba75-42c214011634",
+     "by": "beta",
+     "followUps": [
+      "表紙のサブタイトルが韓国語になっているので日本語に直してください。また、出典が確認できない「9.9兆ドル(McKinsey)」「4.9兆ドル」のカードは外してください。",
+      "スライドに残っている韓国語の文字をすべて日本語に直し、グラフの英語ラベル(Economic Potential、Tech CapExなど)も日本語にしてください。",
+      "2か所直してください。14枚目に残っている「9.9 Trillion $(McKinsey推計)」は出典が確認できないので外してください。最後のスライドのタイトル「The Future is Agentic」は日本語(例: エージェントが切り開く未来)にしてください。",
+      "「McKinsey推計 $9.9 Trillion」「$4.9 Trillion」の記述は出典が確認できないため、その文と数値をすべて削除してください。",
+      "出典が確認できない「McKinsey推計 9.9兆ドル / $9.9 Trillion」「4.9兆ドル / $4.9 Trillion」の文と数値をすべて削除してください。",
+      "出典が確認できない「McKinsey推計 9.9兆ドル / $9.9 Trillion」「4.9兆ドル / $4.9 Trillion」の文と数値をすべて削除してください。",
+      "表紙の日付を「2026年10月25日」と表記してください。",
+      "出典が確認できない「McKinsey推計 9.9兆ドル / $9.9 Trillion」「4.9兆ドル / $4.9 Trillion」の文と数値をすべて削除してください。",
+      "「AI 반도체」という韓国語の表記を「AI半導体」に直してください。"
+     ]
     }
    }
   },
