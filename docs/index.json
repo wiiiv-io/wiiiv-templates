@@ -300,23 +300,26 @@
    "category": "환경·에너지",
    "title": {
     "ko": "세계 탄소 배출과 재생에너지 전환: 주요국 현황 및 한국의 대응 방안",
-    "en": "Global Carbon Emissions and the Renewable Energy Transition"
+    "en": "Global Carbon Emissions and the Renewable Energy Transition",
+    "ja": "世界の炭素排出と再生可能エネルギーへの転換"
    },
    "prompt": {
     "ko": "Our World in Data(OWID)의 국가별 이산화탄소 배출과 에너지 데이터를 받아서 분석해줘. 1990년부터 최근까지 세계와 주요국(중국, 미국, EU, 인도, 한국)의 CO2 배출 추이, 1인당 배출량, 전력 생산 중 재생에너지 비중 변화를 계산하고 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 '세계 탄소 배출과 재생에너지 전환' 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 파리협정 목표와의 격차, 주요국 정책, 한국의 과제도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘.",
-    "en": "Download Our World in Data's CO2 dataset (owid-co2-data.csv) and energy dataset (owid-energy-data.csv) and analyze them. Calculate the CO2 emission trends from 1990 to the latest year for the world and major economies (China, the US, the EU, India and South Korea), per-capita emissions, and the change in the share of renewables in electricity generation, and show them in charts.\n→ Based on the analysis above, write a 15-page report titled 'Global Carbon Emissions and the Renewable Energy Transition'. Use the calculated figures and charts as they are, and also cover the gap to the Paris Agreement goals, policies of the major economies and the challenges for South Korea. Include illustrations that suit the topic."
+    "en": "Download Our World in Data's CO2 dataset (owid-co2-data.csv) and energy dataset (owid-energy-data.csv) and analyze them. Calculate the CO2 emission trends from 1990 to the latest year for the world and major economies (China, the US, the EU, India and South Korea), per-capita emissions, and the change in the share of renewables in electricity generation, and show them in charts.\n→ Based on the analysis above, write a 15-page report titled 'Global Carbon Emissions and the Renewable Energy Transition'. Use the calculated figures and charts as they are, and also cover the gap to the Paris Agreement goals, policies of the major economies and the challenges for South Korea. Include illustrations that suit the topic.",
+    "ja": "Our World in DataのCO2データ(owid-co2-data.csv)とエネルギーデータ(owid-energy-data.csv)を取得して分析してください。1990年から最新年までの世界と主要国(中国、米国、EU、インド、韓国)のCO2排出推移、1人当たり排出量、発電に占める再生可能エネルギー比率の変化を計算し、グラフで示してください。\n→ 上の分析結果をもとに、「世界の炭素排出と再生可能エネルギーへの転換」レポートを15ページで作成してください。計算した数値とグラフをそのまま使い、パリ協定目標とのギャップ、主要国の政策、韓国の課題も扱ってください。テーマに合ったイラストも入れてください。"
    },
    "url": {
     "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/carbon-energy/ko.html",
-    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/carbon-energy/en.html"
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/carbon-energy/en.html",
+    "ja": "https://wiiiv-io.github.io/wiiiv-templates/docs/carbon-energy/ja.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/carbon-energy/thumb.png",
    "params": {
     "pages": 15,
     "theme": "sage",
-    "images": 11,
+    "images": 8,
     "research": "analysis+web",
-    "language": "en",
+    "language": "ja",
     "flow": "Da→AIA"
    },
    "run": {
@@ -348,6 +351,17 @@
       "In the electricity mix chart, show solar, wind, hydro and fossil fuels as one 'Share of global electricity (%)' series.",
       "The electricity mix values are wrong. According to Our World in Data for 2024, the world's electricity came from solar 6.9%, wind 8.1%, hydro 14.3%, nuclear 9.0% and fossil fuels 59.1%. Correct the chart and any text that uses the old solar (15%), wind (13%) and hydro (12.9%) figures."
      ]
+    },
+    "ja": {
+     "credits": null,
+     "minutes": 14.5,
+     "sources": 27,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "cf2828a41+",
+     "sessionId": "2d14bc5e-716c-411d-b59a-c43898afc2b4",
+     "by": "beta",
+     "followUps": []
     }
    }
   }
