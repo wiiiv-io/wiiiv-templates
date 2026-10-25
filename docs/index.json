@@ -81,7 +81,7 @@
    "category": "금융·데이터 분석",
    "title": {
     "ko": "반도체 3사 투자 분석 보고서: 엔비디아, TSMC, 삼성전자",
-    "en": "The AI Triad: Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)",
+    "en": "The AI Supercycle: A Comparative Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)",
     "ja": "半導体3社投資分析レポート：NVIDIA・TSMC・サムスン電子"
    },
    "prompt": {
@@ -117,19 +117,14 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 11.5,
-     "sources": 10,
+     "minutes": 10.0,
+     "sources": 44,
      "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "e594123c7",
-     "sessionId": "64e2f088-5406-412b-ae37-279ea93e98cf",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "c923ec20-7f4f-4155-b6f4-0d3dfb1b5100",
      "by": "beta",
-     "followUps": [
-      "The cumulative return and Sharpe ratio charts appear twice (once labeled NVDA, once NVIDIA). Keep the first pair and remove the repeated pair.",
-      "Please add one sentence at the end of the first paragraph noting that all figures come from the analysis of daily closing prices in this conversation.",
-      "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text.",
-      "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text."
-     ]
+     "followUps": []
     },
     "ja": {
      "credits": null,
