@@ -270,12 +270,12 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 6.7,
+     "minutes": 6.6,
      "sources": 0,
      "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "e594123c7",
-     "sessionId": "2aceab0c-9554-4b0c-9a74-ce6b16cc40e5",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "5075e205-d568-49ff-9141-352e29cd9084",
      "by": "beta",
      "followUps": []
     },
