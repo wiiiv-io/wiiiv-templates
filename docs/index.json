@@ -85,36 +85,40 @@
    "category": "과학·우주",
    "title": {
     "ko": "우주 탐사의 역사와 미래: 1957년부터 2036년까지",
-    "en": "From Sputnik to Starship"
+    "en": "From Sputnik to Starship",
+    "ja": "宇宙探査の歴史と今後10年"
    },
    "prompt": {
     "ko": "우주 탐사의 역사와 앞으로 10년을 다룬 프레젠테이션을 14장 분량으로 만들어줘. 스푸트니크와 아폴로부터 국제우주정거장, 화성 탐사, 재사용 로켓까지 주요 이정표를 연표와 수치로 보여 주고, 아르테미스 계획·화성 유인 탐사·민간 우주 기업·한국의 누리호와 다누리까지 다음 10년의 계획을 정리해줘. 주제에 어울리는 이미지도 넣어줘.",
-    "en": "Make a 14-slide presentation on the history of space exploration and the next ten years. Show the key milestones from Sputnik and Apollo to the International Space Station, Mars exploration and reusable rockets with a timeline and figures, and lay out the plans for the next decade: the Artemis program, crewed Mars missions, private space companies, and Korea's Nuri rocket and Danuri lunar orbiter. Include images that suit the topic."
+    "en": "Make a 14-slide presentation on the history of space exploration and the next ten years. Show the key milestones from Sputnik and Apollo to the International Space Station, Mars exploration and reusable rockets with a timeline and figures, and lay out the plans for the next decade: the Artemis program, crewed Mars missions, private space companies, and Korea's Nuri rocket and Danuri lunar orbiter. Include images that suit the topic.",
+    "ja": "宇宙探査の歴史と今後10年をテーマにした14枚のプレゼンテーションを作成してください。スプートニクとアポロから国際宇宙ステーション、火星探査、再使用ロケットまでの主な節目を年表と数値で示し、アルテミス計画・有人火星探査・民間宇宙企業・韓国のヌリ号とタヌリまで、今後10年の計画を整理してください。テーマに合った画像も入れてください。"
    },
    "url": {
     "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/space-next-decade/ko.html",
-    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/space-next-decade/en.html"
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/space-next-decade/en.html",
+    "ja": "https://wiiiv-io.github.io/wiiiv-templates/docs/space-next-decade/ja.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/space-next-decade/thumb.png",
    "params": {
     "slides": 14,
     "theme": "noir",
-    "images": 5,
+    "images": 4,
     "research": "web",
-    "language": "en"
+    "language": "ja"
    },
    "run": {
     "credits": null,
-    "minutes": 6.5,
+    "minutes": 8.0,
     "sources": 0,
     "model": "qwen3.7-flash",
     "date": "2026-10-25",
     "build": "0e2-latest",
-    "sessionId": "e6595582-8418-4514-9217-932d60894b58",
+    "sessionId": "bb5fbebe-f7ce-4503-a31a-b46517ca610d",
     "by": "beta",
     "followUps": [
-     "Please correct three facts: John Glenn's Friendship 7 flight lasted about 295 minutes (4 h 55 min), not 490; Curiosity has been active for about 14 years as of 2026, not 12; and the crewed Artemis lunar landing (Artemis III) is planned for 2027, not September 2026 — fix the charts and text.",
-     "One more fix: Opportunity landed on Mars in 2004, not 2008 — correct the label 'Opportunity (2008)' to 'Opportunity (2004)'."
+     "3か所直してください。3枚目の数値カードの英語ラベル(Apollo Program (Nominal)など)を日本語に、4枚目のISSのグラフ(120M・156M)は意味が分からないので外して事実の箇条書きに、最後のスライドはカードが画面からはみ出さないように整えてください。",
+     "もう少し直してください。Falcon 9の年間打上げ回数は2021年31回、2022年61回、2023年96回、2024年132回が正しいので、グラフと本文を直してください。Starshipの「試行1〜4」のグラフは意味が分かりにくいので外してください。「Global Space Economy」は「世界の宇宙経済」にしてください。",
+     "「Key Insights」という英語の見出しを日本語(例: 主なポイント)に直してください。"
     ]
    }
   },
