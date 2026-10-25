@@ -6,33 +6,36 @@
    "kind": "report",
    "category": "기술·AI",
    "title": {
-    "ko": "생성형 AI 시장 경쟁 구도와 2027년 전망: 심층 보고서"
+    "ko": "생성형 AI 시장 경쟁 구도와 2027년 전망: 심층 보고서",
+    "en": "The Generative AI Competitive Landscape: Strategic Analysis and Outlook to 2027"
    },
    "prompt": {
-    "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘."
+    "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘.",
+    "en": "Write a 20-page in-depth report on the competitive landscape of the generative AI market and its outlook for 2027. Compare OpenAI, Anthropic, Google, Meta, xAI and Chinese models (DeepSeek, Qwen and others) on revenue, investment, user base and model performance, and cover the enterprise and consumer markets, chip and data-center investment, and regulation. Show the key figures in charts and include illustrations that suit the topic."
    },
    "url": {
-    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ko.html"
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/ko.html",
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/en.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/genai-2027/thumb.png",
    "params": {
     "pages": 20,
     "theme": "pearl",
-    "images": 8,
+    "images": 6,
     "research": "web",
-    "language": "ko"
+    "language": "en"
    },
    "run": {
     "credits": null,
-    "minutes": 12.0,
+    "minutes": 8.8,
     "sources": 22,
     "model": "qwen3.7-flash",
     "date": "2026-10-25",
-    "build": "314cd3f46",
-    "sessionId": "6daa9428-05d3-4c29-afac-390f456e9c0a",
+    "build": "0e2-latest",
+    "sessionId": "7192a6b5-bd78-4049-84e5-70561aee1e1f",
     "by": "beta",
     "followUps": [
-     "'이 시나리오는scaling law' 처럼 띄어쓰기 없이 영어가 붙은 곳을 자연스러운 한국어 문장으로 바로잡아 줘."
+     "Please fix two charts: remove the 'Net Loss/Cost' chart because OpenAI's value is missing (shown as 0), and change the series label 'Valuation (USD)' to 'Valuation ()'."
     ]
    }
   },
