@@ -6,7 +6,7 @@
    "kind": "report",
    "category": "기술·AI",
    "title": {
-    "ko": "생성형 AI 시장 경쟁 구도와 2027년 전망: 심층 보고서",
+    "ko": "생성형 AI 시장 경쟁 구도 및 2027년 심층 전망",
     "en": "The Generative AI Competitive Landscape: Strategic Analysis and Outlook to 2027",
     "ja": "生成AI市場の競争構図と2027年の展望：詳細分析レポート"
    },
@@ -30,30 +30,26 @@
    },
    "run": {
     "credits": null,
-    "minutes": 12.0,
-    "sources": 22,
+    "minutes": 9.0,
+    "sources": 62,
     "model": "qwen3.7-flash",
-    "date": "2026-10-25",
-    "build": "0e2-latest",
-    "sessionId": "6daa9428-05d3-4c29-afac-390f456e9c0a",
+    "date": "2026-10-26",
+    "build": "aaf6fbb06+d583801f0",
+    "sessionId": "5d7290cf-02c3-45f5-b6b3-b66bfaff056d",
     "by": "beta",
-    "followUps": [
-     "'이 시나리오는scaling law' 처럼 띄어쓰기 없이 영어가 붙은 곳을 자연스러운 한국어 문장으로 바로잡아 줘."
-    ]
+    "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 12.0,
-     "sources": 22,
+     "minutes": 9.0,
+     "sources": 62,
      "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "0e2-latest",
-     "sessionId": "6daa9428-05d3-4c29-afac-390f456e9c0a",
+     "date": "2026-10-26",
+     "build": "aaf6fbb06+d583801f0",
+     "sessionId": "5d7290cf-02c3-45f5-b6b3-b66bfaff056d",
      "by": "beta",
-     "followUps": [
-      "'이 시나리오는scaling law' 처럼 띄어쓰기 없이 영어가 붙은 곳을 자연스러운 한국어 문장으로 바로잡아 줘."
-     ]
+     "followUps": []
     },
     "en": {
      "credits": null,
