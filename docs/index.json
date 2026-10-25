@@ -89,15 +89,18 @@
    "category": "금융·데이터 분석",
    "title": {
     "ko": "반도체 3사 투자 분석: NVDA·TSMC·삼성전자 3년 주가와 AI 반도체 전망",
-    "en": "The AI Triad: Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)"
+    "en": "The AI Triad: Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)",
+    "ja": "半導体3社投資分析レポート — NVDA vs TSMC vs サムスン電子"
    },
    "prompt": {
     "ko": "엔비디아(NVDA), TSMC(TSM), 삼성전자(005930.KS)의 최근 3년 주가 데이터를 받아서 분석해줘. 누적 수익률, 연간 변동성, 최대 낙폭(MDD), 샤프 비율, 세 종목 간 상관관계를 계산하고 주요 구간을 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 반도체 3사 투자 분석 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 각 사의 실적·사업 동향과 AI 반도체 수요 전망도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘.",
-    "en": "Download the last three years of stock price data for NVIDIA (NVDA), TSMC (TSM) and Samsung Electronics (005930.KS) and analyze it. Calculate cumulative return, annual volatility, maximum drawdown (MDD), Sharpe ratio and the correlation between the three stocks, and show the key periods in charts.\n→ Based on the analysis above, write a 15-page investment analysis report on the three chipmakers. Use the calculated figures and charts as they are, and also cover each company's earnings and business developments and the outlook for AI chip demand. Include illustrations that suit the topic."
+    "en": "Download the last three years of stock price data for NVIDIA (NVDA), TSMC (TSM) and Samsung Electronics (005930.KS) and analyze it. Calculate cumulative return, annual volatility, maximum drawdown (MDD), Sharpe ratio and the correlation between the three stocks, and show the key periods in charts.\n→ Based on the analysis above, write a 15-page investment analysis report on the three chipmakers. Use the calculated figures and charts as they are, and also cover each company's earnings and business developments and the outlook for AI chip demand. Include illustrations that suit the topic.",
+    "ja": "エヌビディア(NVDA)、TSMC(TSM)、サムスン電子(005930.KS)の直近3年間の株価データを取得して分析してください。累積リターン、年間ボラティリティ、最大ドローダウン(MDD)、シャープレシオ、3銘柄間の相関を計算し、主な局面をグラフで示してください。\n→ 上の分析結果をもとに、半導体3社の投資分析レポートを15ページで作成してください。計算した数値とグラフをそのまま使い、各社の業績・事業動向とAI半導体の需要見通しも扱ってください。テーマに合ったイラストも入れてください。"
    },
    "url": {
     "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/ko.html",
-    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/en.html"
+    "en": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/en.html",
+    "ja": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/ja.html"
    },
    "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/semis-3y/thumb.png",
    "params": {
@@ -105,7 +108,7 @@
     "theme": "ocean",
     "images": 10,
     "research": "analysis+web",
-    "language": "en",
+    "language": "ja",
     "flow": "Da→AIA"
    },
    "run": {
@@ -137,6 +140,20 @@
       "Please add one sentence at the end of the first paragraph noting that all figures come from the analysis of daily closing prices in this conversation.",
       "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text.",
       "Remove the chart that plots TSMC's 'Gross Margin (%)' and 'Market Share (%)' as one series — they are different metrics. Keep the text."
+     ]
+    },
+    "ja": {
+     "credits": null,
+     "minutes": 15.5,
+     "sources": 6,
+     "model": "qwen3.7-flash",
+     "date": "2026-10-25",
+     "build": "cf2828a41+",
+     "sessionId": "d446f57c-6a26-451d-aadf-cd755987708e",
+     "by": "beta",
+     "followUps": [
+      "グラフを2つ直してください。相関係数のグラフは分析結果どおり、NVDA–TSM 0.65、NVDA–サムスン電子 0.1357、TSM–サムスン電子 0.2025 にしてください。四半期売上高のグラフは値が億ドル単位なので、単位表記を「億ドル」に直してください。",
+      "年間ボラティリティのグラフは分析結果どおり、NVDA 47.32%、TSMC 40.18%、サムスン電子 52.59% にしてください。"
      ]
     }
    }
