@@ -155,7 +155,7 @@
    "kind": "slides",
    "category": "과학·우주",
    "title": {
-    "ko": "우주 탐사의 역사와 미래: 2026-2036 주요 이정표 및 전망",
+    "ko": "우주 탐사의 과거, 현재, 그리고 미래",
     "en": "From Sputnik to Starship",
     "ja": "宇宙探査の歴史と今後10年の展望"
    },
@@ -179,24 +179,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 5.2,
+    "minutes": 8.4,
     "sources": 0,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-26",
-    "build": "aaf6fbb06+d583801f0",
-    "sessionId": "ae060c91-350e-4c2d-a4b6-5463fa958486",
+    "model": "qwen3.7-plus (상·중 등급)",
+    "date": "2026-10-28",
+    "build": "b71b3e5b5",
+    "sessionId": "6032795e-8c3c-44bd-a8d3-97246d9f6ba1",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 5.2,
+     "minutes": 8.4,
      "sources": 0,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "ae060c91-350e-4c2d-a4b6-5463fa958486",
+     "model": "qwen3.7-plus (상·중 등급)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "6032795e-8c3c-44bd-a8d3-97246d9f6ba1",
      "by": "beta",
      "followUps": []
     },
