@@ -80,7 +80,7 @@
    "kind": "report",
    "category": "금융·데이터 분석",
    "title": {
-    "ko": "반도체 3사 투자 분석 보고서: 엔비디아, TSMC, 삼성전자",
+    "ko": "반도체 3사 투자 분석 보고서 (NVDA · TSM · 삼성전자)",
     "en": "The AI Supercycle: A Comparative Investment Analysis of NVIDIA, TSMC, and Samsung (2023-2026)",
     "ja": "半導体3社投資分析レポート：NVIDIA・TSMC・サムスン電子"
    },
@@ -105,12 +105,12 @@
    },
    "run": {
     "credits": null,
-    "minutes": 9.8,
-    "sources": 21,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-26",
-    "build": "aaf6fbb06+d583801f0",
-    "sessionId": "f19025db-d2fb-4705-8004-d0fbc6ca27fd",
+    "minutes": 14.4,
+    "sources": 25,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "86993026d",
+    "sessionId": "9c15618f-ade9-4a94-8499-bbadef91af7a",
     "by": "beta",
     "followUps": []
    },
@@ -139,12 +139,12 @@
     },
     "ko": {
      "credits": null,
-     "minutes": 9.8,
-     "sources": 21,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "f19025db-d2fb-4705-8004-d0fbc6ca27fd",
+     "minutes": 14.4,
+     "sources": 25,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "86993026d",
+     "sessionId": "9c15618f-ade9-4a94-8499-bbadef91af7a",
      "by": "beta",
      "followUps": []
     }
