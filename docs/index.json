@@ -82,7 +82,7 @@
    "title": {
     "ko": "반도체 3사 투자 분석 보고서 (NVDA · TSM · 삼성전자)",
     "en": "Semiconductor Investment Analysis: NVIDIA, TSMC & Samsung Electronics",
-    "ja": "半導体3社投資分析レポート：NVIDIA・TSMC・サムスン電子"
+    "ja": "半導体3社投資分析レポート：NVIDIA、TSMC、サムスン電子"
    },
    "prompt": {
     "ko": "엔비디아(NVDA), TSMC(TSM), 삼성전자(005930.KS)의 최근 3년 주가 데이터를 받아서 분석해줘. 누적 수익률, 연간 변동성, 최대 낙폭(MDD), 샤프 비율, 세 종목 간 상관관계를 계산하고 주요 구간을 차트로 보여줘.\n→ 위 분석 결과를 바탕으로 반도체 3사 투자 분석 보고서를 15쪽 분량으로 만들어줘. 계산한 수치와 차트를 그대로 쓰고, 각 사의 실적·사업 동향과 AI 반도체 수요 전망도 함께 다뤄줘. 주제에 어울리는 삽화 이미지도 넣어줘.",
@@ -128,12 +128,12 @@
     },
     "ja": {
      "credits": null,
-     "minutes": 10.2,
-     "sources": 42,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "4c6025f3-8af4-461b-a1e2-6d66ca2200f2",
+     "minutes": 15.0,
+     "sources": 23,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "86993026d",
+     "sessionId": "07fd1f5b-2599-43df-8e2e-b8abfc049da3",
      "by": "beta",
      "followUps": []
     },
