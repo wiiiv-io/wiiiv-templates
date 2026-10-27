@@ -232,7 +232,7 @@
    "kind": "slides",
    "category": "기술·AI",
    "title": {
-    "ko": "2026 AI 기술 트렌드: 자율성과 통합의 시대",
+    "ko": "2026 AI 기술 트렌드: 실험을 넘어 변혁으로",
     "en": "12 AI Technology Trends for 2026",
     "ja": "2026年 AI技術トレンド12選"
    },
@@ -256,16 +256,14 @@
    },
    "run": {
     "credits": null,
-    "minutes": 9.6,
+    "minutes": 8.4,
     "sources": 0,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-25",
-    "build": "43dfe912b",
-    "sessionId": "26aa3c03-47e6-4dcd-9603-6b77d850be67",
+    "model": "qwen3.7-plus (상·중 등급)",
+    "date": "2026-10-28",
+    "build": "b71b3e5b5",
+    "sessionId": "5eaca122-0a0f-46dc-b214-cf6a34507934",
     "by": "beta",
-    "followUps": [
-     "두 군데를 고쳐 줘. 마지막 장의 contact@company.com 과 www.company.com/ai-insights 는 실제가 아닌 자리표시이니 지워 줘. 10번 슬라이드 차트에서 값이 없는 항목이 0으로 떨어지는 선 계열은 빼 줘."
-    ]
+    "followUps": []
    },
    "runs": {
     "en": {
@@ -299,6 +297,17 @@
       "出典が確認できない「McKinsey推計 9.9兆ドル / $9.9 Trillion」「4.9兆ドル / $4.9 Trillion」の文と数値をすべて削除してください。",
       "「AI 반도체」という韓国語の表記を「AI半導体」に直してください。"
      ]
+    },
+    "ko": {
+     "credits": null,
+     "minutes": 8.4,
+     "sources": 0,
+     "model": "qwen3.7-plus (상·중 등급)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "5eaca122-0a0f-46dc-b214-cf6a34507934",
+     "by": "beta",
+     "followUps": []
     }
    }
   },
