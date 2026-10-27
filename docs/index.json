@@ -8,7 +8,7 @@
    "title": {
     "ko": "2026 생성형 AI 시장 심층 분석: 경쟁 구도 및 2027년 전망",
     "en": "Generative AI Competitive Landscape: 2025-2026 Market Analysis",
-    "ja": "生成AI市場の競争構図と2027年の展望"
+    "ja": "生成AI市場の競争構図と2027年展望：エージェント時代への転換点"
    },
    "prompt": {
     "ko": "생성형 AI 시장의 경쟁 구도와 2027년 전망을 20쪽 분량의 심층 보고서로 작성해줘. OpenAI, Anthropic, Google, Meta, xAI와 중국 모델(DeepSeek, Qwen 등)의 매출·투자·사용자 규모·모델 성능 경쟁을 비교하고, 기업용 시장과 소비자 시장, 반도체·데이터센터 투자, 규제 동향까지 다뤄줘. 주요 수치는 차트로 보여 주고, 주제에 어울리는 삽화 이미지도 넣어줘.",
@@ -64,12 +64,12 @@
     },
     "ja": {
      "credits": null,
-     "minutes": 9.9,
-     "sources": 62,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "2dcc3e40-0cb7-4748-aa3a-57ca7c5da6ec",
+     "minutes": 16.8,
+     "sources": 56,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "c7eb6a2a-afec-4bf0-9415-ebc05eda0f28",
      "by": "beta",
      "followUps": []
     }
