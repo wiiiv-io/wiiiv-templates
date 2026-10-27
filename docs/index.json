@@ -429,7 +429,7 @@
    "kind": "report",
    "category": "산업·경제",
    "title": {
-    "ko": "2026 한국 이차전지 산업 심층 보고서: 구조적 전환과 글로벌 재편"
+    "ko": "한국 이차전지 산업 2026: ESS 피벗과 수익성 양극화"
    },
    "prompt": {
     "ko": "한국 이차전지(배터리) 산업의 2026년 현황과 앞으로의 전망을 20쪽 분량의 심층 보고서로 작성해줘. LG에너지솔루션·삼성SDI·SK온과 소재 기업(에코프로·포스코퓨처엠 등)의 실적과 점유율, 중국 CATL·BYD와의 경쟁, 미국 IRA와 유럽 규제의 영향, LFP·46파이·전고체 같은 기술 흐름을 다루고, 주요 수치는 차트로 보여 주고 주제에 어울리는 삽화 이미지도 넣어줘."
@@ -447,24 +447,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 8.5,
-    "sources": 66,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-26",
-    "build": "aaf6fbb06+d583801f0",
-    "sessionId": "8bbb4b5d-6754-4550-a3ed-c51a80556a20",
+    "minutes": 14.1,
+    "sources": 34,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "86993026d",
+    "sessionId": "438d1d66-2b0f-445c-b7f7-435cb59b4c56",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 8.5,
-     "sources": 66,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "8bbb4b5d-6754-4550-a3ed-c51a80556a20",
+     "minutes": 14.1,
+     "sources": 34,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "86993026d",
+     "sessionId": "438d1d66-2b0f-445c-b7f7-435cb59b4c56",
      "by": "beta",
      "followUps": []
     }
