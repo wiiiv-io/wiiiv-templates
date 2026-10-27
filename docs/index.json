@@ -156,7 +156,7 @@
    "category": "과학·우주",
    "title": {
     "ko": "우주 탐사의 과거, 현재, 그리고 미래",
-    "en": "From Sputnik to Starship",
+    "en": "Space Exploration: From Sputnik to Mars & Beyond",
     "ja": "宇宙探査の歴史と今後10年の展望"
    },
    "prompt": {
@@ -202,17 +202,14 @@
     },
     "en": {
      "credits": null,
-     "minutes": 6.5,
+     "minutes": 8.7,
      "sources": 0,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-25",
-     "build": "0e2-latest",
-     "sessionId": "e6595582-8418-4514-9217-932d60894b58",
+     "model": "qwen3.7-plus (상·중 등급)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "d529ea52-28b5-4b06-9267-7b31d24e40bc",
      "by": "beta",
-     "followUps": [
-      "Please correct three facts: John Glenn's Friendship 7 flight lasted about 295 minutes (4 h 55 min), not 490; Curiosity has been active for about 14 years as of 2026, not 12; and the crewed Artemis lunar landing (Artemis III) is planned for 2027, not September 2026 — fix the charts and text.",
-      "One more fix: Opportunity landed on Mars in 2004, not 2008 — correct the label 'Opportunity (2008)' to 'Opportunity (2004)'."
-     ]
+     "followUps": []
     },
     "ja": {
      "credits": null,
