@@ -307,7 +307,7 @@
    "kind": "report",
    "category": "환경·에너지",
    "title": {
-    "ko": "세계 탄소 배출과 재생에너지 전환: 1990~2025 주요국 분석",
+    "ko": "세계 탄소 배출과 재생에너지 전환: 2026년 종합 분석",
     "en": "Global Carbon Emissions and the Renewable Energy Transition",
     "ja": "世界の炭素排出と再生可能エネルギーへの転換：1990年〜2025年分析"
    },
@@ -332,12 +332,12 @@
    },
    "run": {
     "credits": null,
-    "minutes": 13.4,
-    "sources": 40,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-26",
-    "build": "aaf6fbb06+d583801f0",
-    "sessionId": "5f9febe7-9a5f-4112-b3cb-eb7a96670fdf",
+    "minutes": 14.9,
+    "sources": 38,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "86993026d",
+    "sessionId": "f12f0330-5290-4441-bffd-fae8118ba95b",
     "by": "beta",
     "followUps": []
    },
@@ -366,12 +366,12 @@
     },
     "ko": {
      "credits": null,
-     "minutes": 13.4,
-     "sources": 40,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "5f9febe7-9a5f-4112-b3cb-eb7a96670fdf",
+     "minutes": 14.9,
+     "sources": 38,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "86993026d",
+     "sessionId": "f12f0330-5290-4441-bffd-fae8118ba95b",
      "by": "beta",
      "followUps": []
     }
