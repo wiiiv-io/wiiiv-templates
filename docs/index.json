@@ -268,12 +268,12 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 6.6,
+     "minutes": 10.3,
      "sources": 0,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "5075e205-d568-49ff-9141-352e29cd9084",
+     "model": "qwen3.7-plus (상·중 등급)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "13ac0002-98a7-43f5-92a4-e57c6401264b",
      "by": "beta",
      "followUps": []
     },
