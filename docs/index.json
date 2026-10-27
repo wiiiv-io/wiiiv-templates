@@ -157,7 +157,7 @@
    "title": {
     "ko": "우주 탐사의 과거, 현재, 그리고 미래",
     "en": "Space Exploration: From Sputnik to Mars & Beyond",
-    "ja": "宇宙探査の歴史と今後10年の展望"
+    "ja": "宇宙探査の歴史と今後10年"
    },
    "prompt": {
     "ko": "우주 탐사의 역사와 앞으로 10년을 다룬 프레젠테이션을 14장 분량으로 만들어줘. 스푸트니크와 아폴로부터 국제우주정거장, 화성 탐사, 재사용 로켓까지 주요 이정표를 연표와 수치로 보여 주고, 아르테미스 계획·화성 유인 탐사·민간 우주 기업·한국의 누리호와 다누리까지 다음 10년의 계획을 정리해줘. 주제에 어울리는 이미지도 넣어줘.",
@@ -213,12 +213,12 @@
     },
     "ja": {
      "credits": null,
-     "minutes": 5.6,
+     "minutes": 9.6,
      "sources": 0,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "0ec71c90-8ce9-40a3-aed7-7daa2589c2f4",
+     "model": "qwen3.7-plus (상·중 등급)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "b4cad000-e322-4d93-a3fd-ba3caaba4652",
      "by": "beta",
      "followUps": []
     }
