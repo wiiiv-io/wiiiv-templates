@@ -340,12 +340,12 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 10.3,
-     "sources": 44,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "fda86afd-7091-46cc-8c50-f6ca5c1e9a3f",
+     "minutes": 17.8,
+     "sources": 45,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "b71b3e5b5",
+     "sessionId": "b1bbd5ac-1335-4494-9fc8-47dbb1b64234",
      "by": "beta",
      "followUps": []
     },
