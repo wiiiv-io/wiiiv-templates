@@ -6,7 +6,7 @@
    "kind": "report",
    "category": "기술·AI",
    "title": {
-    "ko": "생성형 AI 시장 경쟁 구도 및 2027년 심층 전망",
+    "ko": "2026 생성형 AI 시장 심층 분석: 경쟁 구도 및 2027년 전망",
     "en": "Generative AI Competitive Landscape & 2027 Outlook",
     "ja": "生成AI市場の競争構図と2027年の展望"
    },
@@ -30,24 +30,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 9.0,
-    "sources": 62,
-    "model": "qwen3.7-flash",
-    "date": "2026-10-26",
-    "build": "aaf6fbb06+d583801f0",
-    "sessionId": "5d7290cf-02c3-45f5-b6b3-b66bfaff056d",
+    "minutes": 17.1,
+    "sources": 23,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "86993026d",
+    "sessionId": "ed64eee7-0855-4b30-87b5-cbc4d80b2b56",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 9.0,
-     "sources": 62,
-     "model": "qwen3.7-flash",
-     "date": "2026-10-26",
-     "build": "aaf6fbb06+d583801f0",
-     "sessionId": "5d7290cf-02c3-45f5-b6b3-b66bfaff056d",
+     "minutes": 17.1,
+     "sources": 23,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "86993026d",
+     "sessionId": "ed64eee7-0855-4b30-87b5-cbc4d80b2b56",
      "by": "beta",
      "followUps": []
     },
