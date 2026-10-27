@@ -469,6 +469,52 @@
      "followUps": []
     }
    }
+  },
+  {
+   "id": "defense-export-2026",
+   "kind": "report",
+   "category": "산업·경제",
+   "title": {
+    "ko": "K-방산의 글로벌 도약: 2024~2026년 수출 현황 및 2030년 전망"
+   },
+   "prompt": {
+    "ko": "한국 방위산업 수출의 2024~2026년 현황과 앞으로의 전망을 20쪽 분량의 심층 보고서로 작성해줘. K9 자주포·K2 전차·FA-50·천무 같은 주요 수출 무기와 폴란드·중동·동남아 등 지역별 수출 계약, 한화에어로스페이스·현대로템·KAI·LIG넥스원의 실적과 수주 잔고, 미국·유럽 방산 기업과의 경쟁, 정부의 수출 금융·정책 지원을 다루고, 주요 수치는 차트로 보여 주고 주제에 어울리는 삽화 이미지도 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/defense-export-2026/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/defense-export-2026/thumb.png",
+   "params": {
+    "pages": 20,
+    "theme": "ivory",
+    "images": 8,
+    "research": "web",
+    "language": "ko"
+   },
+   "run": {
+    "credits": null,
+    "minutes": 16.1,
+    "sources": 45,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "9f6d6b4fd",
+    "sessionId": "429e3120-3765-49e2-8bbc-0c07dc666b13",
+    "by": "beta",
+    "followUps": []
+   },
+   "runs": {
+    "ko": {
+     "credits": null,
+     "minutes": 16.1,
+     "sources": 45,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "9f6d6b4fd",
+     "sessionId": "429e3120-3765-49e2-8bbc-0c07dc666b13",
+     "by": "beta",
+     "followUps": []
+    }
+   }
   }
  ]
 }
