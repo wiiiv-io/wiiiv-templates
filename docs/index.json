@@ -515,6 +515,52 @@
      "followUps": []
     }
    }
+  },
+  {
+   "id": "ai-coding-2026",
+   "kind": "report",
+   "category": "기술·AI",
+   "title": {
+    "ko": "2026 AI 코딩 도구 시장: 에이전트 시대의 경쟁 구도와 미래 전망"
+   },
+   "prompt": {
+    "ko": "AI 코딩 도구 시장의 2026년 경쟁 현황과 앞으로의 전망을 20쪽 분량의 심층 보고서로 작성해줘. GitHub Copilot·Cursor·Claude Code·OpenAI Codex·Windsurf 같은 주요 제품의 기능과 가격, 사용자 수와 매출, 기업 도입 현황과 개발 생산성 연구 결과, 시장 규모 전망과 경쟁 구도의 변화를 다루고, 주요 수치는 차트로 보여 주고 주제에 어울리는 삽화 이미지도 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-coding-2026/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/ai-coding-2026/thumb.png",
+   "params": {
+    "pages": 20,
+    "theme": "ivory",
+    "images": 8,
+    "research": "web",
+    "language": "ko"
+   },
+   "run": {
+    "credits": null,
+    "minutes": 15.1,
+    "sources": 29,
+    "model": "qwen3.7-plus (정밀 작성)",
+    "date": "2026-10-28",
+    "build": "9f6d6b4fd",
+    "sessionId": "0f701296-8199-426e-8d5c-2202e901c8eb",
+    "by": "beta",
+    "followUps": []
+   },
+   "runs": {
+    "ko": {
+     "credits": null,
+     "minutes": 15.1,
+     "sources": 29,
+     "model": "qwen3.7-plus (정밀 작성)",
+     "date": "2026-10-28",
+     "build": "9f6d6b4fd",
+     "sessionId": "0f701296-8199-426e-8d5c-2202e901c8eb",
+     "by": "beta",
+     "followUps": []
+    }
+   }
   }
  ]
 }
