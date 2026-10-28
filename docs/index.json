@@ -213,12 +213,12 @@
     },
     "ja": {
      "credits": null,
-     "minutes": 9.6,
+     "minutes": 9.9,
      "sources": 0,
-     "model": "qwen3.7-plus (상·중 등급)",
-     "date": "2026-10-28",
-     "build": "b71b3e5b5",
-     "sessionId": "b4cad000-e322-4d93-a3fd-ba3caaba4652",
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "0b8b546b9",
+     "sessionId": "ec1e92a6-dfdd-45d5-914f-c3b6561e05ac",
      "by": "beta",
      "followUps": []
     }
