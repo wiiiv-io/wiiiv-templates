@@ -265,12 +265,12 @@
    "runs": {
     "en": {
      "credits": null,
-     "minutes": 10.3,
+     "minutes": 9.3,
      "sources": 0,
-     "model": "qwen3.7-plus (상·중 등급)",
-     "date": "2026-10-28",
-     "build": "b71b3e5b5",
-     "sessionId": "13ac0002-98a7-43f5-92a4-e57c6401264b",
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "106aa4ce5",
+     "sessionId": "7c4f9a4b-622b-4c83-a490-503b0f8aac34",
      "by": "beta",
      "followUps": []
     },
