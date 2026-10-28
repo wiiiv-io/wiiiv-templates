@@ -276,12 +276,12 @@
     },
     "ja": {
      "credits": null,
-     "minutes": 9.6,
+     "minutes": 9.3,
      "sources": 0,
-     "model": "qwen3.7-plus (상·중 등급)",
-     "date": "2026-10-28",
-     "build": "b71b3e5b5",
-     "sessionId": "298e70ef-d3e4-4595-991d-3968190be686",
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "e9e7861f8",
+     "sessionId": "e69f3646-7592-4dc0-9a94-c9d72d66bb87",
      "by": "beta",
      "followUps": []
     },
