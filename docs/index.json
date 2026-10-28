@@ -202,12 +202,12 @@
     },
     "en": {
      "credits": null,
-     "minutes": 8.7,
+     "minutes": 8.1,
      "sources": 0,
-     "model": "qwen3.7-plus (상·중 등급)",
-     "date": "2026-10-28",
-     "build": "b71b3e5b5",
-     "sessionId": "d529ea52-28b5-4b06-9267-7b31d24e40bc",
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "106aa4ce5",
+     "sessionId": "a279e485-6f82-4909-8af4-8dcc158d9fa2",
      "by": "beta",
      "followUps": []
     },
