@@ -30,6 +30,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | chess3d | game |
 | othello3d | game |
 | freecell | game |
+| sudoku | game |
 | pacman | game |
 | calculator | tool |
 | scientific-calculator | tool |
