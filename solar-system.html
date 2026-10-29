@@ -12,6 +12,8 @@
 /* 스크롤 막대: 평소엔 숨기고, 휠·끌기로 움직일 때만 가늘게 (모든 스크롤 영역 공통) */
 * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .scrolling { scrollbar-color: rgba(200, 212, 240, .38) transparent; }
+/* 펼친 선택 목록: 운영체제 기본(흰 바탕)에 밝은 글자가 묻히지 않게 */
+select { color-scheme: dark; } select option { background: #141a2b; color: #e9edf7; }
 html, body { margin: 0; height: 100%; background: #000; color: var(--fg); font: 14px/1.5 'Pretendard', 'Inter', 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
 #gl, #ov { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #gl { touch-action: none; cursor: grab; }
@@ -2551,7 +2553,7 @@ const UI = {};
     let m = document.querySelector('.menu'); if (m) { m.remove(); return; }
     m = document.createElement('div'); m.className = 'menu glass'; const t = T();
     const q = RN.quality >= 0.95 ? 'h' : RN.quality >= 0.7 ? 'm' : 'l';
-    m.innerHTML = `<div class="row" style="cursor:default">${t.lang}<select id="mnLang" class="sel" style="background:transparent;border:1px solid var(--line2);border-radius:8px;padding:4px 6px;color:var(--fg);color-scheme:dark">${Object.keys(TX).map(k => `<option value="${k}"${k === LG ? ' selected' : ''}>${LNAMES[k] || k}</option>`).join('')}</select></div>
+    m.innerHTML = `<div class="row" style="cursor:default">${t.lang}<select id="mnLang" class="sel" style="background:transparent;border:1px solid var(--line2);border-radius:8px;padding:4px 6px;color:var(--fg);color-scheme:dark">${Object.keys(LNAMES).filter(k => TX[k]).map(k => `<option value="${k}"${k === LG ? ' selected' : ''}>${LNAMES[k]}</option>`).join('')}</select></div>
       <div class="row" style="cursor:default">${t.quality}<span class="sel"><button data-q="1" class="act${q === 'h' ? ' on' : ''}">${t.qHigh}</button> <button data-q="0.75" class="act${q === 'm' ? ' on' : ''}">${t.qMed}</button> <button data-q="0.5" class="act${q === 'l' ? ' on' : ''}">${t.qLow}</button></span></div>
       <div class="row" style="cursor:default;flex-wrap:wrap">${t.wellDepth}<span class="sel" style="display:flex;gap:6px;align-items:center;width:100%"><small>${t.exag}</small><input id="mnWell" type="range" min="0.2" max="1" step="0.01" value="${GRAV.p}" style="flex:1;accent-color:var(--acc2)"><small>${t.trueRatio}</small></span></div>
       <div class="row${OUTER.on ? ' on' : ''}" data-a="outer">${t.outer}<span class="ck"></span></div>
