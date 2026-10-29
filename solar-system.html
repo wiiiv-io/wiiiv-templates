@@ -2678,7 +2678,7 @@ const UI = {};
       ctx.fillText(name, x + ox, y);
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
-    PBD.overlay(ctx); APO.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on);
+    PBD.overlay(ctx); APO.overlay(ctx); HIST.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on || !!HIST.on);
     if (!SURF.on && !PBD.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
     // 정보판 실시간 값
     infoT += dt; if (infoT > 0.25 && APP.sel) { infoT = 0; INFO.live(APP.sel); }
@@ -2731,7 +2731,7 @@ const UI = {};
     const nice = NICE.reduce((a, x) => Math.abs(Math.log(x / sec)) < Math.abs(Math.log(a / sec)) ? x : a, NICE[0]);
     APP.live = false; APP.playing = true; APP.rate = nice / 86400; UI.time();
   };
-  UI.go = (b, dist) => { PBD.stop(); APO.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
+  UI.go = (b, dist) => { PBD.stop(); APO.stop(); HIST.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
   UI.select = (b, keep) => {
     APP.sel = b; $('info').classList.remove('off'); document.body.classList.add('sheet', 'panel');
     INFO.render(b);
@@ -2819,14 +2819,14 @@ const UI = {};
     ['apollo11', '1969-07-20T20:17', 'apo'], ['eclipse1919', '1919-05-29T13:08', 'eclipse'], ['v2nep', '1989-08-25T02:00', 'mis:voyager2:4'], ['halley86', '1986-02-09T11:00', 'halley', 0],
     ['sl9', '1994-07-16T20:13', 'jupiter', 4], ['mars2003', '2003-08-27T09:51', 'mars', 0], ['conj2020', '2020-12-21T18:20', 'conj'], ['eclipse2017', '2017-08-21T18:26', 'eclipse'],
     ['eclipse2024', '2024-04-08T18:18', 'eclipse'], ['eclipse2026', '2026-08-12T17:46', 'eclipse'], ['cassiniEnd', '2017-09-15T06:00', 'saturn', 0], ['nhPluto', '2015-07-14T08:00', 'mis:newhorizons:2'],
-    ['pbd1990', '1990-02-14T04:48', 'pbd'], ['parker24', '2024-12-24T06:00', 'mis:parker:1'], ['apophis', '2029-04-13T21:46', 'apophis', 0], ['halley61', '2061-07-28T12:00', 'halley', 0],
+    ['pbd1990', '1990-02-14T04:48', 'pbd'], ['apollo8', '1968-12-24T16:40', 'hist:apollo8'], ['apollo13', '1970-04-14T03:08', 'hist:apollo13'], ['hubble', '1990-04-25T19:38', 'hist:hubble'], ['parker24', '2024-12-24T06:00', 'mis:parker:1'], ['apophis', '2029-04-13T21:46', 'apophis', 0], ['halley61', '2061-07-28T12:00', 'halley', 0],
   ];
   UI.dateDlg = () => {
     let d = $('dateDlg'); if (d) { d.remove(); return; }
     d = document.createElement('div'); d.id = 'dateDlg'; d.className = 'glass'; const t = T();
     const cur = new Date(tdb2utc(APP.d)); const iso = cur.toISOString().slice(0, 16);
     d.innerHTML = `<b>${t.dateTitle}</b><div class="row"><input id="dlgDT" type="datetime-local" value="${iso}" step="60"></div><div class="row"><button class="btn" id="dlgGo">${t.go}</button><button class="btn ghost" id="dlgX">${t.cancel}</button></div>
-      <b style="font-size:12.5px;color:var(--dim)">${t.events}</b><div class="evs">${EVENTS.map((e, i) => `<button class="chip" data-i="${i}">${t.ev[e[0]]}</button>`).join('')}</div>`;
+      <b style="font-size:12.5px;color:var(--dim)">${t.events}</b><div class="evs">${EVENTS.map((e, i) => `<button class="chip" data-i="${i}">${t.ev[e[0]] || (HISTT[LG] || HISTT.en)[e[0]]?.title || e[0]}</button>`).join('')}</div>`;
     document.body.appendChild(d);
     $('dlgX').onclick = () => d.remove();
     $('dlgGo').onclick = () => { const v = $('dlgDT').value; if (v) { goDate(Date.parse(v + 'Z')); } d.remove(); };
@@ -2838,6 +2838,7 @@ const UI = {};
     if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; }
     if (what === 'pbd') { PBD.start(); return; }
     if (what === 'apo') { APO.start(); return; }
+    if (what.startsWith('hist:')) { HIST.start(what.slice(5)); return; }
     if (what === 'eclipse') { // 달 그림자 축 위에서 해를 봄
       const E = BY.earth, M = BY.moon; const u = nrm(sub(M.pos, BY.sun.pos)); APP.show.orbits = false; CAM.flyTo(M, len(sub(E.pos, M.pos)) - E.R, { dir: u, dur: 3 }); CAM.fovT = 1.6; UI.close();
       setTimeout(() => { APP.show.orbits = true; }, 60000); return; }
@@ -3473,7 +3474,7 @@ const PBD = { on: false, step: 0 };
 (function () {
   const WHEN = '1990-02-14T04:48Z';
   const T = () => PBDT[LG] || PBDT.en;
-  PBD.start = async () => { if (typeof APO !== 'undefined') APO.stop();
+  PBD.start = async () => { if (typeof APO !== 'undefined') APO.stop(); if (typeof HIST !== 'undefined') HIST.stop();
     if (SURF.on) { SURF.on = false; $('surf').hidden = true; } if (LEARN.on) LEARN.close();
     if (!MIS.list) await MIS.init(); await MIS.load('voyager1'); const m = MIS.list && MIS.list.find(x => x.id === 'voyager1'); if (!m) { UI.toast('voyager1 ?'); return; }
     APP.spin = null; APP.d = utc2tdb(Date.parse(WHEN)); APP.live = false; APP.playing = false; simAt(APP.d); MIS.sel = m; MIS.update(APP.d); UI.time();
@@ -3538,6 +3539,9 @@ const PBDT = {
 // ── 역사 장면: 검색과 탐사선 판에서 찾을 수 있게
 const SCENES = [
   { id: 'apo', go: () => APO.start(), col: [0.95, 0.95, 0.9], name: () => (APOT[LG] || APOT.en).title, en: 'Apollo 11', sub: () => '1969 · NASA', keys: ['apollo', '아폴로', '암스트롱', 'armstrong', '달 착륙', 'moon landing', 'アポロ', '阿波罗', '阿波羅', 'аполлон'] },
+  { id: 'apollo8', go: () => HIST.start('apollo8'), col: [0.6, 0.85, 1], name: () => ((HISTT[LG] || HISTT.en).apollo8).title, en: 'Apollo 8 Earthrise', sub: () => '1968 · NASA', keys: ['apollo 8', '아폴로 8', 'earthrise', '지구돋이', '지구 돋이', '地球の出', '地出', 'восход земли'] },
+  { id: 'apollo13', go: () => HIST.start('apollo13'), col: [1, 0.6, 0.45], name: () => ((HISTT[LG] || HISTT.en).apollo13).title, en: 'Apollo 13', sub: () => '1970 · NASA', keys: ['apollo 13', '아폴로 13', '러벨', 'lovell', 'houston', '휴스턴', '문제가'] },
+  { id: 'hubble', go: () => HIST.start('hubble'), col: [0.8, 0.8, 1], name: () => ((HISTT[LG] || HISTT.en).hubble).title, en: 'Hubble Space Telescope', sub: () => '1990 · NASA/ESA', keys: ['hubble', '허블', 'deep field', '딥 필드', 'ハッブル', '哈勃', '哈伯', 'хаббл'] },
   { id: 'pbd', go: () => PBD.start(), col: [0.55, 0.8, 1], name: () => (PBDT[LG] || PBDT.en).title, en: 'Pale Blue Dot', sub: () => '1990 · Voyager 1', keys: ['pale', 'blue dot', '창백', '푸른 점', '세이건', 'sagan', 'ペイル', '暗淡', 'бледно'] },
 ];
 const SCN_T = { ko: '역사적 순간', en: 'Historic moments', ja: '歴史的な瞬間', zh: '历史时刻', 'zh-TW': '歷史時刻', es: 'Momentos históricos', fr: 'Moments historiques', de: 'Historische Momente', pt: 'Momentos históricos', ru: 'Исторические моменты', vi: 'Khoảnh khắc lịch sử' };
@@ -3569,7 +3573,7 @@ const APO = { on: false, step: 0 };
   const T = () => APOT[LG] || APOT.en;
   const at = iso => { APP.d = utc2tdb(Date.parse(iso)); APP.live = false; APP.playing = false; simAt(APP.d); UI.time(); };
   APO.start = () => {
-    PBD.stop(); if (LEARN.on) LEARN.close(); if (MIS.on) MIS.close(); UI.close();
+    PBD.stop(); HIST.stop(); if (LEARN.on) LEARN.close(); if (MIS.on) MIS.close(); UI.close();
     APO.on = true; APO.saved = { o: APP.show.orbits, l: APP.show.labels, g: APP.show.gravity }; APP.show.gravity = false; APP.spin = null;
     APO.view(0);
   };
@@ -3652,6 +3656,257 @@ const APOT = {
     { b: 'Bầu trời nơi hạ cánh', when: '21/7/1969 02:56 UTC · Biển Tĩnh lặng', body: ['Neil Armstrong bước xuống thang của Eagle và đặt chân lên Mặt Trăng: “Đây là bước nhỏ của một con người, nhưng là bước nhảy vọt của nhân loại.” Khoảng 600 triệu người theo dõi qua truyền hình.', 'Vì Mặt Trăng luôn hướng một mặt về Trái Đất, ở đây Trái Đất gần như đứng yên trên bầu trời và chỉ đổi pha. Không có khí quyển nên bầu trời ban ngày vẫn đen. Kéo để nhìn quanh.'] },
     { b: 'Nơi hạ cánh nhìn từ quỹ đạo', when: '20/7/1969 20:17 UTC · lúc hạ cánh', body: ['“Houston, đây là Căn cứ Tĩnh lặng. Đại bàng đã đáp.” Khi đó chỉ còn khoảng 25 giây nhiên liệu; Armstrong lái bằng tay để tránh một hố đầy đá tảng.', 'Ở độ cao khoảng 110 km, Michael Collins một mình bay quanh Mặt Trăng trong module chỉ huy Columbia, mất hoàn toàn liên lạc với Trái Đất mỗi lần bay ra sau Mặt Trăng. Dấu vàng là nơi hạ cánh.'] },
     { b: 'Mặt Trăng từ Trái Đất hôm ấy', when: '20/7/1969 20:17 UTC · Houston', body: ['Lúc hạ cánh, một vầng trăng lưỡi liềm treo trên Trung tâm Điều khiển ở Houston — ba ngày sau trăng mới. Biển Tĩnh lặng vừa đón bình minh; ánh nắng thấp và bóng dài được chọn có chủ ý để dễ nhận định địa hình.', 'Đây là góc nhìn hẹp (khoảng 6°) tới Mặt Trăng từ Houston vào thời điểm đó.'] },
+  ] },
+};
+
+// ───────────────────────── 역사 장면 모음: 아폴로 8호 지구돋이 · 아폴로 13호 · 허블 ─────────────────────────
+// 장면마다 시점(view) 몇 개: 시각을 맞추고 카메라를 놓은 뒤 설명판(#pbd)을 띄운다. 글은 HISTT[언어][장면].
+const HIST = { on: null, step: 0 };
+(function () {
+  const at = iso => { APP.d = utc2tdb(Date.parse(iso)); APP.live = false; APP.playing = false; simAt(APP.d); UI.time(); };
+  const leaveSurf = () => { if (SURF.on) { SURF.on = false; $('surf').hidden = true; } };
+  const llOf = (b, v) => { const l = m3tv(b.R3, nrm(v)); return [Math.asin(clamp(l[2], -1, 1)) * R2D, Math.atan2(l[1], l[0]) * R2D]; };
+  const rotToward = (a, b, ang) => { const ax = nrm(crs(a, b)); return m3v(qm3(qaxis(ax, ang)), a); };
+  // 천체 둘레 고도 h(km)에 떠서, 목표 o 가 지평선 위 elev° 에 보이는 자리로 (달 궤도에서 지구돋이 등)
+  function limbView(b, o, h, elev, fov) {
+    const e = nrm(sub(o.pos, b.pos)); const dip = Math.acos(b.R / (b.R + h)); // 지평선 내림각
+    const zen = Math.PI / 2 + dip - elev * D2R; // 목표가 천정에서 이만큼 떨어지는 자리
+    const perp = nrm(crs(e, Math.abs(e[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
+    const site = m3v(qm3(qaxis(perp, zen)), e); // e 를 zen 만큼 돌린 방향이 천정
+    const [la, lo] = llOf(b, site); SURF.enter(b, 0); SURF.lat = la; SURF.lon = lo; SURF.alt = h; $('surf').hidden = true;
+    const f = SURF.camera(); const [al, az] = SURF.altaz(o, f); SURF.yaw = az; SURF.pitch = al - fov * (h > 200 ? 0.35 : 0.18); CAM.fovT = fov;
+  }
+  // 천체 위 고도 h 에서 하늘의 한 방향(적경·적위)을 천정에 두고 올려다봄
+  function zenithView(b, ra, de, h, fov) {
+    const v = m3v(EQ2EC, radec2vec(ra * D2R, de * D2R)); const [la, lo] = llOf(b, v);
+    SURF.enter(b, 0); SURF.lat = la; SURF.lon = lo; SURF.alt = h; $('surf').hidden = true; SURF.camera(); SURF.yaw = 0; SURF.pitch = 89.97; CAM.fovT = fov;
+  }
+  const mark = (ctx, w, label, col = '#ffcf6e') => { const p = RN.project(sub(w, CAM.pos)); if (!p.on) return; ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, TAU); ctx.stroke(); ctx.font = '600 12.5px system-ui, sans-serif'; ctx.fillStyle = col; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.fillText(label, p.x + 14, p.y + 4); ctx.shadowBlur = 0; };
+  const surfPt = (b, la, lo, h = 0) => { const l = [Math.cos(la * D2R) * Math.cos(lo * D2R), Math.cos(la * D2R) * Math.sin(lo * D2R), Math.sin(la * D2R)]; return add(b.rp || b.pos, m3v(b.R3, scl(l, b.R + h))); };
+  const HDF = [189.206, 62.216]; // 허블 딥 필드 (적경·적위, 도)
+  const DEF = {
+    apollo8: { views: [
+      { go: () => { at('1968-12-24T16:40:00Z'); limbView(BY.moon, BY.earth, 110, 3, 24); } },
+      { go: () => { leaveSurf(); at('1968-12-24T16:40:00Z'); CAM.fovT = 50; APP.show.orbits = true; CAM.flyTo(BY.earth, len(sub(BY.moon.pos, BY.earth.pos)) * 1.5, { dir: nrm(add(nrm(sub(BY.moon.pos, BY.earth.pos)), [0, 0, 0.9])), dur: 3 }); } },
+    ], photos: [['https://images.nasa.gov/details/as08-14-2383', 'earthrise']] },
+    apollo13: { views: [
+      { go: () => { leaveSurf(); at('1970-04-14T03:08:00Z'); CAM.fovT = 50; APP.show.orbits = true; const E = BY.earth, M = BY.moon; CAM.flyTo(E, len(sub(M.pos, E.pos)) * 2.1, { dir: nrm(add(nrm(crs(sub(M.pos, E.pos), [0, 0, 1])), [0, 0, 0.7])), dur: 3 }); },
+        draw: ctx => { const E = BY.earth, M = BY.moon; const u = nrm(sub(M.pos, E.pos)); mark(ctx, add(E.pos, scl(u, 321860)), HT().apollo13.mark0); } },
+      { go: () => { at('1970-04-15T00:21:00Z'); limbView(BY.moon, BY.earth, 254, 3, 60); } },
+      { go: () => { leaveSurf(); at('1970-04-17T18:07:00Z'); CAM.fovT = 50; const E = BY.earth; const w = surfPt(E, -21.63, -165.37); CAM.flyTo(E, E.R * 3.2, { dir: nrm(sub(w, E.pos)), dur: 3 }); },
+        draw: ctx => mark(ctx, surfPt(BY.earth, -21.63, -165.37), HT().apollo13.mark2) },
+    ], photos: [['https://images.nasa.gov/details/as13-59-8500', 'damage'], ['https://images.nasa.gov/details/as13-62-8929', 'mailbox'], ['https://images.nasa.gov/details/as13-60-8588', 'a13earth']] },
+    hubble: { views: [
+      { go: () => { at('1990-04-25T19:38:00Z'); const E = BY.earth; SURF.enter(E, 0); SURF.lat = 20; SURF.lon = -160; SURF.alt = 612; $('surf').hidden = true; SURF.camera(); SURF.yaw = 90; SURF.pitch = -16; CAM.fovT = 70; } },
+      { go: () => { at('1995-12-18T12:00:00Z'); zenithView(BY.earth, HDF[0], HDF[1], 600, 1.2); },
+        draw: ctx => { const v = m3v(EQ2EC, radec2vec(HDF[0] * D2R, HDF[1] * D2R)); const p = RN.project(scl(v, 1e6)); if (!p.on) return; const s = (2.6 / 60) * D2R * RN.pxPerRad / (devicePixelRatio > 1 ? 1 : 1);
+          ctx.strokeStyle = '#ffcf6e'; ctx.lineWidth = 1.5; ctx.strokeRect(p.x - s / 2, p.y - s / 2, s, s); ctx.font = '600 12.5px system-ui, sans-serif'; ctx.fillStyle = '#ffcf6e'; ctx.fillText(HT().hubble.mark1, p.x + s / 2 + 10, p.y + 4); } },
+    ], photos: [['https://images.nasa.gov/details/S31-76-026', 'hstRelease'], ['https://images.nasa.gov/details/PIA12110', 'hdf'], ['https://images.nasa.gov/details/GSFC_20171208_Archive_e000842', 'pillars']] },
+  };
+  const HT = () => HISTT[LG] || HISTT.en;
+  HIST.start = id => {
+    PBD.stop(); APO.stop(); HIST.stop(); if (LEARN.on) LEARN.close(); if (MIS.on) MIS.close(); UI.close();
+    HIST.on = id; HIST.saved = { o: APP.show.orbits, l: APP.show.labels, g: APP.show.gravity }; APP.show.gravity = false; APP.spin = null; HIST.view(0);
+  };
+  HIST.view = k => { HIST.step = k; DEF[HIST.on].views[k].go(); HIST.panel(); };
+  HIST.stop = () => { if (!HIST.on) return; HIST.on = null; $('pbd').hidden = true; leaveSurf(); CAM.fovT = 50; if (HIST.saved) { APP.show.orbits = HIST.saved.o; APP.show.labels = HIST.saved.l; APP.show.gravity = HIST.saved.g; } UI.toolsSync && UI.toolsSync(); };
+  HIST.panel = () => {
+    const id = HIST.on, t = HT()[id], d = DEF[id], v = t.v[HIST.step], el = $('pbd'); el.hidden = false; const ph = HPT[LG] || HPT.en;
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="hsX">×</button></div><div class="pt">${v.when}</div>${v.body.map(p => `<p>${p}</p>`).join('')}
+      <div class="ph2">${(PHT[LG] || PHT.en).head}</div><div class="plinks">${d.photos.map(([u, c]) => `<a href="${u}" target="_blank" rel="noopener">${ph[c]} ↗</a>`).join('')}</div>
+      <div class="pb">${t.v.map((x, i) => `<button class="act${i === HIST.step ? ' on' : ''}" data-v="${i}">${x.b}</button>`).join('')}</div>`;
+    $('hsX').onclick = HIST.stop; setTip($('hsX'), 'close'); el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => HIST.view(+b.dataset.v));
+  };
+  HIST.overlay = ctx => { if (!HIST.on) return; const v = DEF[HIST.on].views[HIST.step]; if (v.draw) v.draw(ctx); };
+})();
+const HPT = {
+  ko: { earthrise: '지구돋이 (1968)', damage: '폭발로 뜯겨 나간 기계선', mailbox: '임시로 만든 이산화탄소 필터 "우체통"', a13earth: '귀환 길에 본 지구', hstRelease: '디스커버리호 팔에서 풀려나는 허블 (1990)', hdf: '허블 딥 필드 (1995)', pillars: '창조의 기둥' },
+  en: { earthrise: 'Earthrise (1968)', damage: 'The service module torn open by the explosion', mailbox: 'The improvised CO₂ filter “mailbox”', a13earth: 'Earth on the way home', hstRelease: 'Hubble released from Discovery’s arm (1990)', hdf: 'Hubble Deep Field (1995)', pillars: 'Pillars of Creation' },
+};
+const HISTT = {
+  ko: {
+    apollo8: { title: '아폴로 8호 — 지구돋이', v: [
+      { b: '달 궤도에서 본 지구돋이', when: '1968년 12월 24일 16:40 UTC · 달 상공 110 km', body: ['사람이 처음으로 달을 돈 아폴로 8호. 네 번째 바퀴에서 달 뒤편을 돌아 나오던 순간, 창밖 달 지평선 위로 지구가 떠올랐습니다. 윌리엄 앤더스가 급히 컬러 필름을 갈아 끼우고 찍은 사진이 "지구돋이"입니다.', '이 사진은 환경 운동의 상징이 되었습니다. 그날 밤 승무원들은 창세기를 읽는 크리스마스이브 방송을 했고, 역사상 가장 많은 사람이 본 방송 가운데 하나가 되었습니다.'] },
+      { b: '지구와 달 사이', when: '1968년 12월 24일 · 지구에서 약 38만 km', body: ['사람이 지구 중력권을 벗어나 다른 천체까지 간 것은 이때가 처음입니다. 프랭크 보먼, 짐 러벨, 윌리엄 앤더스 세 사람은 지구 전체를 하나의 공으로 본 첫 인류가 되었습니다.'] },
+    ], mark0: '' },
+    apollo13: { title: '아폴로 13호', mark0: '폭발 지점 (지구에서 약 32만 km, 근사)', mark2: '태평양 착수 지점', v: [
+      { b: '"휴스턴, 문제가 생겼다"', when: '1970년 4월 14일 03:08 UTC · 지구에서 약 32만 km', body: ['달로 가던 중 기계선의 2번 산소 탱크가 폭발했습니다. 전력과 산소의 대부분을 잃자 달 착륙은 취소되고, 세 승무원은 달 착륙선 아쿠아리우스를 구명정 삼아 돌아오는 길을 찾아야 했습니다.', '노란 표시는 그 무렵 우주선의 대략적인 위치입니다(실제 궤적이 아니라 지구–달 선 위의 근사 위치).'] },
+      { b: '달 뒤편, 가장 먼 곳', when: '1970년 4월 15일 00:21 UTC · 달 뒤편 상공 254 km', body: ['엔진을 함부로 쓸 수 없어, 달을 한 바퀴 돌아 저절로 지구로 돌아오는 "자유 귀환 궤도"를 탔습니다. 달 뒤편을 지나는 동안 지구와 교신이 끊겼고, 이때 지구에서 400,171 km 떨어져 지금까지 사람이 간 가장 먼 거리 기록을 세웠습니다.', '화면은 그 고도에서 달 지평선 너머로 지구가 다시 떠오르는 모습입니다.'] },
+      { b: '무사 귀환', when: '1970년 4월 17일 18:07 UTC · 남태평양', body: ['추위와 쌓이는 이산화탄소, 부족한 물과 전력을 견딘 끝에 사령선 오디세이가 사모아 근처 남태평양에 내려앉았습니다. 지상 기술진이 우주선에 있는 물건만으로 만들게 한 이산화탄소 필터 "우체통"은 공학의 전설로 남았습니다. "성공적인 실패"라고 불립니다.'] },
+    ] },
+    hubble: { title: '허블 우주 망원경', mark1: '허블 딥 필드 (2.6′ — 보름달의 1/12)', v: [
+      { b: '궤도에서 본 지구', when: '1990년 4월 25일 · 고도 약 612 km', body: ['우주왕복선 디스커버리호가 허블을 로봇 팔로 들어 올려 궤도에 놓았습니다. 대기 위에 있어 별빛이 흔들리지 않으니, 지상 망원경보다 훨씬 선명하게 우주를 봅니다.', '처음 보낸 사진은 흐렸습니다. 주거울이 머리카락 굵기의 1/50(약 2.2 μm)만큼 잘못 깎였던 것입니다. 1993년 우주인들이 "안경"(교정 광학계 COSTAR)을 달아 주고서야 제 눈을 찾았습니다.'] },
+      { b: '허블 딥 필드', when: '1995년 12월 18–28일 · 큰곰자리 방향', body: ['천문학자들은 별도 은하도 거의 없는, 하늘에서 가장 텅 빈 듯한 작은 조각을 골라 열흘 동안 342장을 찍었습니다. 보름달 지름의 12분의 1밖에 안 되는 이 조각에서 약 3,000개의 은하가 나왔습니다.', '화면은 그 방향을 좁은 시야로 올려다본 모습입니다. 맨눈에는 아무것도 없는 이 네모 안에, 수십억 광년 떨어진 은하들이 가득합니다. 우주가 얼마나 큰지 보여 준 사진입니다.'] },
+    ] },
+  },
+  en: {
+    apollo8: { title: 'Apollo 8 — Earthrise', mark0: '', v: [
+      { b: 'Earthrise from lunar orbit', when: '24 Dec 1968 16:40 UTC · 110 km above the Moon', body: ['Apollo 8 was the first crewed flight to orbit the Moon. On the fourth orbit, coming around from the far side, Earth rose over the lunar horizon. William Anders hurriedly loaded colour film and took “Earthrise”.', 'The photo became an emblem of the environmental movement. That evening the crew read from Genesis in a Christmas Eve broadcast that was among the most watched in history.'] },
+      { b: 'Between Earth and Moon', when: '24 Dec 1968 · about 380,000 km from Earth', body: ['It was the first time people left Earth’s gravitational grip for another world. Frank Borman, Jim Lovell and William Anders became the first humans to see the whole Earth as a single sphere.'] },
+    ] },
+    apollo13: { title: 'Apollo 13', mark0: 'Explosion (about 320,000 km from Earth, approximate)', mark2: 'Pacific splashdown', v: [
+      { b: '“Houston, we’ve had a problem”', when: '14 Apr 1970 03:08 UTC · about 320,000 km from Earth', body: ['On the way to the Moon, oxygen tank 2 in the service module exploded. With most power and oxygen gone, the landing was abandoned and the three astronauts used the lunar module Aquarius as a lifeboat to find a way home.', 'The yellow mark is the spacecraft’s approximate position at the time (on the Earth–Moon line, not the real trajectory).'] },
+      { b: 'Behind the Moon, farthest ever', when: '15 Apr 1970 00:21 UTC · 254 km above the far side', body: ['Unable to risk the main engine, they swung around the Moon on a “free-return” path back to Earth. Out of contact behind the Moon, they reached 400,171 km from Earth — still the farthest humans have ever travelled.', 'Here Earth rises again beyond the lunar horizon from that altitude.'] },
+      { b: 'Safe return', when: '17 Apr 1970 18:07 UTC · South Pacific', body: ['After cold, rising carbon dioxide and scarce water and power, the command module Odyssey splashed down in the South Pacific near Samoa. The CO₂ filter “mailbox” that engineers had the crew build from items on board became an engineering legend — a “successful failure”.'] },
+    ] },
+    hubble: { title: 'Hubble Space Telescope', mark1: 'Hubble Deep Field (2.6′ — 1/12 of the full Moon)', v: [
+      { b: 'Earth from its orbit', when: '25 Apr 1990 · about 612 km up', body: ['The shuttle Discovery lifted Hubble out with its robot arm and set it in orbit. Above the atmosphere starlight does not twinkle, so it sees far more sharply than ground telescopes.', 'Its first images were blurred: the primary mirror had been ground wrong by about 2.2 μm, a fiftieth of a hair’s width. Only in 1993 did astronauts fit “glasses” (the COSTAR corrective optics).'] },
+      { b: 'Hubble Deep Field', when: '18–28 Dec 1995 · toward Ursa Major', body: ['Astronomers chose one of the emptiest-looking patches of sky and took 342 exposures over ten days. In a speck one-twelfth the width of the full Moon, about 3,000 galaxies appeared.', 'This is a narrow view looking straight up toward that patch. Inside the square, empty to the eye, are galaxies billions of light-years away — a picture of how vast the universe is.'] },
+    ] },
+  },
+};
+
+// ───────── 역사 장면 번역 ─────────
+HPT.ja = { earthrise: '地球の出（1968）', damage: '爆発で引き裂かれた機械船', mailbox: '即席の二酸化炭素フィルター「郵便ポスト」', a13earth: '帰還途中に見た地球', hstRelease: 'ディスカバリーのアームから放たれるハッブル（1990）', hdf: 'ハッブル・ディープ・フィールド（1995）', pillars: '創造の柱' };
+HISTT.ja = {
+  apollo8: { title: 'アポロ8号 — 地球の出', mark0: '', v: [
+    { b: '月周回軌道からの地球の出', when: '1968年12月24日 16:40 UTC · 月面上空110 km', body: ['アポロ8号は月を周回した初の有人飛行でした。4周目、月の裏側から回り込んできたとき、月の地平線の上に地球が昇りました。ウィリアム・アンダースが急いでカラーフィルムを装填し、「地球の出」を撮影しました。', 'この写真は環境保護運動の象徴となりました。その夜、乗組員はクリスマス・イブの放送で創世記を朗読し、史上最も多くの人が見た放送の一つとなりました。'] },
+    { b: '地球と月のあいだ', when: '1968年12月24日 · 地球から約38万 km', body: ['人類が地球の重力圏を離れ、別の天体へ向かったのはこれが初めてでした。フランク・ボーマン、ジム・ラベル、ウィリアム・アンダースの3人は、地球全体を一つの球として見た最初の人類となりました。'] },
+  ] },
+  apollo13: { title: 'アポロ13号', mark0: '爆発地点（地球から約32万 km、概算）', mark2: '太平洋着水地点', v: [
+    { b: '「ヒューストン、問題が発生した」', when: '1970年4月14日 03:08 UTC · 地球から約32万 km', body: ['月へ向かう途中、機械船の第2酸素タンクが爆発しました。電力と酸素の大半を失い、月面着陸は中止。3人の宇宙飛行士は月着陸船アクエリアスを救命ボートとして使い、帰還の道を探りました。', '黄色の印は当時の宇宙船のおおよその位置です（実際の軌道ではなく、地球と月を結ぶ線上の概略位置）。'] },
+    { b: '月の裏側、史上最遠', when: '1970年4月15日 00:21 UTC · 月の裏側上空254 km', body: ['メインエンジンを使う危険を冒せず、月を回って自然に地球へ戻る「自由帰還軌道」をとりました。月の裏側で交信が途絶えるなか、地球から400,171 kmに達しました。これは今も人類が到達した最遠距離です。', 'ここでは、その高度から月の地平線の向こうに地球が再び昇ります。'] },
+    { b: '無事帰還', when: '1970年4月17日 18:07 UTC · 南太平洋', body: ['寒さ、増え続ける二酸化炭素、乏しい水と電力に耐えた末、司令船オデッセイはサモア近くの南太平洋に着水しました。地上の技術者が船内の物だけで乗組員に作らせた二酸化炭素フィルター「郵便ポスト」は工学の伝説となりました。「成功した失敗」と呼ばれています。'] },
+  ] },
+  hubble: { title: 'ハッブル宇宙望遠鏡', mark1: 'ハッブル・ディープ・フィールド（2.6′ — 満月の1/12）', v: [
+    { b: '軌道から見た地球', when: '1990年4月25日 · 高度約612 km', body: ['スペースシャトル・ディスカバリーがロボットアームでハッブルを持ち上げ、軌道に放ちました。大気の上では星の光がまたたかないため、地上の望遠鏡よりはるかに鮮明に見えます。', '最初の画像はぼやけていました。主鏡が髪の毛の太さの50分の1、約2.2 μmだけ誤って研磨されていたのです。1993年に宇宙飛行士が「メガネ」（補正光学装置COSTAR）を取り付けて、ようやく視力を取り戻しました。'] },
+    { b: 'ハッブル・ディープ・フィールド', when: '1995年12月18〜28日 · おおぐま座の方向', body: ['天文学者たちは空で最も何もなさそうな小さな領域を選び、10日間で342枚を撮影しました。満月の直径の12分の1しかないその一角に、約3,000個の銀河が現れました。', 'これはその方向を真上に見上げた狭い視野です。肉眼では何もないこの四角の中に、数十億光年かなたの銀河がひしめいています。宇宙の広大さを示す一枚です。'] },
+  ] },
+};
+
+HPT.zh = { earthrise: '地出（1968）', damage: '被爆炸撕开的服务舱', mailbox: '临时拼装的二氧化碳过滤器“邮箱”', a13earth: '返航途中看到的地球', hstRelease: '哈勃从发现号机械臂上释放（1990）', hdf: '哈勃深空场（1995）', pillars: '创生之柱' };
+HISTT.zh = {
+  apollo8: { title: '阿波罗8号 — 地出', mark0: '', v: [
+    { b: '月球轨道上的地出', when: '1968年12月24日 16:40 UTC · 月面上空110 km', body: ['阿波罗8号是首次环绕月球的载人飞行。第四圈从月球背面绕出时，地球从月平线上升起。威廉·安德斯匆忙换上彩色胶卷，拍下了《地出》。', '这张照片成为环保运动的象征。当晚，宇航员在平安夜直播中朗读《创世记》，成为史上收看人数最多的节目之一。'] },
+    { b: '地月之间', when: '1968年12月24日 · 距地球约38万 km', body: ['这是人类第一次挣脱地球引力，前往另一个天体。弗兰克·博尔曼、吉姆·洛弗尔和威廉·安德斯成为第一批把整个地球看作一个球体的人。'] },
+  ] },
+  apollo13: { title: '阿波罗13号', mark0: '爆炸位置（距地球约32万 km，近似）', mark2: '太平洋溅落点', v: [
+    { b: '“休斯敦，我们遇到了问题”', when: '1970年4月14日 03:08 UTC · 距地球约32万 km', body: ['在飞往月球途中，服务舱的2号氧气罐发生爆炸。大部分电力和氧气丧失，登月被迫取消，三名宇航员把登月舱“宝瓶座”当作救生艇，寻找回家的路。', '黄色标记是当时飞船的大致位置（位于地月连线上，并非真实轨迹）。'] },
+    { b: '月球背面，史上最远', when: '1970年4月15日 00:21 UTC · 月球背面上空254 km', body: ['由于不敢冒险使用主发动机，他们沿着“自由返回”轨道绕过月球返回地球。在月球背面失去联络时，他们到达了距地球400,171 km处——至今仍是人类到过的最远距离。', '这里，地球从该高度再次越过月平线升起。'] },
+    { b: '平安归来', when: '1970年4月17日 18:07 UTC · 南太平洋', body: ['熬过寒冷、不断升高的二氧化碳以及匮乏的水和电力之后，指令舱“奥德赛”在萨摩亚附近的南太平洋溅落。地面工程师让宇航员用舱内物品拼装的二氧化碳过滤器“邮箱”成为工程传奇——一次“成功的失败”。'] },
+  ] },
+  hubble: { title: '哈勃空间望远镜', mark1: '哈勃深空场（2.6′ — 满月的1/12）', v: [
+    { b: '从轨道看地球', when: '1990年4月25日 · 高度约612 km', body: ['航天飞机发现号用机械臂将哈勃托出并送入轨道。在大气层之上，星光不会闪烁，因此它看得远比地面望远镜清晰。', '最初传回的图像是模糊的：主镜磨制误差约2.2 μm，相当于头发丝粗细的五十分之一。直到1993年，宇航员才为它装上“眼镜”（COSTAR校正光学系统）。'] },
+    { b: '哈勃深空场', when: '1995年12月18–28日 · 大熊座方向', body: ['天文学家选了天空中看起来最空旷的一小块区域，在十天里拍摄了342张照片。在这块只有满月直径十二分之一的小区域里，出现了约3,000个星系。', '这是朝那个方向直直仰望的窄视野。在肉眼看来空无一物的方框里，布满了数十亿光年外的星系——这张照片展示了宇宙有多么浩瀚。'] },
+  ] },
+};
+
+HPT['zh-TW'] = { earthrise: '地出（1968）', damage: '被爆炸撕開的服務艙', mailbox: '臨時拼裝的二氧化碳過濾器「郵筒」', a13earth: '返航途中看到的地球', hstRelease: '哈伯從發現號機械臂上釋放（1990）', hdf: '哈伯深空視野（1995）', pillars: '創生之柱' };
+HISTT['zh-TW'] = {
+  apollo8: { title: '阿波羅8號 — 地出', mark0: '', v: [
+    { b: '月球軌道上的地出', when: '1968年12月24日 16:40 UTC · 月面上空110 km', body: ['阿波羅8號是首次環繞月球的載人飛行。第四圈從月球背面繞出時，地球從月平線上升起。威廉·安德斯匆忙換上彩色底片，拍下了〈地出〉。', '這張照片成為環保運動的象徵。當晚，太空人在平安夜轉播中朗讀〈創世記〉，成為史上收看人數最多的節目之一。'] },
+    { b: '地月之間', when: '1968年12月24日 · 距地球約38萬 km', body: ['這是人類第一次掙脫地球引力，前往另一個天體。法蘭克·包曼、吉姆·洛弗爾和威廉·安德斯成為第一批把整個地球看作一顆球體的人。'] },
+  ] },
+  apollo13: { title: '阿波羅13號', mark0: '爆炸位置（距地球約32萬 km，近似）', mark2: '太平洋濺落點', v: [
+    { b: '「休士頓，我們出了問題」', when: '1970年4月14日 03:08 UTC · 距地球約32萬 km', body: ['在飛往月球途中，服務艙的2號氧氣槽發生爆炸。大部分電力和氧氣喪失，登月被迫取消，三名太空人把登月艙「水瓶座號」當作救生艇，尋找回家的路。', '黃色標記是當時太空船的大致位置（位於地月連線上，並非真實軌跡）。'] },
+    { b: '月球背面，史上最遠', when: '1970年4月15日 00:21 UTC · 月球背面上空254 km', body: ['由於不敢冒險使用主引擎，他們沿著「自由返回」軌道繞過月球返回地球。在月球背面失去聯繫時，他們到達了距地球400,171 km處——至今仍是人類到過的最遠距離。', '這裡，地球從該高度再次越過月平線升起。'] },
+    { b: '平安歸來', when: '1970年4月17日 18:07 UTC · 南太平洋', body: ['熬過寒冷、不斷升高的二氧化碳以及匱乏的水和電力之後，指揮艙「奧德賽號」在薩摩亞附近的南太平洋濺落。地面工程師讓太空人用艙內物品拼裝的二氧化碳過濾器「郵筒」成為工程傳奇——一次「成功的失敗」。'] },
+  ] },
+  hubble: { title: '哈伯太空望遠鏡', mark1: '哈伯深空視野（2.6′ — 滿月的1/12）', v: [
+    { b: '從軌道看地球', when: '1990年4月25日 · 高度約612 km', body: ['太空梭發現號用機械臂將哈伯托出並送入軌道。在大氣層之上，星光不會閃爍，因此它看得遠比地面望遠鏡清晰。', '最初傳回的影像是模糊的：主鏡研磨誤差約2.2 μm，相當於髮絲粗細的五十分之一。直到1993年，太空人才為它裝上「眼鏡」（COSTAR修正光學系統）。'] },
+    { b: '哈伯深空視野', when: '1995年12月18–28日 · 大熊座方向', body: ['天文學家選了天空中看起來最空曠的一小塊區域，在十天裡拍攝了342張照片。在這塊只有滿月直徑十二分之一的小區域裡，出現了約3,000個星系。', '這是朝那個方向直直仰望的窄視野。在肉眼看來空無一物的方框裡，布滿了數十億光年外的星系——這張照片展示了宇宙有多麼浩瀚。'] },
+  ] },
+};
+
+HPT.es = { earthrise: 'Salida de la Tierra (1968)', damage: 'El módulo de servicio desgarrado por la explosión', mailbox: 'El filtro de CO₂ improvisado, el «buzón»', a13earth: 'La Tierra en el camino de regreso', hstRelease: 'El Hubble liberado del brazo del Discovery (1990)', hdf: 'Campo Profundo del Hubble (1995)', pillars: 'Pilares de la Creación' };
+HISTT.es = {
+  apollo8: { title: 'Apolo 8 — Salida de la Tierra', mark0: '', v: [
+    { b: 'Salida de la Tierra desde la órbita lunar', when: '24 dic 1968 16:40 UTC · 110 km sobre la Luna', body: ['El Apolo 8 fue el primer vuelo tripulado en orbitar la Luna. En la cuarta órbita, al salir de la cara oculta, la Tierra se elevó sobre el horizonte lunar. William Anders cargó a toda prisa película en color y tomó «Salida de la Tierra».', 'La foto se convirtió en un emblema del movimiento ecologista. Esa noche la tripulación leyó el Génesis en una emisión de Nochebuena que fue una de las más vistas de la historia.'] },
+    { b: 'Entre la Tierra y la Luna', when: '24 dic 1968 · a unos 380.000 km de la Tierra', body: ['Era la primera vez que unas personas escapaban de la gravedad terrestre rumbo a otro mundo. Frank Borman, Jim Lovell y William Anders fueron los primeros humanos en ver la Tierra entera como una sola esfera.'] },
+  ] },
+  apollo13: { title: 'Apolo 13', mark0: 'Explosión (a unos 320.000 km de la Tierra, aproximado)', mark2: 'Amerizaje en el Pacífico', v: [
+    { b: '«Houston, tenemos un problema»', when: '14 abr 1970 03:08 UTC · a unos 320.000 km de la Tierra', body: ['Camino a la Luna, explotó el tanque de oxígeno 2 del módulo de servicio. Sin la mayor parte de la energía y el oxígeno, se canceló el alunizaje y los tres astronautas usaron el módulo lunar Aquarius como bote salvavidas para volver a casa.', 'La marca amarilla es la posición aproximada de la nave en ese momento (sobre la línea Tierra–Luna, no la trayectoria real).'] },
+    { b: 'Tras la Luna, más lejos que nunca', when: '15 abr 1970 00:21 UTC · 254 km sobre la cara oculta', body: ['Sin poder arriesgarse a usar el motor principal, rodearon la Luna en una trayectoria de «retorno libre» hacia la Tierra. Incomunicados tras la Luna, llegaron a 400.171 km de la Tierra: aún la mayor distancia jamás recorrida por seres humanos.', 'Aquí la Tierra vuelve a salir tras el horizonte lunar desde esa altitud.'] },
+    { b: 'Regreso a salvo', when: '17 abr 1970 18:07 UTC · Pacífico Sur', body: ['Tras soportar el frío, el aumento del dióxido de carbono y la escasez de agua y energía, el módulo de mando Odyssey amerizó en el Pacífico Sur cerca de Samoa. El filtro de CO₂ «buzón» que los ingenieros hicieron construir a la tripulación con objetos de a bordo se volvió una leyenda de la ingeniería: un «fracaso exitoso».'] },
+  ] },
+  hubble: { title: 'Telescopio espacial Hubble', mark1: 'Campo Profundo del Hubble (2,6′ — 1/12 de la Luna llena)', v: [
+    { b: 'La Tierra desde su órbita', when: '25 abr 1990 · a unos 612 km de altura', body: ['El transbordador Discovery sacó el Hubble con su brazo robótico y lo dejó en órbita. Por encima de la atmósfera la luz de las estrellas no titila, así que ve mucho más nítido que los telescopios terrestres.', 'Sus primeras imágenes salieron borrosas: el espejo primario se había pulido mal, unos 2,2 μm, la cincuentava parte del grosor de un cabello. Solo en 1993 los astronautas le pusieron «gafas» (la óptica correctora COSTAR).'] },
+    { b: 'Campo Profundo del Hubble', when: '18–28 dic 1995 · hacia la Osa Mayor', body: ['Los astrónomos eligieron una de las zonas del cielo de aspecto más vacío y tomaron 342 exposiciones durante diez días. En una mota de una doceava parte del ancho de la Luna llena aparecieron unas 3.000 galaxias.', 'Esta es una vista estrecha mirando directamente hacia esa zona. Dentro del cuadrado, vacío a simple vista, hay galaxias a miles de millones de años luz: una imagen de lo inmenso que es el universo.'] },
+  ] },
+};
+
+HPT.fr = { earthrise: 'Lever de Terre (1968)', damage: 'Le module de service éventré par l’explosion', mailbox: 'Le filtre à CO₂ improvisé, la « boîte aux lettres »', a13earth: 'La Terre sur le chemin du retour', hstRelease: 'Hubble libéré du bras de Discovery (1990)', hdf: 'Champ profond de Hubble (1995)', pillars: 'Piliers de la Création' };
+HISTT.fr = {
+  apollo8: { title: 'Apollo 8 — Lever de Terre', mark0: '', v: [
+    { b: 'Lever de Terre en orbite lunaire', when: '24 déc. 1968 16 h 40 UTC · à 110 km au-dessus de la Lune', body: ['Apollo 8 fut le premier vol habité à orbiter autour de la Lune. Lors de la quatrième orbite, en sortant de la face cachée, la Terre se leva au-dessus de l’horizon lunaire. William Anders chargea en hâte un film couleur et prit « Lever de Terre ».', 'La photo devint un emblème du mouvement écologiste. Ce soir-là, l’équipage lut la Genèse lors d’une émission de la veille de Noël qui compte parmi les plus regardées de l’histoire.'] },
+    { b: 'Entre la Terre et la Lune', when: '24 déc. 1968 · à environ 380 000 km de la Terre', body: ['C’était la première fois que des humains échappaient à l’emprise gravitationnelle de la Terre pour un autre monde. Frank Borman, Jim Lovell et William Anders furent les premiers à voir la Terre entière comme une seule sphère.'] },
+  ] },
+  apollo13: { title: 'Apollo 13', mark0: 'Explosion (à environ 320 000 km de la Terre, approximatif)', mark2: 'Amerrissage dans le Pacifique', v: [
+    { b: '« Houston, nous avons un problème »', when: '14 avr. 1970 03 h 08 UTC · à environ 320 000 km de la Terre', body: ['En route vers la Lune, le réservoir d’oxygène n° 2 du module de service explosa. Privés de l’essentiel de l’énergie et de l’oxygène, ils renoncèrent à l’alunissage et les trois astronautes utilisèrent le module lunaire Aquarius comme canot de sauvetage pour rentrer.', 'Le repère jaune indique la position approximative du vaisseau à ce moment (sur la ligne Terre–Lune, pas la trajectoire réelle).'] },
+    { b: 'Derrière la Lune, au plus loin', when: '15 avr. 1970 00 h 21 UTC · à 254 km au-dessus de la face cachée', body: ['Ne pouvant risquer le moteur principal, ils contournèrent la Lune sur une trajectoire de « retour libre » vers la Terre. Sans contact derrière la Lune, ils atteignirent 400 171 km de la Terre — toujours la plus grande distance jamais parcourue par des humains.', 'Ici, la Terre se lève de nouveau au-delà de l’horizon lunaire depuis cette altitude.'] },
+    { b: 'Retour sain et sauf', when: '17 avr. 1970 18 h 07 UTC · Pacifique Sud', body: ['Après le froid, la hausse du dioxyde de carbone et le manque d’eau et d’énergie, le module de commande Odyssey amerrit dans le Pacifique Sud près des Samoa. Le filtre à CO₂ « boîte aux lettres » que les ingénieurs firent fabriquer à l’équipage avec les objets du bord est devenu une légende de l’ingénierie — un « échec réussi ».'] },
+  ] },
+  hubble: { title: 'Télescope spatial Hubble', mark1: 'Champ profond de Hubble (2,6′ — 1/12 de la pleine Lune)', v: [
+    { b: 'La Terre depuis son orbite', when: '25 avr. 1990 · à environ 612 km d’altitude', body: ['La navette Discovery sortit Hubble avec son bras robotique et le plaça en orbite. Au-dessus de l’atmosphère, la lumière des étoiles ne scintille pas : il voit bien plus nettement que les télescopes au sol.', 'Ses premières images étaient floues : le miroir primaire avait été mal poli d’environ 2,2 μm, un cinquantième de l’épaisseur d’un cheveu. Ce n’est qu’en 1993 que des astronautes lui posèrent des « lunettes » (l’optique correctrice COSTAR).'] },
+    { b: 'Champ profond de Hubble', when: '18–28 déc. 1995 · vers la Grande Ourse', body: ['Les astronomes choisirent l’une des zones du ciel les plus vides en apparence et prirent 342 poses en dix jours. Dans ce point large d’un douzième de la pleine Lune apparurent environ 3 000 galaxies.', 'Voici une vue étroite tournée droit vers cette zone. Dans ce carré, vide à l’œil nu, se trouvent des galaxies à des milliards d’années-lumière — une image de l’immensité de l’univers.'] },
+  ] },
+};
+
+HPT.de = { earthrise: 'Erdaufgang (1968)', damage: 'Das von der Explosion aufgerissene Servicemodul', mailbox: 'Der improvisierte CO₂-Filter, der „Briefkasten“', a13earth: 'Die Erde auf dem Heimweg', hstRelease: 'Hubble wird vom Arm der Discovery freigegeben (1990)', hdf: 'Hubble Deep Field (1995)', pillars: 'Säulen der Schöpfung' };
+HISTT.de = {
+  apollo8: { title: 'Apollo 8 — Erdaufgang', mark0: '', v: [
+    { b: 'Erdaufgang aus dem Mondorbit', when: '24. Dez. 1968 16:40 UTC · 110 km über dem Mond', body: ['Apollo 8 war der erste bemannte Flug in eine Mondumlaufbahn. Beim vierten Umlauf, als das Raumschiff hinter der Mondrückseite hervorkam, stieg die Erde über den Mondhorizont. William Anders legte hastig einen Farbfilm ein und nahm „Earthrise“ auf.', 'Das Foto wurde zum Sinnbild der Umweltbewegung. An jenem Abend las die Crew in einer Heiligabend-Sendung aus der Genesis vor – eine der meistgesehenen Sendungen der Geschichte.'] },
+    { b: 'Zwischen Erde und Mond', when: '24. Dez. 1968 · etwa 380.000 km von der Erde', body: ['Zum ersten Mal verließen Menschen den Schwerkraftgriff der Erde, um eine andere Welt zu erreichen. Frank Borman, Jim Lovell und William Anders sahen als erste Menschen die ganze Erde als eine einzige Kugel.'] },
+  ] },
+  apollo13: { title: 'Apollo 13', mark0: 'Explosion (etwa 320.000 km von der Erde, ungefähr)', mark2: 'Wasserung im Pazifik', v: [
+    { b: '„Houston, wir haben ein Problem“', when: '14. Apr. 1970 03:08 UTC · etwa 320.000 km von der Erde', body: ['Auf dem Weg zum Mond explodierte Sauerstofftank 2 im Servicemodul. Da der Großteil von Strom und Sauerstoff verloren war, wurde die Landung abgesagt, und die drei Astronauten nutzten die Mondfähre Aquarius als Rettungsboot für den Heimweg.', 'Die gelbe Markierung zeigt die ungefähre Position des Raumschiffs zu dieser Zeit (auf der Linie Erde–Mond, nicht die tatsächliche Flugbahn).'] },
+    { b: 'Hinter dem Mond, so weit wie nie', when: '15. Apr. 1970 00:21 UTC · 254 km über der Rückseite', body: ['Da sie das Haupttriebwerk nicht riskieren konnten, schwenkten sie auf einer „freien Rückkehrbahn“ um den Mond zurück zur Erde. Ohne Funkkontakt hinter dem Mond erreichten sie 400.171 km Abstand zur Erde – bis heute die größte Entfernung, die Menschen je zurückgelegt haben.', 'Hier geht die Erde aus dieser Höhe erneut über dem Mondhorizont auf.'] },
+    { b: 'Sichere Rückkehr', when: '17. Apr. 1970 18:07 UTC · Südpazifik', body: ['Nach Kälte, steigendem Kohlendioxid und knappem Wasser und Strom wasserte die Kommandokapsel Odyssey im Südpazifik nahe Samoa. Der CO₂-Filter „Briefkasten“, den Ingenieure die Crew aus Gegenständen an Bord bauen ließen, wurde zur Ingenieurslegende – ein „erfolgreicher Fehlschlag“.'] },
+  ] },
+  hubble: { title: 'Hubble-Weltraumteleskop', mark1: 'Hubble Deep Field (2,6′ — 1/12 des Vollmonds)', v: [
+    { b: 'Die Erde aus seiner Umlaufbahn', when: '25. Apr. 1990 · etwa 612 km Höhe', body: ['Die Raumfähre Discovery hob Hubble mit ihrem Roboterarm heraus und setzte es im Orbit aus. Oberhalb der Atmosphäre funkelt das Sternenlicht nicht, daher sieht es weit schärfer als Teleskope am Boden.', 'Die ersten Bilder waren unscharf: Der Hauptspiegel war um etwa 2,2 μm falsch geschliffen, ein Fünfzigstel einer Haarbreite. Erst 1993 setzten Astronauten ihm eine „Brille“ auf (die Korrekturoptik COSTAR).'] },
+    { b: 'Hubble Deep Field', when: '18.–28. Dez. 1995 · Richtung Großer Bär', body: ['Astronomen wählten einen der leersten Himmelsausschnitte und machten in zehn Tagen 342 Aufnahmen. In einem Fleck von einem Zwölftel der Vollmondbreite zeigten sich rund 3.000 Galaxien.', 'Dies ist ein enger Blick senkrecht nach oben auf diesen Ausschnitt. Im Quadrat, das dem Auge leer erscheint, liegen Galaxien in Milliarden Lichtjahren Entfernung – ein Bild davon, wie riesig das Universum ist.'] },
+  ] },
+};
+
+HPT.pt = { earthrise: 'Nascer da Terra (1968)', damage: 'O módulo de serviço rasgado pela explosão', mailbox: 'O filtro de CO₂ improvisado, a “caixa de correio”', a13earth: 'A Terra no caminho de volta', hstRelease: 'Hubble liberado do braço do Discovery (1990)', hdf: 'Campo Profundo do Hubble (1995)', pillars: 'Pilares da Criação' };
+HISTT.pt = {
+  apollo8: { title: 'Apollo 8 — Nascer da Terra', mark0: '', v: [
+    { b: 'Nascer da Terra da órbita lunar', when: '24 dez 1968 16:40 UTC · 110 km acima da Lua', body: ['A Apollo 8 foi o primeiro voo tripulado a orbitar a Lua. Na quarta órbita, ao contornar o lado oculto, a Terra surgiu sobre o horizonte lunar. William Anders carregou às pressas um filme colorido e fez “Nascer da Terra”.', 'A foto tornou-se um emblema do movimento ambientalista. Naquela noite, a tripulação leu o Gênesis numa transmissão de véspera de Natal que está entre as mais assistidas da história.'] },
+    { b: 'Entre a Terra e a Lua', when: '24 dez 1968 · a cerca de 380.000 km da Terra', body: ['Foi a primeira vez que pessoas deixaram o domínio gravitacional da Terra rumo a outro mundo. Frank Borman, Jim Lovell e William Anders foram os primeiros humanos a ver a Terra inteira como uma única esfera.'] },
+  ] },
+  apollo13: { title: 'Apollo 13', mark0: 'Explosão (a cerca de 320.000 km da Terra, aproximado)', mark2: 'Amerissagem no Pacífico', v: [
+    { b: '“Houston, temos um problema”', when: '14 abr 1970 03:08 UTC · a cerca de 320.000 km da Terra', body: ['A caminho da Lua, o tanque de oxigênio 2 do módulo de serviço explodiu. Sem a maior parte da energia e do oxigênio, o pouso foi cancelado e os três astronautas usaram o módulo lunar Aquarius como bote salva-vidas para encontrar o caminho de casa.', 'A marca amarela é a posição aproximada da nave naquele momento (sobre a linha Terra–Lua, não a trajetória real).'] },
+    { b: 'Atrás da Lua, mais longe que nunca', when: '15 abr 1970 00:21 UTC · 254 km acima do lado oculto', body: ['Sem poder arriscar o motor principal, contornaram a Lua numa trajetória de “retorno livre” de volta à Terra. Sem contato atrás da Lua, chegaram a 400.171 km da Terra — ainda a maior distância já percorrida por seres humanos.', 'Aqui a Terra volta a nascer além do horizonte lunar, vista daquela altitude.'] },
+    { b: 'Retorno seguro', when: '17 abr 1970 18:07 UTC · Pacífico Sul', body: ['Depois do frio, do aumento do dióxido de carbono e da escassez de água e energia, o módulo de comando Odyssey amerissou no Pacífico Sul, perto de Samoa. O filtro de CO₂ “caixa de correio” que os engenheiros fizeram a tripulação montar com objetos de bordo virou lenda da engenharia — um “fracasso bem-sucedido”.'] },
+  ] },
+  hubble: { title: 'Telescópio Espacial Hubble', mark1: 'Campo Profundo do Hubble (2,6′ — 1/12 da Lua cheia)', v: [
+    { b: 'A Terra vista de sua órbita', when: '25 abr 1990 · a cerca de 612 km de altitude', body: ['O ônibus espacial Discovery ergueu o Hubble com seu braço robótico e o colocou em órbita. Acima da atmosfera a luz das estrelas não cintila, então ele enxerga com muito mais nitidez que os telescópios em solo.', 'Suas primeiras imagens saíram borradas: o espelho primário havia sido polido errado em cerca de 2,2 μm, um cinquenta avos da espessura de um fio de cabelo. Só em 1993 astronautas lhe instalaram “óculos” (a óptica corretiva COSTAR).'] },
+    { b: 'Campo Profundo do Hubble', when: '18–28 dez 1995 · em direção à Ursa Maior', body: ['Os astrônomos escolheram uma das áreas do céu de aparência mais vazia e fizeram 342 exposições ao longo de dez dias. Num pontinho com um doze avos da largura da Lua cheia, surgiram cerca de 3.000 galáxias.', 'Esta é uma visão estreita olhando direto para aquela área. Dentro do quadrado, vazio a olho nu, há galáxias a bilhões de anos-luz — uma imagem de quão vasto é o universo.'] },
+  ] },
+};
+
+HPT.ru = { earthrise: 'Восход Земли (1968)', damage: 'Служебный модуль, разорванный взрывом', mailbox: 'Самодельный фильтр CO₂ — «почтовый ящик»', a13earth: 'Земля на пути домой', hstRelease: '«Хаббл» отпускают с манипулятора «Дискавери» (1990)', hdf: 'Глубокое поле «Хаббла» (1995)', pillars: 'Столпы Творения' };
+HISTT.ru = {
+  apollo8: { title: '«Аполлон-8» — Восход Земли', mark0: '', v: [
+    { b: 'Восход Земли с лунной орбиты', when: '24 дек. 1968 16:40 UTC · 110 км над Луной', body: ['«Аполлон-8» стал первым пилотируемым полётом на орбиту Луны. На четвёртом витке, выходя из-за обратной стороны, экипаж увидел, как Земля поднимается над лунным горизонтом. Уильям Андерс спешно зарядил цветную плёнку и сделал снимок «Восход Земли».', 'Фотография стала символом экологического движения. В тот вечер экипаж прочитал отрывок из Книги Бытия в рождественской трансляции — одной из самых просматриваемых в истории.'] },
+    { b: 'Между Землёй и Луной', when: '24 дек. 1968 · около 380 000 км от Земли', body: ['Впервые люди вырвались из гравитационных объятий Земли к другому миру. Фрэнк Борман, Джим Ловелл и Уильям Андерс стали первыми людьми, увидевшими всю Землю целиком как единый шар.'] },
+  ] },
+  apollo13: { title: '«Аполлон-13»', mark0: 'Взрыв (около 320 000 км от Земли, приблизительно)', mark2: 'Приводнение в Тихом океане', v: [
+    { b: '«Хьюстон, у нас проблема»', when: '14 апр. 1970 03:08 UTC · около 320 000 км от Земли', body: ['На пути к Луне взорвался кислородный бак № 2 служебного модуля. Лишившись большей части электроэнергии и кислорода, экипаж отказался от посадки, и трое астронавтов использовали лунный модуль «Водолей» (Aquarius) как спасательную шлюпку, чтобы вернуться домой.', 'Жёлтая метка — приблизительное положение корабля в тот момент (на линии Земля–Луна, а не реальная траектория).'] },
+    { b: 'За Луной, дальше всех', when: '15 апр. 1970 00:21 UTC · 254 км над обратной стороной', body: ['Не рискуя включать основной двигатель, они обогнули Луну по траектории «свободного возврата» к Земле. Без связи за Луной они удалились от Земли на 400 171 км — это до сих пор самое большое расстояние, на которое когда-либо удалялись люди.', 'Здесь Земля снова восходит над лунным горизонтом с этой высоты.'] },
+    { b: 'Благополучное возвращение', when: '17 апр. 1970 18:07 UTC · южная часть Тихого океана', body: ['Пережив холод, рост углекислого газа, нехватку воды и энергии, командный модуль «Одиссей» (Odyssey) приводнился в южной части Тихого океана близ Самоа. Фильтр CO₂ «почтовый ящик», который инженеры поручили экипажу собрать из подручных предметов, стал инженерной легендой — «успешной неудачей».'] },
+  ] },
+  hubble: { title: 'Космический телескоп «Хаббл»', mark1: 'Глубокое поле «Хаббла» (2,6′ — 1/12 полной Луны)', v: [
+    { b: 'Земля с его орбиты', when: '25 апр. 1990 · высота около 612 км', body: ['Шаттл «Дискавери» извлёк «Хаббл» манипулятором и вывел его на орбиту. Над атмосферой звёзды не мерцают, поэтому телескоп видит гораздо чётче наземных.', 'Первые снимки оказались размытыми: главное зеркало было отшлифовано с ошибкой около 2,2 мкм — одна пятидесятая толщины волоса. Лишь в 1993 году астронавты надели ему «очки» (корректирующую оптику COSTAR).'] },
+    { b: 'Глубокое поле «Хаббла»', when: '18–28 дек. 1995 · в направлении Большой Медведицы', body: ['Астрономы выбрали один из самых пустых на вид участков неба и за десять дней сделали 342 снимка. В пятнышке шириной в одну двенадцатую диаметра полной Луны обнаружилось около 3000 галактик.', 'Это узкий вид прямо вверх на этот участок. Внутри квадрата, пустого для глаза, — галактики на расстоянии миллиардов световых лет. Снимок о том, как огромна Вселенная.'] },
+  ] },
+};
+
+HPT.vi = { earthrise: 'Trái Đất mọc (1968)', damage: 'Khoang phục vụ bị vụ nổ xé toạc', mailbox: 'Bộ lọc CO₂ tự chế “hộp thư”', a13earth: 'Trái Đất trên đường trở về', hstRelease: 'Hubble được thả khỏi cánh tay của Discovery (1990)', hdf: 'Trường Sâu Hubble (1995)', pillars: 'Những Cột Trụ Sáng Tạo' };
+HISTT.vi = {
+  apollo8: { title: 'Apollo 8 — Trái Đất mọc', mark0: '', v: [
+    { b: 'Trái Đất mọc từ quỹ đạo Mặt Trăng', when: '24/12/1968 16:40 UTC · cách Mặt Trăng 110 km', body: ['Apollo 8 là chuyến bay có người lái đầu tiên bay quanh Mặt Trăng. Ở vòng thứ tư, khi vòng ra từ phía khuất, Trái Đất nhô lên trên đường chân trời Mặt Trăng. William Anders vội lắp phim màu và chụp bức “Trái Đất mọc”.', 'Bức ảnh trở thành biểu tượng của phong trào môi trường. Tối hôm đó, phi hành đoàn đọc Sáng Thế Ký trong chương trình truyền hình đêm Giáng sinh, một trong những chương trình được xem nhiều nhất lịch sử.'] },
+    { b: 'Giữa Trái Đất và Mặt Trăng', when: '24/12/1968 · cách Trái Đất khoảng 380.000 km', body: ['Đây là lần đầu tiên con người thoát khỏi vòng tay hấp dẫn của Trái Đất để đến một thế giới khác. Frank Borman, Jim Lovell và William Anders trở thành những người đầu tiên nhìn thấy toàn bộ Trái Đất như một quả cầu duy nhất.'] },
+  ] },
+  apollo13: { title: 'Apollo 13', mark0: 'Vụ nổ (cách Trái Đất khoảng 320.000 km, gần đúng)', mark2: 'Điểm hạ cánh trên Thái Bình Dương', v: [
+    { b: '“Houston, chúng tôi gặp sự cố”', when: '14/4/1970 03:08 UTC · cách Trái Đất khoảng 320.000 km', body: ['Trên đường tới Mặt Trăng, bình ôxy số 2 trong khoang phục vụ phát nổ. Mất phần lớn điện và ôxy, cuộc đổ bộ bị hủy và ba phi hành gia dùng tàu đổ bộ Mặt Trăng Aquarius làm xuồng cứu sinh để tìm đường về nhà.', 'Dấu màu vàng là vị trí gần đúng của tàu vào lúc đó (trên đường nối Trái Đất–Mặt Trăng, không phải quỹ đạo thực).'] },
+    { b: 'Sau Mặt Trăng, xa nhất từng có', when: '15/4/1970 00:21 UTC · cách phía khuất 254 km', body: ['Không dám mạo hiểm dùng động cơ chính, họ vòng quanh Mặt Trăng theo quỹ đạo “quay về tự do” để trở lại Trái Đất. Mất liên lạc sau Mặt Trăng, họ đạt khoảng cách 400.171 km từ Trái Đất — đến nay vẫn là khoảng cách xa nhất con người từng đi.', 'Tại đây, Trái Đất lại mọc lên bên kia chân trời Mặt Trăng từ độ cao đó.'] },
+    { b: 'Trở về an toàn', when: '17/4/1970 18:07 UTC · Nam Thái Bình Dương', body: ['Sau khi chịu đựng giá lạnh, lượng CO₂ tăng dần cùng nước và điện khan hiếm, khoang chỉ huy Odyssey hạ xuống Nam Thái Bình Dương gần Samoa. Bộ lọc CO₂ “hộp thư” mà các kỹ sư hướng dẫn phi hành đoàn tự làm từ đồ vật trên tàu đã trở thành huyền thoại kỹ thuật — một “thất bại thành công”.'] },
+  ] },
+  hubble: { title: 'Kính viễn vọng không gian Hubble', mark1: 'Trường Sâu Hubble (2,6′ — 1/12 Trăng tròn)', v: [
+    { b: 'Trái Đất từ quỹ đạo', when: '25/4/1990 · độ cao khoảng 612 km', body: ['Tàu con thoi Discovery dùng cánh tay robot nhấc Hubble ra và đặt vào quỹ đạo. Ở trên khí quyển, ánh sao không lấp lánh, nên nó nhìn rõ nét hơn nhiều so với kính viễn vọng mặt đất.', 'Những ảnh đầu tiên bị mờ: gương chính bị mài sai khoảng 2,2 μm, bằng một phần năm mươi độ dày sợi tóc. Mãi đến năm 1993 các phi hành gia mới lắp cho nó “kính mắt” (hệ quang học hiệu chỉnh COSTAR).'] },
+    { b: 'Trường Sâu Hubble', when: '18–28/12/1995 · hướng chòm Đại Hùng', body: ['Các nhà thiên văn chọn một trong những mảng trời trông trống trải nhất và chụp 342 lần phơi sáng trong mười ngày. Trong một đốm nhỏ chỉ rộng bằng một phần mười hai Trăng tròn, khoảng 3.000 thiên hà đã hiện ra.', 'Đây là góc nhìn hẹp hướng thẳng lên mảng trời đó. Trong ô vuông trống rỗng với mắt thường là những thiên hà cách xa hàng tỷ năm ánh sáng — một bức ảnh cho thấy vũ trụ bao la đến nhường nào.'] },
   ] },
 };
 
