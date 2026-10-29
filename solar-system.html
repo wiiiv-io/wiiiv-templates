@@ -1990,13 +1990,35 @@ void main(){ vec2 xy = uCamXY + vD; float r = length(xy); float u = (r - uRingR.
   float a = t.a * near * edge * uAmt; vec3 c = mix(vec3(.9, .87, .82), t.rgb * 1.6, .5) * uLight * sh * 1.6 * abs(uSunL.z) * 2.;
   o = vec4(c * a, a * .9); logDepthF(); }`;
 const RFT = {
-  ko: { title: '토성 고리 속', alt: '고리면에서 {h}', z: { A: 'A 고리', B: 'B 고리', C: 'C 고리', cassini: '카시니 간극' },
+  ko: { enter: '고리 속으로 들어가기 — 얼음 덩어리 사이로', title: '토성 고리 속', alt: '고리면에서 {h}', z: { A: 'A 고리', B: 'B 고리', C: 'C 고리', cassini: '카시니 간극' },
     zone: r => r < 74658 ? 'D 고리 안쪽' : r < 92000 ? 'C 고리' : r < 117580 ? 'B 고리' : r < 122170 ? '카시니 간극' : r < 136775 ? 'A 고리' : 'A 고리 바깥',
     body: ['고리는 지름이 27만 km나 되지만 두께는 대부분 10~수십 m입니다. 그 안에는 모래알부터 집채만 한 덩어리까지 물 얼음 알갱이가 빽빽하게 떠서, 저마다 작은 위성처럼 토성을 초속 약 17~20 km로 돕니다. 지금 카메라도 그들과 함께 돌고 있어 덩어리들이 멈춘 듯 보입니다.', '휠로 고리면에서 높이를 바꾸고, 끌어서 둘러보세요. 아래 단추로 다른 고리로 옮길 수 있습니다. 가장 빽빽한 B 고리, 미마스의 공명이 비워 낸 카시니 간극, 엷은 C 고리를 비교해 보세요.'] },
-  en: { title: 'Inside Saturn’s rings', alt: '{h} above the ring plane', z: { A: 'A ring', B: 'B ring', C: 'C ring', cassini: 'Cassini Division' },
+  en: { enter: 'Fly into the rings — among the ice chunks', title: 'Inside Saturn’s rings', alt: '{h} above the ring plane', z: { A: 'A ring', B: 'B ring', C: 'C ring', cassini: 'Cassini Division' },
     zone: r => r < 74658 ? 'Inside the D ring' : r < 92000 ? 'C ring' : r < 117580 ? 'B ring' : r < 122170 ? 'Cassini Division' : r < 136775 ? 'A ring' : 'Beyond the A ring',
     body: ['The rings are 270,000 km across but mostly only 10 to a few tens of metres thick. Inside, water-ice chunks from sand grains to house-sized boulders crowd together, each orbiting Saturn like a tiny moon at about 17–20 km/s. The camera is orbiting with them, so they seem to hang still.', 'Use the wheel to change your height above the ring plane and drag to look around. The buttons move you to other rings: compare the dense B ring, the Cassini Division swept clear by a resonance with Mimas, and the faint C ring.'] },
 };
+
+// 다른 언어: 고리 이름(z)·안쪽/바깥 말로 구역 이름을 만듦
+const rfZone = (z, inD, outA) => r => r < 74658 ? inD : r < 92000 ? z.C : r < 117580 ? z.B : r < 122170 ? z.cassini : r < 136775 ? z.A : outA;
+const rfL = (o) => Object.assign(o, { zone: rfZone(o.z, o.inD, o.outA) });
+RFT.ja = rfL({ enter: '環の中へ — 氷の塊のあいだを', title: '土星の環の中', alt: '環の面から {h}', z: { A: 'A環', B: 'B環', C: 'C環', cassini: 'カッシーニの間隙' }, inD: 'D環の内側', outA: 'A環の外側',
+  body: ['環の直径は27万kmもありますが、厚さはほとんどが10〜数十mです。その中には砂粒から家ほどの大きさまでの氷の塊がひしめき、それぞれが小さな衛星のように秒速約17〜20kmで土星を回っています。カメラも一緒に回っているので、塊は止まっているように見えます。', 'ホイールで環の面からの高さを変え、ドラッグで見回してください。下のボタンで別の環へ移れます。最も密なB環、ミマスとの共鳴で掃かれたカッシーニの間隙、淡いC環を比べてみましょう。'] });
+RFT.zh = rfL({ enter: '飞进光环——穿行在冰块之间', title: '土星光环之中', alt: '距环面 {h}', z: { A: 'A环', B: 'B环', C: 'C环', cassini: '卡西尼环缝' }, inD: 'D环内侧', outA: 'A环外侧',
+  body: ['光环直径达27万公里，但大部分厚度只有10到几十米。里面挤满了从沙粒到房子大小的冰块，每一块都像小卫星一样以每秒约17–20公里绕土星运行。镜头也在随它们一起运行，所以冰块看起来像静止一样。', '用滚轮改变离环面的高度，拖动环顾四周。下方按钮可移到其他光环：比较最密的B环、被土卫一共振清空的卡西尼环缝和稀薄的C环。'] });
+RFT['zh-TW'] = rfL({ enter: '飛進光環——穿行在冰塊之間', title: '土星光環之中', alt: '距環面 {h}', z: { A: 'A環', B: 'B環', C: 'C環', cassini: '卡西尼環縫' }, inD: 'D環內側', outA: 'A環外側',
+  body: ['光環直徑達27萬公里，但大部分厚度只有10到幾十公尺。裡面擠滿了從沙粒到房子大小的冰塊，每一塊都像小衛星一樣以每秒約17–20公里繞土星運行。鏡頭也隨它們一起運行，所以冰塊看起來像靜止一樣。', '用滾輪改變離環面的高度，拖曳環顧四周。下方按鈕可移到其他光環：比較最密的B環、被土衛一共振清空的卡西尼環縫和稀薄的C環。'] });
+RFT.es = rfL({ enter: 'Entrar en los anillos — entre bloques de hielo', title: 'Dentro de los anillos de Saturno', alt: '{h} sobre el plano de los anillos', z: { A: 'Anillo A', B: 'Anillo B', C: 'Anillo C', cassini: 'División de Cassini' }, inD: 'Dentro del anillo D', outA: 'Más allá del anillo A',
+  body: ['Los anillos miden 270 000 km de diámetro, pero casi siempre solo de 10 a unas decenas de metros de grosor. Dentro se apiñan bloques de hielo desde granos de arena hasta rocas del tamaño de una casa, y cada uno orbita Saturno como una pequeña luna a unos 17–20 km/s. La cámara orbita con ellos, así que parecen quietos.', 'Usa la rueda para cambiar la altura sobre el plano y arrastra para mirar alrededor. Los botones te llevan a otros anillos: compara el denso anillo B, la división de Cassini vaciada por una resonancia con Mimas y el tenue anillo C.'] });
+RFT.fr = rfL({ enter: 'Entrer dans les anneaux — parmi les blocs de glace', title: 'Dans les anneaux de Saturne', alt: '{h} au-dessus du plan des anneaux', z: { A: 'Anneau A', B: 'Anneau B', C: 'Anneau C', cassini: 'Division de Cassini' }, inD: 'À l’intérieur de l’anneau D', outA: 'Au-delà de l’anneau A',
+  body: ['Les anneaux mesurent 270 000 km de diamètre mais le plus souvent seulement 10 à quelques dizaines de mètres d’épaisseur. Des blocs de glace, du grain de sable au rocher grand comme une maison, s’y pressent ; chacun tourne autour de Saturne comme une petite lune à environ 17–20 km/s. La caméra tourne avec eux, ils semblent donc immobiles.', 'Utilisez la molette pour changer d’altitude au-dessus du plan et faites glisser pour regarder autour. Les boutons mènent à d’autres anneaux : comparez le dense anneau B, la division de Cassini vidée par une résonance avec Mimas et le pâle anneau C.'] });
+RFT.de = rfL({ enter: 'In die Ringe fliegen — zwischen die Eisbrocken', title: 'In Saturns Ringen', alt: '{h} über der Ringebene', z: { A: 'A-Ring', B: 'B-Ring', C: 'C-Ring', cassini: 'Cassinische Teilung' }, inD: 'Innerhalb des D-Rings', outA: 'Jenseits des A-Rings',
+  body: ['Die Ringe sind 270.000 km breit, meist aber nur 10 bis einige Dutzend Meter dick. Darin drängen sich Eisbrocken von Sandkorn- bis Hausgröße; jeder umkreist Saturn wie ein winziger Mond mit etwa 17–20 km/s. Die Kamera kreist mit, deshalb scheinen sie stillzustehen.', 'Mit dem Mausrad ändern Sie die Höhe über der Ringebene, mit Ziehen schauen Sie sich um. Die Knöpfe bringen Sie zu anderen Ringen: Vergleichen Sie den dichten B-Ring, die von einer Resonanz mit Mimas leergefegte Cassinische Teilung und den blassen C-Ring.'] });
+RFT.pt = rfL({ enter: 'Entrar nos anéis — entre blocos de gelo', title: 'Dentro dos anéis de Saturno', alt: '{h} acima do plano dos anéis', z: { A: 'Anel A', B: 'Anel B', C: 'Anel C', cassini: 'Divisão de Cassini' }, inD: 'Dentro do anel D', outA: 'Além do anel A',
+  body: ['Os anéis têm 270.000 km de diâmetro, mas quase sempre só 10 a algumas dezenas de metros de espessura. Dentro se amontoam blocos de gelo de grãos de areia a pedras do tamanho de uma casa, cada um orbitando Saturno como uma pequena lua a cerca de 17–20 km/s. A câmera orbita junto, por isso parecem parados.', 'Use a roda para mudar a altura acima do plano e arraste para olhar em volta. Os botões levam a outros anéis: compare o denso anel B, a Divisão de Cassini esvaziada por uma ressonância com Mimas e o tênue anel C.'] });
+RFT.ru = rfL({ enter: 'Влететь в кольца — среди ледяных глыб', title: 'Внутри колец Сатурна', alt: '{h} над плоскостью колец', z: { A: 'Кольцо A', B: 'Кольцо B', C: 'Кольцо C', cassini: 'Щель Кассини' }, inD: 'Внутри кольца D', outA: 'За кольцом A',
+  body: ['Кольца имеют 270 000 км в поперечнике, но толщина их обычно лишь от 10 до нескольких десятков метров. Внутри теснятся ледяные глыбы — от песчинок до валунов размером с дом, и каждая обращается вокруг Сатурна, как крошечная луна, со скоростью около 17–20 км/с. Камера движется вместе с ними, поэтому они кажутся неподвижными.', 'Колесом меняйте высоту над плоскостью колец, перетаскиванием осматривайтесь. Кнопки переносят к другим кольцам: сравните плотное кольцо B, щель Кассини, расчищенную резонансом с Мимасом, и бледное кольцо C.'] });
+RFT.vi = rfL({ enter: 'Bay vào vành đai — giữa những khối băng', title: 'Bên trong vành đai Sao Thổ', alt: 'Cách mặt vành {h}', z: { A: 'Vành A', B: 'Vành B', C: 'Vành C', cassini: 'Khe Cassini' }, inD: 'Bên trong vành D', outA: 'Bên ngoài vành A',
+  body: ['Vành đai rộng 270.000 km nhưng phần lớn chỉ dày từ 10 đến vài chục mét. Bên trong chen chúc những khối băng từ hạt cát đến tảng lớn bằng ngôi nhà, mỗi khối quay quanh Sao Thổ như một mặt trăng nhỏ với tốc độ khoảng 17–20 km/s. Camera cũng quay cùng chúng nên trông như đứng yên.', 'Dùng con lăn để đổi độ cao so với mặt vành và kéo để nhìn quanh. Các nút đưa bạn sang vành khác: so sánh vành B dày đặc, khe Cassini bị cộng hưởng với Mimas quét trống và vành C mờ nhạt.'] });
 
 // ───────────────────────── 태양 활동: 흑점 쌍·코로나 고리(흐름)·플레어·코로나 질량 방출·홍염 ─────────────────────────
 // 활동 영역은 날짜로 정해지고(같은 날이면 같은 모습) 위도별 차등 자전으로 흘러간다.
@@ -2812,7 +2834,7 @@ const INFO = {};
     });
     const sec = t.sec;
     let h = '';
-    if (b.id === 'saturn') h += `<button class="act ringin" id="ringIn">${(RFT[LG] || RFT.en).enter || (LG === 'ko' ? '고리 속으로 들어가기 — 얼음 덩어리 사이로' : 'Fly into the rings — among the ice chunks')}</button>`;
+    if (b.id === 'saturn') h += `<button class="act ringin" id="ringIn">${(RFT[LG] || RFT.en).enter}</button>`;
     h += `<h3>${sec.live}</h3><div id="liveBox"></div>`;
     if (b.id === 'sun') { const B = BANDT[LG] || BANDT.en; const st = Date.now() / 9e5 | 0; // 15분마다 새 주소 (캐시 피함)
       h += `<h3>${B.head}</h3><div class="bands">${B.b.map((x, i) => `<button class="act${SUNAR.band === i ? ' on' : ''}" data-band="${i}">${x}</button>`).join('')}</div><p class="bnote">${B.note[SUNAR.band]}</p>`;
