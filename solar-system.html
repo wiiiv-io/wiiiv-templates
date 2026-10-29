@@ -52,7 +52,8 @@ input { font: inherit; color: inherit; }
 #infoHead .kind { display: inline-block; margin-top: 8px; padding: 2px 9px; border-radius: 99px; font-size: 11.5px; color: #111; background: var(--acc); font-weight: 650; }
 #infoHead .x { position: absolute; right: 8px; top: 8px; width: 34px; height: 34px; border-radius: 10px; font-size: 20px; color: var(--dim); }
 #infoHead .x:hover { background: rgba(255,255,255,.06); color: var(--fg); }
-#infoActs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+#infoActs { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, auto)); justify-content: start; gap: 5px; margin-top: 10px; }
+#infoActs .act { padding: 6px 8px; font-size: 12px; line-height: 1.25; letter-spacing: -.01em; text-align: center; }
 .act { padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line2); font-size: 12.5px; color: #d7def0; }
 .act:hover { border-color: var(--acc2); color: #fff; }
 .act.on { border-color: var(--acc); color: var(--acc); }
@@ -2424,10 +2425,10 @@ INFOTXT.en = {
 const INFO = {};
 (function () {
   const G = 6.6743e-20; // km³/(kg·s²)
-  const SYS_T = { ko: '부속 천체 보기', en: 'Show its moons', ja: '衛星も見る', zh: '查看卫星', 'zh-TW': '查看衛星', es: 'Ver sus lunas', fr: 'Voir ses lunes', de: 'Monde zeigen', pt: 'Ver as luas', ru: 'Показать спутники', vi: 'Xem các vệ tinh' };
+  const SYS_T = { ko: '위성계 보기', en: 'Moon system', ja: '衛星系', zh: '卫星系统', 'zh-TW': '衛星系統', es: 'Sus lunas', fr: 'Ses lunes', de: 'Mondsystem', pt: 'Suas luas', ru: 'Спутники', vi: 'Hệ vệ tinh' };
   // 위성계를 위에서 비스듬히 (적도면 위 약 37°, 해 쪽)
   const sysDir = b => { const big = (b.kids || []).filter(k => k.R > 100).sort((x, y) => y.R - x.R)[0]; const ek = big && elOf(big, APP.d); const n = ek ? orbNormal(ek) : m3v(b.R3, [0, 0, 1]); /* 가장 큰 위성의 궤도면 기준 (지구는 달 궤도) */ const toSun = nrm(scl(b.pos, -1)); let d = nrm(sub(toSun, scl(n, dot(toSun, n)))); if (len(d) < 0.1) d = [1, 0, 0]; const up = dot(n, toSun) >= 0 || APP.show.gravity ? 1 : -1; return nrm(add(scl(d, Math.cos(0.65)), scl(n, up * Math.sin(0.65)))); };
-  const SPIN_T = { ko: '자전 보기', en: 'Watch it spin', ja: '自転を見る', zh: '观看自转', 'zh-TW': '觀看自轉', es: 'Ver la rotación', fr: 'Voir la rotation', de: 'Rotation ansehen', pt: 'Ver a rotação', ru: 'Смотреть вращение', vi: 'Xem tự quay' };
+  const SPIN_T = { ko: '자전 보기', en: 'Spin', ja: '自転', zh: '自转', 'zh-TW': '自轉', es: 'Rotación', fr: 'Rotation', de: 'Rotation', pt: 'Rotação', ru: 'Вращение', vi: 'Tự quay' };
   const LOCK_T = { ko: '지표에 고정', en: 'Lock to surface', ja: '地表に固定', zh: '锁定地表', 'zh-TW': '鎖定地表', es: 'Fijar a la superficie', fr: 'Fixer à la surface', de: 'An Oberfläche fixieren', pt: 'Fixar na superfície', ru: 'Привязать к поверхности', vi: 'Gắn theo bề mặt' };
   const FOLLOW_T = { ko: '카메라가 지표와 함께 돕니다 — 땅은 멈춰 있고, 해·별·낮밤 경계가 움직입니다', en: 'The camera now turns with the surface — the ground stays put while the Sun, stars and day–night line move', ja: 'カメラが地表と一緒に回ります — 地面は止まり、太陽・星・昼夜の境目が動きます', zh: '镜头随地表一起转动——地面不动，太阳、星星和晨昏线在移动', 'zh-TW': '鏡頭隨地表一起轉動——地面不動，太陽、星星和晨昏線在移動', es: 'La cámara gira con la superficie: el suelo queda quieto y se mueven el Sol, las estrellas y la línea día–noche', fr: 'La caméra tourne avec la surface : le sol reste fixe, le Soleil, les étoiles et la ligne jour–nuit se déplacent', de: 'Die Kamera dreht sich mit der Oberfläche – der Boden steht still, Sonne, Sterne und Tag-Nacht-Grenze wandern', pt: 'A câmera gira com a superfície — o solo fica parado e o Sol, as estrelas e a linha dia–noite se movem', ru: 'Камера вращается вместе с поверхностью — земля неподвижна, а Солнце, звёзды и граница дня и ночи движутся', vi: 'Camera quay cùng bề mặt — mặt đất đứng yên, Mặt Trời, sao và ranh giới ngày–đêm di chuyển' };
   const ECL = { ko: '황도 기준', en: 'ecliptic', ja: '黄道基準', zh: '黄道', 'zh-TW': '黃道', es: 'eclíptica', fr: 'écliptique', de: 'Ekliptik', pt: 'eclíptica', ru: 'эклиптика', vi: 'hoàng đạo' };
@@ -2490,7 +2491,7 @@ const INFO = {};
     $('infoHead').innerHTML = `<h2>${nm(b.id)}</h2>${LG !== 'en' ? `<div class="en">${NAMES.en[b.id]}${d.tag ? ' · ' + d.tag : ''}</div>` : (d.tag ? `<div class="en">${d.tag}</div>` : '')}
       <span class="kind">${kind}</span><button class="x" id="infoX">×</button>
       <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${CAM.allMoonSpan(b) ? `<button class="act" data-a="sys">${SYS_T[LG] || SYS_T.en}</button>` : ''}${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 && b.id !== 'sun' ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
-    $('infoX').onclick = UI.close; setTip($('infoX'), 'close');
+    $('infoX').onclick = UI.close; setTip($('infoX'), 'close'); $('infoActs').style.setProperty('--n', $('infoActs').children.length);
     const tk = { sys: 'sys', go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
     $('infoHead').querySelectorAll('.act').forEach(el => setTip(el, tk[el.dataset.a], { n: nm(b.id), p: b.parent ? nm(b.parent) : '' }));
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
@@ -3420,7 +3421,7 @@ const SURF = { on: false, b: null, lat: 0, lon: 0, alt: 0.002, yaw: 90, pitch: 8
 const STEXT = {
   ko: { dir: ['북', '북동', '동', '남동', '남', '남서', '서', '북서'], sunrise: '다음 해돋이', sunset: '다음 해넘이', moonrise: '다음 달돋이', phobosrise: '포보스 돋이', never: '가까운 때에 일어나지 않아요', sunAlt: '해 고도', az: '방위', local: '현지 태양시', lat: '위·경도', fov: '시야', enter: '{n}에서 보기',
     spot: { seoul: '서울', everest: '에베레스트 정상', mcmurdo: '남극 맥머도 기지', maunakea: '마우나케아 천문대', apollo11: '아폴로 11호 착륙지(고요의 바다)', limb: '동쪽 가장자리 — 지구가 지평선에 걸린 곳', southpole: '남극 섀클턴 충돌구 근처', gale: '게일 충돌구(큐리오시티)', olympus: '올림푸스 몬스 정상', jezero: '예제로 충돌구(퍼서비어런스)', venusClouds: '구름 위 55 km(지구와 비슷한 기압)', caloris: '칼로리스 분지', cloudtops: '구름 꼭대기', jupiterView: '목성이 떠 있는 하늘', huygens: '하위헌스 착륙지', tigerStripes: '남극 "호랑이 줄무늬"', saturnView: '토성이 떠 있는 하늘', neptuneView: '해왕성이 떠 있는 하늘', sputnik: '스푸트니크 평원(하트)', charonView: '카론이 떠 있는 하늘', plutoView: '명왕성이 떠 있는 하늘', here: '여기' } },
-  en: { dir: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], sunrise: 'Next sunrise', sunset: 'Next sunset', moonrise: 'Next moonrise', phobosrise: 'Phobos rise', never: 'Not happening any time soon', sunAlt: 'Sun alt', az: 'Azimuth', local: 'Local solar time', lat: 'Lat/Lon', fov: 'FOV', enter: 'View from {n}',
+  en: { dir: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'], sunrise: 'Next sunrise', sunset: 'Next sunset', moonrise: 'Next moonrise', phobosrise: 'Phobos rise', never: 'Not happening any time soon', sunAlt: 'Sun alt', az: 'Azimuth', local: 'Local solar time', lat: 'Lat/Lon', fov: 'FOV', enter: 'From {n}',
     spot: { seoul: 'Seoul', everest: 'Summit of Everest', mcmurdo: 'McMurdo Station, Antarctica', maunakea: 'Mauna Kea Observatories', apollo11: 'Apollo 11 site (Sea of Tranquility)', limb: 'Eastern limb — Earth on the horizon', southpole: 'Near Shackleton crater, south pole', gale: 'Gale crater (Curiosity)', olympus: 'Summit of Olympus Mons', jezero: 'Jezero crater (Perseverance)', venusClouds: 'Above the clouds at 55 km (Earth-like pressure)', caloris: 'Caloris Basin', cloudtops: 'Cloud tops', jupiterView: 'Jupiter in the sky', huygens: 'Huygens landing site', tigerStripes: 'South-pole “tiger stripes”', saturnView: 'Saturn in the sky', neptuneView: 'Neptune in the sky', sputnik: 'Sputnik Planitia (the heart)', charonView: 'Charon in the sky', plutoView: 'Pluto in the sky', here: 'Here' } },
 };
 const STXT = () => STEXT[LG] || STEXT.en;
@@ -3447,7 +3448,7 @@ TX['de'] = {
   kind: { star: 'Stern', planet: 'Planet', dwarf: 'Zwergplanet', moon: 'Mond', asteroid: 'Asteroid', comet: 'Komet' },
   moonOf: 'Mond von {p}',
   kids: 'Monde',
-  goTo: 'Hinfliegen',
+  goTo: 'Heranfliegen',
   follow: 'Mitdrehen',
   orbit: 'Bahn zeigen',
   centerSun: 'Zur Sonne',
@@ -3640,7 +3641,7 @@ STEXT['de'] = {
   local: 'Wahre Ortszeit',
   lat: 'Breite/Länge',
   fov: 'Sichtfeld',
-  enter: 'Blick von {n}',
+  enter: 'Von {n} aus',
   spot: {
     seoul: 'Seoul',
     everest: 'Gipfel des Mount Everest',
@@ -4396,7 +4397,7 @@ TX['es'] = {
   kind: { star: 'Estrella', planet: 'Planeta', dwarf: 'Planeta enano', moon: 'Luna', asteroid: 'Asteroide', comet: 'Cometa' },
   moonOf: 'Luna de {p}',
   kids: 'Lunas',
-  goTo: 'Volar aquí',
+  goTo: 'Acercarse',
   follow: 'Girar con él',
   orbit: 'Mostrar órbita',
   centerSun: 'Al Sol',
@@ -5328,7 +5329,7 @@ STEXT['es'] = {
   local: 'Hora solar local',
   lat: 'Lat/Lon',
   fov: 'Campo de visión',
-  enter: 'Ver desde {n}',
+  enter: 'Desde {n}',
   spot: {
     seoul: 'Seúl',
     everest: 'Cima del Everest',
@@ -6278,7 +6279,7 @@ STEXT['fr'] = {
   local: 'Heure solaire locale',
   lat: 'Lat./Long.',
   fov: 'Champ',
-  enter: 'Voir depuis {n}',
+  enter: 'Depuis {n}',
   spot: {
     seoul: 'Séoul',
     everest: 'Sommet de l’Everest',
@@ -6340,7 +6341,7 @@ TX['ja'] = {
   kind: { star: '恒星', planet: '惑星', dwarf: '準惑星', moon: '衛星', asteroid: '小惑星', comet: '彗星' },
   moonOf: '{p}の衛星',
   kids: '衛星',
-  goTo: 'ここへ飛ぶ',
+  goTo: '近づく',
   follow: '一緒に回転',
   orbit: '軌道を表示',
   centerSun: '太陽へ',
@@ -7272,7 +7273,7 @@ STEXT['ja'] = {
   local: '地方太陽時',
   lat: '緯度/経度',
   fov: '視野',
-  enter: '{n}から見る',
+  enter: '{n}から',
   spot: {
     seoul: 'ソウル',
     everest: 'エベレスト山頂',
@@ -7334,7 +7335,7 @@ TX['pt'] = {
   kind: { star: 'Estrela', planet: 'Planeta', dwarf: 'Planeta anão', moon: 'Lua', asteroid: 'Asteroide', comet: 'Cometa' },
   moonOf: 'Lua de {p}',
   kids: 'Luas',
-  goTo: 'Voar até aqui',
+  goTo: 'Aproximar',
   follow: 'Girar junto',
   orbit: 'Mostrar órbita',
   centerSun: 'Ir ao Sol',
@@ -8221,7 +8222,7 @@ STEXT['pt'] = {
   local: 'Hora solar local',
   lat: 'Lat/Lon',
   fov: 'Campo de visão',
-  enter: 'Ver de {n}',
+  enter: 'De {n}',
   spot: {
     seoul: 'Seul',
     everest: 'Cume do Everest',
@@ -8298,7 +8299,7 @@ TX['ru'] = {
   },
   moonOf: 'Спутник: {p}',
   kids: 'Спутники',
-  goTo: 'Лететь сюда',
+  goTo: 'Ближе',
   follow: 'Вращаться вместе',
   orbit: 'Показать орбиту',
   centerSun: 'К Солнцу',
@@ -9231,7 +9232,7 @@ STEXT['ru'] = {
   local: 'Местное солнечное время',
   lat: 'Шир./долг.',
   fov: 'Поле зрения',
-  enter: 'Вид с поверхности: {n}',
+  enter: 'Вид: {n}',
   spot: {
     seoul: 'Сеул',
     everest: 'Вершина Эвереста',
@@ -9307,7 +9308,7 @@ TX['vi'] = {
   },
   moonOf: 'Vệ tinh của {p}',
   kids: 'Vệ tinh',
-  goTo: 'Bay tới đây',
+  goTo: 'Lại gần',
   follow: 'Xoay cùng',
   orbit: 'Hiện quỹ đạo',
   centerSun: 'Về Mặt Trời',
@@ -10240,7 +10241,7 @@ STEXT['vi'] = {
   local: 'Giờ mặt trời địa phương',
   lat: 'Vĩ độ/Kinh độ',
   fov: 'Trường nhìn',
-  enter: 'Nhìn từ {n}',
+  enter: 'Từ {n}',
   spot: {
     seoul: 'Seoul',
     everest: 'Đỉnh Everest',
