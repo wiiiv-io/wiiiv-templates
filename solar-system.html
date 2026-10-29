@@ -1907,6 +1907,10 @@ const CAM = { pan: [0, 0, 0], fovT: 50,
   // 화면 빈 곳에 알맞게 들어오는 거리
   const moonSpan = b => { if (!b.kids || !b.kids.length || b.type === 'star') return 0; let m = 0; for (const k of b.kids) { const a = len(k.rel || [0, 0, 0]); if (k.R > 5 && a < b.R * 22) m = Math.max(m, a); } return m; };
   CAM.moonSpan = moonSpan;
+  // 부속 천체 전체: 반지름 100 km 넘는 위성 중 행성 반지름 80배 안쪽 (멀리 붙잡힌 작은 위성은 뺌)
+  CAM.allMoonSpan = b => { let m = 0; for (const k of (b.kids || [])) { const a = len(k.rel || [0, 0, 0]); if (k.R > 100 && a < b.R * 80) m = Math.max(m, a); } return m; };
+  CAM.systemDist = b => { const sp = CAM.allMoonSpan(b); if (!sp) return defaultDist(b, true); const mob = innerWidth <= 760; const fw = mob ? innerWidth : innerWidth - 404, fh = mob ? innerHeight * 0.5 : innerHeight - 120;
+    const tanMin = Math.tan(RN.fov / 2) * Math.min(fh / innerHeight, fw / innerHeight); return sp * 1.1 / (0.8 * tanMin); };
   const defaultDist = (b, close) => {
     // 위성이 있으면 주요 위성 궤도까지 한 화면에 (행성 반지름의 30배 안쪽 위성까지)
     const sysR = close ? 0 : moonSpan(b);
@@ -2013,7 +2017,7 @@ TIPS.ko = {
   learn: '중력과 상대성 수업 9개 — 장면이 저절로 맞춰집니다', more: '언어·화질·중력 우물 깊이·표시 설정·조작법·자료 출처',
   rw: '시간을 느리게, 계속 누르면 거꾸로 흐르게 (단축키 ,)', play: '시간 멈춤 / 다시 흐르기 (스페이스)', ff: '시간을 빠르게 — 누를 때마다 1분/초 → 1시간/초 → 1일/초 … (단축키 .)',
   clock: '날짜·시각을 골라 그때로 가기, 또는 역사적 순간으로', rate: '실제 1초 동안 흐르는 시뮬레이션 시간', now: '지금 이 순간으로 돌아와 실시간으로 흐르게',
-  goTo: '이 천체를 화면 가득 가까이 보기', stand: '{n} 표면에 서서 하늘·해돋이·해넘이 보기', spin: '하루가 약 20초에 지나가도록 시간을 빠르게 해 자전을 봅니다 — 다시 누르면 원래 시간으로',
+  goTo: '이 천체를 화면 가득 가까이 보기', sys: '위성(부속 천체)들의 궤도까지 한 화면에 보이게 물러서서 보기', stand: '{n} 표면에 서서 하늘·해돋이·해넘이 보기', spin: '하루가 약 20초에 지나가도록 시간을 빠르게 해 자전을 봅니다 — 다시 누르면 원래 시간으로',
   lock: '카메라를 지표에 고정 — 땅은 멈추고 해·별·낮밤 경계가 움직입니다', parent: '{p}(으)로 가기', close: '닫기 (Esc)', chip: '{n}(으)로 가기',
   mFollow: '카메라가 탐사선을 따라갑니다', mVectors: '근접 비행 때 태양 기준·행성·행성 기준 속도를 화살표로 — 스윙바이로 빨라지는 원리', mAuto: '근접 비행 땐 느리게, 순항 땐 빠르게 시간을 저절로 맞춤',
   mChart: '그래프를 누르면 그 날짜로 이동', mEvent: '이 순간으로 이동', back: '목록으로',
@@ -2028,7 +2032,7 @@ TIPS.en = {
   learn: 'Nine lessons on gravity and relativity — each sets up the scene for you', more: 'Language, quality, gravity-well depth, display, controls and credits',
   rw: 'Slow time down; keep pressing to run it backwards (shortcut ,)', play: 'Pause / resume time (Space)', ff: 'Speed time up — each press: 1 min/s → 1 h/s → 1 day/s … (shortcut .)',
   clock: 'Pick a date and time, or jump to a historic moment', rate: 'Simulated time that passes in one real second', now: 'Back to this very moment, running in real time',
-  goTo: 'Fly in close to this body', stand: 'Stand on {n} and watch the sky, sunrise and sunset', spin: 'Speed time so one day takes about 20 s and watch it rotate — press again to restore',
+  goTo: 'Fly in close to this body', sys: 'Pull back to see its moons and their orbits', stand: 'Stand on {n} and watch the sky, sunrise and sunset', spin: 'Speed time so one day takes about 20 s and watch it rotate — press again to restore',
   lock: 'Lock the camera to the surface — the ground stays put while the Sun, stars and day–night line move', parent: 'Go to {p}', close: 'Close (Esc)', chip: 'Go to {n}',
   mFollow: 'Make the camera follow the spacecraft', mVectors: 'Arrows for Sun-frame, planet and planet-frame velocity during flybys — how a slingshot speeds you up', mAuto: 'Slow time near flybys and speed it up while cruising',
   mChart: 'Click the chart to jump to that date', mEvent: 'Jump to this moment', back: 'Back to the list',
@@ -2191,6 +2195,11 @@ TIPS.vi = {
   quality: 'Giảm xuống để chuyển động mượt hơn trên thiết bị chậm', well: 'Trái: phóng đại để thấy giếng nhỏ · Phải: tỉ lệ khối lượng thật', outer: 'Hiện 100.000 tiểu hành tinh, vành đai Kuiper, nhật quyển và đám mây Oort',
   dock: 'Đến {n} (phím 0–9)',
 };
+
+// 추가: 부속 천체 보기
+Object.assign(TIPS.ja, { sys: '衛星とその軌道が一画面に入るまで引いて見る' }); Object.assign(TIPS.zh, { sys: '后退，让卫星及其轨道都进入画面' }); Object.assign(TIPS['zh-TW'], { sys: '後退，讓衛星及其軌道都進入畫面' });
+Object.assign(TIPS.es, { sys: 'Alejarse para ver sus lunas y sus órbitas' }); Object.assign(TIPS.fr, { sys: 'Prendre du recul pour voir ses lunes et leurs orbites' }); Object.assign(TIPS.de, { sys: 'Zurückfahren, um die Monde und ihre Bahnen zu sehen' });
+Object.assign(TIPS.pt, { sys: 'Afastar para ver as luas e suas órbitas' }); Object.assign(TIPS.ru, { sys: 'Отдалиться, чтобы увидеть спутники и их орбиты' }); Object.assign(TIPS.vi, { sys: 'Lùi ra để thấy các vệ tinh và quỹ đạo của chúng' });
 
 // ───────────────────────── 천체 소개 글 (언어별) ─────────────────────────
 const INFOTXT = {};
@@ -2415,6 +2424,9 @@ INFOTXT.en = {
 const INFO = {};
 (function () {
   const G = 6.6743e-20; // km³/(kg·s²)
+  const SYS_T = { ko: '부속 천체 보기', en: 'Show its moons', ja: '衛星も見る', zh: '查看卫星', 'zh-TW': '查看衛星', es: 'Ver sus lunas', fr: 'Voir ses lunes', de: 'Monde zeigen', pt: 'Ver as luas', ru: 'Показать спутники', vi: 'Xem các vệ tinh' };
+  // 위성계를 위에서 비스듬히 (적도면 위 약 37°, 해 쪽)
+  const sysDir = b => { const big = (b.kids || []).filter(k => k.R > 100).sort((x, y) => y.R - x.R)[0]; const ek = big && elOf(big, APP.d); const n = ek ? orbNormal(ek) : m3v(b.R3, [0, 0, 1]); /* 가장 큰 위성의 궤도면 기준 (지구는 달 궤도) */ const toSun = nrm(scl(b.pos, -1)); let d = nrm(sub(toSun, scl(n, dot(toSun, n)))); if (len(d) < 0.1) d = [1, 0, 0]; const up = dot(n, toSun) >= 0 || APP.show.gravity ? 1 : -1; return nrm(add(scl(d, Math.cos(0.65)), scl(n, up * Math.sin(0.65)))); };
   const SPIN_T = { ko: '자전 보기', en: 'Watch it spin', ja: '自転を見る', zh: '观看自转', 'zh-TW': '觀看自轉', es: 'Ver la rotación', fr: 'Voir la rotation', de: 'Rotation ansehen', pt: 'Ver a rotação', ru: 'Смотреть вращение', vi: 'Xem tự quay' };
   const LOCK_T = { ko: '지표에 고정', en: 'Lock to surface', ja: '地表に固定', zh: '锁定地表', 'zh-TW': '鎖定地表', es: 'Fijar a la superficie', fr: 'Fixer à la surface', de: 'An Oberfläche fixieren', pt: 'Fixar na superfície', ru: 'Привязать к поверхности', vi: 'Gắn theo bề mặt' };
   const FOLLOW_T = { ko: '카메라가 지표와 함께 돕니다 — 땅은 멈춰 있고, 해·별·낮밤 경계가 움직입니다', en: 'The camera now turns with the surface — the ground stays put while the Sun, stars and day–night line move', ja: 'カメラが地表と一緒に回ります — 地面は止まり、太陽・星・昼夜の境目が動きます', zh: '镜头随地表一起转动——地面不动，太阳、星星和晨昏线在移动', 'zh-TW': '鏡頭隨地表一起轉動——地面不動，太陽、星星和晨昏線在移動', es: 'La cámara gira con la superficie: el suelo queda quieto y se mueven el Sol, las estrellas y la línea día–noche', fr: 'La caméra tourne avec la surface : le sol reste fixe, le Soleil, les étoiles et la ligne jour–nuit se déplacent', de: 'Die Kamera dreht sich mit der Oberfläche – der Boden steht still, Sonne, Sterne und Tag-Nacht-Grenze wandern', pt: 'A câmera gira com a superfície — o solo fica parado e o Sol, as estrelas e a linha dia–noite se movem', ru: 'Камера вращается вместе с поверхностью — земля неподвижна, а Солнце, звёзды и граница дня и ночи движутся', vi: 'Camera quay cùng bề mặt — mặt đất đứng yên, Mặt Trời, sao và ranh giới ngày–đêm di chuyển' };
@@ -2477,13 +2489,13 @@ const INFO = {};
     const kind = b.type === 'moon' ? t.moonOf.replace('{p}', nm(b.parent)) : t.kind[b.type];
     $('infoHead').innerHTML = `<h2>${nm(b.id)}</h2>${LG !== 'en' ? `<div class="en">${NAMES.en[b.id]}${d.tag ? ' · ' + d.tag : ''}</div>` : (d.tag ? `<div class="en">${d.tag}</div>` : '')}
       <span class="kind">${kind}</span><button class="x" id="infoX">×</button>
-      <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 && b.id !== 'sun' ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
+      <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${CAM.allMoonSpan(b) ? `<button class="act" data-a="sys">${SYS_T[LG] || SYS_T.en}</button>` : ''}${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 && b.id !== 'sun' ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
     $('infoX').onclick = UI.close; setTip($('infoX'), 'close');
-    const tk = { go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
+    const tk = { sys: 'sys', go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
     $('infoHead').querySelectorAll('.act').forEach(el => setTip(el, tk[el.dataset.a], { n: nm(b.id), p: b.parent ? nm(b.parent) : '' }));
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
       const a = el.dataset.a;
-      if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
+      if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'sys') CAM.flyTo(b, CAM.systemDist(b), { dir: sysDir(b) }); else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
       else if (a === 'spin') INFO.spin(b);
       else if (a === 'follow') { CAM.lockRot = !CAM.lockRot; el.classList.toggle('on', CAM.lockRot); if (CAM.lockRot) UI.toast(FOLLOW_T[LG] || FOLLOW_T.en, 5000); }
     });
