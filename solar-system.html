@@ -1078,7 +1078,7 @@ void main(){
 SH.sunF = `
 in vec3 vP; in vec3 vN; in vec3 vL; in vec2 vUV;
 uniform vec4 uT; uniform vec3 uC; uniform float uR; uniform float uI; uniform mat3 uRot; uniform float uPx; uniform float uAct;
-uniform vec4 uSpots[16]; uniform int uNS; uniform vec4 uFlare; uniform vec4 uWave; uniform vec2 uWaveR; uniform float uW;
+uniform vec4 uSpots[96]; uniform int uNS; uniform vec4 uFlare; uniform vec4 uWave; uniform vec2 uWaveR; uniform float uW;
 out vec4 o;
 ${GLX.LOGDEPTH_F}
 ${GLX.NOISE}
@@ -1096,8 +1096,9 @@ void main(){
   float sup = smoothstep(0., .5, w2.y - w2.x);
   // 흑점 (활동 영역에서 받은 쌍): 본그림자 + 가는 실 같은 반그림자
   float umbra = 0., pen = 0., fac = 0.;
-  for (int i = 0; i < 16; i++){ if (i >= uNS) break; vec4 sp = uSpots[i]; if (sp.w <= 0.) continue;
-    float ang = acos(clamp(dot(q, sp.xyz), -1., 1.)); float r = ang / sp.w;
+  for (int i = 0; i < 96; i++){ if (i >= uNS) break; vec4 sp = uSpots[i]; if (sp.w <= 0.) continue;
+    float c = dot(q, sp.xyz); float lim = sp.w * 3.3; if (c < 1. - lim * lim * .5) continue; // 멀면 건너뜀
+    float ang = acos(clamp(c, -1., 1.)); float r = ang / sp.w;
     vec3 t1 = normalize(cross(sp.xyz, vec3(0, 0, 1))), t2 = cross(sp.xyz, t1); float th = atan(dot(q, t2), dot(q, t1));
     // 반그림자: 바깥으로 뻗는 실(필라멘트), 가장자리가 들쭉날쭉
     float fil = .62 + .38 * smoothstep(-.3, .9, sin(th * 70. + vnoise(vec3(th * 6., r * 4., float(i))) * 7.) * (.6 + .4 * vnoise(vec3(th * 30., r * 9., 3.))));
@@ -1115,7 +1116,7 @@ void main(){
   float meso = fbm(q * 160. + vec3(0, 0, uT.x * .3), 4), net = (1. - smoothstep(.0, .05, w2.y - w2.x)) * (.5 + .5 * vnoise(q * 300.));
   float I = .66 + .30 * gran + .10 * (meso - .5) * (1. - gFade * .6) + .04 * sup + .035 * net + .03 * g2;
   I *= 1. - pen * .52 - umbra * .40; I = mix(I, I * .08, umbra); // 본그림자는 거의 검게 (실제 광구의 약 20%, 노출로 더 어둡게 보임)
-  I += (fac * .6 + facN * .5) * pow(1. - mu, 1.5) * .35;
+  I += (min(fac, 1.) * .35 + facN * .5) * pow(1. - mu, 1.5) * .35;
   // 주변 감광 (파장별: 파랑이 더 많이 어두워짐)
   vec3 u = vec3(.50, .62, .78); vec3 ld = 1. - u * (1. - pow(mu, .8));
   vec3 col = vec3(1., .52, .15) * I * ld * vec3(1., 1. - .25 * (1. - mu), 1. - .5 * (1. - mu));
@@ -1823,31 +1824,37 @@ const OTXT = () => OTEXT[LG] || OTEXT.en;
 // ───────────────────────── 태양 활동: 흑점 쌍·코로나 고리(흐름)·플레어·코로나 질량 방출·홍염 ─────────────────────────
 // 활동 영역은 날짜로 정해지고(같은 날이면 같은 모습) 위도별 차등 자전으로 흘러간다.
 // 고리 속 플라스마 흐름·플레어·CME·홍염의 꿈틀거림은 보기 좋게 실제 시계(SUNAR.w, 초)로 움직인다.
-const SUNAR = { list: [], spots: new Float32Array(64), nSpots: 0, w: 0, ev: null, nextEv: 12, proms: new Float32Array(32), nProms: 0, flare: [0, 0, 1, 0], wave: [0, 0, 1, 0], waveR: [0, 0], cme: [0, 0, 0, 0], near: 0 };
+const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: null, nextEv: 12, proms: new Float32Array(32), nProms: 0, flare: [0, 0, 1, 0], wave: [0, 0, 1, 0], waveR: [0, 0], cme: [0, 0, 0, 0], near: 0 };
 (function () {
   const hash = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
   const omega = lat => { const s2 = Math.sin(lat * D2R) ** 2; return 14.713 - 2.396 * s2 - 1.787 * s2 * s2; };
   const W0 = 14.1844;
-  const activity = d => { const yr = 2000 + d / 365.25; const ph = ((yr - 2019.9) / 11.0) % 1; return 0.15 + 0.85 * Math.pow(Math.sin(Math.PI * Math.min(1, ph * 1.6)), 2); };
+  // 11년 주기: 극소(2019.9)에서 약 4.5년 오르고 6.5년 내려감 (25주기 극대 2024년 무렵)
+  const activity = d => { const yr = 2000 + d / 365.25; const ph = (((yr - 2019.9) / 11.0) % 1 + 1) % 1; const f = ph < 0.41 ? Math.sin(Math.PI / 2 * ph / 0.41) : Math.cos(Math.PI / 2 * (ph - 0.41) / 0.59); return 0.12 + 0.88 * f * f; };
   SUNAR.activity = activity;
   const ll2v = (la, lo) => [Math.cos(la * D2R) * Math.cos(lo * D2R), Math.cos(la * D2R) * Math.sin(lo * D2R), Math.sin(la * D2R)];
   // 앞(s=-1)·뒤(s=1) 흑점 위치 (본체 좌표)
   const foot = (r, s) => { const dl = r.sep * R2D, t = r.tilt * D2R; return ll2v(r.lat + s * dl * 0.5 * Math.sin(t), r.lon + s * dl * 0.5 * Math.cos(t) / Math.cos(r.lat * D2R)); };
   SUNAR.update = (d, dt = 1 / 60) => {
     SUNAR.w += dt;
-    const act = activity(d); const list = []; const k1 = Math.floor(d / 2);
-    for (let k = k1 - 40; k <= k1; k++) {
-      if (hash(k * 1.7) > act * 0.85) continue;
-      const born = k * 2 + hash(k * 3.1) * 2, life = 15 + hash(k * 5.3) * 55, age = d - born; if (age < 0 || age > life) continue;
-      const hemi = hash(k * 7.7) < 0.5 ? -1 : 1; const lat = hemi * (6 + hash(k * 9.1) * 26); const lon0 = hash(k * 11.3) * 360;
+    const act = activity(d); const list = []; const k1 = Math.floor(d);
+    for (let k = k1 - 70; k <= k1; k++) for (let m = 0; m < 2; m++) { const kk = k * 2 + m; // 하루에 두 번 태어날 기회 (극대기엔 보이는 쪽에 흑점군 10~20개)
+      if (hash(kk * 1.7) > act * 0.75) continue;
+      const k_ = kk; const born = k + hash(kk * 3.1), life = 15 + hash(kk * 5.3) * 55, age = d - born; if (age < 0 || age > life) continue;
+      const hemi = hash(kk * 7.7) < 0.5 ? -1 : 1; const lat = hemi * (6 + hash(kk * 9.1) * 26); const lon0 = hash(kk * 11.3) * 360;
       const lon = lon0 + (omega(lat) - W0) * age;
-      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const size = (0.02 + hash(k * 13.7) * 0.045) * grow; // 예전보다 약 1.6배
-      const tilt = hemi * (4 + hash(k * 2.9) * 10); const sep = 0.05 + hash(k * 4.4) * 0.07;
-      list.push({ k, lat, lon, size, tilt, sep, grow, hemi, born, life });
+      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const big = hash(kk * 13.7); const size = (0.013 + big * big * 0.05) * grow; // 작은 것이 훨씬 많고 큰 것은 드묾
+      const tilt = hemi * (4 + hash(kk * 2.9) * 10); const sep = 0.05 + hash(kk * 4.4) * 0.07;
+      list.push({ k: kk, lat, lon, size, tilt, sep, grow, hemi, born, life });
     }
-    list.sort((a, b) => b.size - a.size); SUNAR.list = list.slice(0, 8);
+    list.sort((a, b) => b.size - a.size); SUNAR.list = list.slice(0, 24);
     let n = 0; const S = SUNAR.spots; S.fill(0);
-    for (const r of SUNAR.list) for (const [s, f] of [[-1, 1], [1, 0.72]]) { if (n >= 16) break; const v = foot(r, s); S[n * 4] = v[0]; S[n * 4 + 1] = v[1]; S[n * 4 + 2] = v[2]; S[n * 4 + 3] = r.size * f; n++; }
+    const put = (v, w) => { if (n >= 96 || w < 0.0025) return; S[n * 4] = v[0]; S[n * 4 + 1] = v[1]; S[n * 4 + 2] = v[2]; S[n * 4 + 3] = w; n++; };
+    for (const r of SUNAR.list) { put(foot(r, -1), r.size); put(foot(r, 1), r.size * 0.72); }
+    for (const r of SUNAR.list) {
+      const extra = Math.round(1 + hash(r.k * 23.1) * 5 * Math.min(1, r.size / 0.02)); // 큰 흑점군일수록 작은 흑점(구멍)이 많음
+      for (let j = 0; j < extra; j++) { const u = hash(r.k * 31 + j) * 2 - 1, o = (hash(r.k * 37 + j) - 0.5) * 0.7; const dl = r.sep * R2D, t = r.tilt * D2R;
+        put(ll2v(r.lat + u * dl * 0.6 * Math.sin(t) + o * dl * 0.4 * Math.cos(t), r.lon + (u * dl * 0.6 * Math.cos(t) - o * dl * 0.4 * Math.sin(t)) / Math.cos(r.lat * D2R)), r.size * (0.15 + hash(r.k * 41 + j) * 0.3)); } }
     SUNAR.nSpots = n;
     const sun = BY.sun; const camD = len(sub(CAM.pos, sun.pos)); SUNAR.near = clamp((40 - camD / sun.R) / 20, 0, 1);
     // 저절로 일어나는 플레어 (가까이 있을 때만, 15~35초마다)
@@ -1890,7 +1897,7 @@ const SUNAR = { list: [], spots: new Float32Array(64), nSpots: 0, w: 0, ev: null
     const sun = BY.sun, d = len(sub(sun.pos, cp)); if (d > sun.R * 40) return;
     const fade = SUNAR.near; const C = sub(sun.rp || sun.pos, cp); const R3 = sun.R3; const w = SUNAR.w;
     SUNAR.list.forEach((r, ri) => {
-      if (r.size < 0.012) return; const A = foot(r, -1), B = foot(r, 1);
+      if (r.size < 0.022) return; const A = foot(r, -1), B = foot(r, 1);
       const fp = SUNAR.ev && SUNAR.ev.i === ri ? (SUNAR.ev.I || 0) : 0;
       const strands = 16;
       for (let j = 0; j < strands; j++) {
@@ -1902,7 +1909,7 @@ const SUNAR = { list: [], spots: new Float32Array(64), nSpots: 0, w: 0, ev: null
           p = scl(p, 1 + hgt * Math.sin(Math.PI * u)); const q = add(C, m3v(R3, scl(p, sun.R))); pts[i * 3] = q[0]; pts[i * 3 + 1] = q[1]; pts[i * 3 + 2] = q[2];
           const blob = Math.pow(0.5 + 0.5 * Math.sin(TAU * (u * 2.2 - w * sp * dir) + ph), 3); // 흐르는 밝은 덩어리
           al[i] = (0.22 + 0.78 * blob) * (0.35 + 0.65 * Math.sin(Math.PI * u) ** 0.5); }
-        const k = (2.4 + 2.6 * flick) * r.grow * fade * (1 + fp * 8) * (0.6 + 0.4 * hash(r.k * 13 + j));
+        const k = (1.1 + 1.3 * flick) * r.grow * fade * (1 + fp * 10) * (0.6 + 0.4 * hash(r.k * 13 + j)) * clamp((2.6 - d / sun.R) / 1.1, 0, 1); // 멀리선 고리를 숨김 (흑점이 가려지지 않게)
         RN.addLine(pts, al, [k, k * (0.6 + 0.35 * fp), k * (0.28 + 0.65 * fp), 0.4 * fade], 1.1 + fp * 1.8, false);
       }
     });
