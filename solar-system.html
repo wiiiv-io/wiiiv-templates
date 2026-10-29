@@ -2706,7 +2706,7 @@ const UI = {};
   UI.hover = (x, y) => { const b = pick(x, y); hoverB = b; $('gl').style.cursor = b ? 'pointer' : ''; };
   UI.click = (x, y, dbl) => {
     // 탐사선 표시를 누르면 탐사선 판
-    if (MIS.list) for (const m of MIS.list) { const c = MIS.crafts[m.id]; if (c.st && c.scr && c.scr.on && Math.hypot(c.scr.x - x, c.scr.y - y) < 14) { MIS.open().then(() => { const i = MIS.list.indexOf(m); const el = document.querySelectorAll('#mis .mrow')[i]; if (el && MIS.sel !== m) el.click(); }); return; } }
+    if (MIS.list) for (const m of MIS.list) { const c = MIS.crafts[m.id]; if (c.st && c.scr && c.scr.on && Math.hypot(c.scr.x - x, c.scr.y - y) < 14) { MIS.open().then(() => { const i = MIS.list.indexOf(m); const el = document.querySelectorAll('#mis .mrow[data-id]')[i]; if (el && MIS.sel !== m) el.click(); }); return; } }
     const b = pick(x, y);
     if (b) { if (b === APP.sel && !dbl && CAM.focus === b) return; UI.go(b); }
   };
@@ -2747,15 +2747,17 @@ const UI = {};
     let hits = (q ? all.filter(x => x.n.toLowerCase().includes(q) || x.e.toLowerCase().includes(q) || x.b.id.includes(q)) : all.filter(x => x.b.type === 'planet' || x.b.type === 'star')).slice(0, 14);
     // 탐사선도 찾기 (현재 언어 이름·영어 이름)
     const ms = (MIS.list || []).filter(m => { if (!q) return false; const n = (MTXT().m[m.id]?.n || '').toLowerCase(), e = (MTEXT.en.m[m.id]?.n || '').toLowerCase(); return n.includes(q) || e.includes(q) || m.id.includes(q); }).slice(0, 8);
-    box.innerHTML = ms.map(m => `<div class="sg" data-m="${m.id}"><span class="sw" style="background:rgb(${m.col.map(c => c * 255 | 0)});border-radius:2px"></span>${MTXT().m[m.id]?.n || m.id}<small>${T().missions} · ${MTXT().m[m.id]?.ag || ''}</small></div>`).join('')
+    const sc = q ? SCENES.filter(s => s.name().toLowerCase().includes(q) || s.en.toLowerCase().includes(q) || s.keys.some(k => k.includes(q) || q.includes(k))) : [];
+    box.innerHTML = sc.map(s => `<div class="sg" data-s="${s.id}"><span class="sw" style="background:rgb(${s.col.map(c => c * 255 | 0)});border-radius:2px"></span>${s.name()}<small>${SCN_T[LG] || SCN_T.en} · ${s.sub()}</small></div>`).join('') + ms.map(m => `<div class="sg" data-m="${m.id}"><span class="sw" style="background:rgb(${m.col.map(c => c * 255 | 0)});border-radius:2px"></span>${MTXT().m[m.id]?.n || m.id}<small>${T().missions} · ${MTXT().m[m.id]?.ag || ''}</small></div>`).join('')
       + hits.map(x => `<div class="sg" data-id="${x.b.id}"><span class="sw" style="background:rgb(${x.b.col.map(c => c * 255 | 0)})"></span>${x.n}<small>${x.b.type === 'moon' ? T().moonOf.replace('{p}', nm(x.b.parent)) : T().kind[x.b.type]}</small></div>`).join('');
-    box.hidden = !(hits.length + ms.length);
+    box.hidden = !(hits.length + ms.length + sc.length);
     const done = () => { $('search').value = ''; $('search').blur(); box.hidden = true; };
     box.querySelectorAll('.sg[data-id]').forEach(el => el.onmousedown = el.onclick = e => { e.preventDefault(); UI.go(BY[el.dataset.id]); done(); });
+    box.querySelectorAll('.sg[data-s]').forEach(el => el.onmousedown = el.onclick = e => { e.preventDefault(); done(); SCENES.find(s => s.id === el.dataset.s).go(); });
     box.querySelectorAll('.sg[data-m]').forEach(el => el.onmousedown = el.onclick = e => { e.preventDefault(); done(); UI.openMission(el.dataset.m); });
   }
   // 탐사선 판을 열고 그 임무를 고름
-  UI.openMission = id => MIS.open().then(() => { const i = MIS.list.findIndex(m => m.id === id); const el = document.querySelectorAll('#mis .mrow')[i]; if (el && (!MIS.sel || MIS.sel.id !== id)) el.click(); });
+  UI.openMission = id => MIS.open().then(() => { const i = MIS.list.findIndex(m => m.id === id); const el = document.querySelectorAll('#mis .mrow[data-id]')[i]; if (el && (!MIS.sel || MIS.sel.id !== id)) el.click(); });
 
 
   // ── 시간 막대
@@ -2840,7 +2842,7 @@ const UI = {};
       const E = BY.earth, M = BY.moon; const u = nrm(sub(M.pos, BY.sun.pos)); APP.show.orbits = false; CAM.flyTo(M, len(sub(E.pos, M.pos)) - E.R, { dir: u, dur: 3 }); CAM.fovT = 1.6; UI.close();
       setTimeout(() => { APP.show.orbits = true; }, 60000); return; }
     if (what === 'conj') { const E = BY.earth; CAM.flyTo(E, E.R * 1.02, { dur: 3 }); setTimeout(() => { SURF.enter(E, 0); const f = SURF.enu(E, SURF.lat, SURF.lon); const [al, az] = SURF.altaz(BY.jupiter, f); SURF.yaw = az; SURF.pitch = Math.max(al, 2); CAM.fovT = 3; }, 3200); return; }
-    if (what.startsWith('mis:')) { const [, id, ev] = what.split(':'); MIS.open().then(() => { const i = MIS.list.findIndex(m => m.id === id); const el = document.querySelectorAll('#mis .mrow')[i]; if (el) el.click(); setTimeout(() => { const bs = document.querySelectorAll('#msEv button'); if (bs[+ev]) bs[+ev].click(); }, 900); }); return; }
+    if (what.startsWith('mis:')) { const [, id, ev] = what.split(':'); MIS.open().then(() => { const i = MIS.list.findIndex(m => m.id === id); const el = document.querySelectorAll('#mis .mrow[data-id]')[i]; if (el) el.click(); setTimeout(() => { const bs = document.querySelectorAll('#msEv button'); if (bs[+ev]) bs[+ev].click(); }, 900); }); return; }
     const b = BY[what]; if (b) { UI.go(b, extra ? b.R * extra : undefined); if (k === 'apollo11') setTimeout(() => SURF.enter(BY.moon, 0), 3500); }
   };
 })();
@@ -3277,8 +3279,8 @@ const MIS = { list: null, data: {}, sel: null, crafts: {}, follow: false, auto: 
   MIS.close = () => { MIS.on = false; $('mis').hidden = true; document.body.classList.remove('mising'); MIS.sel = null; MIS.vectors = false; UI.toolsSync(); };
   function listView() {
     const t = T(); MIS.sel = null;
-    $('mis').innerHTML = `<div class="lh"><b>${t.title}</b><button class="x" id="msX">×</button></div><div class="lb"><p style="color:var(--dim);font-size:12.5px">${t.sub}</p>${MIS.list.map(m => `<button class="mrow" data-id="${m.id}"><i style="color:rgb(${m.col.map(x => x * 255 | 0)});background:currentColor"></i><span><b>${t.m[m.id]?.n || m.id}</b><small>${t.m[m.id]?.ag || ''}</small></span></button>`).join('')}</div>`;
-    $('msX').onclick = MIS.close; setTip($('msX'), 'close'); $('mis').querySelectorAll('.mrow').forEach(el => el.onclick = () => pick(el.dataset.id));
+    $('mis').innerHTML = `<div class="lh"><b>${t.title}</b><button class="x" id="msX">×</button></div><div class="lb"><p style="color:var(--dim);font-size:12.5px">${t.sub}</p><div style="font-size:11.5px;color:var(--acc2);font-weight:700;letter-spacing:.06em;margin:4px 10px">${SCN_T[LG] || SCN_T.en}</div>${SCENES.map(s => `<button class="mrow" data-s="${s.id}"><i style="color:rgb(${s.col.map(x => x * 255 | 0)});background:currentColor"></i><span><b>${s.name()}</b><small>${s.sub()}</small></span></button>`).join('')}<div style="height:1px;background:var(--line);margin:8px 6px"></div>${MIS.list.map(m => `<button class="mrow" data-id="${m.id}"><i style="color:rgb(${m.col.map(x => x * 255 | 0)});background:currentColor"></i><span><b>${t.m[m.id]?.n || m.id}</b><small>${t.m[m.id]?.ag || ''}</small></span></button>`).join('')}</div>`;
+    $('msX').onclick = MIS.close; setTip($('msX'), 'close'); $('mis').querySelectorAll('.mrow[data-id]').forEach(el => el.onclick = () => pick(el.dataset.id)); $('mis').querySelectorAll('.mrow[data-s]').forEach(el => el.onclick = () => SCENES.find(s => s.id === el.dataset.s).go());
   }
   async function pick(id) {
     const m = MIS.list.find(x => x.id === id); MIS.sel = m; await MIS.load(id); detail(m);
@@ -3533,6 +3535,12 @@ const PBDT = {
   ru: { title: 'Бледно-голубая точка', when: '14 февраля 1990 · «Вояджер-1» · около 6 млрд км от Земли', body: ['Покидая Солнечную систему после завершения миссии, «Вояджер-1» по предложению Карла Сагана в последний раз развернул камеру и сделал «семейный портрет» планет. На одном кадре Земля — пылинка меньше пикселя в луче рассеянного солнечного света.', 'Саган писал, что все, кого мы знаем, и вся история человечества прошли на этой пылинке, висящей в солнечном луче, — повод относиться друг к другу добрее и беречь её («Бледно-голубая точка», 1994).', 'Вы видите Землю в узком поле зрения из реального положения «Вояджера-1» в тот день (JPL Horizons). Через 34 минуты после съёмки его камеры выключили навсегда.'], v0: 'Земля с «Вояджера»', v1: 'Где «Вояджер»?', earth: 'Земля — {d} млрд км', line: '«Вояджер-1» → Земля' },
   vi: { title: 'Chấm xanh mờ nhạt', when: '14/2/1990 · Voyager 1 · cách Trái Đất khoảng 6 tỷ km', body: ['Khi rời Hệ Mặt Trời sau nhiệm vụ, theo đề nghị của Carl Sagan, Voyager 1 quay camera lại lần cuối để chụp “ảnh gia đình” các hành tinh. Trong một khung hình, Trái Đất chỉ là một chấm nhỏ hơn một điểm ảnh, nằm trong một vệt ánh nắng tán xạ.', 'Sagan viết rằng mọi người ta biết và toàn bộ lịch sử loài người đã diễn ra trên hạt bụi lơ lửng trong tia nắng ấy — lý do để đối xử tử tế hơn với nhau và trân trọng nó (Pale Blue Dot, 1994).', 'Bạn đang nhìn Trái Đất với trường nhìn hẹp từ vị trí thật của Voyager 1 hôm đó (JPL Horizons). 34 phút sau, camera của Voyager bị tắt vĩnh viễn.'], v0: 'Trái Đất từ Voyager', v1: 'Voyager ở đâu?', earth: 'Trái Đất — {d} tỷ km', line: 'Voyager 1 → Trái Đất' },
 };
+// ── 역사 장면: 검색과 탐사선 판에서 찾을 수 있게
+const SCENES = [
+  { id: 'apo', go: () => APO.start(), col: [0.95, 0.95, 0.9], name: () => (APOT[LG] || APOT.en).title, en: 'Apollo 11', sub: () => '1969 · NASA', keys: ['apollo', '아폴로', '암스트롱', 'armstrong', '달 착륙', 'moon landing', 'アポロ', '阿波罗', '阿波羅', 'аполлон'] },
+  { id: 'pbd', go: () => PBD.start(), col: [0.55, 0.8, 1], name: () => (PBDT[LG] || PBDT.en).title, en: 'Pale Blue Dot', sub: () => '1990 · Voyager 1', keys: ['pale', 'blue dot', '창백', '푸른 점', '세이건', 'sagan', 'ペイル', '暗淡', 'бледно'] },
+];
+const SCN_T = { ko: '역사적 순간', en: 'Historic moments', ja: '歴史的な瞬間', zh: '历史时刻', 'zh-TW': '歷史時刻', es: 'Momentos históricos', fr: 'Moments historiques', de: 'Historische Momente', pt: 'Momentos históricos', ru: 'Исторические моменты', vi: 'Khoảnh khắc lịch sử' };
 // ── 실제 사진 링크 (NASA 공개 자료, 새 창)
 const PHOTOS = {
   pbd: [['https://photojournal.jpl.nasa.gov/catalog/PIA00452', 'pbdOrig'], ['https://photojournal.jpl.nasa.gov/catalog/PIA23645', 'pbdNew'], ['https://images.nasa.gov/details/PIA23681', 'pbdPersp']],
