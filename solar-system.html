@@ -928,6 +928,14 @@ ${GLX.NOISE}
 vec4 tex2(sampler2D t, vec2 uv){ vec2 dx = dFdx(uv), dy = dFdy(uv); float u2 = fract(uv.x + .5); float dx2 = dFdx(u2), dy2 = dFdy(u2); if (abs(dx2) < abs(dx.x)) dx.x = dx2; if (abs(dy2) < abs(dy.x)) dy.x = dy2; return textureGrad(t, uv, dx, dy); }
 // 가스 행성: 텍스처보다 더 다가가면 띠를 따라 늘어난 난류 잔결을 더함 (텍스처를 흐름 잡음으로 살짝 비틀어 읽기)
 uniform float uTexW; uniform float uGasK; uniform int uPlanet; uniform float uWall;
+// 대적점: 텍스처 속 위치(u .3677, v .6125)의 타원 안을 반시계(남반구 고기압)로 돌림.
+// 흐름 지도 방식: 반 주기 어긋난 두 표본을 섞어, 돌아도 무늬가 끝없이 꼬이지 않게
+vec2 grsRot(vec2 uv, float ph){ vec2 c = vec2(.3677, .6125), ab = vec2(.034, .036); vec2 e = (uv - c) / ab; float r = length(e);
+  float w = 1. - smoothstep(.75, 1.25, r); float ang = ph * (1.1 - .55 * r) * w; float cs = cos(ang), sn = sin(ang);
+  return c + vec2(cs * e.x - sn * e.y, sn * e.x + cs * e.y) * ab; }
+vec3 grsSample(sampler2D t, vec2 uv){ float T = 14., s = uWall / T; float f1 = fract(s), f2 = fract(s + .5);
+  vec3 a = tex2(t, grsRot(uv, (f1 - .5) * 2.4)).rgb, b = tex2(t, grsRot(uv, (f2 - .5) * 2.4)).rgb; float w = abs(1. - 2. * f1);
+  return mix(a, b, w); }
 vec3 gasTex(vec2 uv){
   float texel = 1. / max(uTexW, 1.); float pix = length(fwidth(uv)); float k = clamp(log2(texel / max(pix, 1e-7)) / 2.5, 0., 1.) * uGasK;
   float lon = (uv.x - .5) * 6.2831853, lat = (.5 - uv.y) * 3.14159265;
@@ -939,7 +947,7 @@ vec3 gasTex(vec2 uv){
   vec3 q2 = vec3(p.xy * 160., p.z * 600.) + vec3(w * 3., 0.);
   vec2 w2 = vec2(fbm(q2 + 1.7, 4), fbm(q2 + 9.1, 4)) - .5;
   vec2 uw = uv + (w * vec2(22., 7.) + w2 * vec2(7., 2.5)) * texel * k;
-  vec3 c = tex2(uTex, uw).rgb;
+  vec3 c = (uPlanet == 1 && abs(uw.x - .3677) < .06 && abs(uw.y - .6125) < .06) ? grsSample(uTex, uw) : tex2(uTex, uw).rgb;
   // 가장자리 선명하게: 흐린 밉과의 차이를 키움
   vec3 cb = textureLod(uTex, uw, 3.).rgb; c += (c - cb) * .5 * k;
   // 가는 실 같은 구름결 (능선 잡음) — 흐름을 따라 비틀림
