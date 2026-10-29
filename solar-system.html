@@ -1172,7 +1172,7 @@ void main(){
       float thread = .35 + .65 * smoothstep(.3, .8, vnoise(vec3(x * 60., k * 500., uW * .2)));
       prom += (body + legs * .6) * thread * vis * 1.6;
     } else { // 분출: 위로 갈수록 넓어지며 흩어지는 기둥
-      float fb = fbm(vec3(x * 3.5, k * 16. - uW * .2, float(i)), 4); float col = exp(-pow(x / (.25 + k / h * .5 + wob * .25), 2.)) * exp(-k / (h * (1.3 + wob))) * (.45 + .55 * fb) * (.7 + .3 * sin(x * 22. + fb * 7.));
+      float fb = fbm(vec3(x * 3.5, k * 16. - uW * .2, float(i)), 4); float col = exp(-pow(x / (.25 + min(k / h, 2.) * .3 + wob * .2), 2.)) * exp(-k / (h * (.8 + wob * .5))) * (1. - smoothstep(h * 1.5, h * 2.6, k)) * (.45 + .55 * fb) * (.7 + .3 * sin(x * 22. + fb * 7.));
       prom += col * vis * 3.;
     }
   }
@@ -1898,6 +1898,7 @@ const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: nul
     const fade = SUNAR.near; const C = sub(sun.rp || sun.pos, cp); const R3 = sun.R3; const w = SUNAR.w;
     SUNAR.list.forEach((r, ri) => {
       if (r.size < 0.022) return; const A = foot(r, -1), B = foot(r, 1);
+      const spanPx = r.sep * sun.R / d * RN.pxPerRad; const big = clamp((spanPx - 60) / 120, 0, 1); if (big <= 0) return; // 화면에서 작으면 고리가 흑점을 덮으므로 그리지 않음
       const fp = SUNAR.ev && SUNAR.ev.i === ri ? (SUNAR.ev.I || 0) : 0;
       const strands = 16;
       for (let j = 0; j < strands; j++) {
@@ -1909,8 +1910,8 @@ const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: nul
           p = scl(p, 1 + hgt * Math.sin(Math.PI * u)); const q = add(C, m3v(R3, scl(p, sun.R))); pts[i * 3] = q[0]; pts[i * 3 + 1] = q[1]; pts[i * 3 + 2] = q[2];
           const blob = Math.pow(0.5 + 0.5 * Math.sin(TAU * (u * 2.2 - w * sp * dir) + ph), 3); // 흐르는 밝은 덩어리
           al[i] = (0.22 + 0.78 * blob) * (0.35 + 0.65 * Math.sin(Math.PI * u) ** 0.5); }
-        const k = (1.1 + 1.3 * flick) * r.grow * fade * (1 + fp * 10) * (0.6 + 0.4 * hash(r.k * 13 + j)) * clamp((2.6 - d / sun.R) / 1.1, 0, 1); // 멀리선 고리를 숨김 (흑점이 가려지지 않게)
-        RN.addLine(pts, al, [k, k * (0.6 + 0.35 * fp), k * (0.28 + 0.65 * fp), 0.4 * fade], 1.1 + fp * 1.8, false);
+        const k = (0.5 + 0.7 * flick) * big * r.grow * fade * (1 + fp * 14) * (0.6 + 0.4 * hash(r.k * 13 + j)) * clamp((2.6 - d / sun.R) / 1.1, 0, 1); // 멀리선 고리를 숨김 (흑점이 가려지지 않게)
+        RN.addLine(pts, al, [k, k * (0.55 + 0.4 * fp), k * (0.22 + 0.7 * fp), 0.3 * fade * big], 0.9 + fp * 1.8, false);
       }
     });
   };
