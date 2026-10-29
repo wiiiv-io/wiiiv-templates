@@ -563,7 +563,7 @@
    "kind": "slides",
    "category": "산업·경제",
    "title": {
-    "ko": "2026 한국 커피 산업: 양극화와 글로벌 도약"
+    "ko": "2026 한국 커피 산업: 취향과 실속의 이중주"
    },
    "prompt": {
     "ko": "2026년 한국 커피 산업 트렌드와 전망을 정리한 프레젠테이션을 14장 분량으로 만들어줘. 시장 규모와 성장률, 스페셜티 커피 붐, 저가 커피 브랜드 확장, MZ세대 카페 문화, 홈카페, 친환경 원두와 지속가능성, 로컬 로스터리, 주요 프랜차이즈 경쟁 구도를 대표 사례와 수치로 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘."
@@ -581,24 +581,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 11.2,
+    "minutes": 49.2,
     "sources": 0,
     "model": "qwen3.7-plus (상·중)",
     "date": "2026-10-29",
-    "build": "99531a64a",
-    "sessionId": "66819d12-100f-4bc7-a34e-57c7846d3f19",
+    "build": "cd50e5fc0",
+    "sessionId": "54579f9a-5535-4542-9360-c121c7c9b9aa",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 11.2,
+     "minutes": 49.2,
      "sources": 0,
      "model": "qwen3.7-plus (상·중)",
      "date": "2026-10-29",
-     "build": "99531a64a",
-     "sessionId": "66819d12-100f-4bc7-a34e-57c7846d3f19",
+     "build": "cd50e5fc0",
+     "sessionId": "54579f9a-5535-4542-9360-c121c7c9b9aa",
      "by": "beta",
      "followUps": []
     }
