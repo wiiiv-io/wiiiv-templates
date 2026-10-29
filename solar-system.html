@@ -699,7 +699,7 @@ const GLX = {};
     GLX.gl = gl;
     const cbf = gl.getExtension('EXT_color_buffer_float'), cbhf = gl.getExtension('EXT_color_buffer_half_float');
     gl.getExtension('OES_texture_float_linear');
-    GLX.aniso = gl.getExtension('EXT_texture_filter_anisotropic');
+    GLX.aniso = gl.getExtension('EXT_texture_filter_anisotropic'); GLX.pc = gl.getExtension('KHR_parallel_shader_compile');
     GLX.hdr = !!(cbf || cbhf) && !GLX.ldr;
     HDR_FMT.internal = GLX.hdr ? gl.RGBA16F : gl.RGBA8; HDR_FMT.type = GLX.hdr ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
     GLX.quad = gl.createVertexArray(); gl.bindVertexArray(GLX.quad);
@@ -728,26 +728,32 @@ vec2 worley(vec3 p){ vec3 i = floor(p), f = fract(p); float d1 = 9., d2 = 9.;
   for (int z = -1; z <= 1; z++) for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++){ vec3 g = vec3(x, y, z); vec3 o = h33(i + g); vec3 r = g + o - f; float d = dot(r, r); if (d < d1){ d2 = d1; d1 = d; } else if (d < d2) d2 = d; }
   return sqrt(vec2(d1, d2)); }
 `;
-  function compile(type, src) {
-    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { const log = gl.getShaderInfoLog(s); console.error(log + '\n' + src.split('\n').map((l, i) => (i + 1) + ': ' + l).join('\n')); throw new Error('shader: ' + log); }
-    return s;
-  }
-  GLX.prog = (vs, fs, attribs = []) => {
-    const p = gl.createProgram();
-    gl.attachShader(p, compile(gl.VERTEX_SHADER, HEAD + vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, HEAD + fs));
-    attribs.forEach((a, i) => gl.bindAttribLocation(p, i, a));
-    gl.linkProgram(p); const t0 = performance.now();
-    const okL = gl.getProgramParameter(p, gl.LINK_STATUS); if (GLX.debug) console.error('LOG link ' + (fs.match(/\/\/ ?(\S+)/) || [])[1] + ' ' + (performance.now() - t0).toFixed(0) + 'ms lost=' + gl.isContextLost());
-    if (!okL) throw new Error('link: ' + gl.getProgramInfoLog(p));
+  // 셰이더는 한꺼번에 compile/link 를 걸어 두고(드라이버가 병렬로 처리), 상태 확인·유니폼 조회는 처음 쓸 때 한다.
+  // 확인을 바로 하면 프로그램마다 기다려서 (특히 Windows 의 ANGLE/D3D) 첫 화면이 몇 초 늦어진다.
+  function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; }
+  function finish(o) {
+    const { p, vsS, fsS, vs, fs } = o;
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      for (const [sh, src] of [[vsS, vs], [fsS, fs]]) if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) { const log = gl.getShaderInfoLog(sh); console.error(log + '\n' + (HEAD + src).split('\n').map((l, i) => (i + 1) + ': ' + l).join('\n')); throw new Error('shader: ' + log); }
+      throw new Error('link: ' + gl.getProgramInfoLog(p)); }
     const u = {}, ty = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
     for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(p, i); const name = info.name.replace(/\[0\]$/, ''); u[name] = gl.getUniformLocation(p, info.name); ty[name] = info.type; }
-    return { p, u, ty, name: (fs.match(/\/\/ ?(\S+)/) || [])[1] || fs.slice(0, 40) };
+    o._u = u; o._ty = ty; o.ready = true;
+  }
+  GLX.prog = (vs, fs, attribs = []) => {
+    const p = gl.createProgram(); const vsS = compile(gl.VERTEX_SHADER, HEAD + vs), fsS = compile(gl.FRAGMENT_SHADER, HEAD + fs);
+    gl.attachShader(p, vsS); gl.attachShader(p, fsS); attribs.forEach((a, i) => gl.bindAttribLocation(p, i, a)); gl.linkProgram(p);
+    const o = { p, vsS, fsS, vs, fs, ready: false, name: (fs.match(/\/\/ ?(\S+)/) || [])[1] || fs.slice(0, 40) };
+    Object.defineProperty(o, 'u', { get() { if (!o.ready) finish(o); return o._u; } });
+    Object.defineProperty(o, 'ty', { get() { if (!o.ready) finish(o); return o._ty; } });
+    return o;
   };
+  GLX.pc = null; // KHR_parallel_shader_compile (있으면 병렬 컴파일)
+
   // 유니폼 한꺼번에: 값 모양으로 종류를 고름
   GLX.use = (pr, vals) => {
     if (GLX.debug) { const e = gl.getError(); if (e) console.error('LOG pre-use err ' + e + ' last=' + GLX.lastDraw); }
-    gl.useProgram(pr.p); let unit = 0; GLX.lastDraw = pr.name;
+    const U = pr.u; gl.useProgram(pr.p); let unit = 0; GLX.lastDraw = pr.name;
     for (const k in vals) {
       const loc = pr.u[k]; if (loc == null) continue; const v = vals[k];
       if (v && v.tex) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(v.cube ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, v.tex); gl.uniform1i(loc, unit++); }
@@ -836,7 +842,7 @@ vec2 worley(vec3 p){ vec3 i = floor(p), f = fract(p); float d1 = 9., d2 = 9.;
     const tryNext = () => {
       if (k >= bases.length) return res(null);
       const base = bases[k++], im = new Image(); im.crossOrigin = 'anonymous';
-      im.onload = () => { if (!GLX.fetchBase) GLX.fetchBase = base; res(im); };
+      im.onload = () => { if (!GLX.fetchBase) GLX.fetchBase = base; (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => res(im)); };
       im.onerror = tryNext; im.src = base + name;
     };
     tryNext();
@@ -1380,13 +1386,15 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
   };
   RN.size = () => [W, H];
   // 텍스처 불러오기: lo 먼저, 가까이 가면 hi
+  const upQ = []; RN.upload = (img, opt, put) => new Promise(res => upQ.push([img, opt, put, res]));
+  RN.pump = (budgetMs = 6) => { const t = performance.now(); while (upQ.length && performance.now() - t < budgetMs) { const [img, opt, put, res] = upQ.shift(); put(GLX.texImg(img, opt)); res(); } };
   RN.loadTex = async (name, file, opt = { srgb: 1 }) => {
     if (RN.texs[name] !== undefined) return; RN.texs[name] = null;
-    const im = await GLX.loadImg(file); if (im) RN.texs[name] = GLX.texImg(im, opt);
+    const im = await GLX.loadImg(file); if (im) await RN.upload(im, opt, t => RN.texs[name] = t);
   };
   RN.loadHi = async (name, file, opt = { srgb: 1 }) => {
     if (RN.hi[name] !== undefined) return; RN.hi[name] = null;
-    const im = await GLX.loadImg(file); if (im) { RN.hi[name] = GLX.texImg(im, opt); }
+    const im = await GLX.loadImg(file); if (im) await RN.upload(im, opt, t => RN.hi[name] = t);
   };
   RN.tex = name => RN.hi[name] || RN.texs[name];
   RN.setStars = buf => {
@@ -12974,17 +12982,20 @@ async function loadAssets() {
   $('ldS').textContent = T().loading;
   const lo = ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
   // 하늘
-  GLX.loadImg('milkyway.jpg').then(im => { if (im) RN.mw = GLX.texImg(im, { srgb: 1 }); step(); });
+  GLX.loadImg('milkyway.jpg').then(im => im ? RN.upload(im, { srgb: 1 }, t => RN.mw = t) : null).then(step);
   GLX.loadBin('stars.bin').then(b => { if (b) RN.setStars(b); step(); });
   Promise.all(lo.map(k => RN.loadTex(k, k + '-lo.jpg'))).then(step);
   RN.loadTex('earth-aux', 'earth-aux-lo.jpg', {}).then(step);
   RN.loadTex('venusatm', 'venusatm-lo.jpg').then(step);
-  GLX.loadImg('saturn-rings.png').then(im => { if (im) RN.texs.rings = GLX.texImg(im, { srgb: 1, wrapS: GLX.gl.CLAMP_TO_EDGE }); step(); });
+  GLX.loadImg('saturn-rings.png').then(im => im ? RN.upload(im, { srgb: 1, wrapS: GLX.gl.CLAMP_TO_EDGE }, t => RN.texs.rings = t) : null).then(step);
   setTimeout(() => $('loading').classList.add('done'), 6000);
-  // 위성 지도는 천천히
-  for (const b of BODIES) if (b.tex && !lo.includes(b.tex)) RN.loadTex(b.tex, b.tex + '.jpg');
-  RN.loadTex('earth-n', 'earth-n.jpg', {}); step(); step();
-  OUTER.load();
+  step(); step();
+  // 첫 화면이 뜬 뒤: 소행성·위성 지도는 몇 개씩 천천히 (처음 화면을 막지 않게)
+  setTimeout(async () => {
+    OUTER.load(); RN.loadTex('earth-n', 'earth-n.jpg', {});
+    const rest = BODIES.filter(b => b.tex && !lo.includes(b.tex)).map(b => b.tex); const go = async () => { while (rest.length) { const t = rest.shift(); await RN.loadTex(t, t + '.jpg'); } };
+    go(); go(); go();
+  }, 2500);
 }
 // 가까이 가면 고해상도
 const HI = { earth: ['earth.jpg', 'earth-aux.jpg'], mars: ['mars.jpg'], jupiter: ['jupiter.jpg'], saturn: ['saturn.jpg'], moon: ['moon.jpg'], mercury: ['mercury.jpg'], venus: ['venus.jpg'] };
@@ -13029,6 +13040,7 @@ function loop(now, manual) {
     if (open && mob) ty = ($('info').offsetHeight) / 2 / (innerHeight / 2);
     RN.shift[0] += (tx - RN.shift[0]) * Math.min(1, dt * 5); RN.shift[1] += (ty - RN.shift[1]) * Math.min(1, dt * 5); }
   buildLines(S);
+  RN.pump(APP.frames < 30 ? 12 : 6);
   if (!QS.has('norender')) RN.frame(S);
   wantHi();
   if (!QS.has('noui')) UI.frame(dt);
