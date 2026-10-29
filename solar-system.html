@@ -128,6 +128,9 @@ body.learning #dock { display: none; }
 .evl button.now { background: rgba(255,207,110,.1); }
 .tgl { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 body.mising #dock { display: none; }
+/* 툴팁 */
+#tip { position: fixed; z-index: 50; max-width: 300px; padding: 7px 11px; border-radius: 9px; background: rgba(20, 26, 43, .96); border: 1px solid var(--line2); color: #e9edf7; font-size: 12.5px; line-height: 1.45; pointer-events: none; opacity: 0; transform: translateY(3px); transition: opacity .15s, transform .15s; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+#tip.show { opacity: 1; transform: none; }
 /* 표면 */
 #surf { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); width: min(680px, calc(100% - 24px)); padding: 10px 12px; z-index: 6; }
 #surf .sh { display: flex; align-items: center; gap: 8px; } #surf .sh b { flex: 1; font-size: 14px; }
@@ -2001,6 +2004,194 @@ const NAMES = {
     haumea: 'Haumea', makemake: 'Makemake', eris: 'Eris', gonggong: 'Gonggong', quaoar: 'Quaoar', orcus: 'Orcus', sedna: 'Sedna', arrokoth: 'Arrokoth', halley: "Halley's Comet", churyumov: '67P/Churyumov–Gerasimenko' },
 };
 
+// ───────────────────────── 툴팁: 버튼·표시에 마우스를 올리면(휴대폰은 길게 누르면) 설명 ─────────────────────────
+const TIPS = {};
+TIPS.ko = {
+  brand: '태양계 전체를 위에서 보기', search: '천체·위성·소행성·혜성·탐사선을 이름으로 찾기',
+  orbits: '행성·위성의 궤도선 켜기/끄기', labels: '천체 이름표 켜기/끄기',
+  gravity: '질량이 만든 중력 우물을 격자로 보기 — 행성에 다가가면 그 행성계의 우물로 바뀝니다', missions: '실제 탐사선 21개의 길과 근접 비행 따라가기',
+  learn: '중력과 상대성 수업 9개 — 장면이 저절로 맞춰집니다', more: '언어·화질·중력 우물 깊이·표시 설정·조작법·자료 출처',
+  rw: '시간을 느리게, 계속 누르면 거꾸로 흐르게 (단축키 ,)', play: '시간 멈춤 / 다시 흐르기 (스페이스)', ff: '시간을 빠르게 — 누를 때마다 1분/초 → 1시간/초 → 1일/초 … (단축키 .)',
+  clock: '날짜·시각을 골라 그때로 가기, 또는 역사적 순간으로', rate: '실제 1초 동안 흐르는 시뮬레이션 시간', now: '지금 이 순간으로 돌아와 실시간으로 흐르게',
+  goTo: '이 천체를 화면 가득 가까이 보기', stand: '{n} 표면에 서서 하늘·해돋이·해넘이 보기', spin: '하루가 약 20초에 지나가도록 시간을 빠르게 해 자전을 봅니다 — 다시 누르면 원래 시간으로',
+  lock: '카메라를 지표에 고정 — 땅은 멈추고 해·별·낮밤 경계가 움직입니다', parent: '{p}(으)로 가기', close: '닫기 (Esc)', chip: '{n}(으)로 가기',
+  mFollow: '카메라가 탐사선을 따라갑니다', mVectors: '근접 비행 때 태양 기준·행성·행성 기준 속도를 화살표로 — 스윙바이로 빨라지는 원리', mAuto: '근접 비행 땐 느리게, 순항 땐 빠르게 시간을 저절로 맞춤',
+  mChart: '그래프를 누르면 그 날짜로 이동', mEvent: '이 순간으로 이동', back: '목록으로',
+  rise: '그 순간 조금 전으로 가서 천천히 보여 줍니다', spot: '다른 명소로 옮기기', exitSurf: '우주로 돌아가기 (Esc)',
+  quality: '낮추면 느린 기기에서 부드러워집니다', well: '왼쪽: 작은 천체의 우물도 보이게 과장 · 오른쪽: 실제 질량 비율', outer: '소행성 10만 개·카이퍼 벨트·태양권·오르트 구름 표시',
+  dock: '{n}(으)로 가기 (단축키 0–9)',
+};
+TIPS.en = {
+  brand: 'View the whole Solar System from above', search: 'Find planets, moons, asteroids, comets and spacecraft by name',
+  orbits: 'Show or hide orbits', labels: 'Show or hide names',
+  gravity: 'Show the gravity well made by mass as a grid — near a planet it switches to that planet’s system', missions: 'Follow the real paths and flybys of 21 spacecraft',
+  learn: 'Nine lessons on gravity and relativity — each sets up the scene for you', more: 'Language, quality, gravity-well depth, display, controls and credits',
+  rw: 'Slow time down; keep pressing to run it backwards (shortcut ,)', play: 'Pause / resume time (Space)', ff: 'Speed time up — each press: 1 min/s → 1 h/s → 1 day/s … (shortcut .)',
+  clock: 'Pick a date and time, or jump to a historic moment', rate: 'Simulated time that passes in one real second', now: 'Back to this very moment, running in real time',
+  goTo: 'Fly in close to this body', stand: 'Stand on {n} and watch the sky, sunrise and sunset', spin: 'Speed time so one day takes about 20 s and watch it rotate — press again to restore',
+  lock: 'Lock the camera to the surface — the ground stays put while the Sun, stars and day–night line move', parent: 'Go to {p}', close: 'Close (Esc)', chip: 'Go to {n}',
+  mFollow: 'Make the camera follow the spacecraft', mVectors: 'Arrows for Sun-frame, planet and planet-frame velocity during flybys — how a slingshot speeds you up', mAuto: 'Slow time near flybys and speed it up while cruising',
+  mChart: 'Click the chart to jump to that date', mEvent: 'Jump to this moment', back: 'Back to the list',
+  rise: 'Jump to just before it happens and play slowly', spot: 'Move to another site', exitSurf: 'Back to space (Esc)',
+  quality: 'Lower it for smoother motion on slow devices', well: 'Left: exaggerate so small wells show · Right: true mass ratio', outer: 'Show 100,000 asteroids, the Kuiper Belt, heliosphere and Oort cloud',
+  dock: 'Go to {n} (keys 0–9)',
+};
+const TIP = (k, v = {}) => { let s = (TIPS[LG] && TIPS[LG][k]) || TIPS.en[k] || ''; for (const x in v) s = s.split('{' + x + '}').join(v[x]); return s; };
+// 화면: data-tip 이 있는 요소 위에 머물면 잠시 뒤 말풍선
+(function () {
+  let el = null, timer = 0, cur = null;
+  const box = () => el || (el = Object.assign(document.createElement('div'), { id: 'tip' }), document.body.appendChild(el), el);
+  function show(t) {
+    const txt = t.dataset.tip; if (!txt) return; const b = box(); b.textContent = txt; b.classList.add('show');
+    const r = t.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight; let x = r.left + r.width / 2 - w / 2, y = r.top - h - 8;
+    if (y < 6) y = r.bottom + 8; x = Math.max(6, Math.min(innerWidth - w - 6, x)); b.style.left = x + 'px'; b.style.top = y + 'px';
+  }
+  const hide = () => { clearTimeout(timer); cur = null; if (el) el.classList.remove('show'); };
+  document.addEventListener('pointerover', e => { if (e.pointerType === 'touch') return; const t = e.target.closest && e.target.closest('[data-tip]'); if (t === cur) return; hide(); if (!t) return; cur = t; timer = setTimeout(() => show(t), 380); });
+  document.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') { hide(); return; } const t = e.target.closest && e.target.closest('[data-tip]'); hide(); if (t) { cur = t; timer = setTimeout(() => { show(t); setTimeout(hide, 2600); }, 520); } });
+  document.addEventListener('pointerup', e => { if (e.pointerType === 'touch') clearTimeout(timer); });
+  addEventListener('scroll', hide, true); addEventListener('keydown', hide);
+})();
+// 요소에 붙이기: setTip(요소 또는 선택자, 키, 값)
+const setTip = (q, k, v) => { const els = typeof q === 'string' ? document.querySelectorAll(q) : (q ? [q] : []); els.forEach(e => { e.dataset.tip = TIP(k, v); e.removeAttribute('title'); }); };
+
+// ───────── 툴팁 번역 ─────────
+TIPS.ja = {
+  brand: '太陽系全体を上から見る', search: '惑星・衛星・小惑星・彗星・探査機を名前で探す',
+  orbits: '軌道の表示/非表示', labels: '名前の表示/非表示',
+  gravity: '質量がつくる重力井戸を格子で表示 — 惑星に近づくとその惑星系の井戸に切り替わります', missions: '実在の探査機21機の航路とフライバイをたどる',
+  learn: '重力と相対性理論の9つのレッスン — 場面は自動で整います', more: '言語・画質・重力井戸の深さ・表示・操作方法・クレジット',
+  rw: '時間をゆっくりに。押し続けると逆再生 (ショートカット ,)', play: '時間の一時停止 / 再開 (スペース)', ff: '時間を速く — 押すたびに 1分/秒 → 1時間/秒 → 1日/秒 … (ショートカット .)',
+  clock: '日時を選んでその時へ、または歴史的瞬間へ', rate: '現実の1秒間に進むシミュレーション時間', now: '今この瞬間に戻り、リアルタイムで進める',
+  goTo: 'この天体に画面いっぱいまで近づく', stand: '{n}の地表に立って空・日の出・日の入りを見る', spin: '1日が約20秒で過ぎるよう時間を速めて自転を見る — もう一度押すと元に戻ります',
+  lock: 'カメラを地表に固定 — 地面は止まり、太陽・星・昼夜の境界が動きます', parent: '{p}へ移動', close: '閉じる (Esc)', chip: '{n}へ移動',
+  mFollow: 'カメラが探査機を追いかけます', mVectors: 'フライバイ中の太陽基準・惑星・惑星基準の速度を矢印で表示 — スイングバイで加速するしくみ', mAuto: 'フライバイ付近では遅く、巡航中は速く時間を自動調整',
+  mChart: 'グラフをクリックするとその日付へ移動', mEvent: 'この瞬間へ移動', back: '一覧に戻る',
+  rise: 'その瞬間の少し前に移動してゆっくり再生', spot: '別の名所へ移動', exitSurf: '宇宙に戻る (Esc)',
+  quality: '下げると遅い端末でも滑らかに動きます', well: '左: 小さな天体の井戸も見えるよう誇張 · 右: 実際の質量比', outer: '小惑星10万個・カイパーベルト・太陽圏・オールトの雲を表示',
+  dock: '{n}へ移動 (キー 0–9)',
+};
+TIPS.zh = {
+  brand: '从上方俯瞰整个太阳系', search: '按名称查找行星、卫星、小行星、彗星和探测器',
+  orbits: '显示/隐藏轨道', labels: '显示/隐藏名称',
+  gravity: '以网格显示质量形成的引力井 — 靠近行星时切换为该行星系的引力井', missions: '追随21个真实探测器的航迹与飞掠',
+  learn: '9节引力与相对论课程 — 场景会自动设置好', more: '语言、画质、引力井深度、显示、操作说明和资料来源',
+  rw: '让时间变慢；持续按下则倒流 (快捷键 ,)', play: '暂停 / 继续时间 (空格)', ff: '让时间加快 — 每按一次：1分钟/秒 → 1小时/秒 → 1天/秒 … (快捷键 .)',
+  clock: '选择日期和时间前往，或跳到历史时刻', rate: '现实1秒内流逝的模拟时间', now: '回到此时此刻，按实时流逝',
+  goTo: '飞近这个天体', stand: '站在{n}表面观看天空、日出和日落', spin: '加快时间使一天约20秒过完，观看自转 — 再按一次恢复',
+  lock: '将镜头固定在地表 — 地面不动，太阳、星星和昼夜分界线在移动', parent: '前往{p}', close: '关闭 (Esc)', chip: '前往{n}',
+  mFollow: '让镜头跟随探测器', mVectors: '飞掠时用箭头显示日心、行星及行星参考系速度 — 引力弹弓加速的原理', mAuto: '飞掠时自动放慢时间，巡航时加快',
+  mChart: '点击图表跳到该日期', mEvent: '跳到这一刻', back: '返回列表',
+  rise: '跳到发生前片刻并慢速播放', spot: '换到另一个地点', exitSurf: '返回太空 (Esc)',
+  quality: '调低可让较慢的设备运行更流畅', well: '左：夸大显示，让小天体的引力井也看得见 · 右：真实质量比例', outer: '显示10万颗小行星、柯伊伯带、日球层和奥尔特云',
+  dock: '前往{n} (按键 0–9)',
+};
+TIPS['zh-TW'] = {
+  brand: '從上方俯瞰整個太陽系', search: '依名稱搜尋行星、衛星、小行星、彗星和探測器',
+  orbits: '顯示/隱藏軌道', labels: '顯示/隱藏名稱',
+  gravity: '以網格顯示質量形成的重力井 — 靠近行星時切換為該行星系的重力井', missions: '追隨21艘真實探測器的航跡與飛掠',
+  learn: '9堂重力與相對論課程 — 場景會自動設定好', more: '語言、畫質、重力井深度、顯示、操作說明和資料來源',
+  rw: '讓時間變慢；持續按住則倒流 (快速鍵 ,)', play: '暫停 / 繼續時間 (空白鍵)', ff: '讓時間加快 — 每按一次：1分鐘/秒 → 1小時/秒 → 1天/秒 … (快速鍵 .)',
+  clock: '選擇日期和時間前往，或跳到歷史時刻', rate: '現實1秒內經過的模擬時間', now: '回到此時此刻，以即時速度流動',
+  goTo: '飛近這個天體', stand: '站在{n}表面觀看天空、日出和日落', spin: '加快時間讓一天約20秒過完，觀看自轉 — 再按一次恢復',
+  lock: '將鏡頭固定在地表 — 地面不動，太陽、星星和晨昏線在移動', parent: '前往{p}', close: '關閉 (Esc)', chip: '前往{n}',
+  mFollow: '讓鏡頭跟隨探測器', mVectors: '飛掠時以箭頭顯示日心、行星及行星參考系速度 — 重力彈弓加速的原理', mAuto: '飛掠時自動放慢時間，巡航時加快',
+  mChart: '點選圖表跳到該日期', mEvent: '跳到這一刻', back: '返回列表',
+  rise: '跳到發生前片刻並慢速播放', spot: '換到另一個地點', exitSurf: '返回太空 (Esc)',
+  quality: '調低可讓較慢的裝置執行更流暢', well: '左：誇大顯示，讓小天體的重力井也看得見 · 右：真實質量比例', outer: '顯示10萬顆小行星、古柏帶、日球層和歐特雲',
+  dock: '前往{n} (按鍵 0–9)',
+};
+TIPS.es = {
+  brand: 'Ver todo el sistema solar desde arriba', search: 'Busca planetas, lunas, asteroides, cometas y naves por nombre',
+  orbits: 'Mostrar u ocultar órbitas', labels: 'Mostrar u ocultar nombres',
+  gravity: 'Muestra como cuadrícula el pozo gravitatorio que crea la masa — cerca de un planeta cambia al de su sistema', missions: 'Sigue las rutas y sobrevuelos reales de 21 naves espaciales',
+  learn: 'Nueve lecciones sobre gravedad y relatividad — cada una prepara la escena por ti', more: 'Idioma, calidad, profundidad del pozo, visualización, controles y créditos',
+  rw: 'Ralentiza el tiempo; sigue pulsando para hacerlo retroceder (atajo ,)', play: 'Pausar / reanudar el tiempo (Espacio)', ff: 'Acelera el tiempo — cada pulsación: 1 min/s → 1 h/s → 1 día/s … (atajo .)',
+  clock: 'Elige fecha y hora, o salta a un momento histórico', rate: 'Tiempo simulado que pasa en un segundo real', now: 'Vuelve a este mismo instante, en tiempo real',
+  goTo: 'Acércate a este cuerpo', stand: 'Ponte de pie en {n} y mira el cielo, el amanecer y el atardecer', spin: 'Acelera el tiempo para que un día dure unos 20 s y verlo girar — pulsa otra vez para restaurar',
+  lock: 'Fija la cámara a la superficie — el suelo queda quieto mientras se mueven el Sol, las estrellas y la línea día–noche', parent: 'Ir a {p}', close: 'Cerrar (Esc)', chip: 'Ir a {n}',
+  mFollow: 'La cámara sigue a la nave', mVectors: 'Flechas de velocidad respecto al Sol, del planeta y respecto al planeta en los sobrevuelos — así acelera una asistencia gravitatoria', mAuto: 'Ralentiza el tiempo en los sobrevuelos y lo acelera en crucero',
+  mChart: 'Haz clic en el gráfico para saltar a esa fecha', mEvent: 'Saltar a este momento', back: 'Volver a la lista',
+  rise: 'Salta a justo antes y reprodúcelo despacio', spot: 'Ir a otro lugar', exitSurf: 'Volver al espacio (Esc)',
+  quality: 'Bájala para un movimiento más fluido en dispositivos lentos', well: 'Izquierda: exagerado para ver pozos pequeños · Derecha: proporción real de masas', outer: 'Muestra 100 000 asteroides, el cinturón de Kuiper, la heliosfera y la nube de Oort',
+  dock: 'Ir a {n} (teclas 0–9)',
+};
+TIPS.fr = {
+  brand: 'Voir tout le Système solaire d’en haut', search: 'Chercher planètes, lunes, astéroïdes, comètes et sondes par leur nom',
+  orbits: 'Afficher ou masquer les orbites', labels: 'Afficher ou masquer les noms',
+  gravity: 'Afficher en grille le puits gravitationnel créé par la masse — près d’une planète, il passe à celui de son système', missions: 'Suivre les trajectoires et survols réels de 21 sondes',
+  learn: 'Neuf leçons sur la gravité et la relativité — chacune prépare la scène pour vous', more: 'Langue, qualité, profondeur du puits, affichage, commandes et crédits',
+  rw: 'Ralentir le temps ; maintenez pour le faire reculer (raccourci ,)', play: 'Pause / reprise du temps (Espace)', ff: 'Accélérer le temps — à chaque appui : 1 min/s → 1 h/s → 1 jour/s … (raccourci .)',
+  clock: 'Choisir une date et une heure, ou aller à un moment historique', rate: 'Temps simulé écoulé en une seconde réelle', now: 'Revenir à l’instant présent, en temps réel',
+  goTo: 'S’approcher de cet astre', stand: 'Se tenir sur {n} et regarder le ciel, le lever et le coucher du Soleil', spin: 'Accélérer le temps pour qu’un jour dure environ 20 s et voir la rotation — appuyez à nouveau pour rétablir',
+  lock: 'Fixer la caméra à la surface — le sol reste immobile tandis que le Soleil, les étoiles et la ligne jour–nuit bougent', parent: 'Aller à {p}', close: 'Fermer (Échap)', chip: 'Aller à {n}',
+  mFollow: 'La caméra suit la sonde', mVectors: 'Flèches des vitesses par rapport au Soleil, de la planète et par rapport à la planète lors des survols — comment l’assistance gravitationnelle accélère', mAuto: 'Ralentir le temps près des survols et l’accélérer en croisière',
+  mChart: 'Cliquez sur le graphique pour aller à cette date', mEvent: 'Aller à ce moment', back: 'Retour à la liste',
+  rise: 'Aller juste avant l’événement et le lire lentement', spot: 'Aller à un autre site', exitSurf: 'Retour dans l’espace (Échap)',
+  quality: 'Baissez-la pour plus de fluidité sur les appareils lents', well: 'Gauche : exagéré pour voir les petits puits · Droite : vrai rapport des masses', outer: 'Afficher 100 000 astéroïdes, la ceinture de Kuiper, l’héliosphère et le nuage d’Oort',
+  dock: 'Aller à {n} (touches 0–9)',
+};
+TIPS.de = {
+  brand: 'Das ganze Sonnensystem von oben ansehen', search: 'Planeten, Monde, Asteroiden, Kometen und Raumsonden nach Namen suchen',
+  orbits: 'Umlaufbahnen ein-/ausblenden', labels: 'Namen ein-/ausblenden',
+  gravity: 'Den von Masse erzeugten Gravitationstrichter als Gitter zeigen — nahe einem Planeten wechselt er zu dessen System', missions: 'Den echten Bahnen und Vorbeiflügen von 21 Raumsonden folgen',
+  learn: 'Neun Lektionen zu Gravitation und Relativität — die Szene wird jeweils automatisch eingerichtet', more: 'Sprache, Qualität, Trichtertiefe, Anzeige, Steuerung und Quellen',
+  rw: 'Zeit verlangsamen; weiter drücken, um sie rückwärts laufen zu lassen (Kürzel ,)', play: 'Zeit anhalten / fortsetzen (Leertaste)', ff: 'Zeit beschleunigen — jeder Druck: 1 min/s → 1 h/s → 1 Tag/s … (Kürzel .)',
+  clock: 'Datum und Uhrzeit wählen oder zu einem historischen Moment springen', rate: 'Simulierte Zeit pro echter Sekunde', now: 'Zurück zum aktuellen Moment, in Echtzeit',
+  goTo: 'Nah an diesen Himmelskörper heranfliegen', stand: 'Auf {n} stehen und Himmel, Sonnenauf- und -untergang beobachten', spin: 'Zeit so beschleunigen, dass ein Tag etwa 20 s dauert, und die Rotation sehen — erneut drücken zum Zurücksetzen',
+  lock: 'Kamera an die Oberfläche koppeln — der Boden bleibt still, Sonne, Sterne und Tag-Nacht-Grenze bewegen sich', parent: 'Zu {p}', close: 'Schließen (Esc)', chip: 'Zu {n}',
+  mFollow: 'Kamera folgt der Raumsonde', mVectors: 'Pfeile für Geschwindigkeit relativ zur Sonne, des Planeten und relativ zum Planeten bei Vorbeiflügen — so beschleunigt ein Swing-by', mAuto: 'Zeit bei Vorbeiflügen verlangsamen, im Reiseflug beschleunigen',
+  mChart: 'Ins Diagramm klicken, um zu diesem Datum zu springen', mEvent: 'Zu diesem Moment springen', back: 'Zurück zur Liste',
+  rise: 'Kurz davor springen und langsam abspielen', spot: 'Zu einem anderen Ort wechseln', exitSurf: 'Zurück ins All (Esc)',
+  quality: 'Niedriger stellen für flüssigere Bewegung auf langsamen Geräten', well: 'Links: übertrieben, damit kleine Trichter sichtbar sind · Rechts: echtes Massenverhältnis', outer: '100.000 Asteroiden, Kuipergürtel, Heliosphäre und Oortsche Wolke anzeigen',
+  dock: 'Zu {n} (Tasten 0–9)',
+};
+TIPS.pt = {
+  brand: 'Ver todo o Sistema Solar de cima', search: 'Encontre planetas, luas, asteroides, cometas e sondas pelo nome',
+  orbits: 'Mostrar ou ocultar órbitas', labels: 'Mostrar ou ocultar nomes',
+  gravity: 'Mostra em grade o poço gravitacional criado pela massa — perto de um planeta, passa ao do seu sistema', missions: 'Siga as rotas e sobrevoos reais de 21 sondas espaciais',
+  learn: 'Nove lições sobre gravidade e relatividade — cada uma prepara a cena para você', more: 'Idioma, qualidade, profundidade do poço, exibição, controles e créditos',
+  rw: 'Desacelera o tempo; continue pressionando para voltar no tempo (atalho ,)', play: 'Pausar / retomar o tempo (Espaço)', ff: 'Acelera o tempo — a cada toque: 1 min/s → 1 h/s → 1 dia/s … (atalho .)',
+  clock: 'Escolha data e hora, ou salte para um momento histórico', rate: 'Tempo simulado que passa em um segundo real', now: 'De volta a este exato momento, em tempo real',
+  goTo: 'Aproximar-se deste corpo', stand: 'Fique em pé em {n} e veja o céu, o nascer e o pôr do sol', spin: 'Acelera o tempo para um dia durar cerca de 20 s e ver a rotação — toque de novo para restaurar',
+  lock: 'Prende a câmera à superfície — o chão fica parado enquanto o Sol, as estrelas e a linha dia–noite se movem', parent: 'Ir para {p}', close: 'Fechar (Esc)', chip: 'Ir para {n}',
+  mFollow: 'A câmera segue a sonda', mVectors: 'Setas de velocidade em relação ao Sol, do planeta e em relação ao planeta nos sobrevoos — como o estilingue gravitacional acelera', mAuto: 'Desacelera o tempo nos sobrevoos e acelera em cruzeiro',
+  mChart: 'Clique no gráfico para ir a essa data', mEvent: 'Ir para este momento', back: 'Voltar à lista',
+  rise: 'Vai para pouco antes e reproduz devagar', spot: 'Mudar para outro local', exitSurf: 'Voltar ao espaço (Esc)',
+  quality: 'Reduza para movimentos mais suaves em aparelhos lentos', well: 'Esquerda: exagerado para ver poços pequenos · Direita: proporção real das massas', outer: 'Mostra 100 mil asteroides, o Cinturão de Kuiper, a heliosfera e a Nuvem de Oort',
+  dock: 'Ir para {n} (teclas 0–9)',
+};
+TIPS.ru = {
+  brand: 'Вся Солнечная система сверху', search: 'Найти планеты, спутники, астероиды, кометы и зонды по названию',
+  orbits: 'Показать или скрыть орбиты', labels: 'Показать или скрыть названия',
+  gravity: 'Показать сеткой гравитационную яму, созданную массой — у планеты она переключается на её систему', missions: 'Следить за реальными траекториями и пролётами 21 космического аппарата',
+  learn: 'Девять уроков о гравитации и относительности — сцена настраивается сама', more: 'Язык, качество, глубина ямы, отображение, управление и источники',
+  rw: 'Замедлить время; продолжайте нажимать, чтобы пустить его вспять (клавиша ,)', play: 'Пауза / продолжить время (Пробел)', ff: 'Ускорить время — каждое нажатие: 1 мин/с → 1 ч/с → 1 сут/с … (клавиша .)',
+  clock: 'Выбрать дату и время или перейти к историческому моменту', rate: 'Сколько модельного времени проходит за одну реальную секунду', now: 'Вернуться в текущий момент, в реальном времени',
+  goTo: 'Подлететь вплотную к этому телу', stand: 'Встать на {n} и смотреть на небо, восход и закат', spin: 'Ускорить время, чтобы сутки длились около 20 с, и увидеть вращение — нажмите снова, чтобы вернуть',
+  lock: 'Привязать камеру к поверхности — земля неподвижна, а Солнце, звёзды и граница дня и ночи движутся', parent: 'Перейти к {p}', close: 'Закрыть (Esc)', chip: 'Перейти к {n}',
+  mFollow: 'Камера следует за аппаратом', mVectors: 'Стрелки скоростей относительно Солнца, планеты и относительно планеты при пролётах — как гравитационный манёвр разгоняет', mAuto: 'Замедлять время у пролётов и ускорять в полёте',
+  mChart: 'Нажмите на график, чтобы перейти к этой дате', mEvent: 'Перейти к этому моменту', back: 'Назад к списку',
+  rise: 'Перейти чуть раньше события и показать медленно', spot: 'Перейти в другое место', exitSurf: 'Вернуться в космос (Esc)',
+  quality: 'Понизьте для плавности на медленных устройствах', well: 'Слева: с преувеличением, чтобы видеть малые ямы · Справа: реальное соотношение масс', outer: 'Показать 100 000 астероидов, пояс Койпера, гелиосферу и облако Оорта',
+  dock: 'Перейти к {n} (клавиши 0–9)',
+};
+TIPS.vi = {
+  brand: 'Xem toàn bộ Hệ Mặt Trời từ trên cao', search: 'Tìm hành tinh, vệ tinh, tiểu hành tinh, sao chổi và tàu thăm dò theo tên',
+  orbits: 'Hiện hoặc ẩn quỹ đạo', labels: 'Hiện hoặc ẩn tên',
+  gravity: 'Hiển thị giếng hấp dẫn do khối lượng tạo ra dưới dạng lưới — khi đến gần một hành tinh sẽ chuyển sang hệ của hành tinh đó', missions: 'Theo dõi đường bay và các lần bay ngang thực tế của 21 tàu thăm dò',
+  learn: 'Chín bài học về hấp dẫn và thuyết tương đối — cảnh được tự động sắp xếp', more: 'Ngôn ngữ, chất lượng, độ sâu giếng hấp dẫn, hiển thị, điều khiển và nguồn dữ liệu',
+  rw: 'Làm chậm thời gian; nhấn tiếp để chạy ngược (phím tắt ,)', play: 'Tạm dừng / tiếp tục thời gian (Space)', ff: 'Tăng tốc thời gian — mỗi lần nhấn: 1 phút/giây → 1 giờ/giây → 1 ngày/giây … (phím tắt .)',
+  clock: 'Chọn ngày giờ, hoặc đến một khoảnh khắc lịch sử', rate: 'Thời gian mô phỏng trôi qua trong một giây thực', now: 'Trở về đúng lúc này, chạy theo thời gian thực',
+  goTo: 'Bay đến gần thiên thể này', stand: 'Đứng trên {n} và ngắm bầu trời, bình minh và hoàng hôn', spin: 'Tăng tốc để một ngày trôi qua trong khoảng 20 giây và xem nó tự quay — nhấn lần nữa để khôi phục',
+  lock: 'Gắn camera vào bề mặt — mặt đất đứng yên còn Mặt Trời, các vì sao và ranh giới ngày–đêm di chuyển', parent: 'Đến {p}', close: 'Đóng (Esc)', chip: 'Đến {n}',
+  mFollow: 'Camera bám theo tàu thăm dò', mVectors: 'Mũi tên vận tốc so với Mặt Trời, của hành tinh và so với hành tinh khi bay ngang — cách hiệu ứng súng cao su tăng tốc', mAuto: 'Tự làm chậm thời gian khi bay ngang và tăng tốc khi bay hành trình',
+  mChart: 'Nhấp vào biểu đồ để đến ngày đó', mEvent: 'Đến khoảnh khắc này', back: 'Quay lại danh sách',
+  rise: 'Đến ngay trước lúc đó và phát chậm', spot: 'Chuyển sang địa điểm khác', exitSurf: 'Trở lại không gian (Esc)',
+  quality: 'Giảm xuống để chuyển động mượt hơn trên thiết bị chậm', well: 'Trái: phóng đại để thấy giếng nhỏ · Phải: tỉ lệ khối lượng thật', outer: 'Hiện 100.000 tiểu hành tinh, vành đai Kuiper, nhật quyển và đám mây Oort',
+  dock: 'Đến {n} (phím 0–9)',
+};
+
 // ───────────────────────── 천체 소개 글 (언어별) ─────────────────────────
 const INFOTXT = {};
 // 층·탐사 종류·대기 이름 (언어별)
@@ -2287,7 +2478,9 @@ const INFO = {};
     $('infoHead').innerHTML = `<h2>${nm(b.id)}</h2>${LG !== 'en' ? `<div class="en">${NAMES.en[b.id]}${d.tag ? ' · ' + d.tag : ''}</div>` : (d.tag ? `<div class="en">${d.tag}</div>` : '')}
       <span class="kind">${kind}</span><button class="x" id="infoX">×</button>
       <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 && b.id !== 'sun' ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
-    $('infoX').onclick = UI.close;
+    $('infoX').onclick = UI.close; setTip($('infoX'), 'close');
+    const tk = { go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
+    $('infoHead').querySelectorAll('.act').forEach(el => setTip(el, tk[el.dataset.a], { n: nm(b.id), p: b.parent ? nm(b.parent) : '' }));
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
       const a = el.dataset.a;
       if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
@@ -2308,7 +2501,7 @@ const INFO = {};
     if (EXPLORE[b.id]) h += `<h3>${sec.explore}</h3>` + exploreHtml(b);
     if (DISC[b.id] || MOONS_N[b.id]) h += `<h3>${ATX().disc}</h3>` + kv([DISC[b.id] && [ATX().disc, (DISC[b.id][0] < 0 ? ATX().yrBC.replace('{y}', -DISC[b.id][0]) : DISC[b.id][0]) + ' · ' + DISC[b.id][1]], MOONS_N[b.id] && [ATX().moonsN, MOONS_N[b.id]]]);
     $('infoBody').innerHTML = h; $('infoBody').scrollTop = 0;
-    $('infoBody').querySelectorAll('.chip[data-id]').forEach(el => el.onclick = () => UI.go(BY[el.dataset.id]));
+    $('infoBody').querySelectorAll('.chip[data-id]').forEach(el => { el.onclick = () => UI.go(BY[el.dataset.id]); setTip(el, 'chip', { n: nm(el.dataset.id) }); });
     INFO.live(b);
   };
   const ATX = () => ATXT[LG] || ATXT.en;
@@ -2394,13 +2587,15 @@ const UI = {};
     $('brandT').innerHTML = T().title; $('brandS').textContent = T().sub; $('search').placeholder = T().search;
     const tools = ['orbits', 'labels', 'gravity', 'missions', 'learn'];
     $('tools').innerHTML = tools.map(k => `<button class="tb glass${APP.show[k] ? ' on' : ''}" data-k="${k}">${ICON[k]}<span class="lbl">${T()[k]}</span></button>`).join('') + `<button class="tb glass" data-k="more">${ICON.more}</button>`;
+    $('tools').querySelectorAll('.tb').forEach(b => setTip(b, b.dataset.k));
+    setTip($('brand'), 'brand'); setTip($('searchBox'), 'search');
     $('tools').querySelectorAll('.tb').forEach(b => b.onclick = () => { const k = b.dataset.k; if (k in APP.show) { APP.show[k] = !APP.show[k]; b.classList.toggle('on', APP.show[k]); if (k === 'gravity' && APP.show[k]) UI.gravityView(); } else if (k === 'more') UI.menu(b); else if (k === 'learn') { LEARN.on ? LEARN.close() : LEARN.open(); UI.toolsSync(); } else if (k === 'missions') { MIS.on ? MIS.close() : MIS.open(); } });
     dock(); UI.time(); if (APP.sel) UI.select(APP.sel, true);
   };
   UI.toolsSync = () => { $('tools').querySelectorAll('.tb').forEach(b => { const k = b.dataset.k; b.classList.toggle('on', k === 'learn' ? LEARN.on : k === 'missions' ? !!MIS.on : !!APP.show[k] || (k === 'gravity' && !!GRAV.custom)); }); document.body.classList.toggle('learning', LEARN.on); document.body.classList.toggle('mising', !!MIS.on); };
   function dock() {
     const ids = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
-    $('dock').innerHTML = ids.map(id => `<button class="dk" data-id="${id}"><canvas width="52" height="52"></canvas><span class="tip">${nm(id)}</span></button>`).join('');
+    $('dock').innerHTML = ids.map(id => `<button class="dk" data-id="${id}" data-tip="${TIP('dock', { n: nm(id) })}"><canvas width="52" height="52"></canvas></button>`).join('');
     $('dock').querySelectorAll('.dk').forEach(el => { const b = BY[el.dataset.id]; miniGlobe(el.querySelector('canvas'), b); el.onclick = () => UI.go(b); });
   }
   // 작은 그림 (점이 아니라 빛 받은 공)
@@ -2528,6 +2723,7 @@ const UI = {};
       $('clock').onclick = () => UI.dateDlg && UI.dateDlg();
     }
     $('tPlay').innerHTML = APP.playing ? ICON.pause : ICON.play;
+    setTip($('tRw'), 'rw'); setTip($('tPlay'), 'play'); setTip($('tFf'), 'ff'); setTip($('clock'), 'clock'); setTip($('rate'), 'rate'); setTip($('nowBtn'), 'now');
     $('nowBtn').textContent = APP.live ? '● ' + T().live : T().now; $('nowBtn').classList.toggle('on', APP.live);
     $('rate').textContent = !APP.playing ? T().paused : rateText();
   };
@@ -2559,6 +2755,7 @@ const UI = {};
       <div class="row${OUTER.on ? ' on' : ''}" data-a="outer">${t.outer}<span class="ck"></span></div>
       <hr><div class="row" data-a="help">${t.help}</div><div class="row" data-a="cred">${CRED_T[LG] || CRED_T.en}</div>`;
     document.body.appendChild(m);
+    setTip(m.querySelector('[data-q]').parentElement.parentElement, 'quality'); setTip($('mnWell').parentElement.parentElement, 'well'); setTip(m.querySelector('[data-a=outer]'), 'outer');
     $('mnLang').onchange = e => { LG = e.target.value; try { localStorage.setItem('wiiiv-solar-lang', LG); } catch { /* 무시 */ } UI.lang(); m.remove(); };
     m.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { RN.quality = +b.dataset.q; try { localStorage.setItem('wiiiv-solar-q', RN.quality); } catch { /* 무시 */ } dispatchEvent(new Event('resize')); m.remove(); });
     $('mnWell').oninput = e => { GRAV.p = +e.target.value; };
@@ -2845,7 +3042,7 @@ const LEARN = { on: false, li: 0, si: 0, t: 0, draw: null, tick: null };
     $('learn').innerHTML = `<div class="lh"><button class="back" id="lnB">‹</button><b>${les.t}</b><button class="x" id="lnX">×</button></div>
       <div class="lb"><div class="dots">${les.steps.map((_, j) => `<i class="${j === LEARN.si ? 'on' : ''}"></i>`).join('')}</div><h4>${st.t}</h4>${st.h}</div>
       <div class="lf"><button class="act" id="lnP" ${LEARN.si ? '' : 'disabled'}>${t.prev}</button><button class="act prim" id="lnN">${LEARN.si < n - 1 ? t.next : (LEARN.li < t.lessons.length - 1 ? t.nextLesson : t.done)}</button></div>`;
-    $('lnX').onclick = LEARN.close; $('lnB').onclick = menu;
+    $('lnX').onclick = LEARN.close; $('lnB').onclick = menu; setTip($('lnX'), 'close'); setTip($('lnB'), 'back');
     $('lnP').onclick = () => { if (LEARN.si) { LEARN.si--; step(); } };
     $('lnN').onclick = () => { if (LEARN.si < n - 1) { LEARN.si++; step(); } else if (LEARN.li < t.lessons.length - 1) start(LEARN.li + 1); else menu(); };
   }
@@ -3031,7 +3228,7 @@ const MIS = { list: null, data: {}, sel: null, crafts: {}, follow: false, auto: 
   function listView() {
     const t = T(); MIS.sel = null;
     $('mis').innerHTML = `<div class="lh"><b>${t.title}</b><button class="x" id="msX">×</button></div><div class="lb"><p style="color:var(--dim);font-size:12.5px">${t.sub}</p>${MIS.list.map(m => `<button class="mrow" data-id="${m.id}"><i style="color:rgb(${m.col.map(x => x * 255 | 0)});background:currentColor"></i><span><b>${t.m[m.id]?.n || m.id}</b><small>${t.m[m.id]?.ag || ''}</small></span></button>`).join('')}</div>`;
-    $('msX').onclick = MIS.close; $('mis').querySelectorAll('.mrow').forEach(el => el.onclick = () => pick(el.dataset.id));
+    $('msX').onclick = MIS.close; setTip($('msX'), 'close'); $('mis').querySelectorAll('.mrow').forEach(el => el.onclick = () => pick(el.dataset.id));
   }
   async function pick(id) {
     const m = MIS.list.find(x => x.id === id); MIS.sel = m; await MIS.load(id); detail(m);
@@ -3060,7 +3257,8 @@ const MIS = { list: null, data: {}, sel: null, crafts: {}, follow: false, auto: 
       <div id="msLive"></div>
       <h3 style="margin:14px 0 4px;font-size:11.5px;color:var(--acc2);letter-spacing:.08em">${t.chart}</h3><canvas class="chart" id="msChart"></canvas>
       <div class="evl" id="msEv">${m.ev.map((e, i) => `<button data-i="${i}"><span>${fmtD(e[0])}</span>${evText(e[1])}</button>`).join('')}</div></div>`;
-    $('msX').onclick = MIS.close; $('msB').onclick = listView;
+    $('msX').onclick = MIS.close; $('msB').onclick = listView; setTip($('msX'), 'close'); setTip($('msB'), 'back');
+    setTip('#mis [data-t=follow]', 'mFollow'); setTip('#mis [data-t=vectors]', 'mVectors'); setTip('#mis [data-t=auto]', 'mAuto'); setTip($('msChart'), 'mChart'); setTip('#msEv button', 'mEvent');
     $('mis').querySelectorAll('[data-t]').forEach(el => el.onclick = () => { const k = el.dataset.t;
       if (k === 'follow') { const c = MIS.crafts[m.id]; if (c.st) CAM.flyTo(c, Math.max(len(sub(CAM.pos, c.pos)) * 0.5, 2e5), { dur: 2.5 }); }
       if (k === 'vectors') { MIS.vectors = !MIS.vectors; el.classList.toggle('on', MIS.vectors); }
@@ -3179,7 +3377,7 @@ const SURF = { on: false, b: null, lat: 0, lon: 0, alt: 0.002, yaw: 90, pitch: 8
       <div class="sb">${sp.length > 1 ? `<select id="sfSpot">${sp.map((s, i) => `<option value="${i}"${i === SURF.spot ? ' selected' : ''}>${T.spot[s[3]] || s[3]}</option>`).join('')}</select>` : ''}
       <button class="act" data-g="sunrise">${T.sunrise}</button><button class="act" data-g="sunset">${T.sunset}</button>
       ${b.id === 'earth' ? `<button class="act" data-g="moonrise">${T.moonrise}</button>` : ''}${b.id === 'mars' ? `<button class="act" data-g="phobos">${T.phobosrise}</button>` : ''}</div>`;
-    $('sfX').onclick = SURF.exit;
+    $('sfX').onclick = SURF.exit; setTip($('sfX'), 'exitSurf'); setTip($('sfSpot'), 'spot'); setTip('#surf [data-g]', 'rise');
     if ($('sfSpot')) $('sfSpot').onchange = e => SURF.enter(b, +e.target.value);
     el.querySelectorAll('[data-g]').forEach(x => x.onclick = () => {
       const g = x.dataset.g; const o = g === 'moonrise' ? BY.moon : g === 'phobos' ? BY.phobos : BY.sun; const rise = g !== 'sunset';
