@@ -78,6 +78,7 @@ input { font: inherit; color: inherit; }
 #infoBody .bnote { font-size: 12.5px; color: var(--dim); margin: 7px 0 0; }
 #infoBody .sdo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; } #infoBody .sdo a { text-decoration: none; color: var(--dim); font-size: 11.5px; text-align: center; }
 #infoBody .sdo img { width: 100%; aspect-ratio: 1; border-radius: 8px; display: block; background: #000; margin-bottom: 3px; border: 1px solid var(--line); } #infoBody .sdo a:hover img { border-color: var(--acc); }
+#infoBody .ringin { width: 100%; margin: 12px 0 2px; padding: 10px; font-size: 13.5px; border-color: rgba(255,207,110,.5); color: var(--acc); background: rgba(255,207,110,.06); }
 .fact { border-left: 3px solid var(--acc); padding: 6px 10px; margin: 8px 0; background: rgba(255,207,110,.06); border-radius: 0 8px 8px 0; font-size: 13px; color: #e7dcc0; }
 .layers { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
 .layer { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
@@ -1398,7 +1399,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
   RN.skip = new Set((new URLSearchParams(location.search).get('skip') || '').split(','));
   RN.frame = S => {
     const sec = S.time; RN.uT = [((sec / 86400) % 1000 + 1000) % 1000, ((sec / 600) % 1000 + 1000) % 1000, ((sec * 2e-6) % 1000 + 1000) % 1000, ((sec * 3e-5) % 1000 + 1000) % 1000];
-    const cp = S.cam, near = SURF.on ? 1e-5 : 1e-3, far = 1e15;
+    const cp = S.cam, near = RINGF.amt > 0 ? 1e-6 : SURF.on ? 1e-5 : 1e-3, far = 1e15;
     const proj = m4persp(RN.fov, W / H, near, far); proj[8] = -RN.shift[0]; proj[9] = -RN.shift[1];
     const view = m4view(S.R), VPd = m4mul(proj, view), VP = f32(VPd);
     RN.VPd = VPd; RN.logF = 2 / Math.log2(far + 1);
@@ -1458,7 +1459,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
     gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
     for (const [b, C] of rings) {
       const ringT = RN.texs.rings || RN.ringTex;
-      GLX.use(P.ring, { uVP: VP, uRot: GLX.mat3(b.R3), uC: C, uRingR: b.rings, uRingTex: ringT, uSunP: sunC, uSunR: sun.R, uLight: lightAt(b), uS: [b.R, b.R, b.Rp], uTint: [1, 1, 1], uOpac: 1, uLogF: RN.logF, ...occluders(b, cp) });
+      GLX.use(P.ring, { uVP: VP, uRot: GLX.mat3(b.R3), uC: C, uRingR: b.rings, uRingTex: ringT, uSunP: sunC, uSunR: sun.R, uLight: lightAt(b), uS: [b.R, b.R, b.Rp], uTint: [1, 1, 1], uOpac: 1 - 0.45 * RINGF.amt, uLogF: RN.logF, ...occluders(b, cp) });
       GLX.draw(ringMesh);
     }
     // 대기 껍질: 먼저 뒤 배경을 RGB 투과만큼 곱하고(노을빛), 그 위에 산란빛을 더함
@@ -1853,6 +1854,122 @@ const OTEXT = {
   en: { belt: 'Asteroid belt (2.1–3.3 AU)', trojans: 'Jupiter Trojans (L4)', kuiper: 'Kuiper Belt (30–50 AU)', ts: 'Termination shock (~94 AU)', hp: 'Heliopause (~121 AU) — crossed by Voyager 1 in 2012', oortIn: 'Inner Oort cloud (2,000 AU+)', oortOut: 'Outer edge of the Oort cloud (~100,000 AU)', ly: '1 light-year (63,241 AU)', wind: '← Interstellar wind comes from here (the nose)', acen: 'Toward Alpha Centauri (4.37 ly)' },
 };
 const OTXT = () => OTEXT[LG] || OTEXT.en;
+
+// ───────────────────────── 토성 고리 속: 얼음 덩어리 들판 ─────────────────────────
+// 고리는 두께 수십 m 안에 수 cm~수 m 얼음 덩어리가 깔린 판이다. 카메라가 고리면 가까이(수 km 안) 오면
+// 카메라 둘레 격자 칸마다 정해진(같은 자리면 같은) 덩어리들을 점 스프라이트로 그린다. 밀도는 그 반지름의 고리 밝기(광학 두께)를 따른다.
+const RINGF = { on: false, r: 128000, th: 0, z: 0.05, yaw: 180, pitch: -6, amt: 0 };
+(function () {
+  let prog; const W = 180, K = 6; // 칸 180×180, 칸마다 6개 → 약 19만 개
+  let vao, sheet; RINGF.init = () => { prog = GLX.prog(SH.rfV, SH.rfF); sheet = GLX.prog(SH.rsV, SH.rsF); vao = GLX.gl.createVertexArray(); };
+  // 고리 좌표틀: ex, ey (고리면), n (북극)
+  const frame = S => ({ ex: m3v(S.R3, [1, 0, 0]), ey: m3v(S.R3, [0, 1, 0]), n: m3v(S.R3, [0, 0, 1]) });
+  // 토성 둘레 카메라가 고리면에서 얼마나 떨어졌나 (km)
+  RINGF.camLocal = () => { const S = BY.saturn; const f = frame(S); const rel = sub(CAM.pos, S.rp || S.pos); return { x: dot(rel, f.ex), y: dot(rel, f.ey), z: dot(rel, f.n), f }; };
+  RINGF.enter = (r = 128000) => {
+    const S = BY.saturn; if (SURF.on) { SURF.on = false; $('surf').hidden = true; }
+    UI.close(); PBD.stop && PBD.stop(); APO.stop && APO.stop(); HIST.stop && HIST.stop();
+    const f = frame(S); const sunN = dot(nrm(sub(BY.sun.pos, S.pos)), f.n); // 해가 비추는 쪽 면 위로
+    const toSun = nrm(sub(BY.sun.pos, S.pos)); RINGF.th = Math.atan2(dot(toSun, f.ey), dot(toSun, f.ex)) + 0.9; // 낮 쪽에서 약간 옆으로
+    RINGF.r = r; RINGF.z = 0.05 * (sunN >= 0 ? 1 : -1); RINGF.yaw = 180; RINGF.pitch = -8 * Math.sign(RINGF.z);
+    RINGF.on = true; CAM.fly = null; CAM.focus = S; CAM.fovT = 65; APP.playing = false; UI.time(); RINGF.panel();
+  };
+  RINGF.exit = () => { if (!RINGF.on) return; RINGF.on = false; $('pbd').hidden = true; CAM.fovT = 50; const S = BY.saturn; CAM.set(S, CAM.defaultDist(S), nrm(sub(CAM.pos, S.pos))); CAM.flyTo(S); UI.select(S); };
+  // 카메라: 고리 위치(r, θ, z) + 둘러보기(방위 yaw: 0 = 바깥쪽, 180 = 토성 쪽)
+  RINGF.camera = () => {
+    const S = BY.saturn, f = frame(S); const rad = add(scl(f.ex, Math.cos(RINGF.th)), scl(f.ey, Math.sin(RINGF.th))), tan = crs(f.n, rad);
+    CAM.pos = add(add(S.rp || S.pos, scl(rad, RINGF.r)), scl(f.n, RINGF.z));
+    const y = RINGF.yaw * D2R, p = RINGF.pitch * D2R; const fwd = add(add(scl(rad, Math.cos(p) * Math.cos(y)), scl(tan, Math.cos(p) * Math.sin(y))), scl(f.n, Math.sin(p)));
+    CAM.R = lookRot(fwd, f.n); CAM.dist = RINGF.r;
+  };
+  RINGF.look = (dx, dy) => { const k = CAM.fovT / 65; RINGF.yaw = (RINGF.yaw - dx * R2D * k + 360) % 360; RINGF.pitch = clamp(RINGF.pitch + dy * R2D * k, -89, 89); };
+  RINGF.zoom = f => { RINGF.z = Math.sign(RINGF.z || 1) * clamp(Math.abs(RINGF.z) * f, 0.004, 400); if (Math.abs(RINGF.z) >= 399) RINGF.exit(); };
+  RINGF.update = () => { const c = RINGF.on ? { z: RINGF.z } : (BY.saturn.dist < 3e5 ? RINGF.camLocal() : null); const h = c ? Math.abs(c.z) : 1e9; RINGF.amt = clamp(1 - Math.log10(Math.max(h, 0.01) / 2) / 1.5, 0, 1); };
+  RINGF.draw = (VP, cp) => {
+    if (RINGF.amt <= 0 || !RN.texs.rings) return; const S = BY.saturn; const L = RINGF.camLocal(); const r = Math.hypot(L.x, L.y); if (r < S.rings[0] * 0.98 || r > S.rings[1] * 1.02) return;
+    const gl = GLX.gl; const h = Math.max(Math.abs(L.z), 0.004);
+    const c = Math.pow(2, Math.round(Math.log2(clamp(h * 0.16, 0.002, 2)))); // 칸 크기(km), 2의 거듭제곱으로 끊어 덜 깜빡이게
+    const cx = Math.floor(L.x / c), cy = Math.floor(L.y / c);
+    const toSun = nrm(sub(BY.sun.pos, S.pos)); const R = CAM.R; const Lv = [dot(toSun, [R[0], R[3], R[6]]), dot(toSun, [R[1], R[4], R[7]]), dot(toSun, [R[2], R[5], R[8]])];
+    const sunL = [dot(toSun, L.f.ex), dot(toSun, L.f.ey), dot(toSun, L.f.n)];
+    GLX.use(prog, { uVP: VP, uE1: L.f.ex, uE2: L.f.ey, uN: L.f.n, uCell: c, uCamXY: [L.x, L.y], uCamZ: L.z, uFrac: [L.x - cx * c, L.y - cy * c], uRingR: S.rings, uRingTex: RN.texs.rings,
+      uLv: Lv, uSunL: sunL, uRs: [S.R, S.Rp], uLight: RN.lightAt(S), uPx: RN.pxPerRad, uAmt: RINGF.amt, uLogF: RN.logF, uW: K, uExpo: RN.expo });
+    gl.uniform2i(prog.u.uCellI, cx, cy); gl.uniform1i(prog.u.uGrid, W);
+    // 낱개로 안 보이는 먼 알갱이들: 카메라 둘레 고리면 조각을 고리 밝기로 칠함 (가까운 곳은 비워 낱알이 보이게)
+    { const span = Math.max(h * 400, 50); GLX.use(sheet, { uVP: VP, uE1: L.f.ex, uE2: L.f.ey, uN: L.f.n, uCamXY: [L.x, L.y], uCamZ: L.z, uSpan: span, uRingR: S.rings, uRingTex: RN.texs.rings, uSunL: sunL, uRs: [S.R, S.Rp], uLight: RN.lightAt(S), uH: h, uAmt: RINGF.amt, uLogF: RN.logF });
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); gl.disable(gl.CULL_FACE); GLX.fsq ? null : null;
+      gl.bindVertexArray(GLX.quad); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gl.depthMask(true); gl.disable(gl.BLEND);
+      GLX.use(prog, { uVP: VP }); gl.uniform2i(prog.u.uCellI, cx, cy); gl.uniform1i(prog.u.uGrid, W); GLX.use(prog, { uE1: L.f.ex, uE2: L.f.ey, uN: L.f.n, uCell: c, uCamXY: [L.x, L.y], uCamZ: L.z, uFrac: [L.x - cx * c, L.y - cy * c], uRingR: S.rings, uRingTex: RN.texs.rings, uLv: Lv, uSunL: sunL, uRs: [S.R, S.Rp], uLight: RN.lightAt(S), uPx: RN.pxPerRad, uAmt: RINGF.amt, uLogF: RN.logF, uW: K, uExpo: RN.expo }); gl.uniform2i(prog.u.uCellI, cx, cy); gl.uniform1i(prog.u.uGrid, W); }
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND);
+    gl.bindVertexArray(vao); gl.drawArrays(gl.POINTS, 0, W * W * K); gl.bindVertexArray(null);
+  };
+  RINGF.panel = () => {
+    const t = RFT[LG] || RFT.en, el = $('pbd'); el.hidden = false; const z = Math.abs(RINGF.z);
+    const where = t.zone(RINGF.r);
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="rfX">×</button></div><div class="pt">${where} · ${t.alt.replace('{h}', z < 1 ? Math.round(z * 1000) + ' m' : z.toFixed(1) + ' km')}</div>${t.body.map(p => `<p>${p}</p>`).join('')}
+      <div class="pb" style="flex-wrap:wrap">${[[92000, 'B'], [105000, 'B'], [119000, 'cassini'], [128000, 'A'], [80000, 'C']].map(([r, k], i) => `<button class="act${Math.abs(RINGF.r - r) < 500 ? ' on' : ''}" data-r="${r}">${t.z[k]}${k === 'B' && r === 105000 ? ' ²' : ''}</button>`).join('')}</div>`;
+    $('rfX').onclick = RINGF.exit; setTip($('rfX'), 'close');
+    el.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { RINGF.r = +b.dataset.r; RINGF.panel(); });
+  };
+  let pt = 0; RINGF.ui = dt => { if (!RINGF.on) return; pt += dt; if (pt > 0.4) { pt = 0; const e = $('pbd').querySelector('.pt'); if (e) { const t = RFT[LG] || RFT.en, z = Math.abs(RINGF.z); e.textContent = `${t.zone(RINGF.r)} · ${t.alt.replace('{h}', z < 1 ? Math.round(z * 1000) + ' m' : z.toFixed(1) + ' km')}`; } } };
+})();
+SH.rfV = `
+uniform mat4 uVP; uniform vec3 uE1; uniform vec3 uE2; uniform vec3 uN; uniform float uCell; uniform ivec2 uCellI; uniform int uGrid; uniform float uW;
+uniform vec2 uCamXY; uniform float uCamZ; uniform vec2 uFrac; uniform vec2 uRingR; uniform sampler2D uRingTex; uniform vec3 uSunL; uniform vec2 uRs; uniform float uPx; uniform float uAmt; uniform vec3 uLight; uniform float uExpo;
+out vec3 vCol; out float vA;
+${GLX.LOGDEPTH_V}
+uint hu(uint x){ x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+float hf(uint x){ return float(hu(x) & 0xffffffu) / 16777215.; }
+void main(){
+  int K = int(uW); int id = gl_VertexID; int k = id % K; int cell = id / K; int ix = cell % uGrid - uGrid / 2, iy = cell / uGrid - uGrid / 2;
+  ivec2 gc = uCellI + ivec2(ix, iy); uint seed = hu(uint(gc.x) * 73856093u ^ uint(gc.y) * 19349663u ^ uint(k) * 83492791u);
+  float jx = hf(seed), jy = hf(seed + 1u), jz = hf(seed + 2u), js = hf(seed + 3u), jd = hf(seed + 4u), jc = hf(seed + 5u);
+  vec2 d = (vec2(float(ix), float(iy)) + vec2(jx, jy)) * uCell - uFrac; // 카메라 기준 (km)
+  vec2 xy = uCamXY + d; float r = length(xy); float u = (r - uRingR.x) / (uRingR.y - uRingR.x);
+  vec4 tx = texture(uRingTex, vec2(u, .5)); float tau = (u < 0. || u > 1.) ? 0. : tx.a;
+  // 크기: 큰 것은 드물게 (거듭제곱 분포) 5 cm ~ 8 m
+  float rad = clamp(.00012 * pow(max(js, 1e-4), -.6), .00012, .008);
+  float keep = step(jd, tau * 1.15);
+  float thick = .012 + .02 * (1. - tau); float z = (jz - .5) * 2. * thick * (.5 + .5 * jc); // 두께 수십 m
+  vec3 P = uE1 * d.x + uE2 * d.y + uN * (z - uCamZ);
+  float dist = length(P); gl_Position = uVP * vec4(P, 1.); logDepthV();
+  float px = rad * 2. / max(dist, 1e-6) * uPx; float fade = 1. - smoothstep(float(uGrid) * .32, float(uGrid) * .5, length(d) / uCell);
+  gl_PointSize = keep > 0. ? clamp(px, 1., 64.) : 0.;
+  // 토성 그림자 (타원체를 구로 펴서)
+  vec3 p3 = vec3(xy, z) ; vec3 ps = p3 / vec3(uRs.x, uRs.x, uRs.y); vec3 ls = normalize(uSunL / vec3(uRs.x, uRs.x, uRs.y)); float b = dot(ps, ls); float sh = b < 0. ? smoothstep(.985, 1.015, sqrt(max(dot(ps, ps) - b * b, 0.))) : 1.;
+  vec3 ice = mix(vec3(.93, .9, .86), tx.rgb * 1.6, .55) * (.75 + .5 * jc);
+  vCol = ice * uLight * sh * 2.6; vA = fade * uAmt * clamp(px, 0., 1.) * keep;
+}`;
+SH.rfF = `
+in vec3 vCol; in float vA; uniform vec3 uLv; out vec4 o;
+${GLX.LOGDEPTH_F}
+void main(){ vec2 q = gl_PointCoord * 2. - 1.; q.y = -q.y; float rr = dot(q, q); if (rr > 1. || vA < .02) discard;
+  vec3 n = vec3(q, sqrt(1. - rr)); float dif = max(dot(n, normalize(uLv)), 0.); float rim = pow(1. - n.z, 3.) * .15;
+  o = vec4(vCol * (dif * .95 + .05 + rim) * vA, 1.); logDepthF(); }`;
+SH.rsV = `
+layout(location=0) in vec2 aPos;
+uniform mat4 uVP; uniform vec3 uE1; uniform vec3 uE2; uniform vec3 uN; uniform float uCamZ; uniform float uSpan;
+out vec2 vD;
+${GLX.LOGDEPTH_V}
+void main(){ vD = aPos * uSpan; vec3 P = uE1 * vD.x + uE2 * vD.y - uN * uCamZ; gl_Position = uVP * vec4(P, 1.); logDepthV(); }`;
+SH.rsF = `
+in vec2 vD; uniform vec2 uCamXY; uniform vec2 uRingR; uniform sampler2D uRingTex; uniform vec3 uSunL; uniform vec2 uRs; uniform vec3 uLight; uniform float uH; uniform float uAmt; uniform float uSpan; uniform float uCamZ;
+out vec4 o;
+${GLX.LOGDEPTH_F}
+void main(){ vec2 xy = uCamXY + vD; float r = length(xy); float u = (r - uRingR.x) / (uRingR.y - uRingR.x); if (u < 0. || u > 1.) discard;
+  vec4 t = texture(uRingTex, vec2(u, .5));
+  float near = smoothstep(.12, .7, length(vec3(vD, uCamZ))); /* 낱알이 화소보다 작아지는 거리부터 판으로 */ float edge = 1. - smoothstep(uSpan * .6, uSpan, length(vD));
+  vec3 ps = vec3(xy, 0.) / vec3(uRs.x, uRs.x, uRs.y); vec3 ls = normalize(uSunL / vec3(uRs.x, uRs.x, uRs.y)); float b = dot(ps, ls); float sh = b < 0. ? smoothstep(.985, 1.015, sqrt(max(dot(ps, ps) - b * b, 0.))) : 1.;
+  float a = t.a * near * edge * uAmt; vec3 c = mix(vec3(.9, .87, .82), t.rgb * 1.6, .5) * uLight * sh * 1.6 * abs(uSunL.z) * 2.;
+  o = vec4(c * a, a * .9); logDepthF(); }`;
+const RFT = {
+  ko: { title: '토성 고리 속', alt: '고리면에서 {h}', z: { A: 'A 고리', B: 'B 고리', C: 'C 고리', cassini: '카시니 간극' },
+    zone: r => r < 74658 ? 'D 고리 안쪽' : r < 92000 ? 'C 고리' : r < 117580 ? 'B 고리' : r < 122170 ? '카시니 간극' : r < 136775 ? 'A 고리' : 'A 고리 바깥',
+    body: ['고리는 지름이 27만 km나 되지만 두께는 대부분 10~수십 m입니다. 그 안에는 모래알부터 집채만 한 덩어리까지 물 얼음 알갱이가 빽빽하게 떠서, 저마다 작은 위성처럼 토성을 초속 약 17~20 km로 돕니다. 지금 카메라도 그들과 함께 돌고 있어 덩어리들이 멈춘 듯 보입니다.', '휠로 고리면에서 높이를 바꾸고, 끌어서 둘러보세요. 아래 단추로 다른 고리로 옮길 수 있습니다. 가장 빽빽한 B 고리, 미마스의 공명이 비워 낸 카시니 간극, 엷은 C 고리를 비교해 보세요.'] },
+  en: { title: 'Inside Saturn’s rings', alt: '{h} above the ring plane', z: { A: 'A ring', B: 'B ring', C: 'C ring', cassini: 'Cassini Division' },
+    zone: r => r < 74658 ? 'Inside the D ring' : r < 92000 ? 'C ring' : r < 117580 ? 'B ring' : r < 122170 ? 'Cassini Division' : r < 136775 ? 'A ring' : 'Beyond the A ring',
+    body: ['The rings are 270,000 km across but mostly only 10 to a few tens of metres thick. Inside, water-ice chunks from sand grains to house-sized boulders crowd together, each orbiting Saturn like a tiny moon at about 17–20 km/s. The camera is orbiting with them, so they seem to hang still.', 'Use the wheel to change your height above the ring plane and drag to look around. The buttons move you to other rings: compare the dense B ring, the Cassini Division swept clear by a resonance with Mimas, and the faint C ring.'] },
+};
 
 // ───────────────────────── 태양 활동: 흑점 쌍·코로나 고리(흐름)·플레어·코로나 질량 방출·홍염 ─────────────────────────
 // 활동 영역은 날짜로 정해지고(같은 날이면 같은 모습) 위도별 차등 자전으로 흘러간다.
@@ -2668,6 +2785,7 @@ const INFO = {};
     });
     const sec = t.sec;
     let h = '';
+    if (b.id === 'saturn') h += `<button class="act ringin" id="ringIn">${(RFT[LG] || RFT.en).enter || (LG === 'ko' ? '고리 속으로 들어가기 — 얼음 덩어리 사이로' : 'Fly into the rings — among the ice chunks')}</button>`;
     h += `<h3>${sec.live}</h3><div id="liveBox"></div>`;
     if (b.id === 'sun') { const B = BANDT[LG] || BANDT.en; const st = Date.now() / 9e5 | 0; // 15분마다 새 주소 (캐시 피함)
       h += `<h3>${B.head}</h3><div class="bands">${B.b.map((x, i) => `<button class="act${SUNAR.band === i ? ' on' : ''}" data-band="${i}">${x}</button>`).join('')}</div><p class="bnote">${B.note[SUNAR.band]}</p>`;
@@ -2683,6 +2801,7 @@ const INFO = {};
     if (EXPLORE[b.id]) h += `<h3>${sec.explore}</h3>` + exploreHtml(b);
     if (DISC[b.id] || MOONS_N[b.id]) h += `<h3>${ATX().disc}</h3>` + kv([DISC[b.id] && [ATX().disc, (DISC[b.id][0] < 0 ? ATX().yrBC.replace('{y}', -DISC[b.id][0]) : DISC[b.id][0]) + ' · ' + DISC[b.id][1]], MOONS_N[b.id] && [ATX().moonsN, MOONS_N[b.id]]]);
     $('infoBody').innerHTML = h; $('infoBody').scrollTop = 0;
+    if ($('ringIn')) $('ringIn').onclick = () => RINGF.enter();
     $('infoBody').querySelectorAll('[data-band]').forEach(el => el.onclick = () => { SUNAR.band = +el.dataset.band; const y = $('infoBody').scrollTop; INFO.render(b); $('infoBody').scrollTop = y; });
     $('infoBody').querySelectorAll('.sdo img').forEach(im => im.onerror = () => { im.closest('a').style.display = 'none'; });
     $('infoBody').querySelectorAll('.chip[data-id]').forEach(el => { el.onclick = () => UI.go(BY[el.dataset.id]); setTip(el, 'chip', { n: nm(el.dataset.id) }); });
@@ -2830,7 +2949,7 @@ const UI = {};
       ctx.fillText(name, x + ox, y);
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
-    SUNAR.overlay(ctx); PBD.overlay(ctx); APO.overlay(ctx); HIST.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on || !!HIST.on);
+    SUNAR.overlay(ctx); PBD.overlay(ctx); APO.overlay(ctx); HIST.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on || !!HIST.on || RINGF.on);
     if (!SURF.on && !PBD.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
     // 정보판 실시간 값
     infoT += dt; if (infoT > 0.25 && APP.sel) { infoT = 0; INFO.live(APP.sel); }
@@ -2883,7 +3002,7 @@ const UI = {};
     const nice = NICE.reduce((a, x) => Math.abs(Math.log(x / sec)) < Math.abs(Math.log(a / sec)) ? x : a, NICE[0]);
     APP.live = false; APP.playing = true; APP.rate = nice / 86400; UI.time();
   };
-  UI.go = (b, dist) => { PBD.stop(); APO.stop(); HIST.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
+  UI.go = (b, dist) => { PBD.stop(); APO.stop(); HIST.stop(); if (RINGF.on) { RINGF.on = false; $('pbd').hidden = true; CAM.fovT = 50; } if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
   UI.select = (b, keep) => {
     APP.sel = b; $('info').classList.remove('off'); document.body.classList.add('sheet', 'panel');
     INFO.render(b);
@@ -12782,7 +12901,7 @@ function boot() {
   GLX.debug = QS.has('debug'); GLX.ldr = QS.has('ldr'); GLX.d24 = QS.has('d24'); if (QS.has('q')) RN.quality = +QS.get('q') || 0.5;
   cv.addEventListener('webglcontextlost', e => { e.preventDefault(); console.error('LOG context lost at ' + APP.time.toFixed(2) + ' frame ' + APP.frames); });
   if (!RN.init(cv)) { $('loading').innerHTML = '<div id="nogl">' + T().nogl + '</div>'; return; }
-  GRAV.init(); OUTER.init();
+  GRAV.init(); OUTER.init(); RINGF.init();
   const resize = () => { RN.resize(innerWidth, innerHeight, Math.min(devicePixelRatio || 1, 2)); const o = $('ov'); o.width = innerWidth * Math.min(devicePixelRatio || 1, 2); o.height = innerHeight * Math.min(devicePixelRatio || 1, 2); };
   addEventListener('resize', resize); resize();
   simAt(APP.d);
@@ -12834,7 +12953,8 @@ function loop(now, manual) {
   MIS.update(APP.d); MIS.autoRate(); MIS.ui(dt); SUNAR.update(APP.d, dt);
   GRAV.on = APP.show.gravity && !SURF.on; if (SURF.on) GRAV.custom = null; GRAV.update();
   for (const b of BODIES) b.rp = GRAV.amt ? GRAV.disp(b.pos, b) : b.pos;
-  if (SURF.on) SURF.camera(); else CAM.update(dt);
+  if (SURF.on) SURF.camera(); else if (RINGF.on) RINGF.camera(); else CAM.update(dt);
+  RINGF.update(); RINGF.ui(dt);
   document.body.classList.toggle('surfing', SURF.on);
   { const f = RN.fov * R2D; RN.fov = (f + (CAM.fovT - f) * Math.min(1, dt * 2.5)) * D2R; }
   // 일식: 카메라에서 본 해가 얼마나 가려졌나
@@ -12850,7 +12970,7 @@ function loop(now, manual) {
   RN.expoT = clamp(ex, 0.012, 400);
   RN.meter = SURF.on && GLX.hdr;
   if (SURF.on) { const base = SURF.expo(); RN.expoT = RN.avgLum ? clamp(0.16 / RN.avgLum, base * 0.15, base * 1.6) : base; }
-  const S = { cam: CAM.pos, R: CAM.R, time: APP.d * 86400, show: APP.show, skyK: SURF.on ? (SURF.skyK ?? 1) : 1, sunK: 1, eclipse: APP.eclipse, solarAct: APP.solarAct, hidden: null, preT: (VP) => { OUTER.draw(VP, CAM.pos); GRAV.draw(VP, CAM.pos); } };
+  const S = { cam: CAM.pos, R: CAM.R, time: APP.d * 86400, show: APP.show, skyK: SURF.on ? (SURF.skyK ?? 1) : 1, sunK: 1, eclipse: APP.eclipse, solarAct: APP.solarAct, hidden: null, preT: (VP) => { OUTER.draw(VP, CAM.pos); GRAV.draw(VP, CAM.pos); RINGF.draw(VP, CAM.pos); } };
   // 정보판이 가린 만큼 화면 중심을 옮김
   { const open = !$('info').classList.contains('off'), mob = innerWidth <= 760; let tx = 0, ty = 0;
     if (open && !mob) tx = -($('info').offsetWidth + 12) / 2 / (innerWidth / 2);
@@ -12871,7 +12991,7 @@ function adapt(dt) { if (document.hidden || dt > 0.5) return; if (dt > 1 / 25) s
 // 궤도선: 카메라 기준 좌표로
 const orbitCache = {};
 function buildLines(S) {
-  RN.lineBegin(); if (SURF.on) return; SUNAR.lines(S.cam); MIS.lines(S.cam); if (!APP.show.orbits) return; OUTER.lines(S.cam);
+  RN.lineBegin(); if (SURF.on || RINGF.on) return; SUNAR.lines(S.cam); MIS.lines(S.cam); if (!APP.show.orbits) return; OUTER.lines(S.cam);
   const cp = S.cam;
   for (const b of BODIES) {
     if (!b.parent) continue;
@@ -12932,23 +13052,24 @@ function input(cv) {
     const p = ptrs.get(e.pointerId); const dx = e.clientX - p[0], dy = e.clientY - p[1]; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
     moved += Math.abs(dx) + Math.abs(dy);
     if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]); const c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      if (pinch) { if (SURF.on) SURF.zoom(pinch.d / d); else { CAM.zoom(Math.pow(pinch.d / d, 1.6)); CAM.panBy(c[0] - pinch.c[0], c[1] - pinch.c[1]); } pinch.d = d; pinch.c = c; } return; }
+      if (pinch) { if (RINGF.on) RINGF.zoom(Math.pow(pinch.d / d, 2)); else if (SURF.on) SURF.zoom(pinch.d / d); else { CAM.zoom(Math.pow(pinch.d / d, 1.6)); CAM.panBy(c[0] - pinch.c[0], c[1] - pinch.c[1]); } pinch.d = d; pinch.c = c; } return; }
     const k = 0.0055 * (RN.fov / (50 * D2R));
     if (SURF.on) { SURF.look(dx * 0.0055, dy * 0.0055); return; }
+    if (RINGF.on) { RINGF.look(dx * 0.0055, dy * 0.0055); return; }
     if (btn === 1 || (btn === 0 && (e.ctrlKey || e.metaKey))) { CAM.panBy(dx, dy); return; }
     if (btn === 2 || e.shiftKey) CAM.lookAround(dx * k * 0.5, dy * k * 0.5); else CAM.orbit(dx * k, dy * k);
   });
   const up = e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; cv.classList.remove('drag');
     if (moved < 6 && downAt && ptrs.size === 0) { const now = performance.now(); UI.click(e.clientX, e.clientY, now - lastTap < 350); lastTap = now; } downAt = null; };
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-  cv.addEventListener('wheel', e => { e.preventDefault(); const dy = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY; if (SURF.on) SURF.zoom(Math.exp(dy * 0.001)); else CAM.zoom(Math.exp(dy * 0.0018)); }, { passive: false });
+  cv.addEventListener('wheel', e => { e.preventDefault(); const dy = e.deltaMode === 1 ? e.deltaY * 30 : e.deltaY; if (RINGF.on) RINGF.zoom(Math.exp(dy * 0.003)); else if (SURF.on) SURF.zoom(Math.exp(dy * 0.001)); else CAM.zoom(Math.exp(dy * 0.0018)); }, { passive: false });
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     if (e.key === ' ') { APP.playing = !APP.playing; UI.time(); e.preventDefault(); }
     else if (e.key === '.' || e.key === '>') APP.setRate(rateIdx + (rateSign > 0 ? 1 : -1) * (rateIdx === 0 && rateSign < 0 ? -1 : 1));
     else if (e.key === ',' || e.key === '<') faster(-1);
     else if (e.key === 'f' || e.key === 'F') CAM.recenter();
-    else if (e.key === 'Escape') { if (SURF.on) SURF.exit(); else UI.close(); }
+    else if (e.key === 'Escape') { if (RINGF.on) RINGF.exit(); else if (SURF.on) SURF.exit(); else UI.close(); }
     else if (e.key >= '0' && e.key <= '9') { const ids = ['sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']; const b = BY[ids[+e.key]]; if (b) UI.go(b); }
   });
 }
