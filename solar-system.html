@@ -2504,7 +2504,7 @@ const INFO = {};
     $('infoHead').querySelectorAll('.act').forEach(el => setTip(el, tk[el.dataset.a], { n: nm(b.id), p: b.parent ? nm(b.parent) : '' }));
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
       const a = el.dataset.a;
-      if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'sys') { if (b.id === 'sun') { CAM.flyTo(b, 8.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 4 }); UI.autoTime(b); } else CAM.flyTo(b, CAM.systemDist(b), { dir: sysDir(b) }); } else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
+      if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'sys') { if (b.id === 'sun') { CAM.flyTo(b, 4.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 4 }); UI.autoTime(b); } else CAM.flyTo(b, CAM.systemDist(b), { dir: sysDir(b) }); } else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
       else if (a === 'spin') INFO.spin(b);
       else if (a === 'follow') { CAM.lockRot = !CAM.lockRot; el.classList.toggle('on', CAM.lockRot); if (CAM.lockRot) UI.toast(FOLLOW_T[LG] || FOLLOW_T.en, 5000); }
     });
@@ -12182,7 +12182,7 @@ function boot() {
   if (QS.has('manual')) { // 시험용: 장면을 손으로 넘김
     window.step = (n = 1, dt = 1 / 30) => { for (let i = 0; i < n; i++) { APP.last = performance.now() - dt * 1000; loop(performance.now(), true); } };
   } else requestAnimationFrame(loop);
-  if (!QS.has('nointro')) setTimeout(() => { CAM.flyTo(BY.sun, 8.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 7 }); setTimeout(() => { UI.select(BY.sun); UI.autoTime(BY.sun); let seen = 0; try { seen = +localStorage.getItem('wiiiv-solar-seen') || 0; localStorage.setItem('wiiiv-solar-seen', seen + 1); } catch { /* 무시 */ } if (seen < 2) UI.toast(T().clickHint, 6000); }, 6500); }, 2600);
+  if (!QS.has('nointro')) setTimeout(() => { CAM.flyTo(BY.sun, 4.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 7 }); setTimeout(() => { UI.select(BY.sun); UI.autoTime(BY.sun); let seen = 0; try { seen = +localStorage.getItem('wiiiv-solar-seen') || 0; localStorage.setItem('wiiiv-solar-seen', seen + 1); } catch { /* 무시 */ } if (seen < 2) UI.toast(T().clickHint, 6000); }, 6500); }, 2600);
 }
 async function loadAssets() {
   const ld = $('ldP'); let n = 0; const tot = 8; const t0 = performance.now(); const done = () => setTimeout(() => $('loading').classList.add('done'), Math.max(0, 1800 - (performance.now() - t0))); // 로고가 잠깐은 보이게
