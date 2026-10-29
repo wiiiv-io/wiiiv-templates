@@ -557,6 +557,52 @@
      "followUps": []
     }
    }
+  },
+  {
+   "id": "korea-coffee-2026",
+   "kind": "slides",
+   "category": "산업·경제",
+   "title": {
+    "ko": "2026 한국 커피 산업 트렌드와 전망"
+   },
+   "prompt": {
+    "ko": "2026년 한국 커피 산업 트렌드와 전망을 정리한 프레젠테이션을 14장 분량으로 만들어줘. 시장 규모와 성장률, 스페셜티 커피 붐, 저가 커피 브랜드 확장, MZ세대 카페 문화, 홈카페, 친환경 원두와 지속가능성, 로컬 로스터리, 주요 프랜차이즈 경쟁 구도를 대표 사례와 수치로 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘."
+   },
+   "url": {
+    "ko": "https://wiiiv-io.github.io/wiiiv-templates/docs/korea-coffee-2026/ko.html"
+   },
+   "thumb": "https://wiiiv-io.github.io/wiiiv-templates/docs/korea-coffee-2026/thumb.png",
+   "params": {
+    "slides": 14,
+    "theme": "paper",
+    "images": 10,
+    "research": "web",
+    "language": "ko"
+   },
+   "run": {
+    "credits": null,
+    "minutes": 9.3,
+    "sources": 0,
+    "model": "qwen3.7-plus (상·중)",
+    "date": "2026-10-29",
+    "build": "d8dbe1d6a",
+    "sessionId": "56916082-458a-4c2f-a779-d6ecda00bcfb",
+    "by": "beta",
+    "followUps": []
+   },
+   "runs": {
+    "ko": {
+     "credits": null,
+     "minutes": 9.3,
+     "sources": 0,
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "d8dbe1d6a",
+     "sessionId": "56916082-458a-4c2f-a779-d6ecda00bcfb",
+     "by": "beta",
+     "followUps": []
+    }
+   }
   }
  ]
 }
