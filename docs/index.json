@@ -229,7 +229,7 @@
    "kind": "slides",
    "category": "기술·AI",
    "title": {
-    "ko": "2026 AI 기술 트렌드: 실험을 넘어 변혁으로",
+    "ko": "2026 AI Revolution: 생성에서 실행으로",
     "en": "12 AI Technology Trends for 2026",
     "ja": "2026年 AI技術トレンド12選"
    },
@@ -253,12 +253,12 @@
    },
    "run": {
     "credits": null,
-    "minutes": 8.4,
+    "minutes": 9.0,
     "sources": 0,
-    "model": "qwen3.7-plus (상·중 등급)",
-    "date": "2026-10-28",
-    "build": "b71b3e5b5",
-    "sessionId": "5eaca122-0a0f-46dc-b214-cf6a34507934",
+    "model": "qwen3.7-plus (상·중)",
+    "date": "2026-10-29",
+    "build": "0b8b546b9",
+    "sessionId": "cb7f77ff-a36b-49a3-bfa5-dc6df1bb8d88",
     "by": "beta",
     "followUps": []
    },
@@ -287,12 +287,12 @@
     },
     "ko": {
      "credits": null,
-     "minutes": 8.4,
+     "minutes": 9.0,
      "sources": 0,
-     "model": "qwen3.7-plus (상·중 등급)",
-     "date": "2026-10-28",
-     "build": "b71b3e5b5",
-     "sessionId": "5eaca122-0a0f-46dc-b214-cf6a34507934",
+     "model": "qwen3.7-plus (상·중)",
+     "date": "2026-10-29",
+     "build": "0b8b546b9",
+     "sessionId": "cb7f77ff-a36b-49a3-bfa5-dc6df1bb8d88",
      "by": "beta",
      "followUps": []
     }
