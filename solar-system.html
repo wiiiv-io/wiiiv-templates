@@ -1397,6 +1397,11 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
     const im = await GLX.loadImg(file); if (im) await RN.upload(im, opt, t => RN.hi[name] = t);
   };
   RN.tex = name => RN.hi[name] || RN.texs[name];
+  // 줄인 별 자료(8 B/별) → 방향·등급·색 (float ×5)
+  RN.unpackStars = buf => { const d = new DataView(buf), n = buf.byteLength / 8, f = new Float32Array(n * 5);
+    for (let i = 0; i < n; i++) { const o = i * 8; const x = d.getInt16(o, true), y = d.getInt16(o + 2, true), z = d.getInt16(o + 4, true), l = Math.hypot(x, y, z) || 1;
+      f[i * 5] = x / l; f[i * 5 + 1] = y / l; f[i * 5 + 2] = z / l; f[i * 5 + 3] = d.getUint8(o + 6) / 255 * 9 - 1.5; f[i * 5 + 4] = d.getUint8(o + 7) / 255 * 3 - 0.5; }
+    return f.buffer; };
   RN.setStars = buf => {
     const f = new Float32Array(buf); starN = f.length / 5;
     starVao = gl.createVertexArray(); gl.bindVertexArray(starVao);
@@ -1779,7 +1784,11 @@ const OUTER = { on: true, n: 0, k: 1 };
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0); gl.bindVertexArray(null); oortN = N;
   };
   OUTER.load = async () => {
-    const b = await GLX.loadBin('asteroids.bin'); if (!b) return; const f = new Float32Array(b); OUTER.n = f.length / 7;
+    let f; const q = await GLX.loadBin('asteroids-q.bin');
+    if (q) { const d = new DataView(q), n = q.byteLength / 14, T = TAU; f = new Float32Array(n * 7); const u = (o, lo, hi) => lo + d.getUint16(o, true) / 65535 * (hi - lo);
+      for (let i = 0; i < n; i++) { const o = i * 14; f[i * 7] = Math.pow(2, u(o, -1, 16)); f[i * 7 + 1] = u(o + 2, 0, 1); f[i * 7 + 2] = u(o + 4, 0, Math.PI); f[i * 7 + 3] = u(o + 6, 0, T); f[i * 7 + 4] = u(o + 8, 0, T); f[i * 7 + 5] = u(o + 10, 0, T); f[i * 7 + 6] = d.getUint16(o + 12, true) / 100; } }
+    else { const b = await GLX.loadBin('asteroids.bin'); if (!b) return; f = new Float32Array(b); }
+    OUTER.n = f.length / 7;
     astVao = gl.createVertexArray(); gl.bindVertexArray(astVao); const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, f, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 28, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 16); gl.bindVertexArray(null);
   };
@@ -12983,7 +12992,7 @@ async function loadAssets() {
   const lo = ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
   // 하늘
   GLX.loadImg('milkyway.jpg').then(im => im ? RN.upload(im, { srgb: 1 }, t => RN.mw = t) : null).then(step);
-  GLX.loadBin('stars.bin').then(b => { if (b) RN.setStars(b); step(); });
+  GLX.loadBin('stars-q.bin').then(b => b ? RN.unpackStars(b) : GLX.loadBin('stars.bin')).then(b => { if (b) RN.setStars(b); step(); });
   Promise.all(lo.map(k => RN.loadTex(k, k + '-lo.jpg'))).then(step);
   RN.loadTex('earth-aux', 'earth-aux-lo.jpg', {}).then(step);
   RN.loadTex('venusatm', 'venusatm-lo.jpg').then(step);
