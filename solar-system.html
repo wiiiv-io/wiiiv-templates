@@ -139,6 +139,10 @@ body.mising #dock { display: none; }
 #pbd .ph { display: flex; align-items: center; } #pbd .ph b { flex: 1; font-size: 17px; } #pbd .x { width: 30px; height: 30px; border-radius: 8px; font-size: 18px; color: var(--dim); }
 #pbd .pt { color: var(--acc2); font-size: 12.5px; margin: 2px 0 8px; } #pbd p { margin: 0 0 9px; color: #cdd5e8; font-size: 13.2px; line-height: 1.65; }
 #pbd .pb { display: flex; gap: 6px; margin-top: 4px; }
+#pbd .ph2 { font-size: 11.5px; color: var(--acc2); font-weight: 700; letter-spacing: .04em; margin: 4px 0 6px; }
+#pbd .plinks { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+#pbd .plinks a { font-size: 12px; color: #d7def0; text-decoration: none; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line2); }
+#pbd .plinks a:hover { border-color: var(--acc); color: var(--acc); }
 body.pbding #dock { display: none; }
 /* 표면 */
 #surf { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); width: min(680px, calc(100% - 24px)); padding: 10px 12px; z-index: 6; }
@@ -3485,7 +3489,7 @@ const PBD = { on: false, step: 0 };
   PBD.stop = () => { if (!PBD.on) return; PBD.on = false; $('pbd').hidden = true; CAM.fovT = 50; if (PBD.saved) { APP.show.orbits = PBD.saved.o; APP.show.labels = PBD.saved.l; APP.show.gravity = PBD.saved.g; } UI.toolsSync && UI.toolsSync(); };
   PBD.panel = () => {
     const t = T(), el = $('pbd'); el.hidden = false;
-    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="pbX">×</button></div><div class="pt">${t.when}</div>${t.body.map(p => `<p>${p}</p>`).join('')}
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="pbX">×</button></div><div class="pt">${t.when}</div>${t.body.map(p => `<p>${p}</p>`).join('')}${photoLinks('pbd')}
       <div class="pb"><button class="act${PBD.step === 0 ? ' on' : ''}" data-v="0">${t.v0}</button><button class="act${PBD.step === 1 ? ' on' : ''}" data-v="1">${t.v1}</button></div>`;
     $('pbX').onclick = PBD.stop; setTip($('pbX'), 'close');
     el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => PBD.view(+b.dataset.v));
@@ -3529,6 +3533,25 @@ const PBDT = {
   ru: { title: 'Бледно-голубая точка', when: '14 февраля 1990 · «Вояджер-1» · около 6 млрд км от Земли', body: ['Покидая Солнечную систему после завершения миссии, «Вояджер-1» по предложению Карла Сагана в последний раз развернул камеру и сделал «семейный портрет» планет. На одном кадре Земля — пылинка меньше пикселя в луче рассеянного солнечного света.', 'Саган писал, что все, кого мы знаем, и вся история человечества прошли на этой пылинке, висящей в солнечном луче, — повод относиться друг к другу добрее и беречь её («Бледно-голубая точка», 1994).', 'Вы видите Землю в узком поле зрения из реального положения «Вояджера-1» в тот день (JPL Horizons). Через 34 минуты после съёмки его камеры выключили навсегда.'], v0: 'Земля с «Вояджера»', v1: 'Где «Вояджер»?', earth: 'Земля — {d} млрд км', line: '«Вояджер-1» → Земля' },
   vi: { title: 'Chấm xanh mờ nhạt', when: '14/2/1990 · Voyager 1 · cách Trái Đất khoảng 6 tỷ km', body: ['Khi rời Hệ Mặt Trời sau nhiệm vụ, theo đề nghị của Carl Sagan, Voyager 1 quay camera lại lần cuối để chụp “ảnh gia đình” các hành tinh. Trong một khung hình, Trái Đất chỉ là một chấm nhỏ hơn một điểm ảnh, nằm trong một vệt ánh nắng tán xạ.', 'Sagan viết rằng mọi người ta biết và toàn bộ lịch sử loài người đã diễn ra trên hạt bụi lơ lửng trong tia nắng ấy — lý do để đối xử tử tế hơn với nhau và trân trọng nó (Pale Blue Dot, 1994).', 'Bạn đang nhìn Trái Đất với trường nhìn hẹp từ vị trí thật của Voyager 1 hôm đó (JPL Horizons). 34 phút sau, camera của Voyager bị tắt vĩnh viễn.'], v0: 'Trái Đất từ Voyager', v1: 'Voyager ở đâu?', earth: 'Trái Đất — {d} tỷ km', line: 'Voyager 1 → Trái Đất' },
 };
+// ── 실제 사진 링크 (NASA 공개 자료, 새 창)
+const PHOTOS = {
+  pbd: [['https://photojournal.jpl.nasa.gov/catalog/PIA00452', 'pbdOrig'], ['https://photojournal.jpl.nasa.gov/catalog/PIA23645', 'pbdNew'], ['https://images.nasa.gov/details/PIA23681', 'pbdPersp']],
+  apo: [['https://images.nasa.gov/details/as11-40-5903', 'a11Aldrin'], ['https://images.nasa.gov/details/as11-40-5878', 'a11Foot'], ['https://images.nasa.gov/details/as11-40-5875', 'a11Flag'], ['https://images.nasa.gov/details/as11-44-6548', 'a11Earth']],
+};
+const PHT = {
+  ko: { head: '실제 사진 (NASA, 새 창)', pbdOrig: '원본 사진 (1990)', pbdNew: '다시 처리한 사진 (2020)', pbdPersp: '그날 보이저 1호의 시점', a11Aldrin: '올드린 — 헬멧에 비친 암스트롱', a11Foot: '달 표면의 발자국', a11Flag: '성조기와 올드린', a11Earth: '궤도에서 본 지평선 위 지구' },
+  en: { head: 'Real photos (NASA, new tab)', pbdOrig: 'Original image (1990)', pbdNew: 'Reprocessed image (2020)', pbdPersp: 'Voyager 1’s viewpoint that day', a11Aldrin: 'Aldrin — Armstrong reflected in his visor', a11Foot: 'A bootprint in the lunar soil', a11Flag: 'Aldrin beside the flag', a11Earth: 'Earth over the lunar horizon from orbit' },
+  ja: { head: '実際の写真（NASA・新しいタブ）', pbdOrig: 'オリジナル（1990年）', pbdNew: '再処理版（2020年）', pbdPersp: 'その日のボイジャー1号の視点', a11Aldrin: 'オルドリン — バイザーに映るアームストロング', a11Foot: '月面の足跡', a11Flag: '星条旗とオルドリン', a11Earth: '軌道から見た月の地平線上の地球' },
+  zh: { head: '真实照片（NASA，新标签页）', pbdOrig: '原始照片（1990）', pbdNew: '重新处理版（2020）', pbdPersp: '当天旅行者1号的视角', a11Aldrin: '奥尔德林——面罩映出阿姆斯特朗', a11Foot: '月面上的脚印', a11Flag: '美国国旗与奥尔德林', a11Earth: '从轨道看月平线上的地球' },
+  'zh-TW': { head: '真實照片（NASA，新分頁）', pbdOrig: '原始照片（1990）', pbdNew: '重新處理版（2020）', pbdPersp: '當天航海家1號的視角', a11Aldrin: '艾德林——面罩映出阿姆斯壯', a11Foot: '月面上的腳印', a11Flag: '美國國旗與艾德林', a11Earth: '從軌道看月平線上的地球' },
+  es: { head: 'Fotos reales (NASA, pestaña nueva)', pbdOrig: 'Imagen original (1990)', pbdNew: 'Imagen reprocesada (2020)', pbdPersp: 'El punto de vista de la Voyager 1 ese día', a11Aldrin: 'Aldrin — Armstrong reflejado en su visor', a11Foot: 'Una huella en el suelo lunar', a11Flag: 'Aldrin junto a la bandera', a11Earth: 'La Tierra sobre el horizonte lunar desde órbita' },
+  fr: { head: 'Vraies photos (NASA, nouvel onglet)', pbdOrig: 'Image originale (1990)', pbdNew: 'Image retraitée (2020)', pbdPersp: 'Le point de vue de Voyager 1 ce jour-là', a11Aldrin: 'Aldrin — Armstrong reflété dans sa visière', a11Foot: 'Une empreinte dans le sol lunaire', a11Flag: 'Aldrin près du drapeau', a11Earth: 'La Terre au-dessus de l’horizon lunaire, depuis l’orbite' },
+  de: { head: 'Echte Fotos (NASA, neuer Tab)', pbdOrig: 'Originalbild (1990)', pbdNew: 'Neu bearbeitet (2020)', pbdPersp: 'Voyager 1s Blickwinkel an jenem Tag', a11Aldrin: 'Aldrin – Armstrong spiegelt sich im Visier', a11Foot: 'Ein Fußabdruck im Mondstaub', a11Flag: 'Aldrin neben der Flagge', a11Earth: 'Erde über dem Mondhorizont aus der Umlaufbahn' },
+  pt: { head: 'Fotos reais (NASA, nova aba)', pbdOrig: 'Imagem original (1990)', pbdNew: 'Imagem reprocessada (2020)', pbdPersp: 'O ponto de vista da Voyager 1 naquele dia', a11Aldrin: 'Aldrin — Armstrong refletido no visor', a11Foot: 'Uma pegada no solo lunar', a11Flag: 'Aldrin ao lado da bandeira', a11Earth: 'A Terra sobre o horizonte lunar vista da órbita' },
+  ru: { head: 'Настоящие снимки (NASA, новая вкладка)', pbdOrig: 'Оригинал (1990)', pbdNew: 'Переобработка (2020)', pbdPersp: 'Ракурс «Вояджера-1» в тот день', a11Aldrin: 'Олдрин — Армстронг отражается в стекле шлема', a11Foot: 'След на лунном грунте', a11Flag: 'Олдрин у флага', a11Earth: 'Земля над лунным горизонтом с орбиты' },
+  vi: { head: 'Ảnh thật (NASA, tab mới)', pbdOrig: 'Ảnh gốc (1990)', pbdNew: 'Ảnh xử lý lại (2020)', pbdPersp: 'Góc nhìn của Voyager 1 hôm ấy', a11Aldrin: 'Aldrin — Armstrong phản chiếu trên kính mũ', a11Foot: 'Dấu giày trên đất Mặt Trăng', a11Flag: 'Aldrin bên lá cờ', a11Earth: 'Trái Đất trên chân trời Mặt Trăng từ quỹ đạo' },
+};
+const photoLinks = k => { const t = PHT[LG] || PHT.en; return `<div class="ph2">${t.head}</div><div class="plinks">${PHOTOS[k].map(([u, c]) => `<a href="${u}" target="_blank" rel="noopener">${t[c]} ↗</a>`).join('')}</div>`; };
 
 // ───────────────────────── 아폴로 11호 (1969-07-20/21) ─────────────────────────
 // ① 고요 기지에서 본 하늘(첫 발자국 시각) ② 달 궤도에서 본 착륙지(착륙 시각, 사령선 컬럼비아 고도) ③ 그날 휴스턴에서 본 초승달
@@ -3554,7 +3577,7 @@ const APO = { on: false, step: 0 };
   APO.stop = () => { if (!APO.on) return; APO.on = false; $('pbd').hidden = true; leaveSurf(); CAM.fovT = 50; if (APO.saved) { APP.show.orbits = APO.saved.o; APP.show.labels = APO.saved.l; APP.show.gravity = APO.saved.g; } UI.toolsSync && UI.toolsSync(); };
   APO.panel = () => {
     const t = T(), el = $('pbd'); el.hidden = false; const v = t.v[APO.step];
-    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="apX">×</button></div><div class="pt">${v.when}</div>${v.body.map(p => `<p>${p}</p>`).join('')}
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="apX">×</button></div><div class="pt">${v.when}</div>${v.body.map(p => `<p>${p}</p>`).join('')}${photoLinks('apo')}
       <div class="pb">${t.v.map((x, i) => `<button class="act${i === APO.step ? ' on' : ''}" data-v="${i}">${x.b}</button>`).join('')}</div>`;
     $('apX').onclick = APO.stop; setTip($('apX'), 'close'); el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => APO.view(+b.dataset.v));
   };
