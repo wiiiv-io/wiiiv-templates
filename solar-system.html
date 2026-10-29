@@ -1884,7 +1884,7 @@ const CAM = { pan: [0, 0, 0], fovT: 50,
       const toSun = nrm(scl(b.pos, -1)); const side = nrm(crs(toSun, UP));
       dir1 = nrm(add(add(scl(toSun, 0.78), scl(side, -0.6)), scl(UP, 0.2)));
       if (b.R3 && b.id !== 'sun') {
-        const n = m3v(b.R3, [0, 0, 1]); const sunEl = dot(n, toSun); const want = (sunEl >= 0 ? 1 : -1) * (b.rings ? 0.42 : 0.3);
+        const n = m3v(b.R3, [0, 0, 1]); const sunEl = dot(n, toSun); const want = (sunEl >= 0 ? 1 : -1) * (moonSpan(b) ? 0.62 : b.rings ? 0.42 : 0.3); // 위성계는 위에서 내려다보듯
         const cur = dot(dir1, n); dir1 = nrm(add(dir1, scl(n, want - cur)));
       }
       if (len(b.pos) < 1) dir1 = nrm([0.4, -0.85, 0.35]);
@@ -1894,14 +1894,18 @@ const CAM = { pan: [0, 0, 0], fovT: 50,
     CAM.focus = b;
   };
   // 화면 빈 곳에 알맞게 들어오는 거리
-  const defaultDist = b => {
-    const Rv = b.id === 'sun' ? b.R * 1.25 : b.rings ? b.rings[1] * 1.05 : (b.shape ? Math.max(...b.shape) : b.R);
+  const moonSpan = b => { if (!b.kids || !b.kids.length || b.type === 'star') return 0; let m = 0; for (const k of b.kids) { const a = len(k.rel || [0, 0, 0]); if (k.R > 5 && a < b.R * 22) m = Math.max(m, a); } return m; };
+  CAM.moonSpan = moonSpan;
+  const defaultDist = (b, close) => {
+    // 위성이 있으면 주요 위성 궤도까지 한 화면에 (행성 반지름의 30배 안쪽 위성까지)
+    const sysR = close ? 0 : moonSpan(b);
+    const Rv = b.id === 'sun' ? b.R * 1.25 : sysR ? sysR * 1.08 : b.rings ? b.rings[1] * 1.05 : (b.shape ? Math.max(...b.shape) : b.R);
     const mob = innerWidth <= 760, W = innerWidth, H = innerHeight;
     const fw = mob ? W : W - 404, fh = mob ? H * 0.5 : H - 120;
     const tanY = Math.tan(RN.fov / 2); const tanMin = tanY * Math.min(fh / H, fw / H);
     return Rv / (0.72 * tanMin) + Rv * 0.2;
   };
-  CAM.defaultDist = defaultDist;
+  CAM.defaultDist = defaultDist; CAM.closeDist = b => defaultDist(b, true);
   CAM.lookPoint = () => { const R = qm3(qmul(CAM.q, CAM.look)); const back = [R[2], R[5], R[8]]; return sub(CAM.pos, scl(back, CAM.dist)); };
   // 매 장면
   CAM.update = dt => {
@@ -2278,7 +2282,7 @@ const INFO = {};
     $('infoX').onclick = UI.close;
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
       const a = el.dataset.a;
-      if (a === 'go') CAM.flyTo(b); else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
+      if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
       else if (a === 'spin') INFO.spin(b);
       else if (a === 'follow') { CAM.lockRot = !CAM.lockRot; el.classList.toggle('on', CAM.lockRot); if (CAM.lockRot) UI.toast(FOLLOW_T[LG] || FOLLOW_T.en, 5000); }
     });
