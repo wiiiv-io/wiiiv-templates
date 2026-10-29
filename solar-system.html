@@ -1402,7 +1402,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
       const lum = dotLum(b, cp);
       if (lum <= 0) continue;
       const fade = b.pr < 1.2 ? 1 : clamp((6 - b.pr) / 4.8, 0, 1);
-      GLX.use(P.dot, { uVP: VP, uC: sub(b.rp || b.pos, cp), uView: [W / 2, H / 2], uPx: 5 * dpr * RN.quality, uCol: scl(b.col, lum * fade / RN.expo), uCore: 1, uLogF: RN.logF });
+      GLX.use(P.dot, { uVP: VP, uC: sub(b.rp || b.pos, cp), uView: [W / 2, H / 2], uPx: (b.type === 'planet' ? 8 : 5) * dpr * RN.quality, uCol: scl(b.col, lum * fade / RN.expo), uCore: 1, uLogF: RN.logF });
       GLX.draw(RN.dotMesh);
     }
     gl.disable(gl.BLEND); gl.depthMask(true);
@@ -1461,7 +1461,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
     // 겉보기 밝기 비슷하게 (알베도·크기·거리), 보이도록 눌러 줌
     const rs = len(b.pos) / AU, dc = b.dist / AU;
     const f = (b.alb || 0.3) * (b.R / 6378) ** 2 / (rs * rs * dc * dc + 1e-12);
-    return clamp(0.05 + 0.25 * Math.log10(1 + f * 50), 0.05, 1.2) * RN.expo;
+    const k = b.type === 'planet' ? 1.6 : 1; return clamp((0.05 + 0.25 * Math.log10(1 + f * 50)) * k, b.type === 'planet' ? 0.5 : 0.05, 1.6) * RN.expo;
   }
   function drawBody(b, C, VP, sunC, S, pr) {
     if (GLX.debug) console.error('LOG draw ' + b.id + ' pr=' + pr.toFixed(1) + ' lost=' + gl.isContextLost());
@@ -1676,7 +1676,7 @@ const OUTER = { on: true, n: 0, k: 1 };
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false); gl.enable(gl.DEPTH_TEST);
     const camAU = scl(cp, 1 / AU);
     if (astVao && OUTER.n) {
-      const fade = vis * clamp((sunD - 0.25) / 1.2, 0, 1) * (1 - clamp((sunD - 400) / 600, 0, 1));
+      const fade = vis * clamp((sunD - 0.25) / 1.2, 0, 1) * clamp(2.5 / Math.max(sunD, 1), 0.07, 1) * (1 - clamp((sunD - 400) / 600, 0, 1));
       if (fade > 0.01) { GLX.use(pAst, { uVP: VP, uCam: camAU, uT: APP.d, uAU: AU, uI: fade * 0.9 / RN.expo, uDpr: Math.min(devicePixelRatio || 1, 2) * RN.quality, uLogF: RN.logF });
         gl.bindVertexArray(astVao); gl.drawArrays(gl.POINTS, 0, OUTER.n); gl.bindVertexArray(null); }
     }
@@ -2646,6 +2646,7 @@ const UI = {};
     for (const b of list) {
       if (!visibleLabel(b)) continue;
       if (SURF.on) continue;
+      if (b.type === 'star' && b.dist > AU * 4) continue; // 멀리서는 태양 이름을 빼서 안쪽 행성 이름이 보이게
       const x = b.scr.x, y = b.scr.y, rpx = Math.max(b.pr || 0, 0);
       const ox = Math.max(rpx, 4) + 7;
       const name = nm(b.id); const w = ctx.measureText(name).width;
