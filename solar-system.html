@@ -927,7 +927,7 @@ ${GLX.NOISE}
 // 경도 이음매에서도 밉맵이 튀지 않게
 vec4 tex2(sampler2D t, vec2 uv){ vec2 dx = dFdx(uv), dy = dFdy(uv); float u2 = fract(uv.x + .5); float dx2 = dFdx(u2), dy2 = dFdy(u2); if (abs(dx2) < abs(dx.x)) dx.x = dx2; if (abs(dy2) < abs(dy.x)) dy.x = dy2; return textureGrad(t, uv, dx, dy); }
 // 가스 행성: 텍스처보다 더 다가가면 띠를 따라 늘어난 난류 잔결을 더함 (텍스처를 흐름 잡음으로 살짝 비틀어 읽기)
-uniform float uTexW; uniform float uGasK;
+uniform float uTexW; uniform float uGasK; uniform int uPlanet; uniform float uWall;
 vec3 gasTex(vec2 uv){
   float texel = 1. / max(uTexW, 1.); float pix = length(fwidth(uv)); float k = clamp(log2(texel / max(pix, 1e-7)) / 2.5, 0., 1.) * uGasK;
   float lon = (uv.x - .5) * 6.2831853, lat = (.5 - uv.y) * 3.14159265;
@@ -993,9 +993,25 @@ void main(){
     float dif = max(NL, 0.);
     col = base * (pow(dif, .8) * .9 + .1 * smoothstep(-.1, .2, NL)) * uLight * sh;
   } else if (uKind == 2){ // 가스 행성: 가장자리 어두워짐
+    vec3 ln = normalize(vL); float lat = asin(clamp(ln.z, -1., 1.)); float phi = atan(ln.y, ln.x);
+    if (uPlanet == 2 && ln.z > .8){ // 토성 북극 육각형 제트 (위도 약 78°) 와 가운데 소용돌이
+      float rho = acos(clamp(ln.z, -1., 1.)); float ph = phi + uWall * .002; float m = mod(ph, 1.0471976) - .5235988; float rh = .2 / cos(m);
+      float band = exp(-pow((rho - rh) / .018, 2.)); float inside = smoothstep(rh + .01, rh - .02, rho);
+      base = mix(base, base * vec3(.62, .82, .92), inside * .7); float edgeD = exp(-pow((rho - rh - .025) / .012, 2.)); base *= (1. + band * .7 * (.7 + .3 * vnoise(vec3(ph * 30., rho * 200., uWall * .01)))) * (1. - edgeD * .35);
+      base *= 1. - .6 * exp(-pow(rho / .025, 2.)); }
     float dif = max(NL, 0.);
     float limb = pow(NV, .25);
     col = base * dif * mix(.75, 1., limb) * uLight * sh;
+    if (uPlanet > 0){ // 극광: 위도 약 ±75° 고리, 밤쪽에서 더 또렷 (자외선 극광을 보이는 색으로)
+      float al = abs(lat) - (uPlanet == 1 ? 1.22 : 1.31); float ring = exp(-al * al / .0006) + .35 * exp(-al * al / .006);
+      float flick = .55 + .45 * vnoise(vec3(phi * 9., lat * 30., uWall * .25)) * (.6 + .4 * sin(phi * 4. + uWall * .3));
+      vec3 ac = uPlanet == 1 ? vec3(.55, .35, 1.) : vec3(.45, .55, 1.);
+      col += ac * ring * flick * (.05 + .95 * smoothstep(.05, -.2, NL)) * (.5 + .5 / max(NV, .3)) * .35 / max(uExpo, 1e-4);
+    }
+    if (uPlanet == 1 && NL < 0.){ // 목성 밤쪽 번개: 띠 속에서 가끔 번쩍
+      vec2 g = vec2(phi * 18., lat * 30.); vec2 gi = floor(g); float hsh = fract(sin(dot(gi, vec2(12.9898, 78.233))) * 43758.5453);
+      float tt = uWall * .7 + hsh * 50.; float on = step(.985, fract(sin(floor(tt) * 91.7 + hsh * 13.) * 4375.85)) * (1. - fract(tt));
+      float dd = length(fract(g) - .5); col += vec3(.75, .85, 1.) * on * exp(-dd * dd / .02) * smoothstep(-.02, -.15, NL) * 1.2 / max(uExpo, 1e-4); }
   } else { // 대기 없는 고체: 로멜-젤리거 + 람베르트 섞기 (보름달이 납작하게 밝은 이유)
     float mu0 = max(NL, 0.), mu = max(NV, 1e-3);
     float ls = 2. * mu0 / (mu0 + mu);
@@ -1048,7 +1064,7 @@ void main(){ float r = mix(uRingR.x, uRingR.y, aPos.x); float a = aPos.y * 6.283
   vP = uC + uRot * vec3(cos(a) * r, sin(a) * r, 0.); gl_Position = uVP * vec4(vP, 1.); logDepthV(); }`;
 SH.ringF = `
 in vec3 vP; in float vR;
-uniform sampler2D uRingTex; uniform vec3 uSunP; uniform vec3 uLight; uniform mat3 uRot; uniform vec3 uC; uniform vec3 uS; uniform float uSunR; uniform vec3 uTint; uniform float uOpac;
+uniform sampler2D uRingTex; uniform vec3 uSunP; uniform vec3 uLight; uniform mat3 uRot; uniform vec3 uC; uniform vec3 uS; uniform float uSunR; uniform vec3 uTint; uniform float uOpac; uniform float uWall;
 out vec4 o;
 ${GLX.LOGDEPTH_F}
 ${SH.SHADOW}
@@ -1061,6 +1077,9 @@ void main(){
   float k1 = 1. - smoothstep(.3, 1.2, fw * 7000.), k2 = 1. - smoothstep(.3, 1.2, fw * 60000.);
   float rings = 1. + k1 * (vnoise(vec3(r1, 0., 0.)) - .5) * .7 + k2 * (vnoise(vec3(r2, 3., 0.)) - .5) * .5;
   a = clamp(a * rings, 0., 1.); c *= .9 + .2 * k1 * vnoise(vec3(r1 * .5, 7., 0.));
+  { vec3 lq = transpose(uRot) * (vP - uC); float ang = atan(lq.y, lq.x); float rr = length(lq.xy); // B 고리의 스포크: 어두운 방사형 쐐기
+    float inB = smoothstep(.29, .33, vR) * smoothstep(.66, .6, vR); float sp = smoothstep(.62, .82, vnoise(vec3(ang * 22., vR * 3., uWall * .01))) * smoothstep(.3, .7, vnoise(vec3(ang * 5., 2., uWall * .004)));
+    c *= 1. - inB * sp * .35; }
   vec3 n = uRot * vec3(0, 0, 1); vec3 L = normalize(uSunP - vP); vec3 V = normalize(-vP);
   float sl = dot(n, L), sv = dot(n, V);
   // 해와 같은 쪽에서 보면 반사, 반대쪽이면 투과(앞 산란)
@@ -1459,7 +1478,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
     gl.disable(gl.CULL_FACE); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
     for (const [b, C] of rings) {
       const ringT = RN.texs.rings || RN.ringTex;
-      GLX.use(P.ring, { uVP: VP, uRot: GLX.mat3(b.R3), uC: C, uRingR: b.rings, uRingTex: ringT, uSunP: sunC, uSunR: sun.R, uLight: lightAt(b), uS: [b.R, b.R, b.Rp], uTint: [1, 1, 1], uOpac: 1 - 0.45 * RINGF.amt, uLogF: RN.logF, ...occluders(b, cp) });
+      GLX.use(P.ring, { uVP: VP, uRot: GLX.mat3(b.R3), uC: C, uRingR: b.rings, uRingTex: ringT, uSunP: sunC, uSunR: sun.R, uLight: lightAt(b), uS: [b.R, b.R, b.Rp], uTint: [1, 1, 1], uOpac: 1 - 0.45 * RINGF.amt, uWall: SUNAR.w % 2000, uLogF: RN.logF, ...occluders(b, cp) });
       GLX.draw(ringMesh);
     }
     // 대기 껍질: 먼저 뒤 배경을 RGB 투과만큼 곱하고(노을빛), 그 위에 산란빛을 더함
@@ -1554,7 +1573,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
       uVP: VP, uRot: GLX.mat3(b.R3), uS: S3, uC: C, uR: b.R, uTex: t || RN.white, uHasTex: t ? 1 : 0, uCol: b.col.map(x => x * (b.alb ? Math.min(1, 0.4 + b.alb) : 0.7)),
       uKind: kind, uSunP: sunC, uSunR: BY.sun.R, uLight: lightAt(b), uT: RN.uT, uLS: b.atm ? 0 : 0.85, uExpo: RN.expo,
       uAux: RN.tex('earth-aux') || RN.black, uNorm: RN.tex('earth-n') || RN.white, uRingTex: RN.texs.rings || RN.ringTex, uHasRing: b.rings ? 1 : 0, uRingR: b.rings || [0, 0],
-      uTexW: t ? t.w : 1, uGasK: b.id === 'jupiter' ? 1 : b.id === 'saturn' ? 0.7 : 0.35, uCamL: camLocal(b, C), uLogF: RN.logF, ...occluders(b, S.cam), uFwd: [-S.R[2], -S.R[5], -S.R[8]], uCity: SURF.on && SURF.b === b ? 0.004 : 1,
+      uTexW: t ? t.w : 1, uGasK: b.id === 'jupiter' ? 1 : b.id === 'saturn' ? 0.7 : 0.35, uPlanet: b.id === 'jupiter' ? 1 : b.id === 'saturn' ? 2 : 0, uWall: SUNAR.w % 2000, uCamL: camLocal(b, C), uLogF: RN.logF, ...occluders(b, S.cam), uFwd: [-S.R[2], -S.R[5], -S.R[8]], uCity: SURF.on && SURF.b === b ? 0.004 : 1,
     };
     if (b.id === 'venus') { const vt = RN.tex('venusatm'); if (vt) u.uTex = vt, u.uHasTex = 1; }
     if (b.atm && b.atm.H) Object.assign(u, atmU(b), { uHasAtm: 1 }); else u.uHasAtm = 0;
