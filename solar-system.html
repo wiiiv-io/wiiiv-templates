@@ -1839,22 +1839,22 @@ const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: nul
     SUNAR.w += dt;
     const act = activity(d); const list = []; const k1 = Math.floor(d);
     for (let k = k1 - 70; k <= k1; k++) for (let m = 0; m < 2; m++) { const kk = k * 2 + m; // 하루에 두 번 태어날 기회 (극대기엔 보이는 쪽에 흑점군 10~20개)
-      if (hash(kk * 1.7) > act * 0.75) continue;
+      if (hash(kk * 1.7) > act * 0.3) continue; // 실제 사진처럼: 활발할 때도 보이는 쪽 흑점군은 대개 5~10개
       const k_ = kk; const born = k + hash(kk * 3.1), life = 15 + hash(kk * 5.3) * 55, age = d - born; if (age < 0 || age > life) continue;
       const hemi = hash(kk * 7.7) < 0.5 ? -1 : 1; const lat = hemi * (6 + hash(kk * 9.1) * 26); const lon0 = hash(kk * 11.3) * 360;
       const lon = lon0 + (omega(lat) - W0) * age;
-      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const big = hash(kk * 13.7); const size = (0.013 + big * big * 0.05) * grow; // 작은 것이 훨씬 많고 큰 것은 드묾
-      const tilt = hemi * (4 + hash(kk * 2.9) * 10); const sep = 0.05 + hash(kk * 4.4) * 0.07;
+      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const big = hash(kk * 13.7); const size = (0.006 + big * big * big * 0.03) * grow; // 대부분 작은 점, 가끔 큰 흑점 // 작은 것이 훨씬 많고 큰 것은 드묾
+      const tilt = hemi * (4 + hash(kk * 2.9) * 10); const sep = (0.025 + hash(kk * 4.4) * 0.05) * (0.6 + size / 0.02);
       list.push({ k: kk, lat, lon, size, tilt, sep, grow, hemi, born, life });
     }
-    list.sort((a, b) => b.size - a.size); SUNAR.list = list.slice(0, 24);
+    list.sort((a, b) => b.size - a.size); SUNAR.list = list.slice(0, 20);
     let n = 0; const S = SUNAR.spots; S.fill(0);
     const put = (v, w) => { if (n >= 96 || w < 0.0025) return; S[n * 4] = v[0]; S[n * 4 + 1] = v[1]; S[n * 4 + 2] = v[2]; S[n * 4 + 3] = w; n++; };
     for (const r of SUNAR.list) { put(foot(r, -1), r.size); put(foot(r, 1), r.size * 0.72); }
     for (const r of SUNAR.list) {
       const extra = Math.round(1 + hash(r.k * 23.1) * 5 * Math.min(1, r.size / 0.02)); // 큰 흑점군일수록 작은 흑점(구멍)이 많음
       for (let j = 0; j < extra; j++) { const u = hash(r.k * 31 + j) * 2 - 1, o = (hash(r.k * 37 + j) - 0.5) * 0.7; const dl = r.sep * R2D, t = r.tilt * D2R;
-        put(ll2v(r.lat + u * dl * 0.6 * Math.sin(t) + o * dl * 0.4 * Math.cos(t), r.lon + (u * dl * 0.6 * Math.cos(t) - o * dl * 0.4 * Math.sin(t)) / Math.cos(r.lat * D2R)), r.size * (0.15 + hash(r.k * 41 + j) * 0.3)); } }
+        put(ll2v(r.lat + u * dl * 0.6 * Math.sin(t) + o * dl * 0.4 * Math.cos(t), r.lon + (u * dl * 0.6 * Math.cos(t) - o * dl * 0.4 * Math.sin(t)) / Math.cos(r.lat * D2R)), r.size * (0.18 + hash(r.k * 41 + j) * 0.32)); } }
     SUNAR.nSpots = n;
     const sun = BY.sun; const camD = len(sub(CAM.pos, sun.pos)); SUNAR.near = clamp((40 - camD / sun.R) / 20, 0, 1);
     // 저절로 일어나는 플레어 (가까이 있을 때만, 15~35초마다)
@@ -1897,7 +1897,7 @@ const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: nul
     const sun = BY.sun, d = len(sub(sun.pos, cp)); if (d > sun.R * 40) return;
     const fade = SUNAR.near; const C = sub(sun.rp || sun.pos, cp); const R3 = sun.R3; const w = SUNAR.w;
     SUNAR.list.forEach((r, ri) => {
-      if (r.size < 0.022) return; const A = foot(r, -1), B = foot(r, 1);
+      if (r.size < 0.012) return; const A = foot(r, -1), B = foot(r, 1);
       const spanPx = r.sep * sun.R / d * RN.pxPerRad; const big = clamp((spanPx - 60) / 120, 0, 1); if (big <= 0) return; // 화면에서 작으면 고리가 흑점을 덮으므로 그리지 않음
       const fp = SUNAR.ev && SUNAR.ev.i === ri ? (SUNAR.ev.I || 0) : 0;
       const strands = 16;
@@ -1919,9 +1919,9 @@ const SUNAR = { list: [], spots: new Float32Array(384), nSpots: 0, w: 0, ev: nul
   SUNAR.overlay = ctx => {
     const sun = BY.sun; if (SUNAR.near < 0.5 || !SUNAR.list.length || SURF.on) return; const vd = nrm(sub(CAM.pos, sun.pos)); const T = SAT[LG] || SAT.en;
     ctx.font = '600 12px system-ui, sans-serif';
-    for (const r of SUNAR.list.slice(0, 3)) {
+    for (const r of SUNAR.list.slice(0, 2)) {
       const v = m3v(sun.R3, foot(r, -1)); if (dot(v, vd) < 0.25) continue; const p = RN.project(sub(add(sun.rp || sun.pos, scl(v, sun.R)), CAM.pos)); if (!p.on) continue;
-      const diam = 2 * r.size * sun.R; const ne = diam / 12742; if (ne < 1.5) continue; const rpx = r.size * sun.R / len(sub(CAM.pos, sun.pos)) * RN.pxPerRad;
+      const diam = 2 * r.size * sun.R; const ne = diam / 12742; if (ne < 3) continue; const rpx = r.size * sun.R / len(sub(CAM.pos, sun.pos)) * RN.pxPerRad;
       ctx.globalAlpha = SUNAR.near * 0.9; ctx.strokeStyle = 'rgba(255,230,180,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x + rpx * 0.8, p.y - rpx * 0.8); ctx.lineTo(p.x + rpx + 24, p.y - rpx - 18); ctx.stroke();
       ctx.fillStyle = '#ffe6b4'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.fillText(T.spot.replace('{n}', Math.round(ne)), p.x + rpx + 28, p.y - rpx - 20); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
