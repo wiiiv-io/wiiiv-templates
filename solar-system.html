@@ -2674,7 +2674,7 @@ const UI = {};
       ctx.fillText(name, x + ox, y);
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
-    PBD.overlay(ctx); document.body.classList.toggle('pbding', PBD.on);
+    PBD.overlay(ctx); APO.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on);
     if (!SURF.on && !PBD.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
     // 정보판 실시간 값
     infoT += dt; if (infoT > 0.25 && APP.sel) { infoT = 0; INFO.live(APP.sel); }
@@ -2727,7 +2727,7 @@ const UI = {};
     const nice = NICE.reduce((a, x) => Math.abs(Math.log(x / sec)) < Math.abs(Math.log(a / sec)) ? x : a, NICE[0]);
     APP.live = false; APP.playing = true; APP.rate = nice / 86400; UI.time();
   };
-  UI.go = (b, dist) => { PBD.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
+  UI.go = (b, dist) => { PBD.stop(); APO.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
   UI.select = (b, keep) => {
     APP.sel = b; $('info').classList.remove('off'); document.body.classList.add('sheet', 'panel');
     INFO.render(b);
@@ -2810,7 +2810,7 @@ const UI = {};
   };
   // 날짜로 가기 + 역사적 순간
   const EVENTS = [
-    ['apollo11', '1969-07-20T20:17', 'moon', 4], ['eclipse1919', '1919-05-29T13:08', 'eclipse'], ['v2nep', '1989-08-25T02:00', 'mis:voyager2:4'], ['halley86', '1986-02-09T11:00', 'halley', 0],
+    ['apollo11', '1969-07-20T20:17', 'apo'], ['eclipse1919', '1919-05-29T13:08', 'eclipse'], ['v2nep', '1989-08-25T02:00', 'mis:voyager2:4'], ['halley86', '1986-02-09T11:00', 'halley', 0],
     ['sl9', '1994-07-16T20:13', 'jupiter', 4], ['mars2003', '2003-08-27T09:51', 'mars', 0], ['conj2020', '2020-12-21T18:20', 'conj'], ['eclipse2017', '2017-08-21T18:26', 'eclipse'],
     ['eclipse2024', '2024-04-08T18:18', 'eclipse'], ['eclipse2026', '2026-08-12T17:46', 'eclipse'], ['cassiniEnd', '2017-09-15T06:00', 'saturn', 0], ['nhPluto', '2015-07-14T08:00', 'mis:newhorizons:2'],
     ['pbd1990', '1990-02-14T04:48', 'pbd'], ['parker24', '2024-12-24T06:00', 'mis:parker:1'], ['apophis', '2029-04-13T21:46', 'apophis', 0], ['halley61', '2061-07-28T12:00', 'halley', 0],
@@ -2831,6 +2831,7 @@ const UI = {};
     goDate(Date.parse(iso + 'Z'));
     if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; }
     if (what === 'pbd') { PBD.start(); return; }
+    if (what === 'apo') { APO.start(); return; }
     if (what === 'eclipse') { // 달 그림자 축 위에서 해를 봄
       const E = BY.earth, M = BY.moon; const u = nrm(sub(M.pos, BY.sun.pos)); APP.show.orbits = false; CAM.flyTo(M, len(sub(E.pos, M.pos)) - E.R, { dir: u, dur: 3 }); CAM.fovT = 1.6; UI.close();
       setTimeout(() => { APP.show.orbits = true; }, 60000); return; }
@@ -3466,7 +3467,7 @@ const PBD = { on: false, step: 0 };
 (function () {
   const WHEN = '1990-02-14T04:48Z';
   const T = () => PBDT[LG] || PBDT.en;
-  PBD.start = async () => {
+  PBD.start = async () => { if (typeof APO !== 'undefined') APO.stop();
     if (SURF.on) { SURF.on = false; $('surf').hidden = true; } if (LEARN.on) LEARN.close();
     if (!MIS.list) await MIS.init(); await MIS.load('voyager1'); const m = MIS.list && MIS.list.find(x => x.id === 'voyager1'); if (!m) { UI.toast('voyager1 ?'); return; }
     APP.spin = null; APP.d = utc2tdb(Date.parse(WHEN)); APP.live = false; APP.playing = false; simAt(APP.d); MIS.sel = m; MIS.update(APP.d); UI.time();
@@ -3527,6 +3528,100 @@ const PBDT = {
   pt: { title: 'Pálido Ponto Azul', when: '14 fev 1990 · Voyager 1 · a cerca de 6 bilhões de km da Terra', body: ['Deixando o Sistema Solar após a missão, a Voyager 1 virou a câmera uma última vez a pedido de Carl Sagan e fez um “retrato de família” dos planetas. Numa imagem, a Terra era um grão menor que um pixel, num raio de luz solar espalhada.', 'Sagan escreveu que todos que conhecemos e toda a história humana aconteceram nesse grão suspenso num raio de sol — razão para tratarmos uns aos outros com mais bondade e preservá-lo (Pálido Ponto Azul, 1994).', 'Você vê a Terra com campo estreito a partir da posição real da Voyager 1 naquele dia (JPL Horizons). Trinta e quatro minutos depois, suas câmeras foram desligadas para sempre.'], v0: 'A Terra vista da Voyager', v1: 'Onde está a Voyager?', earth: 'Terra — {d} bilhões de km', line: 'Voyager 1 → Terra' },
   ru: { title: 'Бледно-голубая точка', when: '14 февраля 1990 · «Вояджер-1» · около 6 млрд км от Земли', body: ['Покидая Солнечную систему после завершения миссии, «Вояджер-1» по предложению Карла Сагана в последний раз развернул камеру и сделал «семейный портрет» планет. На одном кадре Земля — пылинка меньше пикселя в луче рассеянного солнечного света.', 'Саган писал, что все, кого мы знаем, и вся история человечества прошли на этой пылинке, висящей в солнечном луче, — повод относиться друг к другу добрее и беречь её («Бледно-голубая точка», 1994).', 'Вы видите Землю в узком поле зрения из реального положения «Вояджера-1» в тот день (JPL Horizons). Через 34 минуты после съёмки его камеры выключили навсегда.'], v0: 'Земля с «Вояджера»', v1: 'Где «Вояджер»?', earth: 'Земля — {d} млрд км', line: '«Вояджер-1» → Земля' },
   vi: { title: 'Chấm xanh mờ nhạt', when: '14/2/1990 · Voyager 1 · cách Trái Đất khoảng 6 tỷ km', body: ['Khi rời Hệ Mặt Trời sau nhiệm vụ, theo đề nghị của Carl Sagan, Voyager 1 quay camera lại lần cuối để chụp “ảnh gia đình” các hành tinh. Trong một khung hình, Trái Đất chỉ là một chấm nhỏ hơn một điểm ảnh, nằm trong một vệt ánh nắng tán xạ.', 'Sagan viết rằng mọi người ta biết và toàn bộ lịch sử loài người đã diễn ra trên hạt bụi lơ lửng trong tia nắng ấy — lý do để đối xử tử tế hơn với nhau và trân trọng nó (Pale Blue Dot, 1994).', 'Bạn đang nhìn Trái Đất với trường nhìn hẹp từ vị trí thật của Voyager 1 hôm đó (JPL Horizons). 34 phút sau, camera của Voyager bị tắt vĩnh viễn.'], v0: 'Trái Đất từ Voyager', v1: 'Voyager ở đâu?', earth: 'Trái Đất — {d} tỷ km', line: 'Voyager 1 → Trái Đất' },
+};
+
+// ───────────────────────── 아폴로 11호 (1969-07-20/21) ─────────────────────────
+// ① 고요 기지에서 본 하늘(첫 발자국 시각) ② 달 궤도에서 본 착륙지(착륙 시각, 사령선 컬럼비아 고도) ③ 그날 휴스턴에서 본 초승달
+const APO = { on: false, step: 0 };
+(function () {
+  const SITE = [0.67408, 23.47297], LAND = '1969-07-20T20:17:40Z', STEP = '1969-07-21T02:56:15Z', HOUSTON = [29.5593, -95.0900];
+  const T = () => APOT[LG] || APOT.en;
+  const at = iso => { APP.d = utc2tdb(Date.parse(iso)); APP.live = false; APP.playing = false; simAt(APP.d); UI.time(); };
+  APO.start = () => {
+    PBD.stop(); if (LEARN.on) LEARN.close(); if (MIS.on) MIS.close(); UI.close();
+    APO.on = true; APO.saved = { o: APP.show.orbits, l: APP.show.labels, g: APP.show.gravity }; APP.show.gravity = false; APP.spin = null;
+    APO.view(0);
+  };
+  const leaveSurf = () => { if (SURF.on) { SURF.on = false; $('surf').hidden = true; } };
+  APO.view = k => {
+    APO.step = k; const M = BY.moon, E = BY.earth;
+    if (k === 0) { at(STEP); SURF.enter(M, 0); SURF.lat = SITE[0]; SURF.lon = SITE[1]; SURF.alt = 0.002; const f = SURF.camera(); const [al, az] = SURF.altaz(E, f); SURF.yaw = az; SURF.pitch = Math.max(al - 30, 8); CAM.fovT = 75; /* 지평선과 지구가 함께 */ $('surf').hidden = true; }
+    else if (k === 1) { leaveSurf(); at(LAND); APP.show.orbits = false; const loc = [Math.cos(SITE[0] * D2R) * Math.cos(SITE[1] * D2R), Math.cos(SITE[0] * D2R) * Math.sin(SITE[1] * D2R), Math.sin(SITE[0] * D2R)];
+      const n = m3v(M.R3, loc), east = nrm(crs(m3v(M.R3, [0, 0, 1]), n)); CAM.fovT = 50; CAM.flyTo(M, M.R + 1300, { dir: nrm(add(scl(n, 0.75), scl(east, 0.66))), dur: 3 }); }
+    else { leaveSurf(); at(LAND); SURF.enter(E, 0); SURF.lat = HOUSTON[0]; SURF.lon = HOUSTON[1]; SURF.alt = 0.02; const f = SURF.camera(); const [al, az] = SURF.altaz(M, f); SURF.yaw = az; SURF.pitch = Math.max(al, 3); CAM.fovT = 6; $('surf').hidden = true; }
+    APO.panel();
+  };
+  APO.stop = () => { if (!APO.on) return; APO.on = false; $('pbd').hidden = true; leaveSurf(); CAM.fovT = 50; if (APO.saved) { APP.show.orbits = APO.saved.o; APP.show.labels = APO.saved.l; APP.show.gravity = APO.saved.g; } UI.toolsSync && UI.toolsSync(); };
+  APO.panel = () => {
+    const t = T(), el = $('pbd'); el.hidden = false; const v = t.v[APO.step];
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="apX">×</button></div><div class="pt">${v.when}</div>${v.body.map(p => `<p>${p}</p>`).join('')}
+      <div class="pb">${t.v.map((x, i) => `<button class="act${i === APO.step ? ' on' : ''}" data-v="${i}">${x.b}</button>`).join('')}</div>`;
+    $('apX').onclick = APO.stop; setTip($('apX'), 'close'); el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => APO.view(+b.dataset.v));
+  };
+  // 착륙지 표시 (궤도에서 볼 때)
+  APO.overlay = ctx => {
+    if (!APO.on || APO.step !== 1) return; const M = BY.moon; const loc = [Math.cos(SITE[0] * D2R) * Math.cos(SITE[1] * D2R), Math.cos(SITE[0] * D2R) * Math.sin(SITE[1] * D2R), Math.sin(SITE[0] * D2R)];
+    const w = add(M.rp || M.pos, m3v(M.R3, scl(loc, M.R))); const p = RN.project(sub(w, CAM.pos)); if (!p.on) return;
+    ctx.strokeStyle = '#ffcf6e'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y - 15); ctx.lineTo(p.x, p.y - 9); ctx.moveTo(p.x, p.y + 9); ctx.lineTo(p.x, p.y + 15); ctx.moveTo(p.x - 15, p.y); ctx.lineTo(p.x - 9, p.y); ctx.moveTo(p.x + 9, p.y); ctx.lineTo(p.x + 15, p.y); ctx.stroke();
+    ctx.font = '600 13px system-ui, sans-serif'; ctx.fillStyle = '#ffcf6e'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.fillText(T().site, p.x + 18, p.y + 4); ctx.shadowBlur = 0;
+  };
+})();
+const APOT = {
+  ko: { title: '아폴로 11호', site: '고요 기지 — 이글 착륙선', v: [
+    { b: '착륙지에서 본 하늘', when: '1969년 7월 21일 02:56 UTC · 고요의 바다', body: ['닐 암스트롱이 착륙선 이글의 사다리를 내려와 달 표면에 첫발을 디딘 순간입니다. "이것은 한 사람에게는 작은 걸음이지만, 인류에게는 거대한 도약입니다." 약 6억 명이 이 장면을 텔레비전으로 지켜보았습니다.', '달은 늘 같은 면을 지구로 향하기 때문에, 이곳 하늘에서 지구는 거의 같은 자리에 떠 있고 위상만 바뀝니다. 대기가 없어 낮인데도 하늘은 검습니다. 화면을 끌어 둘러보세요.'] },
+    { b: '달 궤도에서 본 착륙지', when: '1969년 7월 20일 20:17 UTC · 착륙 순간', body: ['"휴스턴, 여기는 고요 기지. 이글이 내려앉았습니다." 연료가 약 25초 분량 남았을 때였습니다. 암스트롱은 바위투성이 분화구를 피해 손으로 조종해 내려앉았습니다.', '그 위 약 110 km 궤도에서는 마이클 콜린스가 사령선 컬럼비아를 타고 혼자 달을 돌았습니다. 달 뒤편으로 갈 때마다 지구와의 교신이 완전히 끊겼습니다. 노란 표시가 착륙 지점입니다.'] },
+    { b: '그날 지구에서 본 달', when: '1969년 7월 20일 20:17 UTC · 휴스턴', body: ['착륙 순간 휴스턴 관제 센터 위 하늘에는 초승달이 떠 있었습니다. 신월(7월 17일)에서 사흘 지난 달로, 고요의 바다는 아침 해가 막 비추기 시작한 곳이었습니다. 낮은 해가 만드는 긴 그림자 덕분에 지형을 잘 볼 수 있도록 일부러 고른 날짜입니다.', '이 화면은 좁은 시야(약 6°)로 그 시각 휴스턴에서 본 달입니다.'] },
+  ] },
+  en: { title: 'Apollo 11', site: 'Tranquility Base — lunar module Eagle', v: [
+    { b: 'Sky at the landing site', when: '21 Jul 1969 02:56 UTC · Sea of Tranquility', body: ['Neil Armstrong steps off Eagle’s ladder onto the Moon: “That’s one small step for [a] man, one giant leap for mankind.” Some 600 million people watched on television.', 'Because the Moon keeps one face toward Earth, Earth hangs almost fixed in this sky and only changes phase. With no air, the daytime sky is black. Drag to look around.'] },
+    { b: 'Landing site from orbit', when: '20 Jul 1969 20:17 UTC · touchdown', body: ['“Houston, Tranquility Base here. The Eagle has landed.” About 25 seconds of fuel remained; Armstrong flew by hand to avoid a boulder-strewn crater.', 'About 110 km above, Michael Collins circled alone in the command module Columbia, losing all contact with Earth each time he passed behind the Moon. The yellow mark is the landing site.'] },
+    { b: 'The Moon from Earth that day', when: '20 Jul 1969 20:17 UTC · Houston', body: ['At touchdown a crescent Moon stood over Mission Control in Houston — three days after new Moon. The Sea of Tranquility had just seen sunrise; low sunlight and long shadows were chosen on purpose so the crew could judge the terrain.', 'This is a narrow (about 6°) view of the Moon from Houston at that moment.'] },
+  ] },
+  ja: { title: 'アポロ11号', site: '静かの基地 — 月着陸船イーグル', v: [
+    { b: '着陸地点の空', when: '1969年7月21日 02:56 UTC · 静かの海', body: ['ニール・アームストロングがイーグルのはしごを降り、月面に第一歩を記した瞬間です。「これは一人の人間にとっては小さな一歩だが、人類にとっては偉大な飛躍である。」約6億人がテレビで見守りました。', '月はいつも同じ面を地球に向けているので、ここの空で地球はほぼ同じ位置に浮かび、満ち欠けだけが変わります。大気がないため昼でも空は黒いのです。ドラッグして見回してください。'] },
+    { b: '月周回軌道から見た着陸地点', when: '1969年7月20日 20:17 UTC · 着陸の瞬間', body: ['「ヒューストン、こちら静かの基地。イーグルは着陸した。」燃料は約25秒分しか残っていませんでした。アームストロングは岩だらけのクレーターを避けて手動で着陸しました。', 'その上空約110 kmでは、マイケル・コリンズが司令船コロンビアで一人月を回り、月の裏側に入るたびに地球との交信が完全に途絶えました。黄色の印が着陸地点です。'] },
+    { b: 'その日地球から見た月', when: '1969年7月20日 20:17 UTC · ヒューストン', body: ['着陸の瞬間、ヒューストンの管制センターの空には三日月が浮かんでいました。新月（7月17日）から3日後で、静かの海は朝日が差し始めたところでした。低い太陽と長い影で地形が見やすいよう、あえて選ばれた日付です。', 'これはその時刻にヒューストンから見た月を狭い視野（約6°）で見たものです。'] },
+  ] },
+  zh: { title: '阿波罗11号', site: '静海基地 — 登月舱“鹰”号', v: [
+    { b: '着陆点的天空', when: '1969年7月21日 02:56 UTC · 静海', body: ['尼尔·阿姆斯特朗走下“鹰”号的舷梯，在月面留下第一个脚印：“这是个人的一小步，却是人类的一大步。”约6亿人通过电视观看。', '月球总以同一面朝向地球，所以在这里的天空中，地球几乎停在原处，只有相位变化。没有大气，白天天空也是黑的。拖动画面环顾四周。'] },
+    { b: '从月球轨道看着陆点', when: '1969年7月20日 20:17 UTC · 着陆瞬间', body: ['“休斯敦，这里是静海基地。‘鹰’已着陆。”当时燃料只剩约25秒。阿姆斯特朗手动驾驶，避开了布满巨石的陨坑。', '在其上方约110公里的轨道上，迈克尔·柯林斯独自驾驶指令舱“哥伦比亚”号绕月飞行，每次转到月球背面都会与地球完全失去联系。黄色标记为着陆点。'] },
+    { b: '那天从地球看月亮', when: '1969年7月20日 20:17 UTC · 休斯敦', body: ['着陆时，休斯敦任务控制中心上空挂着一弯新月——新月（7月17日）后第三天。静海刚迎来日出；特意选择低角度阳光和长影子，方便宇航员判断地形。', '这是当时从休斯敦以窄视场（约6°）看到的月亮。'] },
+  ] },
+  'zh-TW': { title: '阿波羅11號', site: '寧靜海基地 — 登月艙「老鷹號」', v: [
+    { b: '著陸點的天空', when: '1969年7月21日 02:56 UTC · 寧靜海', body: ['尼爾·阿姆斯壯走下「老鷹號」的梯子，在月面留下第一個腳印：「這是個人的一小步，卻是人類的一大步。」約6億人透過電視觀看。', '月球總以同一面朝向地球，所以在這裡的天空中，地球幾乎停在原處，只有盈虧變化。沒有大氣，白天天空也是黑的。拖曳畫面環顧四周。'] },
+    { b: '從月球軌道看著陸點', when: '1969年7月20日 20:17 UTC · 著陸瞬間', body: ['「休士頓，這裡是寧靜海基地。老鷹號已著陸。」當時燃料只剩約25秒。阿姆斯壯手動駕駛，避開了布滿巨石的隕石坑。', '在其上方約110公里的軌道上，麥可·柯林斯獨自駕駛指揮艙「哥倫比亞號」繞月飛行，每次轉到月球背面都會與地球完全失聯。黃色標記為著陸點。'] },
+    { b: '那天從地球看月亮', when: '1969年7月20日 20:17 UTC · 休士頓', body: ['著陸時，休士頓任務控制中心上空掛著一彎眉月——新月（7月17日）後第三天。寧靜海剛迎來日出；刻意選擇低角度陽光和長影子，方便太空人判斷地形。', '這是當時從休士頓以窄視野（約6°）看到的月亮。'] },
+  ] },
+  es: { title: 'Apolo 11', site: 'Base Tranquilidad — módulo lunar Eagle', v: [
+    { b: 'Cielo en el lugar de alunizaje', when: '21 jul 1969 02:56 UTC · Mar de la Tranquilidad', body: ['Neil Armstrong baja la escalera del Eagle y pisa la Luna: «Es un pequeño paso para el hombre, un gran salto para la humanidad». Unos 600 millones de personas lo vieron por televisión.', 'Como la Luna muestra siempre la misma cara a la Tierra, aquí la Tierra queda casi fija en el cielo y solo cambia de fase. Sin aire, el cielo diurno es negro. Arrastra para mirar alrededor.'] },
+    { b: 'El lugar desde la órbita', when: '20 jul 1969 20:17 UTC · alunizaje', body: ['«Houston, aquí Base Tranquilidad. El Eagle ha alunizado». Quedaban unos 25 segundos de combustible; Armstrong pilotó a mano para evitar un cráter lleno de rocas.', 'Unos 110 km más arriba, Michael Collins orbitaba solo en el módulo de mando Columbia y perdía todo contacto con la Tierra cada vez que pasaba tras la Luna. La marca amarilla es el lugar del alunizaje.'] },
+    { b: 'La Luna desde la Tierra ese día', when: '20 jul 1969 20:17 UTC · Houston', body: ['En el alunizaje, una Luna creciente brillaba sobre el Control de Misión en Houston, tres días después de la luna nueva. En el Mar de la Tranquilidad acababa de amanecer; se eligió a propósito el sol bajo y las sombras largas para juzgar el terreno.', 'Es una vista estrecha (unos 6°) de la Luna desde Houston en ese momento.'] },
+  ] },
+  fr: { title: 'Apollo 11', site: 'Base de la Tranquillité — module lunaire Eagle', v: [
+    { b: 'Le ciel au site d’alunissage', when: '21 juil. 1969 02:56 UTC · mer de la Tranquillité', body: ['Neil Armstrong descend l’échelle d’Eagle et pose le pied sur la Lune : « C’est un petit pas pour l’homme, un bond de géant pour l’humanité. » Quelque 600 millions de personnes regardent à la télévision.', 'La Lune montrant toujours la même face à la Terre, la Terre reste presque immobile dans ce ciel et ne change que de phase. Sans air, le ciel diurne est noir. Faites glisser pour regarder autour.'] },
+    { b: 'Le site vu de l’orbite', when: '20 juil. 1969 20:17 UTC · alunissage', body: ['« Houston, ici la base de la Tranquillité. L’Aigle s’est posé. » Il restait environ 25 secondes de carburant ; Armstrong a piloté à la main pour éviter un cratère jonché de rochers.', 'À environ 110 km au-dessus, Michael Collins tournait seul dans le module de commande Columbia, coupé de la Terre à chaque passage derrière la Lune. La marque jaune indique le site d’alunissage.'] },
+    { b: 'La Lune vue de la Terre ce jour-là', when: '20 juil. 1969 20:17 UTC · Houston', body: ['Au moment de l’alunissage, un croissant de Lune brillait au-dessus du centre de contrôle de Houston, trois jours après la nouvelle lune. Le soleil venait de se lever sur la mer de la Tranquillité : un éclairage rasant et de longues ombres avaient été choisis pour juger du terrain.', 'Voici une vue étroite (environ 6°) de la Lune depuis Houston à cet instant.'] },
+  ] },
+  de: { title: 'Apollo 11', site: 'Tranquility Base — Mondlandefähre Eagle', v: [
+    { b: 'Himmel am Landeplatz', when: '21. Juli 1969 02:56 UTC · Meer der Ruhe', body: ['Neil Armstrong steigt die Leiter der Eagle hinab und betritt den Mond: „Das ist ein kleiner Schritt für einen Menschen, ein riesiger Sprung für die Menschheit.“ Rund 600 Millionen Menschen sahen im Fernsehen zu.', 'Da der Mond der Erde stets dieselbe Seite zuwendet, steht die Erde hier fast fest am Himmel und ändert nur ihre Phase. Ohne Luft ist der Taghimmel schwarz. Ziehen Sie, um sich umzusehen.'] },
+    { b: 'Landeplatz aus der Umlaufbahn', when: '20. Juli 1969 20:17 UTC · Landung', body: ['„Houston, hier ist Tranquility Base. Der Adler ist gelandet.“ Es blieben etwa 25 Sekunden Treibstoff; Armstrong steuerte von Hand an einem geröllübersäten Krater vorbei.', 'Etwa 110 km darüber umkreiste Michael Collins allein im Kommandomodul Columbia den Mond und verlor hinter dem Mond jedes Mal den Funkkontakt zur Erde. Die gelbe Markierung zeigt den Landeplatz.'] },
+    { b: 'Der Mond von der Erde an jenem Tag', when: '20. Juli 1969 20:17 UTC · Houston', body: ['Bei der Landung stand eine Mondsichel über der Missionskontrolle in Houston – drei Tage nach Neumond. Im Meer der Ruhe war gerade die Sonne aufgegangen; flaches Licht und lange Schatten wurden bewusst gewählt, um das Gelände beurteilen zu können.', 'Dies ist ein enger Blick (etwa 6°) auf den Mond von Houston aus zu diesem Zeitpunkt.'] },
+  ] },
+  pt: { title: 'Apollo 11', site: 'Base da Tranquilidade — módulo lunar Eagle', v: [
+    { b: 'O céu no local de pouso', when: '21 jul 1969 02:56 UTC · Mar da Tranquilidade', body: ['Neil Armstrong desce a escada da Eagle e pisa na Lua: “Este é um pequeno passo para um homem, um salto gigantesco para a humanidade.” Cerca de 600 milhões de pessoas assistiram pela TV.', 'Como a Lua mostra sempre a mesma face à Terra, aqui a Terra fica quase parada no céu e só muda de fase. Sem ar, o céu diurno é preto. Arraste para olhar ao redor.'] },
+    { b: 'O local visto da órbita', when: '20 jul 1969 20:17 UTC · pouso', body: ['“Houston, aqui Base da Tranquilidade. A Águia pousou.” Restavam cerca de 25 segundos de combustível; Armstrong pilotou à mão para evitar uma cratera cheia de rochas.', 'Uns 110 km acima, Michael Collins orbitava sozinho no módulo de comando Columbia, perdendo todo contato com a Terra a cada passagem por trás da Lua. A marca amarela é o local do pouso.'] },
+    { b: 'A Lua vista da Terra naquele dia', when: '20 jul 1969 20:17 UTC · Houston', body: ['No pouso, uma Lua crescente brilhava sobre o Controle da Missão em Houston, três dias após a lua nova. O Mar da Tranquilidade acabava de ver o nascer do Sol; o sol baixo e as sombras longas foram escolhidos de propósito para avaliar o terreno.', 'Esta é uma vista estreita (cerca de 6°) da Lua a partir de Houston naquele momento.'] },
+  ] },
+  ru: { title: '«Аполлон-11»', site: 'База Спокойствия — лунный модуль «Игл»', v: [
+    { b: 'Небо в месте посадки', when: '21 июля 1969, 02:56 UTC · Море Спокойствия', body: ['Нил Армстронг спускается по трапу «Игла» и ступает на Луну: «Это один маленький шаг для человека и огромный скачок для человечества». Около 600 млн человек смотрели трансляцию.', 'Луна всегда обращена к Земле одной стороной, поэтому Земля здесь почти неподвижна на небе и лишь меняет фазы. Без атмосферы дневное небо чёрное. Потяните, чтобы осмотреться.'] },
+    { b: 'Место посадки с орбиты', when: '20 июля 1969, 20:17 UTC · посадка', body: ['«Хьюстон, говорит База Спокойствия. „Орёл“ сел». Топлива оставалось секунд на 25; Армстронг вёл модуль вручную, уходя от кратера, усеянного валунами.', 'На высоте около 110 км Майкл Коллинз в одиночку облетал Луну в командном модуле «Колумбия» и терял связь с Землёй за Луной на каждом витке. Жёлтая метка — место посадки.'] },
+    { b: 'Луна с Земли в тот день', when: '20 июля 1969, 20:17 UTC · Хьюстон', body: ['В момент посадки над Центром управления в Хьюстоне висел серп Луны — через три дня после новолуния. В Море Спокойствия только что взошло Солнце: низкое освещение и длинные тени выбрали нарочно, чтобы оценивать рельеф.', 'Это узкий (около 6°) вид на Луну из Хьюстона в тот момент.'] },
+  ] },
+  vi: { title: 'Apollo 11', site: 'Căn cứ Tĩnh lặng — module Eagle', v: [
+    { b: 'Bầu trời nơi hạ cánh', when: '21/7/1969 02:56 UTC · Biển Tĩnh lặng', body: ['Neil Armstrong bước xuống thang của Eagle và đặt chân lên Mặt Trăng: “Đây là bước nhỏ của một con người, nhưng là bước nhảy vọt của nhân loại.” Khoảng 600 triệu người theo dõi qua truyền hình.', 'Vì Mặt Trăng luôn hướng một mặt về Trái Đất, ở đây Trái Đất gần như đứng yên trên bầu trời và chỉ đổi pha. Không có khí quyển nên bầu trời ban ngày vẫn đen. Kéo để nhìn quanh.'] },
+    { b: 'Nơi hạ cánh nhìn từ quỹ đạo', when: '20/7/1969 20:17 UTC · lúc hạ cánh', body: ['“Houston, đây là Căn cứ Tĩnh lặng. Đại bàng đã đáp.” Khi đó chỉ còn khoảng 25 giây nhiên liệu; Armstrong lái bằng tay để tránh một hố đầy đá tảng.', 'Ở độ cao khoảng 110 km, Michael Collins một mình bay quanh Mặt Trăng trong module chỉ huy Columbia, mất hoàn toàn liên lạc với Trái Đất mỗi lần bay ra sau Mặt Trăng. Dấu vàng là nơi hạ cánh.'] },
+    { b: 'Mặt Trăng từ Trái Đất hôm ấy', when: '20/7/1969 20:17 UTC · Houston', body: ['Lúc hạ cánh, một vầng trăng lưỡi liềm treo trên Trung tâm Điều khiển ở Houston — ba ngày sau trăng mới. Biển Tĩnh lặng vừa đón bình minh; ánh nắng thấp và bóng dài được chọn có chủ ý để dễ nhận định địa hình.', 'Đây là góc nhìn hẹp (khoảng 6°) tới Mặt Trăng từ Houston vào thời điểm đó.'] },
+  ] },
 };
 
 // ───────── 독일어 ─────────
