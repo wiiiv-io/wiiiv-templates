@@ -825,7 +825,10 @@ vec2 worley(vec3 p){ vec3 i = floor(p), f = fract(p); float d1 = 9., d2 = 9.;
   GLX.bind = tg => { gl.bindFramebuffer(gl.FRAMEBUFFER, tg ? tg.fb : null); gl.viewport(0, 0, tg ? tg.w : gl.drawingBufferWidth, tg ? tg.h : gl.drawingBufferHeight); };
 
   // 이미지 불러오기: 같은 폴더 → CDN 순서
-  GLX.BASES = ['assets/solar/', 'https://wiiiv-io.github.io/wiiiv-templates/assets/solar/'];
+  // 같은 폴더의 assets/ 는 템플릿 저장소에서 직접 열었을 때만 (wiiiv 앱 안 srcdoc iframe 이면 상대 주소가 앱 서버를 가리켜 index.html 이 돌아올 수 있음)
+  const CDN = 'https://wiiiv-io.github.io/wiiiv-templates/assets/solar/';
+  const own = location.protocol === 'file:' || /github\.io$/.test(location.hostname) || /solar-system\.html$/.test(location.pathname);
+  GLX.BASES = own ? ['assets/solar/', CDN] : [CDN];
   GLX.fetchBase = null;
   GLX.loadImg = name => new Promise(res => {
     const bases = GLX.fetchBase ? [GLX.fetchBase] : GLX.BASES;
@@ -840,7 +843,7 @@ vec2 worley(vec3 p){ vec3 i = floor(p), f = fract(p); float d1 = 9., d2 = 9.;
   });
   GLX.loadBin = async name => {
     for (const base of (GLX.fetchBase ? [GLX.fetchBase] : GLX.BASES)) {
-      try { const r = await fetch(base + name); if (r.ok) { if (!GLX.fetchBase) GLX.fetchBase = base; return await r.arrayBuffer(); } } catch { /* 다음 */ }
+      try { const r = await fetch(base + name); if (r.ok && !/text\/html/i.test(r.headers.get('content-type') || '')) { if (!GLX.fetchBase) GLX.fetchBase = base; return await r.arrayBuffer(); } } catch { /* 다음 */ }
     }
     return null;
   };
