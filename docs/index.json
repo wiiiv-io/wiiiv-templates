@@ -229,7 +229,7 @@
    "kind": "slides",
    "category": "기술·AI",
    "title": {
-    "ko": "2026년 AI 기술 동향",
+    "ko": "2026년 AI 기술 트렌드 12가지",
     "en": "12 AI Technology Trends for 2026",
     "ja": "2026年 AI技術トレンド12選"
    },
@@ -253,12 +253,12 @@
    },
    "run": {
     "credits": null,
-    "minutes": 11.4,
+    "minutes": 28.3,
     "sources": 0,
     "model": "qwen3.7-plus (상·중)",
     "date": "2026-10-29",
-    "build": "d48c0c63d",
-    "sessionId": "eac867ef-89fc-4774-adf6-a9c0027a19ba",
+    "build": "cd50e5fc0",
+    "sessionId": "760a916f-259e-4c41-81b6-a25e9ed45a6c",
     "by": "beta",
     "followUps": []
    },
@@ -287,12 +287,12 @@
     },
     "ko": {
      "credits": null,
-     "minutes": 11.4,
+     "minutes": 28.3,
      "sources": 0,
      "model": "qwen3.7-plus (상·중)",
      "date": "2026-10-29",
-     "build": "d48c0c63d",
-     "sessionId": "eac867ef-89fc-4774-adf6-a9c0027a19ba",
+     "build": "cd50e5fc0",
+     "sessionId": "760a916f-259e-4c41-81b6-a25e9ed45a6c",
      "by": "beta",
      "followUps": []
     }
