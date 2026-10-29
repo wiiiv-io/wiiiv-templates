@@ -609,7 +609,7 @@
    "kind": "slides",
    "category": "산업·경제",
    "title": {
-    "ko": "K-뷰티 글로벌 진출 현황과 전략"
+    "ko": "K-뷰티 글로벌 진출 현황과 전략: 2026"
    },
    "prompt": {
     "ko": "K-뷰티의 글로벌 진출 현황과 전략을 정리한 프레젠테이션을 14장 분량으로 만들어줘. 한국 화장품 수출 규모와 국가별 비중, 미국·일본·동남아 시장 반응, 인디 브랜드의 성장, 스킨케어·선케어·색조 트렌드, 온라인 플랫폼과 인플루언서 마케팅, 규제와 인증, 앞으로의 과제를 대표 사례와 수치로 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘."
@@ -627,24 +627,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 10.0,
+    "minutes": 10.5,
     "sources": 0,
     "model": "qwen3.7-plus (상·중)",
     "date": "2026-10-30",
-    "build": "ffa064bff",
-    "sessionId": "ef47f7f2-9dbd-4957-8a91-6275cbd57cb5",
+    "build": "f3e157def",
+    "sessionId": "af1ec755-389b-4e72-ada3-df0ec253aa24",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 10.0,
+     "minutes": 10.5,
      "sources": 0,
      "model": "qwen3.7-plus (상·중)",
      "date": "2026-10-30",
-     "build": "ffa064bff",
-     "sessionId": "ef47f7f2-9dbd-4957-8a91-6275cbd57cb5",
+     "build": "f3e157def",
+     "sessionId": "af1ec755-389b-4e72-ada3-df0ec253aa24",
      "by": "beta",
      "followUps": []
     }
