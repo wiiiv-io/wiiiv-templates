@@ -253,12 +253,12 @@
    },
    "run": {
     "credits": null,
-    "minutes": 28.3,
+    "minutes": 12.1,
     "sources": 0,
     "model": "qwen3.7-plus (상·중)",
-    "date": "2026-10-29",
-    "build": "cd50e5fc0",
-    "sessionId": "760a916f-259e-4c41-81b6-a25e9ed45a6c",
+    "date": "2026-10-30",
+    "build": "1ce90f45b",
+    "sessionId": "d7c3f698-7617-4361-ae08-b87c31747dc1",
     "by": "beta",
     "followUps": []
    },
@@ -287,12 +287,12 @@
     },
     "ko": {
      "credits": null,
-     "minutes": 28.3,
+     "minutes": 12.1,
      "sources": 0,
      "model": "qwen3.7-plus (상·중)",
-     "date": "2026-10-29",
-     "build": "cd50e5fc0",
-     "sessionId": "760a916f-259e-4c41-81b6-a25e9ed45a6c",
+     "date": "2026-10-30",
+     "build": "1ce90f45b",
+     "sessionId": "d7c3f698-7617-4361-ae08-b87c31747dc1",
      "by": "beta",
      "followUps": []
     }
