@@ -9,6 +9,9 @@
   --fg: #e9edf7; --dim: #93a0bf; --dim2: #67728f; --acc: #ffcf6e; --acc2: #7fb4ff; --good: #7fe0b0; --r: 14px; --side: 380px; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
+/* 스크롤 막대: 평소엔 숨기고, 휠·끌기로 움직일 때만 가늘게 (모든 스크롤 영역 공통) */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.scrolling { scrollbar-color: rgba(200, 212, 240, .38) transparent; }
 html, body { margin: 0; height: 100%; background: #000; color: var(--fg); font: 14px/1.5 'Pretendard', 'Inter', 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
 #gl, #ov { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 #gl { touch-action: none; cursor: grab; }
@@ -51,7 +54,7 @@ input { font: inherit; color: inherit; }
 .act { padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line2); font-size: 12.5px; color: #d7def0; }
 .act:hover { border-color: var(--acc2); color: #fff; }
 .act.on { border-color: var(--acc); color: var(--acc); }
-#infoBody { flex: 1; overflow: auto; padding: 4px 16px 18px; user-select: text; -webkit-user-select: text; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+#infoBody { flex: 1; overflow: auto; padding: 4px 16px 18px; user-select: text; -webkit-user-select: text; }
 #infoBody h3 { margin: 18px 0 8px; font-size: 11.5px; color: var(--acc2); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
 #infoBody h3::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 #infoBody p { margin: 0 0 10px; color: #cdd5e8; line-height: 1.65; font-size: 13.5px; }
@@ -2376,6 +2379,8 @@ const UI = {};
     rw: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6l-8 6 8 6zM12 6l-8 6 8 6z"/></svg>',
   };
   UI.init = () => {
+    // 스크롤할 때만 막대를 잠깐 보여 줌
+    const tm = new WeakMap(); document.addEventListener('scroll', e => { const el = e.target; if (!el || !el.classList) return; el.classList.add('scrolling'); clearTimeout(tm.get(el)); tm.set(el, setTimeout(() => el.classList.remove('scrolling'), 900)); }, true);
     ov = $('ov'); ctx = ov.getContext('2d');
     UI.lang();
     $('search').addEventListener('input', search); $('search').addEventListener('keydown', e => { if (e.key === 'Enter') { const f = $('sugg').querySelector('.sg'); if (f) f.click(); } if (e.key === 'Escape') { $('search').blur(); $('sugg').hidden = true; } });
