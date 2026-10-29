@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title id="pageTitle">태양계 — Solar System</title>
+<title id="pageTitle">wiiiv 태양계 — Solar System</title>
 <style>
 :root { --bg: #000; --panel: rgba(10, 13, 22, 0.78); --panel2: rgba(18, 22, 36, 0.92); --line: rgba(150, 170, 220, 0.16); --line2: rgba(150, 170, 220, 0.3);
   --fg: #e9edf7; --dim: #93a0bf; --dim2: #67728f; --acc: #ffcf6e; --acc2: #7fb4ff; --good: #7fe0b0; --r: 14px; --side: 380px; }
@@ -25,8 +25,10 @@ input { font: inherit; color: inherit; }
 /* 위 */
 #top { position: fixed; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 10px; align-items: flex-start; pointer-events: none; z-index: 5; }
 #top > * { pointer-events: auto; }
-#brand { padding: 9px 14px 8px; display: flex; flex-direction: column; min-width: 0; cursor: pointer; }
+#brand { padding: 8px 14px 8px 10px; display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; min-width: 0; cursor: pointer; }
+#brand img { grid-row: 1 / span 2; width: 34px; height: auto; filter: drop-shadow(0 0 6px rgba(160, 110, 255, .35)); }
 #brand b { font-size: 15.5px; letter-spacing: .02em; font-weight: 700; white-space: nowrap; }
+#brand b .w, #loading .w { font-weight: 800; letter-spacing: .01em; background: linear-gradient(90deg, #ff9a3d, #ff4fa0 38%, #9a6bff 68%, #3fd6d0); -webkit-background-clip: text; background-clip: text; color: transparent; }
 #brand b i { font-style: normal; color: var(--acc); }
 #brand span { color: var(--dim); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #searchBox { position: relative; flex: 0 1 300px; min-width: 0; }
@@ -147,6 +149,9 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 #loading.done { opacity: 0; pointer-events: none; }
 #loading .t { text-align: center; color: var(--dim); font-size: 13px; letter-spacing: .1em; }
 #loading .t b { display: block; color: var(--fg); font-size: 22px; letter-spacing: .3em; font-weight: 300; margin-bottom: 14px; }
+#loading .lg { width: 84px; height: auto; display: block; margin: 0 auto 14px; animation: lgGlow 2.4s ease-in-out infinite; }
+#loading .w { display: block; font-size: 30px; letter-spacing: .04em; margin-bottom: 6px; }
+@keyframes lgGlow { 0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 120, 160, .25)); transform: scale(1); } 50% { filter: drop-shadow(0 0 22px rgba(140, 120, 255, .55)); transform: scale(1.04); } }
 #loading .pg { width: 180px; height: 2px; background: rgba(255,255,255,.08); margin: 16px auto 0; overflow: hidden; border-radius: 2px; }
 #loading .pg i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--acc2), var(--acc)); transition: width .3s; }
 #nogl { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--dim); }
@@ -170,8 +175,7 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 @media (max-width: 760px) {
   :root { --side: 100%; }
   #top { gap: 6px; left: 8px; right: 8px; }
-  #brand { padding: 0; width: 40px; height: 40px; align-items: center; justify-content: center; } #brand span { display: none; } #brand b { font-size: 0; }
-  #brand b::before { content: ''; width: 18px; height: 18px; border-radius: 50%; display: block; background: radial-gradient(circle at 35% 35%, #fff6d8, #ffb43a 55%, #ff7a12); box-shadow: 0 0 12px #ff9a2a; }
+  #brand { padding: 0; width: 40px; height: 40px; display: grid; place-items: center; grid-template-columns: 1fr; } #brand span, #brand b { display: none; } #brand img { width: 28px; grid-row: auto; }
   #searchBox { flex: 1 1 auto; }
   .tb .lbl { display: none; }
   .tb { padding: 0; width: 40px; justify-content: center; }
@@ -203,7 +207,7 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 <canvas id="gl"></canvas>
 <canvas id="ov"></canvas>
 <div id="top">
-  <div id="brand" class="glass"><b id="brandT">태양계</b><span id="brandS"></span></div>
+  <div id="brand" class="glass"><img id="brandLogo" alt="wiiiv"><b id="brandT">태양계</b><span id="brandS"></span></div>
   <div id="searchBox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="search" autocomplete="off" spellcheck="false"><div id="sugg" class="glass" hidden></div></div>
   <div id="tools"></div>
 </div>
@@ -214,8 +218,11 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 <div id="surf" class="glass" hidden></div>
 <div id="timebar" class="glass"></div>
 <div id="toast" class="glass"></div>
-<div id="loading"><div class="t"><b id="ldT">SOLAR SYSTEM</b><span id="ldS"></span><div class="pg"><i id="ldP"></i></div></div></div>
+<div id="loading"><div class="t"><img class="lg" id="ldLogo" alt="wiiiv"><span class="w">wiiiv</span><b id="ldT">SOLAR SYSTEM</b><span id="ldS"></span><div class="pg"><i id="ldP"></i></div></div></div>
 <script>
+// wiiiv 로고 (원본: wiiiv/brand/originals/wiiiv-logo-master.png 를 128px 로 줄인 사본)
+const WIIIV_LOGO = 'data:image/webp;base64,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';
+
 // ───────────────────────── 수학 (배열 [x,y,z], 4×4 는 열 우선 Float64Array) ─────────────────────────
 const D2R = Math.PI / 180, R2D = 180 / Math.PI, TAU = Math.PI * 2;
 const AU = 149597870.7, C_KMS = 299792.458, G_SI = 6.6743e-11, DAY = 86400;
@@ -2596,8 +2603,8 @@ const UI = {};
     $('brand').onclick = () => UI.go(BY.sun, BY.neptune.rel ? len(BY.neptune.pos) * 2.4 : 1e10);
   };
   UI.lang = () => {
-    document.documentElement.lang = LG; $('pageTitle').textContent = T().title + ' — Solar System';
-    $('brandT').innerHTML = T().title; $('brandS').textContent = T().sub; $('search').placeholder = T().search;
+    document.documentElement.lang = LG; $('pageTitle').textContent = 'wiiiv ' + T().title + (LG === 'en' ? '' : ' — Solar System');
+    $('brandT').innerHTML = '<span class="w">wiiiv</span> ' + T().title; $('brandLogo').src = WIIIV_LOGO; $('ldLogo').src = WIIIV_LOGO; $('ldT').textContent = T().title; $('brandS').textContent = T().sub; $('search').placeholder = T().search;
     const tools = ['orbits', 'labels', 'gravity', 'missions', 'learn'];
     $('tools').innerHTML = tools.map(k => `<button class="tb glass${APP.show[k] ? ' on' : ''}" data-k="${k}">${ICON[k]}<span class="lbl">${T()[k]}</span></button>`).join('') + `<button class="tb glass" data-k="more">${ICON.more}</button>`;
     $('tools').querySelectorAll('.tb').forEach(b => setTip(b, b.dataset.k));
@@ -12162,7 +12169,8 @@ function boot() {
   if (!QS.has('nointro')) setTimeout(() => { CAM.flyTo(BY.sun, 8.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 7 }); setTimeout(() => { UI.select(BY.sun); let seen = 0; try { seen = +localStorage.getItem('wiiiv-solar-seen') || 0; localStorage.setItem('wiiiv-solar-seen', seen + 1); } catch { /* 무시 */ } if (seen < 2) UI.toast(T().clickHint, 6000); }, 6500); }, 2600);
 }
 async function loadAssets() {
-  const ld = $('ldP'); let n = 0; const tot = 8; const step = () => { n++; ld.style.width = Math.min(100, n / tot * 100) + '%'; if (n >= 4) $('loading').classList.add('done'); };
+  const ld = $('ldP'); let n = 0; const tot = 8; const t0 = performance.now(); const done = () => setTimeout(() => $('loading').classList.add('done'), Math.max(0, 1800 - (performance.now() - t0))); // 로고가 잠깐은 보이게
+  const step = () => { n++; ld.style.width = Math.min(100, n / tot * 100) + '%'; if (n === 4) done(); };
   $('ldS').textContent = T().loading;
   const lo = ['sun', 'mercury', 'venus', 'earth', 'moon', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
   // 하늘
