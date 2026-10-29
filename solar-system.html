@@ -12139,14 +12139,14 @@ function boot() {
   simAt(APP.d);
   UI.init();
   // 처음: 태양계 위에서 지구로
-  CAM.set(BY.sun, 7.5e9, [0.08, -0.42, 0.9]);
+  CAM.set(BY.sun, 3.2e10, [0.05, -0.3, 0.95]); // 멀리 위에서 시작해 태양계 전체로 내려옴
   CAM.update(0);
   if (!QS.has('noassets')) { loadAssets(); MIS.init(); } else $('loading').classList.add('done');
   input(cv);
   if (QS.has('manual')) { // 시험용: 장면을 손으로 넘김
     window.step = (n = 1, dt = 1 / 30) => { for (let i = 0; i < n; i++) { APP.last = performance.now() - dt * 1000; loop(performance.now(), true); } };
   } else requestAnimationFrame(loop);
-  if (!QS.has('nointro')) setTimeout(() => { CAM.flyTo(BY.earth, null, { dur: 8 }); setTimeout(() => { UI.select(BY.earth); let seen = 0; try { seen = +localStorage.getItem('wiiiv-solar-seen') || 0; localStorage.setItem('wiiiv-solar-seen', seen + 1); } catch { /* 무시 */ } if (seen < 2) UI.toast(T().clickHint, 6000); }, 6500); }, 2600);
+  if (!QS.has('nointro')) setTimeout(() => { CAM.flyTo(BY.sun, 8.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 7 }); setTimeout(() => { UI.select(BY.sun); let seen = 0; try { seen = +localStorage.getItem('wiiiv-solar-seen') || 0; localStorage.setItem('wiiiv-solar-seen', seen + 1); } catch { /* 무시 */ } if (seen < 2) UI.toast(T().clickHint, 6000); }, 6500); }, 2600);
 }
 async function loadAssets() {
   const ld = $('ldP'); let n = 0; const tot = 8; const step = () => { n++; ld.style.width = Math.min(100, n / tot * 100) + '%'; if (n >= 4) $('loading').classList.add('done'); };
