@@ -1078,7 +1078,7 @@ void main(){
 SH.sunF = `
 in vec3 vP; in vec3 vN; in vec3 vL; in vec2 vUV;
 uniform vec4 uT; uniform vec3 uC; uniform float uR; uniform float uI; uniform mat3 uRot; uniform float uPx; uniform float uAct;
-uniform vec4 uSpots[16]; uniform int uNS;
+uniform vec4 uSpots[16]; uniform int uNS; uniform vec4 uFlare; uniform vec4 uWave; uniform vec2 uWaveR; uniform float uW;
 out vec4 o;
 ${GLX.LOGDEPTH_F}
 ${GLX.NOISE}
@@ -1099,21 +1099,32 @@ void main(){
   for (int i = 0; i < 16; i++){ if (i >= uNS) break; vec4 sp = uSpots[i]; if (sp.w <= 0.) continue;
     float ang = acos(clamp(dot(q, sp.xyz), -1., 1.)); float r = ang / sp.w;
     vec3 t1 = normalize(cross(sp.xyz, vec3(0, 0, 1))), t2 = cross(sp.xyz, t1); float th = atan(dot(q, t2), dot(q, t1));
-    float fil = .75 + .25 * sin(th * 90. + vnoise(vec3(th * 8., r * 6., 1.)) * 6.);
-    umbra = max(umbra, 1. - smoothstep(.32, .42, r + (vnoise(q * 900.) - .5) * .06));
-    pen = max(pen, (1. - smoothstep(.85, 1.05, r + (vnoise(q * 400.) - .5) * .12)) * fil);
-    fac += (1. - smoothstep(1., 3.5, r)) * smoothstep(.9, 1.3, r);
+    // 반그림자: 바깥으로 뻗는 실(필라멘트), 가장자리가 들쭉날쭉
+    float fil = .62 + .38 * smoothstep(-.3, .9, sin(th * 70. + vnoise(vec3(th * 6., r * 4., float(i))) * 7.) * (.6 + .4 * vnoise(vec3(th * 30., r * 9., 3.))));
+    float edge = (vnoise(vec3(th * 7., float(i), 1.)) - .5) * .18 + (vnoise(q * 400.) - .5) * .1;
+    float u = 1. - smoothstep(.30, .40, r + (vnoise(q * 900.) - .5) * .06 + edge * .4);
+    // 빛다리: 본그림자를 가로지르는 밝은 띠 (큰 흑점만)
+    float br = 1. - smoothstep(.0, .035, abs(dot(q - sp.xyz, normalize(t1 * .8 + t2 * .6)) / sp.w - .05 * sin(th * 3.))); u *= 1. - br * step(.03, sp.w) * .85;
+    umbra = max(umbra, u);
+    pen = max(pen, (1. - smoothstep(.88, 1.04, r + edge)) * fil);
+    fac += (1. - smoothstep(1., 3.2, r)) * smoothstep(.95, 1.3, r);
   }
   // 백반: 활동 영역 둘레가 가장자리에서 밝아짐
   float facN = smoothstep(.0, .3, fbm(q * 9. + 3., 4) - .5);
   // 중간 크기 얼룩(메소쌀알·네트워크): 멀리서도 표면이 살아 보이게
   float meso = fbm(q * 160. + vec3(0, 0, uT.x * .3), 4), net = (1. - smoothstep(.0, .05, w2.y - w2.x)) * (.5 + .5 * vnoise(q * 300.));
   float I = .66 + .30 * gran + .10 * (meso - .5) * (1. - gFade * .6) + .04 * sup + .035 * net + .03 * g2;
-  I *= 1. - pen * .5 - umbra * .42;
+  I *= 1. - pen * .52 - umbra * .40; I = mix(I, I * .08, umbra); // 본그림자는 거의 검게 (실제 광구의 약 20%, 노출로 더 어둡게 보임)
   I += (fac * .6 + facN * .5) * pow(1. - mu, 1.5) * .35;
   // 주변 감광 (파장별: 파랑이 더 많이 어두워짐)
   vec3 u = vec3(.50, .62, .78); vec3 ld = 1. - u * (1. - pow(mu, .8));
   vec3 col = vec3(1., .52, .15) * I * ld * vec3(1., 1. - .25 * (1. - mu), 1. - .5 * (1. - mu));
+  col = mix(col, col * vec3(.9, .55, .35), umbra * .6); // 본그림자는 붉게
+  // 플레어: 활동 영역 위 두 줄기 하얀 띠(플레어 리본) + 번쩍임, 그리고 표면을 퍼지는 충격파
+  if (uFlare.w > 0.){ float fa = acos(clamp(dot(q, uFlare.xyz), -1., 1.)); vec3 ft = normalize(cross(uFlare.xyz, vec3(0, 0, 1)));
+    float s = dot(q - uFlare.xyz, ft); float rib = exp(-pow((abs(s) - .012) / .004, 2.)) * exp(-fa * fa / .0012) * (.6 + .4 * vnoise(q * 600. + uW));
+    col += vec3(1., .9, .75) * (rib * 2.2 + exp(-fa / .004) * 1.6) * uFlare.w; }
+  if (uWaveR.y > 0.){ float wa = acos(clamp(dot(q, uWave.xyz), -1., 1.)); col += vec3(1., .85, .6) * exp(-pow((wa - uWaveR.x) / .01, 2.)) * uWaveR.y * .35 * (.6 + .4 * vnoise(q * 120.)); }
   o = vec4(col * uI, 1.);
   logDepthF();
 }`;
@@ -1126,28 +1137,51 @@ ${GLX.LOGDEPTH_V}
 void main(){ vQ = aPos * uSize; vP = uC + (uRx * aPos.x + uRy * aPos.y) * uSize; gl_Position = uVP * vec4(vP, 1.); logDepthV(); }`;
 SH.coronaF = `
 in vec2 vQ; in vec3 vP;
-uniform vec4 uT; uniform float uI; uniform float uAct; uniform vec2 uPoleS; uniform float uOcc;
+uniform vec4 uT; uniform float uI; uniform float uAct; uniform vec2 uPoleS; uniform float uOcc; uniform float uW; uniform float uNear;
+uniform vec4 uProm[8]; uniform int uNP; uniform vec4 uCME;
 out vec4 o;
 ${GLX.LOGDEPTH_F}
 ${GLX.NOISE}
+float wrapA(float x){ return atan(sin(x), cos(x)); }
 void main(){
   float r = length(vQ); if (r < 1.0) discard;
-  float a = atan(vQ.y, vQ.x);
-  // 극 방향 (화면 위 태양 북극) 기준 위도
-  float pa = atan(uPoleS.y, uPoleS.x); float rel = a - pa; float latLike = abs(cos(rel));
-  // 스트리머: 적도 쪽 길게, 극 쪽 짧은 깃털
-  float n1 = fbm(vec3(cos(a) * 3., sin(a) * 3., uT.z), 5);
-  float n2 = fbm(vec3(cos(a) * 14., sin(a) * 14., r * .5 + uT.z * .5), 4);
+  float a = atan(vQ.y, vQ.x); float k = r - 1.;
+  float pa = atan(uPoleS.y, uPoleS.x); float latLike = abs(cos(a - pa));
+  // 코로나 줄기: 적도 쪽 길게, 극 쪽 짧은 깃털 — 천천히 흐름
+  float t = uT.z + uW * .004;
+  float n1 = fbm(vec3(cos(a) * 3., sin(a) * 3., t), 5);
+  float n2 = fbm(vec3(cos(a) * 14., sin(a) * 14., r * .5 - uW * .03), 4);
   float streak = mix(.4, 1.6, n1) * (.7 + .6 * n2);
   float eq = mix(1., .35, pow(latLike, 3.) * (1. - uAct * .6));
-  float k = (r - 1.);
-  float K = pow(r, -3.2) * 1.0 + pow(r, -6.) * 3.;
-  float cor = K * streak * mix(.6, 1.6, eq) * (1. - .6 * smoothstep(1., 2.5, r) * pow(latLike, 4.) );
-  // 홍염: 가장자리 바로 위 붉은 고리·불꽃
-  float pn = fbm(vec3(cos(a) * 40., sin(a) * 40., uT.w), 5);
-  float prom = smoothstep(.62, .78, pn) * exp(-k * 28. / (.4 + pn)) * smoothstep(1.0, 1.004, r);
-  float spic = (1. - smoothstep(1.0, 1.02, r)) * (.6 + .4 * fbm(vec3(cos(a) * 300., sin(a) * 300., uT.w * 3.3), 2));
-  vec3 col = vec3(1., .96, .9) * cor * .25 + vec3(1., .25, .15) * (prom * 3. + spic * .9);
+  float K = pow(r, -3.2) + pow(r, -6.) * 3.;
+  float cor = K * streak * mix(.6, 1.6, eq) * (1. - .6 * smoothstep(1., 2.5, r) * pow(latLike, 4.));
+  // 채층: 가장자리 바로 위 얇은 붉은 층 + 풀잎처럼 일렁이는 스피큘
+  float chrom = exp(-k / .0035) * 1.2;
+  float sp1 = fbm(vec3(a * 420., k * 40., uW * .8), 3), sp2 = vnoise(vec3(a * 1300., uW * 1.7, 0.));
+  float spic = exp(-k / (.006 + .012 * sp1)) * (.45 + .55 * sp2) * smoothstep(1.0, 1.0015, r);
+  // 홍염: 고리 아치(1) 와 분출 기둥(-1) — 실처럼 꼬인 결이 천천히 꿈틀
+  float prom = 0.;
+  for (int i = 0; i < 8; i++){ if (i >= uNP) break; vec4 P = uProm[i]; float da = wrapA(a - P.x); float w = P.z, h = P.y, vis = abs(P.w);
+    if (abs(da) > w * 1.6 + .02) continue;
+    float x = da / w; float wob = (fbm(vec3(x * 3., k * 30., uW * .12 + float(i) * 7.), 4) - .5);
+    if (P.w > 0.){ // 아치: 두 발이 표면에 붙은 고리
+      float arch = h * sqrt(max(1. - x * x, 0.)); float d = abs(k - arch * (1. + wob * .35)) / (h * .06 + .0012);
+      float body = exp(-d * d) * smoothstep(1.05, .85, abs(x));
+      float legs = exp(-pow((abs(x) - .9) / .12, 2.)) * smoothstep(arch + .01, 0., k);
+      float thread = .35 + .65 * smoothstep(.3, .8, vnoise(vec3(x * 60., k * 500., uW * .2)));
+      prom += (body + legs * .6) * thread * vis * 1.6;
+    } else { // 분출: 위로 갈수록 넓어지며 흩어지는 기둥
+      float fb = fbm(vec3(x * 3.5, k * 16. - uW * .2, float(i)), 4); float col = exp(-pow(x / (.25 + k / h * .5 + wob * .25), 2.)) * exp(-k / (h * (1.3 + wob))) * (.45 + .55 * fb) * (.7 + .3 * sin(x * 22. + fb * 7.));
+      prom += col * vis * 3.;
+    }
+  }
+  // 코로나 질량 방출: 화면에서 그 방향으로 부풀어 나가는 고리 모양 구름
+  float cme = 0.;
+  if (uCME.z > 0.){ float da = wrapA(a - uCME.x); float ang = exp(-pow(da / uCME.w, 2.));
+    float shell = exp(-pow((r - uCME.y) / (.06 + uCME.y * .05), 2.)); float core = exp(-pow((r - uCME.y * .72) / (.05 + uCME.y * .04), 2.)) * .5;
+    float tex = .55 + .45 * fbm(vec3(da * 8., r * 3. - uW * .3, 1.), 4);
+    cme = (shell + core) * ang * tex * uCME.z * smoothstep(1., 1.1, r); }
+  vec3 col = vec3(1., .96, .9) * (cor * .25 * (1. - .55 * uNear * exp(-k / .08)) + cme * 2.2) + vec3(1., .22, .14) * (chrom * 2.5 * uNear + spic * 1.6 * (.4 + .6 * uNear)) + vec3(1., .13, .08) * prom * 7.;
   o = vec4(col * uI * uOcc, 0.);
   logDepthF();
 }`;
@@ -1374,14 +1408,14 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
       const C = sunC, d = len(C), pr = sun.R / d * pxPerRad; sun.scr = projectPt(VPd, C); sun.pr = pr; sun.dist = d;
       if (pr > 0.5 && !RN.skip.has('sun')) {
         const mesh = pr > 300 ? sphHi : pr > 40 ? sphMid : sphLo;
-        GLX.use(P.sun, { uVP: VP, uRot: GLX.mat3(sun.R3), uS: [sun.R, sun.R, sun.R], uC: C, uT: RN.uT, uR: sun.R, uI: 60 * S.sunK, uPx: 1 / Math.max(pr, 1), uAct: S.solarAct, uLogF: RN.logF, uSpots: SUNAR.spots, uNS: SUNAR.nSpots });
+        GLX.use(P.sun, { uVP: VP, uRot: GLX.mat3(sun.R3), uS: [sun.R, sun.R, sun.R], uC: C, uT: RN.uT, uR: sun.R, uI: 60 * S.sunK * (1 - 0.5 * smooth(clamp((pr - 60) / 300, 0, 1))), uPx: 1 / Math.max(pr, 1), uAct: S.solarAct, uLogF: RN.logF, uSpots: SUNAR.spots, uNS: SUNAR.nSpots, uFlare: SUNAR.flare, uWave: SUNAR.wave, uWaveR: SUNAR.waveR, uW: SUNAR.w % 1000 });
         GLX.draw(mesh);
       }
       // 코로나: 화면 정렬
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false); gl.disable(gl.CULL_FACE);
       const right = [S.R[0], S.R[3], S.R[6]], up = [S.R[1], S.R[4], S.R[7]];
       const pole = m3v(sun.R3, [0, 0, 1]); const poleS = [dot(pole, right), dot(pole, up)];
-      if (!RN.skip.has('corona')) GLX.use(P.corona, { uVP: VP, uC: C, uRx: scl(right, sun.R), uRy: scl(up, sun.R), uSize: 7, uT: RN.uT, uI: (0.3 + 2.2 * Math.pow(S.eclipse || 0, 6)) / RN.expo * S.sunK, uAct: S.solarAct, uPoleS: poleS, uOcc: 1, uLogF: RN.logF });
+      if (!RN.skip.has('corona')) GLX.use(P.corona, { uVP: VP, uC: C, uRx: scl(right, sun.R), uRy: scl(up, sun.R), uSize: 7, uT: RN.uT, uI: (0.3 + 2.2 * Math.pow(S.eclipse || 0, 6)) / RN.expo * S.sunK, uAct: S.solarAct, uPoleS: poleS, uOcc: 1, uLogF: RN.logF, uW: SUNAR.w % 1000, uNear: SUNAR.near, uProm: SUNAR.proms, uNP: SUNAR.nProms, uCME: SUNAR.cme });
       if (!RN.skip.has('corona')) GLX.draw(RN.dotMesh);
       gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
     }
@@ -1504,7 +1538,7 @@ const RN = { shift: [0, 0], fov: 50 * D2R, expo: 1, expoT: 1, bloomK: 0.06, texs
     if (RN.meter && RN.meterN % 8 === 0 && bloom.length > 3) { const tg = bloom[bloom.length - 1]; gl.bindFramebuffer(gl.FRAMEBUFFER, tg.fb);
       try { const px = new Float32Array(tg.w * tg.h * 4); gl.readPixels(0, 0, tg.w, tg.h, gl.RGBA, gl.FLOAT, px); let s = 0, n = 0; for (let i = 0; i < px.length; i += 4) { const l = 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]; if (isFinite(l)) { s += Math.log(1e-4 + l); n++; } } RN.avgLum = Math.exp(s / Math.max(n, 1)); } catch (e) { RN.meter = false; } }
     GLX.bind(null);
-    GLX.use(P.tone, { uSrc: hdr, uBloom: bloom[0] || hdr, uExpo: RN.expo, uBloomK: RN.bloomK * (1 - 0.9 * smooth(clamp(((BY.sun.pr || 0) * (1 - (S.eclipse || 0)) - 60) / 400, 0, 1))), uT: RN.uT });
+    GLX.use(P.tone, { uSrc: hdr, uBloom: bloom[0] || hdr, uExpo: RN.expo, uBloomK: RN.bloomK * (1 - 0.92 * smooth(clamp(((BY.sun.pr || 0) * (1 - (S.eclipse || 0)) - 25) / 200, 0, 1))), uT: RN.uT });
     GLX.fsq();
   }
 })();
@@ -1786,67 +1820,119 @@ const OTEXT = {
 };
 const OTXT = () => OTEXT[LG] || OTEXT.en;
 
-// ───────────────────────── 태양 활동 영역: 흑점 쌍·코로나 고리·플레어 ─────────────────────────
-// 날짜에 따라 정해지는(같은 날이면 같은) 활동 영역을 만들고, 위도별 차등 자전으로 흘려 보낸다.
-const SUNAR = { list: [], spots: new Float32Array(64), nSpots: 0 };
+// ───────────────────────── 태양 활동: 흑점 쌍·코로나 고리(흐름)·플레어·코로나 질량 방출·홍염 ─────────────────────────
+// 활동 영역은 날짜로 정해지고(같은 날이면 같은 모습) 위도별 차등 자전으로 흘러간다.
+// 고리 속 플라스마 흐름·플레어·CME·홍염의 꿈틀거림은 보기 좋게 실제 시계(SUNAR.w, 초)로 움직인다.
+const SUNAR = { list: [], spots: new Float32Array(64), nSpots: 0, w: 0, ev: null, nextEv: 12, proms: new Float32Array(32), nProms: 0, flare: [0, 0, 1, 0], wave: [0, 0, 1, 0], waveR: [0, 0], cme: [0, 0, 0, 0], near: 0 };
 (function () {
   const hash = n => { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
-  // 위도별 자전 각속도 (도/일, 항성) — 적도 14.71, 극 쪽 느림 (Snodgrass)
   const omega = lat => { const s2 = Math.sin(lat * D2R) ** 2; return 14.713 - 2.396 * s2 - 1.787 * s2 * s2; };
-  const W0 = 14.1844; // IAU 자전 (본체 좌표의 기준)
-  // 태양 주기 위상 (2025년 무렵 극대) → 활동 세기
+  const W0 = 14.1844;
   const activity = d => { const yr = 2000 + d / 365.25; const ph = ((yr - 2019.9) / 11.0) % 1; return 0.15 + 0.85 * Math.pow(Math.sin(Math.PI * Math.min(1, ph * 1.6)), 2); };
   SUNAR.activity = activity;
-  SUNAR.update = d => {
-    const act = activity(d); const list = [];
-    // 2일마다 하나씩 태어날 기회, 수명 15~70일
-    const k1 = Math.floor(d / 2);
+  const ll2v = (la, lo) => [Math.cos(la * D2R) * Math.cos(lo * D2R), Math.cos(la * D2R) * Math.sin(lo * D2R), Math.sin(la * D2R)];
+  // 앞(s=-1)·뒤(s=1) 흑점 위치 (본체 좌표)
+  const foot = (r, s) => { const dl = r.sep * R2D, t = r.tilt * D2R; return ll2v(r.lat + s * dl * 0.5 * Math.sin(t), r.lon + s * dl * 0.5 * Math.cos(t) / Math.cos(r.lat * D2R)); };
+  SUNAR.update = (d, dt = 1 / 60) => {
+    SUNAR.w += dt;
+    const act = activity(d); const list = []; const k1 = Math.floor(d / 2);
     for (let k = k1 - 40; k <= k1; k++) {
       if (hash(k * 1.7) > act * 0.85) continue;
       const born = k * 2 + hash(k * 3.1) * 2, life = 15 + hash(k * 5.3) * 55, age = d - born; if (age < 0 || age > life) continue;
       const hemi = hash(k * 7.7) < 0.5 ? -1 : 1; const lat = hemi * (6 + hash(k * 9.1) * 26); const lon0 = hash(k * 11.3) * 360;
-      const lon = lon0 + (omega(lat) - W0) * age; // 본체 좌표에서 흘러감
-      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const size = (0.012 + hash(k * 13.7) * 0.03) * grow;
-      const tilt = hemi * (4 + hash(k * 2.9) * 10); const sep = 0.04 + hash(k * 4.4) * 0.06;
+      const lon = lon0 + (omega(lat) - W0) * age;
+      const grow = Math.min(1, age / 4) * Math.min(1, (life - age) / 8); const size = (0.02 + hash(k * 13.7) * 0.045) * grow; // 예전보다 약 1.6배
+      const tilt = hemi * (4 + hash(k * 2.9) * 10); const sep = 0.05 + hash(k * 4.4) * 0.07;
       list.push({ k, lat, lon, size, tilt, sep, grow, hemi, born, life });
     }
     list.sort((a, b) => b.size - a.size); SUNAR.list = list.slice(0, 8);
-    // 흑점 쌍 → 셰이더 유니폼 (본체 좌표 방향, 반지름(라디안), 세기)
     let n = 0; const S = SUNAR.spots; S.fill(0);
-    for (const r of SUNAR.list) {
-      const dl = r.sep * R2D; const la = r.lat * D2R, t = r.tilt * D2R;
-      for (const [s, f] of [[-1, 1], [1, 0.7]]) { // 앞 흑점이 더 큼
-        const lat = (r.lat + s * dl * 0.5 * Math.sin(t)) * D2R, lon = (r.lon + s * dl * 0.5 * Math.cos(t) / Math.cos(la)) * D2R;
-        if (n >= 16) break; S[n * 4] = Math.cos(lat) * Math.cos(lon); S[n * 4 + 1] = Math.cos(lat) * Math.sin(lon); S[n * 4 + 2] = Math.sin(lat); S[n * 4 + 3] = r.size * f; n++;
-      }
-    }
+    for (const r of SUNAR.list) for (const [s, f] of [[-1, 1], [1, 0.72]]) { if (n >= 16) break; const v = foot(r, s); S[n * 4] = v[0]; S[n * 4 + 1] = v[1]; S[n * 4 + 2] = v[2]; S[n * 4 + 3] = r.size * f; n++; }
     SUNAR.nSpots = n;
+    const sun = BY.sun; const camD = len(sub(CAM.pos, sun.pos)); SUNAR.near = clamp((40 - camD / sun.R) / 20, 0, 1);
+    // 저절로 일어나는 플레어 (가까이 있을 때만, 15~35초마다)
+    if (SUNAR.near > 0 && !SUNAR.ev && SUNAR.w > SUNAR.nextEv && SUNAR.list.length) SUNAR.trigger(Math.random() < 0.35);
+    events(); proms(d);
   };
-  // 코로나 고리: 앞·뒤 흑점을 잇는 자기장 아치 여러 가닥 (카메라가 태양 가까이 있을 때)
-  SUNAR.lines = (cp) => {
-    const sun = BY.sun, d = len(sub(sun.pos, cp)); if (d > sun.R * 40) return;
-    const fade = clamp((40 - d / sun.R) / 20, 0, 1); const C = sub(sun.rp || sun.pos, cp); const R3 = sun.R3;
-    const tday = APP.d;
-    for (const r of SUNAR.list) {
-      if (r.size < 0.01) continue;
-      const la = r.lat * D2R, t = r.tilt * D2R, dl = r.sep * R2D;
-      const foot = s => { const lat = (r.lat + s * dl * 0.5 * Math.sin(t)) * D2R, lon = (r.lon + s * dl * 0.5 * Math.cos(t) / Math.cos(la)) * D2R; return [Math.cos(lat) * Math.cos(lon), Math.cos(lat) * Math.sin(lon), Math.sin(lat)]; };
-      const A = foot(-1), B = foot(1);
-      // 플레어: 영역마다 가끔 (몇십 분 동안 밝게)
-      const fl = Math.floor(tday * 6 + r.k); const fp = hash(fl * 1.31 + r.k) < 0.05 * SUNAR.activity(tday) ? (1 - ((tday * 6 + r.k) % 1)) : 0;
-      const strands = 13;
-      for (let j = 0; j < strands; j++) {
-        const off = (j / (strands - 1) - 0.5) * 0.6; const hgt = r.sep * (0.35 + 0.25 * hash(r.k * 7 + j)) * (0.6 + 0.4 * Math.cos(off * 2.4));
-        const n = 40, pts = new Float64Array(n * 3), al = new Float32Array(n);
-        const side = nrm(crs(sub(B, A), add(A, B)));
-        for (let i = 0; i < n; i++) { const u = i / (n - 1); let p = nrm(add(lerp3(A, B, u), scl(side, off * r.sep * 0.6 * Math.sin(Math.PI * u))));
-          p = scl(p, 1 + hgt * Math.sin(Math.PI * u)); const w = add(C, m3v(R3, scl(p, sun.R))); pts[i * 3] = w[0]; pts[i * 3 + 1] = w[1]; pts[i * 3 + 2] = w[2]; al[i] = 0.35 + 0.65 * Math.sin(Math.PI * u) ** 0.5; }
-        const hot = fp > 0 ? 1 + fp * 9 : 1; const k = 3.5 * r.grow * fade * hot * (0.6 + 0.4 * hash(r.k * 13 + j));
-        RN.addLine(pts, al, [k * 1.0, k * (0.62 + 0.3 * fp), k * (0.3 + 0.6 * fp), 0.35 * fade], 1.1 + fp * 1.5, false);
-      }
+  // 플레어 (+ 코로나 질량 방출). 보이는 쪽, CME 는 되도록 가장자리 가까운 활동 영역에서
+  SUNAR.trigger = (cme, forced) => {
+    const sun = BY.sun, vd = nrm(sub(CAM.pos, sun.pos)); let best = null, bs = -1e9;
+    SUNAR.list.forEach((r, i) => { const n = m3v(sun.R3, ll2v(r.lat, r.lon)); const c = dot(n, vd); if (c < 0.05) return; const s = r.size * 10 + (cme ? 1 - c : 0) + Math.random() * 0.3; if (s > bs) { bs = s; best = i; } });
+    if (best == null) { SUNAR.nextEv = SUNAR.w + 8; return false; }
+    SUNAR.ev = { i: best, t0: SUNAR.w, cme: !!cme, big: forced ? 1.4 : 0.7 + Math.random() * 0.6 }; SUNAR.nextEv = SUNAR.w + 15 + Math.random() * 20; return true;
+  };
+  function events() {
+    SUNAR.flare = [0, 0, 1, 0]; SUNAR.wave = [0, 0, 1, 0]; SUNAR.waveR = [0, 0]; SUNAR.cme = [0, 0, 0, 0];
+    const e = SUNAR.ev; if (!e) return; const r = SUNAR.list[e.i]; const t = SUNAR.w - e.t0; if (!r || t > 16) { SUNAR.ev = null; return; }
+    const v = ll2v(r.lat, r.lon); const rise = smooth(clamp(t / 0.7, 0, 1)), decay = Math.exp(-Math.max(0, t - 0.7) / 2.2);
+    const I = rise * decay * e.big; SUNAR.flare = [v[0], v[1], v[2], I]; e.I = I;
+    // 표면을 따라 퍼지는 충격파 (모턴파): 반지름(라디안), 세기
+    if (t > 0.5 && t < 7) { SUNAR.wave = [v[0], v[1], v[2], 0]; SUNAR.waveR = [(t - 0.5) * 0.09, Math.max(0, 1 - (t - 0.5) / 6.5) * e.big]; }
+    if (e.cme && t > 1) { // 화면에서 그 영역 쪽 각도로 부풀어 나가는 구름
+      const sun = BY.sun; const n = m3v(sun.R3, v); const R = CAM.R; const right = [R[0], R[3], R[6]], up = [R[1], R[4], R[7]];
+      const ang = Math.atan2(dot(n, up), dot(n, right)); const tt = t - 1; SUNAR.cme = [ang, 1.05 + tt * 0.42 + tt * tt * 0.012, Math.max(0, 1 - tt / 15) * e.big, 0.35 + tt * 0.025];
     }
+  }
+  // 홍염: 가장자리 근처에 있는 것만, 화면 각도로 넘김 (각도, 높이, 폭, 세기×종류)
+  function proms(d) {
+    const sun = BY.sun, vd = nrm(sub(CAM.pos, sun.pos)); const R = CAM.R; if (!R) return; const right = [R[0], R[3], R[6]], up = [R[1], R[4], R[7]];
+    const P = SUNAR.proms; P.fill(0); let n = 0; const base = Math.floor(d / 9);
+    for (let j = 0; j < 48 && n < 8; j++) {
+      const k = base * 31 + j; const la = (hash(k * 1.3) - 0.5) * 120, lo = hash(k * 2.7) * 360 + (d - base * 9) * 1.5;
+      const nv = m3v(sun.R3, ll2v(la, lo)); const c = dot(nv, vd); const vis = 1 - smooth(clamp((Math.abs(c) - 0.02) / 0.3, 0, 1)); if (vis < 0.05) continue;
+      const ang = Math.atan2(dot(nv, up), dot(nv, right)); const type = hash(k * 5.1) < 0.6 ? 1 : -1; // 1 고리 아치, -1 분출 기둥
+      P[n * 4] = ang; P[n * 4 + 1] = 0.04 + hash(k * 3.3) * 0.1; P[n * 4 + 2] = 0.04 + hash(k * 4.4) * 0.07; P[n * 4 + 3] = vis * type; n++;
+    }
+    SUNAR.nProms = n;
+  }
+  // 코로나 고리: 발끝→꼭대기로 흐르는 플라스마 덩어리, 가닥마다 깜빡임, 플레어 때 하얗게
+  SUNAR.lines = cp => {
+    const sun = BY.sun, d = len(sub(sun.pos, cp)); if (d > sun.R * 40) return;
+    const fade = SUNAR.near; const C = sub(sun.rp || sun.pos, cp); const R3 = sun.R3; const w = SUNAR.w;
+    SUNAR.list.forEach((r, ri) => {
+      if (r.size < 0.012) return; const A = foot(r, -1), B = foot(r, 1);
+      const fp = SUNAR.ev && SUNAR.ev.i === ri ? (SUNAR.ev.I || 0) : 0;
+      const strands = 16;
+      for (let j = 0; j < strands; j++) {
+        const off = (j / (strands - 1) - 0.5) * 0.7; const hgt = r.sep * (0.3 + 0.35 * hash(r.k * 7 + j)) * (0.6 + 0.4 * Math.cos(off * 2.4)) * (1 + fp * 0.15);
+        const n = 48, pts = new Float64Array(n * 3), al = new Float32Array(n); const side = nrm(crs(sub(B, A), add(A, B)));
+        const ph = hash(r.k * 11 + j) * 10, sp = 0.18 + hash(r.k * 17 + j) * 0.25, dir = hash(r.k * 19 + j) < 0.5 ? 1 : -1;
+        const flick = 0.55 + 0.45 * Math.sin(w * (0.6 + hash(j * 3.1 + r.k) * 0.9) + ph);
+        for (let i = 0; i < n; i++) { const u = i / (n - 1); let p = nrm(add(lerp3(A, B, u), scl(side, off * r.sep * 0.6 * Math.sin(Math.PI * u))));
+          p = scl(p, 1 + hgt * Math.sin(Math.PI * u)); const q = add(C, m3v(R3, scl(p, sun.R))); pts[i * 3] = q[0]; pts[i * 3 + 1] = q[1]; pts[i * 3 + 2] = q[2];
+          const blob = Math.pow(0.5 + 0.5 * Math.sin(TAU * (u * 2.2 - w * sp * dir) + ph), 3); // 흐르는 밝은 덩어리
+          al[i] = (0.22 + 0.78 * blob) * (0.35 + 0.65 * Math.sin(Math.PI * u) ** 0.5); }
+        const k = (2.4 + 2.6 * flick) * r.grow * fade * (1 + fp * 8) * (0.6 + 0.4 * hash(r.k * 13 + j));
+        RN.addLine(pts, al, [k, k * (0.6 + 0.35 * fp), k * (0.28 + 0.65 * fp), 0.4 * fade], 1.1 + fp * 1.8, false);
+      }
+    });
+  };
+  // 화면 위 표시: 큰 흑점 옆에 지구 크기 비교, 플레어 알림
+  SUNAR.overlay = ctx => {
+    const sun = BY.sun; if (SUNAR.near < 0.5 || !SUNAR.list.length || SURF.on) return; const vd = nrm(sub(CAM.pos, sun.pos)); const T = SAT[LG] || SAT.en;
+    ctx.font = '600 12px system-ui, sans-serif';
+    for (const r of SUNAR.list.slice(0, 3)) {
+      const v = m3v(sun.R3, foot(r, -1)); if (dot(v, vd) < 0.25) continue; const p = RN.project(sub(add(sun.rp || sun.pos, scl(v, sun.R)), CAM.pos)); if (!p.on) continue;
+      const diam = 2 * r.size * sun.R; const ne = diam / 12742; if (ne < 1.5) continue; const rpx = r.size * sun.R / len(sub(CAM.pos, sun.pos)) * RN.pxPerRad;
+      ctx.globalAlpha = SUNAR.near * 0.9; ctx.strokeStyle = 'rgba(255,230,180,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x + rpx * 0.8, p.y - rpx * 0.8); ctx.lineTo(p.x + rpx + 24, p.y - rpx - 18); ctx.stroke();
+      ctx.fillStyle = '#ffe6b4'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.fillText(T.spot.replace('{n}', Math.round(ne)), p.x + rpx + 28, p.y - rpx - 20); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    }
+    if (SUNAR.ev && SUNAR.ev.I > 0.15) { const r = SUNAR.list[SUNAR.ev.i]; if (r) { const v = m3v(sun.R3, ll2v(r.lat, r.lon)); const p = RN.project(sub(add(sun.rp || sun.pos, scl(v, sun.R * 1.05)), CAM.pos)); if (p.on) { ctx.font = '700 13px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.shadowColor = '#000'; ctx.shadowBlur = 6; ctx.fillText(SUNAR.ev.cme ? T.cme : T.flare, p.x + 14, p.y + 26); ctx.shadowBlur = 0; } } }
   };
 })();
+const SAT = {
+  ko: { spot: '흑점군 — 지구 약 {n}개 크기', flare: '플레어!', cme: '플레어 + 코로나 질량 방출', act: '플레어 보기' },
+  en: { spot: 'Sunspot group — about {n} Earths across', flare: 'Flare!', cme: 'Flare + coronal mass ejection', act: 'Flare' },
+  ja: { spot: '黒点群 — 地球約{n}個分', flare: 'フレア！', cme: 'フレア＋コロナ質量放出', act: 'フレア' },
+  zh: { spot: '黑子群——约{n}个地球宽', flare: '耀斑！', cme: '耀斑＋日冕物质抛射', act: '耀斑' },
+  'zh-TW': { spot: '黑子群——約{n}個地球寬', flare: '閃焰！', cme: '閃焰＋日冕巨量噴發', act: '閃焰' },
+  es: { spot: 'Grupo de manchas — unas {n} Tierras', flare: '¡Fulguración!', cme: 'Fulguración + eyección de masa coronal', act: 'Fulguración' },
+  fr: { spot: 'Groupe de taches — environ {n} Terres', flare: 'Éruption !', cme: 'Éruption + éjection de masse coronale', act: 'Éruption' },
+  de: { spot: 'Fleckengruppe — etwa {n} Erden breit', flare: 'Flare!', cme: 'Flare + koronaler Massenauswurf', act: 'Flare' },
+  pt: { spot: 'Grupo de manchas — cerca de {n} Terras', flare: 'Erupção!', cme: 'Erupção + ejeção de massa coronal', act: 'Erupção' },
+  ru: { spot: 'Группа пятен — около {n} Земель', flare: 'Вспышка!', cme: 'Вспышка + выброс корональной массы', act: 'Вспышка' },
+  vi: { spot: 'Nhóm vết đen — cỡ {n} Trái Đất', flare: 'Bùng nổ!', cme: 'Bùng nổ + phóng khối lượng vành nhật hoa', act: 'Bùng nổ' },
+};
 
 // ───────────────────────── 카메라: 공전 시점·자유 시점·비행 ─────────────────────────
 const CAM = { pan: [0, 0, 0], fovT: 50,
@@ -2036,7 +2122,7 @@ TIPS.ko = {
   learn: '중력과 상대성 수업 9개 — 장면이 저절로 맞춰집니다', more: '언어·화질·중력 우물 깊이·표시 설정·조작법·자료 출처',
   rw: '시간을 느리게, 계속 누르면 거꾸로 흐르게 (단축키 ,)', play: '시간 멈춤 / 다시 흐르기 (스페이스)', ff: '시간을 빠르게 — 누를 때마다 1분/초 → 1시간/초 → 1일/초 … (단축키 .)',
   clock: '날짜·시각을 골라 그때로 가기, 또는 역사적 순간으로', rate: '실제 1초 동안 흐르는 시뮬레이션 시간 — 천체를 고르면 저절로 알맞게 바뀝니다 · 두 번 누르면 지금으로', now: '지금 이 순간으로 돌아와 실시간으로 흐르게',
-  goTo: '이 천체를 화면 가득 가까이 보기', sys: '위성(또는 태양이면 행성)들의 궤도까지 한 화면에 보이게 물러서서 보기', stand: '{n} 표면에 서서 하늘·해돋이·해넘이 보기', spin: '하루가 약 20초에 지나가도록 시간을 빠르게 해 자전을 봅니다 — 다시 누르면 원래 시간으로',
+  goTo: '이 천체를 화면 가득 가까이 보기', flare: '태양 가까이 가서 플레어와 코로나 질량 방출(CME)을 일으켜 보여 줍니다', sys: '위성(또는 태양이면 행성)들의 궤도까지 한 화면에 보이게 물러서서 보기', stand: '{n} 표면에 서서 하늘·해돋이·해넘이 보기', spin: '하루가 약 20초에 지나가도록 시간을 빠르게 해 자전을 봅니다 — 다시 누르면 원래 시간으로',
   lock: '카메라를 지표에 고정 — 땅은 멈추고 해·별·낮밤 경계가 움직입니다', parent: '{p}(으)로 가기', close: '닫기 (Esc)', chip: '{n}(으)로 가기',
   mFollow: '카메라가 탐사선을 따라갑니다', mVectors: '근접 비행 때 태양 기준·행성·행성 기준 속도를 화살표로 — 스윙바이로 빨라지는 원리', mAuto: '근접 비행 땐 느리게, 순항 땐 빠르게 시간을 저절로 맞춤',
   mChart: '그래프를 누르면 그 날짜로 이동', mEvent: '이 순간으로 이동', back: '목록으로',
@@ -2051,7 +2137,7 @@ TIPS.en = {
   learn: 'Nine lessons on gravity and relativity — each sets up the scene for you', more: 'Language, quality, gravity-well depth, display, controls and credits',
   rw: 'Slow time down; keep pressing to run it backwards (shortcut ,)', play: 'Pause / resume time (Space)', ff: 'Speed time up — each press: 1 min/s → 1 h/s → 1 day/s … (shortcut .)',
   clock: 'Pick a date and time, or jump to a historic moment', rate: 'Simulated time per real second — set automatically when you pick a body · double-click to return to now', now: 'Back to this very moment, running in real time',
-  goTo: 'Fly in close to this body', sys: 'Pull back to see its moons (for the Sun, the planets) and their orbits', stand: 'Stand on {n} and watch the sky, sunrise and sunset', spin: 'Speed time so one day takes about 20 s and watch it rotate — press again to restore',
+  goTo: 'Fly in close to this body', flare: 'Fly close to the Sun and set off a flare with a coronal mass ejection', sys: 'Pull back to see its moons (for the Sun, the planets) and their orbits', stand: 'Stand on {n} and watch the sky, sunrise and sunset', spin: 'Speed time so one day takes about 20 s and watch it rotate — press again to restore',
   lock: 'Lock the camera to the surface — the ground stays put while the Sun, stars and day–night line move', parent: 'Go to {p}', close: 'Close (Esc)', chip: 'Go to {n}',
   mFollow: 'Make the camera follow the spacecraft', mVectors: 'Arrows for Sun-frame, planet and planet-frame velocity during flybys — how a slingshot speeds you up', mAuto: 'Slow time near flybys and speed it up while cruising',
   mChart: 'Click the chart to jump to that date', mEvent: 'Jump to this moment', back: 'Back to the list',
@@ -2509,14 +2595,15 @@ const INFO = {};
     const kind = b.type === 'moon' ? t.moonOf.replace('{p}', nm(b.parent)) : t.kind[b.type];
     $('infoHead').innerHTML = `<h2>${nm(b.id)}</h2>${LG !== 'en' ? `<div class="en">${NAMES.en[b.id]}${d.tag ? ' · ' + d.tag : ''}</div>` : (d.tag ? `<div class="en">${d.tag}</div>` : '')}
       <span class="kind">${kind}</span><button class="x" id="infoX">×</button>
-      <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${b.id === 'sun' ? `<button class="act" data-a="sys">${PLN_T[LG] || PLN_T.en}</button>` : CAM.allMoonSpan(b) ? `<button class="act" data-a="sys">${SYS_T[LG] || SYS_T.en}</button>` : ''}${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
+      <div id="infoActs"><button class="act" data-a="go">${t.goTo}</button>${b.id === 'sun' ? `<button class="act" data-a="sys">${PLN_T[LG] || PLN_T.en}</button><button class="act" data-a="flare">${(SAT[LG] || SAT.en).act}</button>` : CAM.allMoonSpan(b) ? `<button class="act" data-a="sys">${SYS_T[LG] || SYS_T.en}</button>` : ''}${SURF.can(b) ? `<button class="act" data-a="stand">${STXT().enter.replace('{n}', nm(b.id))}</button>` : ''}${b.R3 ? `<button class="act${APP.spin === b ? ' on' : ''}" data-a="spin">${SPIN_T[LG] || SPIN_T.en}</button>${APP.spin === b ? `<button class="act${CAM.lockRot ? ' on' : ''}" data-a="follow">${LOCK_T[LG] || LOCK_T.en}</button>` : ''}` : ''}${b.parent && b.parent !== 'sun' ? `<button class="act" data-a="parent">${nm(b.parent)}</button>` : ''}</div>`;
     $('infoX').onclick = UI.close; setTip($('infoX'), 'close'); $('infoActs').style.setProperty('--n', $('infoActs').children.length);
-    const tk = { sys: 'sys', go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
+    const tk = { flare: 'flare', sys: 'sys', go: 'goTo', stand: 'stand', spin: 'spin', follow: 'lock', parent: 'parent' };
     $('infoHead').querySelectorAll('.act').forEach(el => setTip(el, tk[el.dataset.a], { n: nm(b.id), p: b.parent ? nm(b.parent) : '' }));
     $('infoHead').querySelectorAll('.act').forEach(el => el.onclick = () => {
       const a = el.dataset.a;
       if (a === 'go') CAM.flyTo(b, CAM.closeDist(b)); else if (a === 'sys') { if (b.id === 'sun') { CAM.flyTo(b, 4.2e9, { dir: nrm([0.1, -0.86, 0.5]), dur: 4 }); UI.autoTime(b); } else CAM.flyTo(b, CAM.systemDist(b), { dir: sysDir(b) }); } else if (a === 'parent') UI.go(BY[b.parent]); else if (a === 'stand') SURF.enter(b);
       else if (a === 'spin') INFO.spin(b);
+      else if (a === 'flare') { if (SUNAR.near < 0.5) CAM.flyTo(b, b.R * 3.2, { dur: 2.5 }); setTimeout(() => SUNAR.trigger(true, true), SUNAR.near < 0.5 ? 2700 : 0); }
       else if (a === 'follow') { CAM.lockRot = !CAM.lockRot; el.classList.toggle('on', CAM.lockRot); if (CAM.lockRot) UI.toast(FOLLOW_T[LG] || FOLLOW_T.en, 5000); }
     });
     const sec = t.sec;
@@ -2678,7 +2765,7 @@ const UI = {};
       ctx.fillText(name, x + ox, y);
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
-    PBD.overlay(ctx); APO.overlay(ctx); HIST.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on || !!HIST.on);
+    SUNAR.overlay(ctx); PBD.overlay(ctx); APO.overlay(ctx); HIST.overlay(ctx); document.body.classList.toggle('pbding', PBD.on || APO.on || !!HIST.on);
     if (!SURF.on && !PBD.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
     // 정보판 실시간 값
     infoT += dt; if (infoT > 0.25 && APP.sel) { infoT = 0; INFO.live(APP.sel); }
@@ -12679,7 +12766,7 @@ function loop(now, manual) {
   APP.d = clamp(APP.d, -73000, 73000); // 1800 ~ 2200
   simAt(APP.d);
   LEARN.update(dt);
-  MIS.update(APP.d); MIS.autoRate(); MIS.ui(dt); SUNAR.update(APP.d);
+  MIS.update(APP.d); MIS.autoRate(); MIS.ui(dt); SUNAR.update(APP.d, dt);
   GRAV.on = APP.show.gravity && !SURF.on; if (SURF.on) GRAV.custom = null; GRAV.update();
   for (const b of BODIES) b.rp = GRAV.amt ? GRAV.disp(b.pos, b) : b.pos;
   if (SURF.on) SURF.camera(); else CAM.update(dt);
