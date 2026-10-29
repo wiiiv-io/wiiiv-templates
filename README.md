@@ -39,6 +39,7 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 | music-studio | music |
 | mandelbrot | visualization |
 | moon-explorer | visualization |
+| solar-system | visualization |
 | graph3d | visualization |
 
 ---
@@ -48,6 +49,8 @@ https://wiiiv-io.github.io/wiiiv-templates/index.json
 Exception: `music-studio` loads its grand-piano samples from `assets/piano/*.mp3` in this repo (Salamander Grand Piano by Alexander Holm, CC BY 3.0, credited in the app). They are kept out of the HTML so that an LLM editing the template never reads them; offline it falls back to a synthesized piano. `piano.html` and `drum-machine.html` stay only for old links — `index.json` now points to `music-studio`.
 
 Exception: `moon-explorer` loads its map tiles and feature names from `assets/moon/` (~165 MB: `t/` albedo+normal tiles, `h/` height tiles, `hg.png`, `tint.jpg`, `names.json`). Source: NASA/Goddard Scientific Visualization Studio CGI Moon Kit (LRO LROC WAC, LOLA — https://svs.gsfc.nasa.gov/4720) and the USGS/IAU Gazetteer of Planetary Nomenclature; both credited in the app. How they are built: `wiiiv/tools/wiiivapp-src/moon/data/`.
+
+Exception: `solar-system` loads its textures, star catalogue, asteroid elements and spacecraft trajectories from `assets/solar/` (~49 MB: planet/moon maps `*.jpg`, `stars.bin`, `asteroids.bin`, `missions.json` + `missions/*.bin`). They stay out of the HTML for the same reason as the Moon tiles; with no network it still runs with flat-coloured bodies and analytic orbits. Sources: NASA/JPL Horizons and SBDB (public domain), Solar System Scope textures (CC BY 4.0), NASA/JPL/USGS moon maps (public domain), Phobos/Deimos maps by Askaniy Anpilogov et al. (CC BY-SA 3.0), HYG star database v4.1 (CC BY-SA 4.0) — credited in the app menu. The source and asset tools live in the wiiiv repo under `tools/wiiivapp-src/solar-system`.
 
 ## Adding a template (no server/desktop build needed)
 
