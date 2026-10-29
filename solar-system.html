@@ -134,6 +134,12 @@ body.mising #dock { display: none; }
 /* 툴팁 */
 #tip { position: fixed; z-index: 50; max-width: 300px; padding: 7px 11px; border-radius: 9px; background: rgba(20, 26, 43, .96); border: 1px solid var(--line2); color: #e9edf7; font-size: 12.5px; line-height: 1.45; pointer-events: none; opacity: 0; transform: translateY(3px); transition: opacity .15s, transform .15s; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
 #tip.show { opacity: 1; transform: none; }
+/* 창백한 푸른 점 */
+#pbd { position: fixed; left: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); width: min(420px, calc(100% - 24px)); padding: 14px 16px; z-index: 6; max-height: 60vh; overflow: auto; }
+#pbd .ph { display: flex; align-items: center; } #pbd .ph b { flex: 1; font-size: 17px; } #pbd .x { width: 30px; height: 30px; border-radius: 8px; font-size: 18px; color: var(--dim); }
+#pbd .pt { color: var(--acc2); font-size: 12.5px; margin: 2px 0 8px; } #pbd p { margin: 0 0 9px; color: #cdd5e8; font-size: 13.2px; line-height: 1.65; }
+#pbd .pb { display: flex; gap: 6px; margin-top: 4px; }
+body.pbding #dock { display: none; }
 /* 표면 */
 #surf { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); width: min(680px, calc(100% - 24px)); padding: 10px 12px; z-index: 6; }
 #surf .sh { display: flex; align-items: center; gap: 8px; } #surf .sh b { flex: 1; font-size: 14px; }
@@ -216,6 +222,7 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 <div id="learn" class="glass side" hidden></div>
 <div id="mis" class="glass side" hidden></div>
 <div id="surf" class="glass" hidden></div>
+<div id="pbd" class="glass" hidden></div>
 <div id="timebar" class="glass"></div>
 <div id="toast" class="glass"></div>
 <div id="loading"><div class="t"><img class="lg" id="ldLogo" alt="wiiiv"><b id="ldT">SOLAR SYSTEM</b><span id="ldS"></span><div class="pg"><i id="ldP"></i></div></div></div>
@@ -1983,7 +1990,7 @@ TX.ko = {
   quality: '화질', qHigh: '높음', qMed: '보통', qLow: '빠름', lang: '언어', sound: '소리', realScale: '실제 크기', enlarge: '크게 보기',
   clickHint: '끌어서 돌리기 · 휠/두 손가락으로 확대 · 천체를 누르면 날아감', flyingTo: '{n}(으)로 가는 중…',
   wellDepth: '중력 우물 깊이', exag: '과장', trueRatio: '실제 비율', outer: '소행성·카이퍼 벨트·태양권', help: '조작법', helpText: '끌기: 돌려 보기 · 가운데 끌기/Ctrl+끌기/두 손가락 끌기: 옮기기 (F: 다시 가운데로) · 오른쪽 끌기/Shift: 둘러보기 · 휠·두 손가락: 확대 · 천체 누르기: 날아가기 · 스페이스: 멈춤 · ,/. : 시간 빠르기 · 0–9: 태양~명왕성',
-  ev: { apollo11: '아폴로 11호 달 착륙', eclipse1919: '1919년 개기 일식 (에딩턴)', v2nep: '보이저 2호 해왕성 통과', halley86: '핼리 혜성 근일점', sl9: '슐레마커-레비 9 목성 충돌', mars2003: '화성 6만 년 만의 대접근', conj2020: '목성·토성 대근접', eclipse2017: '2017 북미 개기 일식', eclipse2024: '2024 북미 개기 일식', eclipse2026: '2026 스페인 개기 일식', apophis: '아포피스 지구 근접', halley61: '핼리 혜성 귀환', cassiniEnd: '카시니 토성 돌입', nhPluto: '뉴호라이즌스 명왕성 통과', parker24: '파커 탐사선 태양 최근접' },
+  ev: { apollo11: '아폴로 11호 달 착륙', eclipse1919: '1919년 개기 일식 (에딩턴)', v2nep: '보이저 2호 해왕성 통과', halley86: '핼리 혜성 근일점', sl9: '슐레마커-레비 9 목성 충돌', mars2003: '화성 6만 년 만의 대접근', conj2020: '목성·토성 대근접', eclipse2017: '2017 북미 개기 일식', eclipse2024: '2024 북미 개기 일식', eclipse2026: '2026 스페인 개기 일식', apophis: '아포피스 지구 근접', pbd1990: '창백한 푸른 점 (보이저 1호)', halley61: '핼리 혜성 귀환', cassiniEnd: '카시니 토성 돌입', nhPluto: '뉴호라이즌스 명왕성 통과', parker24: '파커 탐사선 태양 최근접' },
 };
 TX.en = {
   title: 'Solar System', sub: 'A real-time simulation of our solar system', search: 'Find — e.g. Saturn, Europa, Voyager',
@@ -2002,7 +2009,7 @@ TX.en = {
   quality: 'Quality', qHigh: 'High', qMed: 'Medium', qLow: 'Fast', lang: 'Language', sound: 'Sound', realScale: 'True scale', enlarge: 'Enlarged',
   clickHint: 'Drag to orbit · wheel/pinch to zoom · tap a body to fly there', flyingTo: 'Flying to {n}…',
   wellDepth: 'Gravity well depth', exag: 'Exaggerated', trueRatio: 'True ratio', outer: 'Asteroids · Kuiper Belt · heliosphere', help: 'Controls', helpText: 'Drag: orbit · Middle-drag/Ctrl+drag/two-finger drag: pan (F: recenter) · Right-drag/Shift: look around · Wheel/pinch: zoom · Tap a body: fly there · Space: pause · , / . : time speed · 0–9: Sun to Pluto',
-  ev: { apollo11: 'Apollo 11 Moon landing', eclipse1919: '1919 total eclipse (Eddington)', v2nep: 'Voyager 2 passes Neptune', halley86: 'Halley’s Comet perihelion', sl9: 'Shoemaker–Levy 9 hits Jupiter', mars2003: 'Closest Mars in 60,000 years', conj2020: 'Great conjunction of Jupiter & Saturn', eclipse2017: '2017 North American eclipse', eclipse2024: '2024 North American eclipse', eclipse2026: '2026 eclipse over Spain', apophis: 'Apophis passes Earth', halley61: 'Halley’s Comet returns', cassiniEnd: 'Cassini plunges into Saturn', nhPluto: 'New Horizons passes Pluto', parker24: 'Parker Solar Probe’s closest pass' },
+  ev: { apollo11: 'Apollo 11 Moon landing', eclipse1919: '1919 total eclipse (Eddington)', v2nep: 'Voyager 2 passes Neptune', halley86: 'Halley’s Comet perihelion', sl9: 'Shoemaker–Levy 9 hits Jupiter', mars2003: 'Closest Mars in 60,000 years', conj2020: 'Great conjunction of Jupiter & Saturn', eclipse2017: '2017 North American eclipse', eclipse2024: '2024 North American eclipse', eclipse2026: '2026 eclipse over Spain', apophis: 'Apophis passes Earth', pbd1990: 'Pale Blue Dot (Voyager 1)', halley61: 'Halley’s Comet returns', cassiniEnd: 'Cassini plunges into Saturn', nhPluto: 'New Horizons passes Pluto', parker24: 'Parker Solar Probe’s closest pass' },
 };
 // 천체 이름
 const NAMES = {
@@ -2667,7 +2674,8 @@ const UI = {};
       ctx.fillText(name, x + ox, y);
       ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }
-    if (!SURF.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
+    PBD.overlay(ctx); document.body.classList.toggle('pbding', PBD.on);
+    if (!SURF.on && !PBD.on) OUTER.overlay(ctx); LEARN.overlay(ctx); MIS.overlay(ctx); SURF.overlay(ctx);
     // 정보판 실시간 값
     infoT += dt; if (infoT > 0.25 && APP.sel) { infoT = 0; INFO.live(APP.sel); }
     clockTick();
@@ -2719,7 +2727,7 @@ const UI = {};
     const nice = NICE.reduce((a, x) => Math.abs(Math.log(x / sec)) < Math.abs(Math.log(a / sec)) ? x : a, NICE[0]);
     APP.live = false; APP.playing = true; APP.rate = nice / 86400; UI.time();
   };
-  UI.go = (b, dist) => { if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
+  UI.go = (b, dist) => { PBD.stop(); if (APP.spin && APP.spin !== b) { APP.spin = null; CAM.lockRot = false; } if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; } if (b.craft) { MIS.open(); return; } UI.select(b); CAM.flyTo(b, dist); UI.autoTime(b); };
   UI.select = (b, keep) => {
     APP.sel = b; $('info').classList.remove('off'); document.body.classList.add('sheet', 'panel');
     INFO.render(b);
@@ -2805,7 +2813,7 @@ const UI = {};
     ['apollo11', '1969-07-20T20:17', 'moon', 4], ['eclipse1919', '1919-05-29T13:08', 'eclipse'], ['v2nep', '1989-08-25T02:00', 'mis:voyager2:4'], ['halley86', '1986-02-09T11:00', 'halley', 0],
     ['sl9', '1994-07-16T20:13', 'jupiter', 4], ['mars2003', '2003-08-27T09:51', 'mars', 0], ['conj2020', '2020-12-21T18:20', 'conj'], ['eclipse2017', '2017-08-21T18:26', 'eclipse'],
     ['eclipse2024', '2024-04-08T18:18', 'eclipse'], ['eclipse2026', '2026-08-12T17:46', 'eclipse'], ['cassiniEnd', '2017-09-15T06:00', 'saturn', 0], ['nhPluto', '2015-07-14T08:00', 'mis:newhorizons:2'],
-    ['parker24', '2024-12-24T06:00', 'mis:parker:1'], ['apophis', '2029-04-13T21:46', 'apophis', 0], ['halley61', '2061-07-28T12:00', 'halley', 0],
+    ['pbd1990', '1990-02-14T04:48', 'pbd'], ['parker24', '2024-12-24T06:00', 'mis:parker:1'], ['apophis', '2029-04-13T21:46', 'apophis', 0], ['halley61', '2061-07-28T12:00', 'halley', 0],
   ];
   UI.dateDlg = () => {
     let d = $('dateDlg'); if (d) { d.remove(); return; }
@@ -2822,6 +2830,7 @@ const UI = {};
   UI.event = ([k, iso, what, extra]) => {
     goDate(Date.parse(iso + 'Z'));
     if (SURF.on) { SURF.on = false; $('surf').hidden = true; CAM.fovT = 50; }
+    if (what === 'pbd') { PBD.start(); return; }
     if (what === 'eclipse') { // 달 그림자 축 위에서 해를 봄
       const E = BY.earth, M = BY.moon; const u = nrm(sub(M.pos, BY.sun.pos)); APP.show.orbits = false; CAM.flyTo(M, len(sub(E.pos, M.pos)) - E.R, { dir: u, dur: 3 }); CAM.fovT = 1.6; UI.close();
       setTimeout(() => { APP.show.orbits = true; }, 60000); return; }
@@ -3273,6 +3282,7 @@ const MIS = { list: null, data: {}, sel: null, crafts: {}, follow: false, auto: 
     jump(m, ev);
   }
   function jump(m, ev) {
+    if (ev[1] === 'pale') { PBD.start(); return; }
     const [jd, k] = ev; const [a, b] = k.split(':'); const d = jd - JD2000;
     const near = (a === 'fly' || a === 'arrive') && BY[b];
     APP.d = d - (near ? (a === 'arrive' ? 3 : 1.2) : 0); APP.live = false; APP.playing = true; MIS.auto = true; simAt(APP.d); MIS.update(APP.d);
@@ -3449,6 +3459,76 @@ const STEXT = {
 };
 const STXT = () => STEXT[LG] || STEXT.en;
 
+// ───────────────────────── 창백한 푸른 점 (1990-02-14, 보이저 1호) ─────────────────────────
+// 보이저 1호의 실제 위치(JPL Horizons)에 카메라를 두고 지구를 바라본다. 좁은 시야각(협각 카메라에 가깝게)으로
+// 지구는 1화소도 안 되는 점, 그 옆으로 해의 산란광이 지나간다.
+const PBD = { on: false, step: 0 };
+(function () {
+  const WHEN = '1990-02-14T04:48Z';
+  const T = () => PBDT[LG] || PBDT.en;
+  PBD.start = async () => {
+    if (SURF.on) { SURF.on = false; $('surf').hidden = true; } if (LEARN.on) LEARN.close();
+    if (!MIS.list) await MIS.init(); await MIS.load('voyager1'); const m = MIS.list && MIS.list.find(x => x.id === 'voyager1'); if (!m) { UI.toast('voyager1 ?'); return; }
+    APP.spin = null; APP.d = utc2tdb(Date.parse(WHEN)); APP.live = false; APP.playing = false; simAt(APP.d); MIS.sel = m; MIS.update(APP.d); UI.time();
+    if (MIS.on) { $('mis').hidden = true; document.body.classList.remove('mising'); MIS.on = false; }
+    UI.close(); PBD.on = true; PBD.step = 0; PBD.saved = { o: APP.show.orbits, l: APP.show.labels, g: APP.show.gravity }; APP.show.gravity = false;
+    PBD.view(0); PBD.panel();
+  };
+  // 0: 보이저에서 지구 (좁은 시야) · 1: 보이저 뒤에서 태양계 전체 (보이저가 어디쯤인지)
+  PBD.view = k => {
+    PBD.step = k; const c = MIS.crafts.voyager1; const st = MIS.state(MIS.sel, APP.d); if (!st) return; const E = BY.earth;
+    if (k === 0) { const dir = nrm(sub(st.pos, E.pos)); CAM.flyTo(E, len(sub(st.pos, E.pos)), { dir, dur: 3.5 }); CAM.fovT = 2.4; APP.show.orbits = false; APP.show.labels = false; }
+    else { CAM.fovT = 50; APP.show.orbits = true; APP.show.labels = true; const back = nrm(st.pos); CAM.flyTo(BY.sun, len(st.pos) * 1.45, { dir: nrm(add(back, [0, 0, 0.35])), dur: 3.5 }); }
+    UI.toolsSync && UI.toolsSync(); PBD.panel();
+  };
+  PBD.stop = () => { if (!PBD.on) return; PBD.on = false; $('pbd').hidden = true; CAM.fovT = 50; if (PBD.saved) { APP.show.orbits = PBD.saved.o; APP.show.labels = PBD.saved.l; APP.show.gravity = PBD.saved.g; } UI.toolsSync && UI.toolsSync(); };
+  PBD.panel = () => {
+    const t = T(), el = $('pbd'); el.hidden = false;
+    el.innerHTML = `<div class="ph"><b>${t.title}</b><button class="x" id="pbX">×</button></div><div class="pt">${t.when}</div>${t.body.map(p => `<p>${p}</p>`).join('')}
+      <div class="pb"><button class="act${PBD.step === 0 ? ' on' : ''}" data-v="0">${t.v0}</button><button class="act${PBD.step === 1 ? ' on' : ''}" data-v="1">${t.v1}</button></div>`;
+    $('pbX').onclick = PBD.stop; setTip($('pbX'), 'close');
+    el.querySelectorAll('[data-v]').forEach(b => b.onclick = () => PBD.view(+b.dataset.v));
+  };
+  // 화면 위: 지구 둘레 표시와 거리
+  PBD.overlay = ctx => {
+    if (!PBD.on) return; const E = BY.earth; const p = RN.project(sub(E.rp || E.pos, CAM.pos)); const t = T();
+    if (PBD.step === 0 && p.on) { // 실제 사진처럼: 해가 카메라 안에서 산란된 빛줄기가 지구를 지나감
+      const sp = RN.project(sub(BY.sun.pos, CAM.pos)); let dx = sp.on ? p.x - sp.x : 0, dy = sp.on ? p.y - sp.y : 1; const L0 = Math.hypot(dx, dy) || 1; dx /= L0; dy /= L0;
+      const nx = -dy, ny = dx, Lr = Math.hypot(innerWidth, innerHeight); ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const [off, w, a] of [[0, 46, .10], [-70, 30, .06], [95, 60, .05], [-170, 22, .04]]) { const cx = p.x + nx * off, cy = p.y + ny * off;
+        const g = ctx.createLinearGradient(cx - nx * w, cy - ny * w, cx + nx * w, cy + ny * w); g.addColorStop(0, 'rgba(255,170,120,0)'); g.addColorStop(.5, `rgba(255,190,150,${a})`); g.addColorStop(1, 'rgba(255,170,120,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(cx - nx * w - dx * Lr, cy - ny * w - dy * Lr); ctx.lineTo(cx + nx * w - dx * Lr, cy + ny * w - dy * Lr); ctx.lineTo(cx + nx * w + dx * Lr, cy + ny * w + dy * Lr); ctx.lineTo(cx - nx * w + dx * Lr, cy - ny * w + dy * Lr); ctx.fill(); }
+      ctx.fillStyle = 'rgba(150,190,255,.95)'; ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, TAU); ctx.fill(); ctx.restore(); }
+    if (PBD.step === 0) { if (!p.on) return; ctx.strokeStyle = 'rgba(127,180,255,.85)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, TAU); ctx.stroke();
+      ctx.font = '600 13px system-ui, sans-serif'; ctx.fillStyle = '#cfe0ff'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; const d = len(sub(CAM.pos, E.pos));
+      ctx.fillText(t.earth.replace('{d}', INFO.fmt.num(d / 1e9, 2)).replace('{e}', INFO.fmt.num(d / 1e8, 1)), p.x + 20, p.y + 4); ctx.shadowBlur = 0; return; }
+    const c = MIS.crafts.voyager1; if (!c.st) return; const q = RN.project(sub(c.pos, CAM.pos)); if (!q.on || !p.on) return;
+    ctx.strokeStyle = 'rgba(255,207,110,.7)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = '600 12.5px system-ui, sans-serif'; ctx.fillStyle = '#ffcf6e'; ctx.fillText(t.line, (q.x + p.x) / 2 + 8, (q.y + p.y) / 2);
+  };
+})();
+const PBDT = {
+  ko: { title: '창백한 푸른 점', when: '1990년 2월 14일 · 보이저 1호 · 지구에서 약 60억 km',
+    body: ['임무를 마치고 태양계를 떠나던 보이저 1호는 칼 세이건의 제안으로 카메라를 마지막으로 뒤로 돌려, 행성들의 "가족사진"을 찍었습니다. 그중 한 장에서 지구는 햇빛이 산란된 줄무늬 속에 떠 있는 1화소도 안 되는 점이었습니다.',
+      '세이건은 이 사진을 두고, 우리가 아는 모든 사람과 모든 역사가 햇빛 속에 떠 있는 이 작은 점 위에서 일어났으며, 그러니 서로를 더 아끼고 이 점을 지켜야 한다고 썼습니다(《창백한 푸른 점》, 1994).',
+      '지금 화면은 그날 보이저 1호의 실제 위치(JPL Horizons)에서 지구를 좁은 시야로 본 모습입니다. 이 사진을 찍고 34분 뒤 보이저의 카메라는 영원히 꺼졌습니다.'],
+    v0: '보이저에서 본 지구', v1: '보이저는 어디에?', earth: '지구 — {e}억 km', line: '보이저 1호 → 지구' },
+  en: { title: 'Pale Blue Dot', when: '14 Feb 1990 · Voyager 1 · about 6 billion km from Earth',
+    body: ['Leaving the Solar System after its mission, Voyager 1 turned its camera back one last time at Carl Sagan’s urging and took a “family portrait” of the planets. In one frame Earth was a speck smaller than a pixel, caught in a ray of scattered sunlight.',
+      'Sagan wrote that everyone we know and all of human history happened on that mote suspended in a sunbeam — a reason to deal more kindly with one another and to cherish it (Pale Blue Dot, 1994).',
+      'You are seeing Earth with a narrow field of view from Voyager 1’s real position that day (JPL Horizons). Thirty-four minutes after these images, Voyager’s cameras were switched off for good.'],
+    v0: 'Earth from Voyager', v1: 'Where is Voyager?', earth: 'Earth — {d} billion km', line: 'Voyager 1 → Earth' },
+  ja: { title: 'ペイル・ブルー・ドット', when: '1990年2月14日 · ボイジャー1号 · 地球から約60億km', body: ['任務を終えて太陽系を離れつつあったボイジャー1号は、カール・セーガンの提案で最後にカメラを振り返らせ、惑星の「家族写真」を撮りました。その一枚の中で地球は、散乱した太陽光の筋に浮かぶ1画素にも満たない点でした。', 'セーガンは、私たちの知る誰もが、人類の歴史のすべてが、陽光の中に浮かぶこの小さな点の上で起きたのだから、互いをもっと大切にし、この点を守るべきだと書きました（『ペイル・ブルー・ドット』1994年）。', 'この画面は、その日のボイジャー1号の実際の位置（JPL Horizons）から狭い視野で地球を見たものです。撮影の34分後、ボイジャーのカメラは永久に停止されました。'], v0: 'ボイジャーから見た地球', v1: 'ボイジャーはどこ？', earth: '地球 — {e}億km', line: 'ボイジャー1号 → 地球' },
+  zh: { title: '暗淡蓝点', when: '1990年2月14日 · 旅行者1号 · 距地球约60亿公里', body: ['完成任务、正飞离太阳系的旅行者1号，在卡尔·萨根的建议下最后一次回转相机，为行星拍下“全家福”。其中一张里，地球只是散射阳光光带中一个不到一个像素的小点。', '萨根写道：我们所知的每一个人、人类全部的历史，都发生在这颗悬浮于阳光中的微尘上——所以我们应当更善待彼此，珍惜这个小点（《暗淡蓝点》，1994）。', '此画面是从当天旅行者1号的真实位置（JPL Horizons）以窄视场看地球的样子。拍摄34分钟后，旅行者的相机被永久关闭。'], v0: '从旅行者看地球', v1: '旅行者在哪里？', earth: '地球 — {e}亿公里', line: '旅行者1号 → 地球' },
+  'zh-TW': { title: '暗淡藍點', when: '1990年2月14日 · 航海家1號 · 距地球約60億公里', body: ['完成任務、正飛離太陽系的航海家1號，在卡爾·薩根的建議下最後一次回轉相機，為行星拍下「全家福」。其中一張裡，地球只是散射陽光光帶中一個不到一個像素的小點。', '薩根寫道：我們所知的每一個人、人類全部的歷史，都發生在這顆懸浮於陽光中的微塵上——所以我們應當更善待彼此，珍惜這個小點（《暗淡藍點》，1994）。', '此畫面是從當天航海家1號的真實位置（JPL Horizons）以窄視野看地球的樣子。拍攝34分鐘後，航海家的相機被永久關閉。'], v0: '從航海家看地球', v1: '航海家在哪裡？', earth: '地球 — {e}億公里', line: '航海家1號 → 地球' },
+  es: { title: 'Un punto azul pálido', when: '14 feb 1990 · Voyager 1 · a unos 6000 millones de km de la Tierra', body: ['Al dejar el sistema solar tras su misión, la Voyager 1 giró su cámara por última vez a petición de Carl Sagan y tomó un «retrato de familia» de los planetas. En una imagen la Tierra era una mota menor que un píxel, dentro de un rayo de luz solar dispersa.', 'Sagan escribió que todas las personas que conocemos y toda la historia humana ocurrieron en esa mota suspendida en un rayo de sol: una razón para tratarnos con más bondad y cuidarla (Un punto azul pálido, 1994).', 'Ves la Tierra con un campo estrecho desde la posición real de la Voyager 1 ese día (JPL Horizons). Treinta y cuatro minutos después, sus cámaras se apagaron para siempre.'], v0: 'La Tierra desde la Voyager', v1: '¿Dónde está la Voyager?', earth: 'Tierra — {d} mil millones de km', line: 'Voyager 1 → Tierra' },
+  fr: { title: 'Le point bleu pâle', when: '14 févr. 1990 · Voyager 1 · à environ 6 milliards de km de la Terre', body: ['Quittant le Système solaire après sa mission, Voyager 1 a tourné sa caméra une dernière fois à la demande de Carl Sagan pour un « portrait de famille » des planètes. Sur une image, la Terre n’était qu’un grain plus petit qu’un pixel, pris dans un rayon de lumière solaire diffusée.', 'Sagan a écrit que tous ceux que nous connaissons et toute l’histoire humaine se sont déroulés sur ce grain suspendu dans un rayon de soleil — une raison d’être plus bienveillants les uns envers les autres et de le chérir (Pale Blue Dot, 1994).', 'Vous voyez la Terre avec un champ étroit depuis la position réelle de Voyager 1 ce jour-là (JPL Horizons). Trente-quatre minutes plus tard, ses caméras furent éteintes pour toujours.'], v0: 'La Terre vue de Voyager', v1: 'Où est Voyager ?', earth: 'Terre — {d} milliards de km', line: 'Voyager 1 → Terre' },
+  de: { title: 'Pale Blue Dot', when: '14. Feb. 1990 · Voyager 1 · rund 6 Milliarden km von der Erde', body: ['Nach ihrer Mission auf dem Weg aus dem Sonnensystem drehte Voyager 1 auf Carl Sagans Anregung ein letztes Mal ihre Kamera zurück und machte ein „Familienporträt“ der Planeten. Auf einem Bild war die Erde ein Pünktchen kleiner als ein Pixel in einem Strahl gestreuten Sonnenlichts.', 'Sagan schrieb, dass alle, die wir kennen, und die ganze Menschheitsgeschichte sich auf diesem Staubkorn im Sonnenstrahl abgespielt haben – ein Grund, freundlicher miteinander umzugehen und ihn zu bewahren (Pale Blue Dot, 1994).', 'Sie sehen die Erde mit engem Bildwinkel von der echten Position der Voyager 1 an jenem Tag (JPL Horizons). 34 Minuten später wurden ihre Kameras für immer abgeschaltet.'], v0: 'Erde von Voyager aus', v1: 'Wo ist Voyager?', earth: 'Erde — {d} Mrd. km', line: 'Voyager 1 → Erde' },
+  pt: { title: 'Pálido Ponto Azul', when: '14 fev 1990 · Voyager 1 · a cerca de 6 bilhões de km da Terra', body: ['Deixando o Sistema Solar após a missão, a Voyager 1 virou a câmera uma última vez a pedido de Carl Sagan e fez um “retrato de família” dos planetas. Numa imagem, a Terra era um grão menor que um pixel, num raio de luz solar espalhada.', 'Sagan escreveu que todos que conhecemos e toda a história humana aconteceram nesse grão suspenso num raio de sol — razão para tratarmos uns aos outros com mais bondade e preservá-lo (Pálido Ponto Azul, 1994).', 'Você vê a Terra com campo estreito a partir da posição real da Voyager 1 naquele dia (JPL Horizons). Trinta e quatro minutos depois, suas câmeras foram desligadas para sempre.'], v0: 'A Terra vista da Voyager', v1: 'Onde está a Voyager?', earth: 'Terra — {d} bilhões de km', line: 'Voyager 1 → Terra' },
+  ru: { title: 'Бледно-голубая точка', when: '14 февраля 1990 · «Вояджер-1» · около 6 млрд км от Земли', body: ['Покидая Солнечную систему после завершения миссии, «Вояджер-1» по предложению Карла Сагана в последний раз развернул камеру и сделал «семейный портрет» планет. На одном кадре Земля — пылинка меньше пикселя в луче рассеянного солнечного света.', 'Саган писал, что все, кого мы знаем, и вся история человечества прошли на этой пылинке, висящей в солнечном луче, — повод относиться друг к другу добрее и беречь её («Бледно-голубая точка», 1994).', 'Вы видите Землю в узком поле зрения из реального положения «Вояджера-1» в тот день (JPL Horizons). Через 34 минуты после съёмки его камеры выключили навсегда.'], v0: 'Земля с «Вояджера»', v1: 'Где «Вояджер»?', earth: 'Земля — {d} млрд км', line: '«Вояджер-1» → Земля' },
+  vi: { title: 'Chấm xanh mờ nhạt', when: '14/2/1990 · Voyager 1 · cách Trái Đất khoảng 6 tỷ km', body: ['Khi rời Hệ Mặt Trời sau nhiệm vụ, theo đề nghị của Carl Sagan, Voyager 1 quay camera lại lần cuối để chụp “ảnh gia đình” các hành tinh. Trong một khung hình, Trái Đất chỉ là một chấm nhỏ hơn một điểm ảnh, nằm trong một vệt ánh nắng tán xạ.', 'Sagan viết rằng mọi người ta biết và toàn bộ lịch sử loài người đã diễn ra trên hạt bụi lơ lửng trong tia nắng ấy — lý do để đối xử tử tế hơn với nhau và trân trọng nó (Pale Blue Dot, 1994).', 'Bạn đang nhìn Trái Đất với trường nhìn hẹp từ vị trí thật của Voyager 1 hôm đó (JPL Horizons). 34 phút sau, camera của Voyager bị tắt vĩnh viễn.'], v0: 'Trái Đất từ Voyager', v1: 'Voyager ở đâu?', earth: 'Trái Đất — {d} tỷ km', line: 'Voyager 1 → Trái Đất' },
+};
+
 // ───────── 독일어 ─────────
 TX['de'] = {
   title: 'Sonnensystem',
@@ -3571,7 +3651,7 @@ TX['de'] = {
     eclipse2017: 'Finsternis 2017 in Nordamerika',
     eclipse2024: 'Finsternis 2024 in Nordamerika',
     eclipse2026: 'Finsternis 2026 über Spanien',
-    apophis: 'Apophis fliegt an der Erde vorbei',
+    pbd1990: 'Pale Blue Dot (Voyager 1)', apophis: 'Apophis fliegt an der Erde vorbei',
     halley61: 'Rückkehr des Halleyschen Kometen',
     cassiniEnd: 'Cassini stürzt in den Saturn',
     nhPluto: 'New Horizons passiert Pluto',
@@ -4520,7 +4600,7 @@ TX['es'] = {
     eclipse2017: 'Eclipse de 2017 en Norteamérica',
     eclipse2024: 'Eclipse de 2024 en Norteamérica',
     eclipse2026: 'Eclipse de 2026 sobre España',
-    apophis: 'Apofis pasa junto a la Tierra',
+    pbd1990: 'Un punto azul pálido (Voyager 1)', apophis: 'Apofis pasa junto a la Tierra',
     halley61: 'Regreso del cometa Halley',
     cassiniEnd: 'La Cassini se precipita en Saturno',
     nhPluto: 'New Horizons pasa junto a Plutón',
@@ -5514,7 +5594,7 @@ TX['fr'] = {
     eclipse2017: 'Éclipse de 2017 en Amérique du Nord',
     eclipse2024: 'Éclipse de 2024 en Amérique du Nord',
     eclipse2026: 'Éclipse de 2026 au-dessus de l’Espagne',
-    apophis: 'Apophis frôle la Terre',
+    pbd1990: 'Le point bleu pâle (Voyager 1)', apophis: 'Apophis frôle la Terre',
     halley61: 'Retour de la comète de Halley',
     cassiniEnd: 'Cassini plonge dans Saturne',
     nhPluto: 'New Horizons survole Pluton',
@@ -6464,7 +6544,7 @@ TX['ja'] = {
     eclipse2017: '2017年 北米皆既日食',
     eclipse2024: '2024年 北米皆既日食',
     eclipse2026: '2026年 スペインの皆既日食',
-    apophis: 'アポフィスが地球に接近',
+    pbd1990: 'ペイル・ブルー・ドット（ボイジャー1号）', apophis: 'アポフィスが地球に接近',
     halley61: 'ハレー彗星の回帰',
     cassiniEnd: 'カッシーニが土星へ突入',
     nhPluto: 'ニュー・ホライズンズが冥王星を通過',
@@ -7458,7 +7538,7 @@ TX['pt'] = {
     eclipse2017: 'Eclipse de 2017 na América do Norte',
     eclipse2024: 'Eclipse de 2024 na América do Norte',
     eclipse2026: 'Eclipse de 2026 sobre a Espanha',
-    apophis: 'Apophis passa pela Terra',
+    pbd1990: 'Pálido Ponto Azul (Voyager 1)', apophis: 'Apophis passa pela Terra',
     halley61: 'Retorno do cometa Halley',
     cassiniEnd: 'Cassini mergulha em Saturno',
     nhPluto: 'New Horizons passa por Plutão',
@@ -8422,7 +8502,7 @@ TX['ru'] = {
     eclipse2017: 'Затмение 2017 года в Северной Америке',
     eclipse2024: 'Затмение 2024 года в Северной Америке',
     eclipse2026: 'Затмение 2026 года над Испанией',
-    apophis: 'Апофис пролетает мимо Земли',
+    pbd1990: 'Бледно-голубая точка («Вояджер-1»)', apophis: 'Апофис пролетает мимо Земли',
     halley61: 'Возвращение кометы Галлея',
     cassiniEnd: '«Кассини» погружается в Сатурн',
     nhPluto: '«Новые горизонты» пролетают мимо Плутона',
@@ -9431,7 +9511,7 @@ TX['vi'] = {
     eclipse2017: 'Nhật thực Bắc Mỹ 2017',
     eclipse2024: 'Nhật thực Bắc Mỹ 2024',
     eclipse2026: 'Nhật thực 2026 trên Tây Ban Nha',
-    apophis: 'Apophis bay ngang Trái Đất',
+    pbd1990: 'Chấm xanh mờ nhạt (Voyager 1)', apophis: 'Apophis bay ngang Trái Đất',
     halley61: 'Sao chổi Halley trở lại',
     cassiniEnd: 'Cassini lao vào Sao Thổ',
     nhPluto: 'New Horizons bay qua Sao Diêm Vương',
@@ -10425,7 +10505,7 @@ TX['zh-TW'] = {
     eclipse2017: '2017年北美日全食',
     eclipse2024: '2024年北美日全食',
     eclipse2026: '2026年西班牙日全食',
-    apophis: '阿波菲斯掠過地球',
+    pbd1990: '暗淡藍點（航海家1號）', apophis: '阿波菲斯掠過地球',
     halley61: '哈雷彗星回歸',
     cassiniEnd: '卡西尼號墜入土星',
     nhPluto: '新視野號飛掠冥王星',
@@ -11346,7 +11426,7 @@ TX['zh'] = {
     eclipse2017: '2017年北美日全食',
     eclipse2024: '2024年北美日全食',
     eclipse2026: '2026年西班牙日全食',
-    apophis: '阿波菲斯掠过地球',
+    pbd1990: '暗淡蓝点（旅行者1号）', apophis: '阿波菲斯掠过地球',
     halley61: '哈雷彗星回归',
     cassiniEnd: '卡西尼号坠入土星',
     nhPluto: '新视野号飞掠冥王星',
