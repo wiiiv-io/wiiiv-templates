@@ -1885,7 +1885,10 @@ const CAM = { pan: [0, 0, 0], fovT: 50,
       dir1 = nrm(add(add(scl(toSun, 0.78), scl(side, -0.6)), scl(UP, 0.2)));
       if (b.R3 && b.id !== 'sun') {
         const n = m3v(b.R3, [0, 0, 1]); const sunEl = dot(n, toSun); const want = (sunEl >= 0 ? 1 : -1) * (moonSpan(b) ? 0.62 : b.rings ? 0.42 : 0.3); // 위성계는 위에서 내려다보듯
-        const cur = dot(dir1, n); dir1 = nrm(add(dir1, scl(n, want - cur)));
+        let nn = n, w = want;
+        // 중력장이 켜져 있으면 늘 판 위쪽에서 (판의 법선: 위성계면 그 행성 북극, 아니면 황도 북쪽)
+        if (APP.show.gravity) { nn = moonSpan(b) || (b.kids && b.kids.length) ? n : [0, 0, 1]; w = 0.6; }
+        const cur = dot(dir1, nn); dir1 = nrm(add(dir1, scl(nn, w - cur)));
       }
       if (len(b.pos) < 1) dir1 = nrm([0.4, -0.85, 0.35]);
     }
@@ -2473,9 +2476,9 @@ const UI = {};
   };
   // 중력장을 켜면 우물이 잘 보이게 비스듬히 위에서
   UI.gravityView = () => {
-    if (CAM.fly) return; const f = CAM.focus; const n = f.type === 'moon' || f.type === 'star' || !f.kids.length ? [0, 0, 1] : m3v(f.R3, [0, 0, 1]);
+    if (CAM.fly) return; const f = CAM.focus; const n = f.type === 'moon' ? m3v(BY[f.parent].R3, [0, 0, 1]) : f.type === 'star' || f.craft || !f.kids.length ? [0, 0, 1] : m3v(f.R3, [0, 0, 1]);
     const R = qm3(CAM.q); const back = [R[2], R[5], R[8]]; const el = Math.asin(clamp(dot(back, n), -1, 1));
-    const want = 0.6; if (Math.abs(el) > 0.35 && Math.abs(el) < 1.2) return;
+    const want = 0.6; if (el > 0.35 && el < 1.2) return; // 판 아래에 있으면 위로
     const flat = nrm(sub(back, scl(n, dot(back, n)))); const dir = nrm(add(scl(len(flat) > 0.1 ? flat : [1, 0, 0], Math.cos(want)), scl(n, Math.sin(want))));
     CAM.flyTo(f, CAM.dist * 1.6, { dir, dur: 2.2 });
   };
