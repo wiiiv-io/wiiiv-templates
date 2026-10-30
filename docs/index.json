@@ -563,7 +563,7 @@
    "kind": "slides",
    "category": "산업·경제",
    "title": {
-    "ko": "2026 한국 커피 산업: 포화 속의 새로운 질서"
+    "ko": "2026년 한국 커피 산업: 포화 시대의 질적 전환과 미래 전략"
    },
    "prompt": {
     "ko": "2026년 한국 커피 산업 트렌드와 전망을 정리한 프레젠테이션을 14장 분량으로 만들어줘. 시장 규모와 성장률, 스페셜티 커피 붐, 저가 커피 브랜드 확장, MZ세대 카페 문화, 홈카페, 친환경 원두와 지속가능성, 로컬 로스터리, 주요 프랜차이즈 경쟁 구도를 대표 사례와 수치로 담고, 슬라이드마다 주제에 어울리는 이미지를 넣어줘."
@@ -581,24 +581,24 @@
    },
    "run": {
     "credits": null,
-    "minutes": 9.6,
+    "minutes": 11.4,
     "sources": 0,
     "model": "qwen3.7-plus (상·중)",
     "date": "2026-10-30",
-    "build": "f3e157def",
-    "sessionId": "bdf2e7d8-e83c-461d-bc94-c9ed0ce1ce52",
+    "build": "6555e952d",
+    "sessionId": "a843cbfe-9279-47a5-aaaa-7176f9ac8a03",
     "by": "beta",
     "followUps": []
    },
    "runs": {
     "ko": {
      "credits": null,
-     "minutes": 9.6,
+     "minutes": 11.4,
      "sources": 0,
      "model": "qwen3.7-plus (상·중)",
      "date": "2026-10-30",
-     "build": "f3e157def",
-     "sessionId": "bdf2e7d8-e83c-461d-bc94-c9ed0ce1ce52",
+     "build": "6555e952d",
+     "sessionId": "a843cbfe-9279-47a5-aaaa-7176f9ac8a03",
      "by": "beta",
      "followUps": []
     }
