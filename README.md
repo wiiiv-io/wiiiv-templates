@@ -52,6 +52,8 @@ Exception: `moon-explorer` loads its map tiles and feature names from `assets/mo
 
 Exception: `solar-system` loads its textures, star catalogue, asteroid elements and spacecraft trajectories from `assets/solar/` (~49 MB: planet/moon maps `*.jpg`, `stars.bin`, `asteroids.bin`, `missions.json` + `missions/*.bin`). They stay out of the HTML for the same reason as the Moon tiles; with no network it still runs with flat-coloured bodies and analytic orbits. Sources: NASA/JPL Horizons and SBDB (public domain), Solar System Scope textures (CC BY 4.0), NASA/JPL/USGS moon maps (public domain), Phobos/Deimos maps by Askaniy Anpilogov et al. (CC BY-SA 3.0), HYG star database v4.1 (CC BY-SA 4.0) — credited in the app menu. The source and asset tools live in the wiiiv repo under `tools/wiiivapp-src/solar-system`.
 
+Exception: `paint` (wiiiv 그림판, a Photoshop-style editor) loads the practice photos for its Learn lessons from `assets/solar/*.jpg` and, only when a Google font is picked, the font CSS from fonts.googleapis.com. Without network everything works except those lessons and web fonts. Source: `tools/wiiivapp-src/paint` in the wiiiv repo.
+
 ## Adding a template (no server/desktop build needed)
 
 1. Create `{id}.html` — **self-contained** (no external scripts/CSS), dark theme (`#0d0d1a` bg, `#7c5cfc` accent), `const LANG = 'ko';` + a `T` dictionary with `ko`/`en` (see `memory.html`). The server rewrites `LANG` to the session language.
