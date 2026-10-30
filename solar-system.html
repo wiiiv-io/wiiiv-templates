@@ -157,9 +157,11 @@ body.pbding #dock { display: none; }
 #surf .sb { display: flex; gap: 6px; flex-wrap: wrap; } #surf select { background: rgba(255,255,255,.06); border: 1px solid var(--line2); border-radius: 9px; padding: 6px 8px; color: var(--fg); color-scheme: dark; }
 body.surfing #dock, body.surfing #info { display: none; }
 /* 안내·알림 */
-body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
+body.panel #timebar, body.panel #hintBar { left: calc((100% - var(--side) - 24px) / 2); } body.panel #hintBar { max-width: calc(100% - var(--side) - 48px); }
 #toast { position: fixed; left: 50%; top: calc(76px + env(safe-area-inset-top)); transform: translateX(-50%); padding: 9px 16px; z-index: 9; font-size: 13.5px; opacity: 0; transition: opacity .3s; pointer-events: none; text-align: center; max-width: 86vw; }
 #toast.show { opacity: 1; }
+#hintBar { position: fixed; left: 50%; transform: translateX(-50%); transition: left .35s; bottom: calc(66px + env(safe-area-inset-bottom)); z-index: 3; font-size: 12px; color: rgba(220,228,255,.5); text-shadow: 0 1px 3px #000; pointer-events: none; white-space: nowrap; max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; }
+@media (hover: none), (max-width: 760px) { #hintBar { display: none; } }
 #loading { position: fixed; inset: 0; display: grid; place-items: center; background: #000; z-index: 20; transition: opacity 1.2s; }
 #loading.done { opacity: 0; pointer-events: none; }
 #loading .t { text-align: center; color: var(--dim); font-size: 13px; letter-spacing: .1em; }
@@ -234,6 +236,7 @@ body.panel #timebar { left: calc((100% - var(--side) - 24px) / 2); }
 <div id="pbd" class="glass" hidden></div>
 <div id="timebar" class="glass"></div>
 <div id="toast" class="glass"></div>
+<div id="hintBar"></div>
 <div id="loading"><div class="t"><img class="lg" id="ldLogo" alt="wiiiv"><b id="ldT">SOLAR SYSTEM</b><span id="ldS"></span><div class="pg"><i id="ldP"></i></div></div></div>
 <script>
 // wiiiv 로고 (원본: wiiiv/brand/originals/wiiiv-logo-master.png 를 128px 로 줄인 사본)
@@ -2312,7 +2315,7 @@ TX.ko = {
   dateTitle: '날짜·시각으로 가기 (UTC)', go: '가기', cancel: '닫기', events: '역사적 순간',
   quality: '화질', qHigh: '높음', qMed: '보통', qLow: '빠름', lang: '언어', sound: '소리', realScale: '실제 크기', enlarge: '크게 보기',
   clickHint: '끌어서 돌리기 · 휠/두 손가락으로 확대 · 천체를 누르면 날아감', flyingTo: '{n}(으)로 가는 중…',
-  wellDepth: '중력 우물 깊이', exag: '과장', trueRatio: '실제 비율', outer: '소행성·카이퍼 벨트·태양권', help: '조작법', helpText: '끌기: 돌려 보기 · 가운데 끌기/Ctrl+끌기/두 손가락 끌기: 옮기기 (F: 다시 가운데로) · 오른쪽 끌기/Shift: 둘러보기 · 휠·두 손가락: 확대 · 천체 누르기: 날아가기 · 스페이스: 멈춤 · ,/. : 시간 빠르기 · 0–9: 태양~명왕성',
+  wellDepth: '중력 우물 깊이', exag: '과장', trueRatio: '실제 비율', outer: '소행성·카이퍼 벨트·태양권', help: '조작법', hintBar: '끌기 회전 · 휠 확대 · 휠버튼 끌기(또는 Ctrl+끌기) 이동 · F 가운데로 · 오른쪽 끌기 둘러보기 · 천체 클릭 날아가기 · Space 재생/멈춤 · 0–9 행성', helpText: '끌기: 돌려 보기 · 가운데 끌기/Ctrl+끌기/두 손가락 끌기: 옮기기 (F: 다시 가운데로) · 오른쪽 끌기/Shift: 둘러보기 · 휠·두 손가락: 확대 · 천체 누르기: 날아가기 · 스페이스: 멈춤 · ,/. : 시간 빠르기 · 0–9: 태양~명왕성',
   ev: { apollo11: '아폴로 11호 달 착륙', eclipse1919: '1919년 개기 일식 (에딩턴)', v2nep: '보이저 2호 해왕성 통과', halley86: '핼리 혜성 근일점', sl9: '슐레마커-레비 9 목성 충돌', mars2003: '화성 6만 년 만의 대접근', conj2020: '목성·토성 대근접', eclipse2017: '2017 북미 개기 일식', eclipse2024: '2024 북미 개기 일식', eclipse2026: '2026 스페인 개기 일식', apophis: '아포피스 지구 근접', pbd1990: '창백한 푸른 점 (보이저 1호)', halley61: '핼리 혜성 귀환', cassiniEnd: '카시니 토성 돌입', nhPluto: '뉴호라이즌스 명왕성 통과', parker24: '파커 탐사선 태양 최근접' },
 };
 TX.en = {
@@ -2331,7 +2334,7 @@ TX.en = {
   dateTitle: 'Go to date & time (UTC)', go: 'Go', cancel: 'Close', events: 'Historic moments',
   quality: 'Quality', qHigh: 'High', qMed: 'Medium', qLow: 'Fast', lang: 'Language', sound: 'Sound', realScale: 'True scale', enlarge: 'Enlarged',
   clickHint: 'Drag to orbit · wheel/pinch to zoom · tap a body to fly there', flyingTo: 'Flying to {n}…',
-  wellDepth: 'Gravity well depth', exag: 'Exaggerated', trueRatio: 'True ratio', outer: 'Asteroids · Kuiper Belt · heliosphere', help: 'Controls', helpText: 'Drag: orbit · Middle-drag/Ctrl+drag/two-finger drag: pan (F: recenter) · Right-drag/Shift: look around · Wheel/pinch: zoom · Tap a body: fly there · Space: pause · , / . : time speed · 0–9: Sun to Pluto',
+  wellDepth: 'Gravity well depth', exag: 'Exaggerated', trueRatio: 'True ratio', outer: 'Asteroids · Kuiper Belt · heliosphere', help: 'Controls', hintBar: 'Drag rotate · Wheel zoom · Middle-drag (or Ctrl+drag) pan · F recenter · Right-drag look around · Click a body to fly · Space play/pause · 0–9 planets', helpText: 'Drag: orbit · Middle-drag/Ctrl+drag/two-finger drag: pan (F: recenter) · Right-drag/Shift: look around · Wheel/pinch: zoom · Tap a body: fly there · Space: pause · , / . : time speed · 0–9: Sun to Pluto',
   ev: { apollo11: 'Apollo 11 Moon landing', eclipse1919: '1919 total eclipse (Eddington)', v2nep: 'Voyager 2 passes Neptune', halley86: 'Halley’s Comet perihelion', sl9: 'Shoemaker–Levy 9 hits Jupiter', mars2003: 'Closest Mars in 60,000 years', conj2020: 'Great conjunction of Jupiter & Saturn', eclipse2017: '2017 North American eclipse', eclipse2024: '2024 North American eclipse', eclipse2026: '2026 eclipse over Spain', apophis: 'Apophis passes Earth', pbd1990: 'Pale Blue Dot (Voyager 1)', halley61: 'Halley’s Comet returns', cassiniEnd: 'Cassini plunges into Saturn', nhPluto: 'New Horizons passes Pluto', parker24: 'Parker Solar Probe’s closest pass' },
 };
 // 천체 이름
@@ -2956,7 +2959,7 @@ const UI = {};
   };
   UI.lang = () => {
     document.documentElement.lang = LG; $('pageTitle').textContent = T().title + (LG === 'en' ? '' : ' — Solar System');
-    $('brandT').textContent = T().title; $('brandLogo').src = WIIIV_LOGO; $('ldLogo').src = WIIIV_LOGO; $('ldT').textContent = T().title; $('brandS').textContent = T().sub; $('search').placeholder = T().search;
+    $('brandT').textContent = T().title; $('brandLogo').src = WIIIV_LOGO; $('ldLogo').src = WIIIV_LOGO; $('ldT').textContent = T().title; $('brandS').textContent = T().sub; $('search').placeholder = T().search; $('hintBar').textContent = T().hintBar;
     const tools = ['orbits', 'labels', 'gravity', 'missions', 'learn'];
     $('tools').innerHTML = tools.map(k => `<button class="tb glass${APP.show[k] ? ' on' : ''}" data-k="${k}">${ICON[k]}<span class="lbl">${T()[k]}</span></button>`).join('') + `<button class="tb glass" data-k="more">${ICON.more}</button>`;
     $('tools').querySelectorAll('.tb').forEach(b => setTip(b, b.dataset.k));
@@ -4360,7 +4363,7 @@ TX['de'] = {
   trueRatio: 'Echtes Verhältnis',
   outer: 'Asteroiden · Kuipergürtel · Heliosphäre',
   help: 'Steuerung',
-  helpText: 'Ziehen: drehen · Rechts ziehen/Umschalt: umsehen · Rad/Pinch: zoomen · Himmelskörper antippen: hinfliegen · Leertaste: Pause · , / . : Zeitraffer · 0–9: Sonne bis Pluto',
+  hintBar: 'Ziehen drehen · Rad zoomen · Mitteltaste (oder Strg+) ziehen verschieben · F zentrieren · Rechts ziehen umsehen · Körper klicken hinfliegen · Leertaste Start/Pause · 0–9 Planeten', helpText: 'Ziehen: drehen · Rechts ziehen/Umschalt: umsehen · Rad/Pinch: zoomen · Himmelskörper antippen: hinfliegen · Leertaste: Pause · , / . : Zeitraffer · 0–9: Sonne bis Pluto',
   ev: {
     apollo11: 'Mondlandung von Apollo 11',
     eclipse1919: 'Totale Finsternis 1919 (Eddington)',
@@ -5309,7 +5312,7 @@ TX['es'] = {
   trueRatio: 'Proporción real',
   outer: 'Asteroides · Cinturón de Kuiper · heliosfera',
   help: 'Controles',
-  helpText: 'Arrastrar: orbitar · Arrastrar con botón derecho/Mayús: mirar alrededor · Rueda/pellizco: zoom · Tocar un cuerpo: volar hasta él · Espacio: pausa · , / . : velocidad del tiempo · 0–9: del Sol a Plutón',
+  hintBar: 'Arrastrar girar · Rueda zoom · Botón central (o Ctrl+) arrastrar mover · F centrar · Clic derecho mirar · Clic en un cuerpo para volar · Espacio reproducir/pausa · 0–9 planetas', helpText: 'Arrastrar: orbitar · Arrastrar con botón derecho/Mayús: mirar alrededor · Rueda/pellizco: zoom · Tocar un cuerpo: volar hasta él · Espacio: pausa · , / . : velocidad del tiempo · 0–9: del Sol a Plutón',
   ev: {
     apollo11: 'Alunizaje del Apolo 11',
     eclipse1919: 'Eclipse total de 1919 (Eddington)',
@@ -6303,7 +6306,7 @@ TX['fr'] = {
   trueRatio: 'Rapport réel',
   outer: 'Astéroïdes · ceinture de Kuiper · héliosphère',
   help: 'Commandes',
-  helpText: 'Glisser : tourner · Clic droit/Maj : regarder autour · Molette/pincer : zoom · Toucher un astre : y aller · Espace : pause · , / . : vitesse du temps · 0–9 : du Soleil à Pluton',
+  hintBar: 'Glisser tourner · Molette zoom · Clic milieu (ou Ctrl+) glisser déplacer · F recentrer · Clic droit regarder · Clic sur un astre pour y aller · Espace lecture/pause · 0–9 planètes', helpText: 'Glisser : tourner · Clic droit/Maj : regarder autour · Molette/pincer : zoom · Toucher un astre : y aller · Espace : pause · , / . : vitesse du temps · 0–9 : du Soleil à Pluton',
   ev: {
     apollo11: 'Alunissage d’Apollo 11',
     eclipse1919: 'Éclipse totale de 1919 (Eddington)',
@@ -7253,7 +7256,7 @@ TX['ja'] = {
   trueRatio: '実際の比率',
   outer: '小惑星 · カイパーベルト · 太陽圏',
   help: '操作方法',
-  helpText: 'ドラッグ：回転 · 右ドラッグ/Shift：見回す · ホイール/ピンチ：ズーム · 天体をタップ：移動 · スペース：一時停止 · , / . ：時間の速さ · 0〜9：太陽〜冥王星',
+  hintBar: 'ドラッグ回転 · ホイール拡大 · 中ボタン(Ctrl+)ドラッグ移動 · F 中央へ · 右ドラッグ見回し · 天体クリックで移動 · Space 再生/停止 · 0–9 惑星', helpText: 'ドラッグ：回転 · 右ドラッグ/Shift：見回す · ホイール/ピンチ：ズーム · 天体をタップ：移動 · スペース：一時停止 · , / . ：時間の速さ · 0〜9：太陽〜冥王星',
   ev: {
     apollo11: 'アポロ11号の月面着陸',
     eclipse1919: '1919年の皆既日食（エディントン）',
@@ -8247,7 +8250,7 @@ TX['pt'] = {
   trueRatio: 'Proporção real',
   outer: 'Asteroides · Cinturão de Kuiper · heliosfera',
   help: 'Controles',
-  helpText: 'Arrastar: orbitar · Arrastar com botão direito/Shift: olhar ao redor · Roda/pinça: zoom · Tocar num corpo: voar até ele · Espaço: pausar · , / . : velocidade do tempo · 0–9: do Sol a Plutão',
+  hintBar: 'Arrastar girar · Roda zoom · Botão do meio (ou Ctrl+) arrastar mover · F centralizar · Botão direito olhar · Clique num corpo para voar · Espaço reproduzir/pausar · 0–9 planetas', helpText: 'Arrastar: orbitar · Arrastar com botão direito/Shift: olhar ao redor · Roda/pinça: zoom · Tocar num corpo: voar até ele · Espaço: pausar · , / . : velocidade do tempo · 0–9: do Sol a Plutão',
   ev: {
     apollo11: 'Pouso da Apollo 11 na Lua',
     eclipse1919: 'Eclipse total de 1919 (Eddington)',
@@ -9211,7 +9214,7 @@ TX['ru'] = {
   trueRatio: 'Истинные пропорции',
   outer: 'Астероиды · пояс Койпера · гелиосфера',
   help: 'Управление',
-  helpText: 'Перетаскивание: облёт · Правая кнопка/Shift: осмотреться · Колесо/щипок: масштаб · Нажатие на тело: полёт к нему · Пробел: пауза · , / . : скорость времени · 0–9: от Солнца до Плутона',
+  hintBar: 'Тянуть — вращение · Колесо — масштаб · Средняя кнопка (или Ctrl+) — сдвиг · F — в центр · Правая — осмотреться · Клик по телу — полёт · Пробел — пуск/пауза · 0–9 планеты', helpText: 'Перетаскивание: облёт · Правая кнопка/Shift: осмотреться · Колесо/щипок: масштаб · Нажатие на тело: полёт к нему · Пробел: пауза · , / . : скорость времени · 0–9: от Солнца до Плутона',
   ev: {
     apollo11: 'Высадка «Аполлона-11» на Луну',
     eclipse1919: 'Полное затмение 1919 года (Эддингтон)',
@@ -10220,7 +10223,7 @@ TX['vi'] = {
   trueRatio: 'Tỉ lệ thật',
   outer: 'Tiểu hành tinh · vành đai Kuiper · nhật quyển',
   help: 'Điều khiển',
-  helpText: 'Kéo: xoay · Kéo chuột phải/Shift: nhìn quanh · Cuộn/chụm: thu phóng · Chạm thiên thể: bay tới · Space: tạm dừng · , / . : tốc độ thời gian · 0–9: từ Mặt Trời đến Sao Diêm Vương',
+  hintBar: 'Kéo xoay · Cuộn phóng to · Kéo nút giữa (hoặc Ctrl+) di chuyển · F về giữa · Kéo chuột phải nhìn quanh · Nhấp thiên thể để bay tới · Space chạy/dừng · 0–9 hành tinh', helpText: 'Kéo: xoay · Kéo chuột phải/Shift: nhìn quanh · Cuộn/chụm: thu phóng · Chạm thiên thể: bay tới · Space: tạm dừng · , / . : tốc độ thời gian · 0–9: từ Mặt Trời đến Sao Diêm Vương',
   ev: {
     apollo11: 'Apollo 11 đáp xuống Mặt Trăng',
     eclipse1919: 'Nhật thực toàn phần 1919 (Eddington)',
@@ -11214,7 +11217,7 @@ TX['zh-TW'] = {
   trueRatio: '真實比例',
   outer: '小行星 · 古柏帶 · 太陽圈',
   help: '操作說明',
-  helpText: '拖曳：旋轉視角 · 右鍵拖曳/Shift：環顧四周 · 滾輪/雙指：縮放 · 點選天體：飛往 · 空白鍵：暫停 · , / . ：時間速度 · 0–9：太陽到冥王星',
+  hintBar: '拖曳旋轉 · 滾輪縮放 · 中鍵(或Ctrl+)拖曳平移 · F 回到中心 · 右鍵拖曳環顧 · 點選天體飛往 · Space 播放/暫停 · 0–9 行星', helpText: '拖曳：旋轉視角 · 右鍵拖曳/Shift：環顧四周 · 滾輪/雙指：縮放 · 點選天體：飛往 · 空白鍵：暫停 · , / . ：時間速度 · 0–9：太陽到冥王星',
   ev: {
     apollo11: '阿波羅11號登月',
     eclipse1919: '1919年日全食（愛丁頓）',
@@ -12135,7 +12138,7 @@ TX['zh'] = {
   trueRatio: '真实比例',
   outer: '小行星 · 柯伊伯带 · 日球层',
   help: '操作',
-  helpText: '拖动：旋转视角 · 右键拖动/Shift：环顾 · 滚轮/双指：缩放 · 点击天体：飞往 · 空格：暂停 · , / . ：时间速度 · 0–9：太阳到冥王星',
+  hintBar: '拖动旋转 · 滚轮缩放 · 中键(或Ctrl+)拖动平移 · F 回到中心 · 右键拖动环顾 · 点击天体飞往 · Space 播放/暂停 · 0–9 行星', helpText: '拖动：旋转视角 · 右键拖动/Shift：环顾 · 滚轮/双指：缩放 · 点击天体：飞往 · 空格：暂停 · , / . ：时间速度 · 0–9：太阳到冥王星',
   ev: {
     apollo11: '阿波罗11号登月',
     eclipse1919: '1919年日全食（爱丁顿）',
@@ -13050,6 +13053,7 @@ function loop(now, manual) {
     RN.shift[0] += (tx - RN.shift[0]) * Math.min(1, dt * 5); RN.shift[1] += (ty - RN.shift[1]) * Math.min(1, dt * 5); }
   buildLines(S);
   RN.pump(APP.frames < 30 ? 12 : 6);
+  { const hb = $('hintBar'), hide = SURF.on || RINGF.on || !$('pbd').hidden || !$('surf').hidden; if (hb.hidden !== hide) hb.hidden = hide; } // 조작법 한 줄: 다른 아래쪽 패널이 있을 땐 숨김
   if (!QS.has('norender')) RN.frame(S);
   wantHi();
   if (!QS.has('noui')) UI.frame(dt);
