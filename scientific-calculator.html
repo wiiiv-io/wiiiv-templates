@@ -20,9 +20,9 @@ body{background:radial-gradient(ellipse at 50% 40%,#1b1b2e,#0d0d1a 70%);display:
   box-shadow:0 0 0 calc(var(--u) * 1.1) #c9cccb,0 0 0 calc(var(--u) * 1.6) #8d9091,0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(0,0,0,.6),inset 0 calc(var(--u) * .4) calc(var(--u) * .6) rgba(255,255,255,.12)}
 .brand{position:absolute;left:calc(var(--u) * 6);top:calc(var(--u) * 4.4);color:#f4f4f0;line-height:1}
 .brand img{display:block;height:calc(var(--u) * 4.4);width:auto;filter:drop-shadow(0 calc(var(--u) * .2) calc(var(--u) * .3) rgba(0,0,0,.5))}
-.brand .row{display:flex;align-items:center;gap:calc(var(--u) * 1.6)}
-.brand i{display:block;font-style:normal;font-size:calc(var(--u) * 2.8);font-weight:600;letter-spacing:calc(var(--u) * .1)}
-.brand u{display:block;text-decoration:none;color:#ff4f6e;font-size:calc(var(--u) * 2.5);letter-spacing:calc(var(--u) * .62);margin-top:calc(var(--u) * 1.4);font-weight:600}
+.brand .row{display:flex;width:max-content;align-items:flex-end;gap:calc(var(--u) * 1.6)}
+.brand i{display:block;font-style:normal;font-size:calc(var(--u) * 2.8);font-weight:600;letter-spacing:calc(var(--u) * .1);line-height:.78}
+.brand u{display:inline-block;white-space:nowrap;text-decoration:none;color:#ff4f6e;font-size:calc(var(--u) * 2.5);letter-spacing:calc(var(--u) * .62);margin-top:calc(var(--u) * 1.4);font-weight:600}
 .solar{position:absolute;right:calc(var(--u) * 6);top:calc(var(--u) * 3.6);width:calc(var(--u) * 25);height:calc(var(--u) * 10);border-radius:calc(var(--u) * 1.2);background:repeating-linear-gradient(90deg,#3b2b28 0 calc(var(--u) * 6),#2c201e calc(var(--u) * 6) calc(var(--u) * 6.25)),#3b2b28;box-shadow:inset 0 0 calc(var(--u) * 1) rgba(0,0,0,.8),0 calc(var(--u) * .3) 0 rgba(255,255,255,.08)}
 .lcdwrap{position:absolute;left:calc(var(--u) * 4);right:calc(var(--u) * 4);top:calc(var(--u) * 17);height:calc(var(--u) * 33);border-radius:calc(var(--u) * 2.5);background:#1c1b1a;box-shadow:inset 0 calc(var(--u) * .5) calc(var(--u) * 1) rgba(0,0,0,.9),0 calc(var(--u) * .3) 0 rgba(255,255,255,.07)}
 .lcd{position:absolute;left:calc(var(--u) * 2.4);right:calc(var(--u) * 2.4);top:calc(var(--u) * 2.4);bottom:calc(var(--u) * 2.4);border-radius:calc(var(--u) * .8);background:linear-gradient(170deg,var(--lcd),var(--lcd2));box-shadow:inset 0 calc(var(--u) * .4) calc(var(--u) * 1.2) rgba(0,0,0,.35);overflow:hidden;filter:contrast(var(--contrast,1))}
@@ -144,7 +144,7 @@ body.tut-open{gap:28px}
 </head>
 <body tabindex="0">
 <div class="calc" id="calc">
-  <div class="brand"><div class="row"><img id="brandLogo" alt="wiiiv"><i>wiiiv-991</i></div><u>SCIENTIFIC</u></div>
+  <div class="brand"><div class="row"><img id="brandLogo" alt="wiiiv"><i>wiiiv-991</i></div><u id="brandSub">SCIENTIFIC</u></div>
   <div class="solar"></div>
   <div class="lcdwrap"><div class="lcd" id="lcd"><canvas id="st"></canvas><canvas id="cv"></canvas></div></div>
   <div class="keys" id="keys"></div>
@@ -1883,6 +1883,10 @@ const HINT = {
 
 // 위브 로고 · 스크롤 막대는 움직일 때만 보이게 (태양계와 같은 방식)
 document.getElementById('brandLogo').src = WIIIV_LOGO;
+// SCIENTIFIC 글자 간격을 윗줄(로고 + wiiiv-991) 너비에 꼭 맞춘다
+{ const row = document.querySelector('.brand .row'), sub = document.getElementById('brandSub');
+  const fit = () => { sub.style.letterSpacing = '0px'; sub.style.marginRight = '0px'; const W = row.getBoundingClientRect().width, w = sub.getBoundingClientRect().width, n = sub.textContent.length; if (!W || n < 2) return; const g = (W - w) / (n - 1); sub.style.letterSpacing = g + 'px'; sub.style.marginRight = -g + 'px'; };
+  new ResizeObserver(fit).observe(row); document.getElementById('brandLogo').addEventListener('load', fit); if (document.fonts) document.fonts.ready.then(fit); }
 { const tm = new WeakMap(); document.addEventListener('scroll', e => { const el = e.target; if (!el || !el.classList) return; el.classList.add('scrolling'); clearTimeout(tm.get(el)); tm.set(el, setTimeout(() => el.classList.remove('scrolling'), 900)); }, true); }
 
 // ── 설정·기억 (실물처럼 전원을 꺼도 남는다)
