@@ -14,7 +14,13 @@ button,input,select{font:inherit;color:inherit}
 #side{width:330px;flex:none;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;transition:margin-left .25s ease;z-index:5}
 #side.hide{margin-left:-330px}
 .brand{display:flex;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
-.logo{width:30px;height:30px;border-radius:9px;background:conic-gradient(from 200deg,#7c5cfc,#4fb3ff,#5effc5,#fdca26,#ff6b9a,#7c5cfc);box-shadow:0 0 14px rgba(124,92,252,.5)}
+.logo{height:28px;width:auto;flex:none;display:block}
+/* 11/01 나무님: 갤러리 아래 편집 칸이 멀어 다루기 어렵다 — 「갤러리」·「편집」 두 탭으로 나눔 */
+.ptabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:10px 14px 0;background:var(--panel2);padding:3px;border-radius:10px;flex:none}
+.ptabs button{border:0;background:none;padding:7px 4px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--dim)}
+.ptabs button:hover{color:var(--fg)}
+.ptabs button.on{background:var(--acc);color:#fff}
+.scroll[hidden]{display:none}
 .brand b{display:block;font-size:15px}.brand small{color:var(--dim);font-size:11px;letter-spacing:.06em}
 .scroll{flex:1;overflow-y:auto;padding:4px 14px 18px;scrollbar-width:thin}
 /* 10/25 나무님: 가운데 흰 스크롤바가 보기 싫다 — 평소엔 투명, 마우스를 올렸을 때만 화면 색에 맞춘 가는 반투명 막대 */
@@ -102,9 +108,12 @@ body.light .math{text-shadow:none}
 <body tabindex="0">
 <div id="app">
   <aside id="side">
-    <div class="brand"><div class="logo"></div><div><b id="tTitle"></b><small id="tSub"></small></div></div>
-    <div class="scroll">
-      <section><h3 id="hGal"></h3><div id="gallery"></div></section>
+    <div class="brand"><img class="logo" id="logo" alt="wiiiv"><div><b id="tTitle"></b><small id="tSub"></small></div></div>
+    <div class="ptabs" id="paneTabs"><button data-p="paneGal" id="tabGal" class="on"></button><button data-p="paneEdit" id="tabEdit"></button></div>
+    <div class="scroll" id="paneGal">
+      <section><div id="gallery"></div></section>
+    </div>
+    <div class="scroll" id="paneEdit" hidden>
       <section><h3 id="hFormula"></h3><div class="tabs" id="modeTabs"></div><div id="editor"></div><div class="err" id="err"></div></section>
       <section><h3 id="hLook"></h3>
         <div class="lbl" id="lMap"></div><div class="maps" id="maps"></div>
@@ -1073,10 +1082,17 @@ document.addEventListener('keydown', e => {
   if (e.key === 'r' || e.key === 'R') resetView();
 });
 
+// wiiiv 로고 (원본: wiiiv/brand/originals/wiiiv-logo-master.png 를 128px 로 줄인 사본)
+const WIIIV_LOGO = 'data:image/webp;base64,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';
+// 옆 판 탭: 갤러리 / 편집
+const PANE_EDIT = { ko: '그래프 편집', en: 'Edit', ja: '編集', zh: '编辑', 'zh-TW': '編輯', es: 'Editar', fr: 'Modifier', de: 'Bearbeiten', pt: 'Editar', ru: 'Правка', vi: 'Chỉnh sửa' };
+function showPane(id) { for (const b of $('paneTabs').children) { const on = b.dataset.p === id; b.classList.toggle('on', on); $(b.dataset.p).hidden = !on; } }
 // ── 시작
 function init() {
   $('tTitle').textContent = T.title; $('tSub').textContent = T.sub;
-  $('hGal').textContent = T.gallery; $('hFormula').textContent = T.formula; $('hLook').textContent = T.look;
+  $('logo').src = WIIIV_LOGO; $('tabGal').textContent = T.gallery; $('tabEdit').textContent = PANE_EDIT[LG] || PANE_EDIT.en;
+  $('paneTabs').onclick = e => { const b = e.target.closest('button[data-p]'); if (b) showPane(b.dataset.p); };
+  $('hFormula').textContent = T.formula; $('hLook').textContent = T.look;
   $('lMap').textContent = T.colormap; $('lStyle').textContent = T.style; $('lRes').textContent = T.res; $('hint').textContent = T.hint;
   $('bPanel').title = T.panel; $('bSpin').title = T.spinTip; $('bReset').title = T.resetTip;
   $('modeTabs').innerHTML = ['explicit', 'param', 'curve', 'implicit'].map(m => `<button data-m="${m}">${T.tabs[m]}</button>`).join('');
@@ -1127,7 +1143,7 @@ const TUT_I18N = {"de":{"Learn":"Lernen","Learn the 3D grapher by doing":"Lerne 
   // {t:이름} → 앱 화면의 그 언어 이름, {p:갤러리 id} → 갤러리 그림 이름, `식` → 수식 글꼴
   const rich = s => esc(s).replace(/\{t:([\w.]+)\}/g, (_, k) => `<b class="tct">${esc(lab(k))}</b>`).replace(/\{p:([\w-]+)\}/g, (_, k) => `<b class="tct">${esc(pname(k))}</b>`).replace(/`([^`]+)`/g, '<code>$1</code>');
   const q = sel => (typeof sel === 'string' ? document.querySelector(sel) : sel);
-  const click = sel => { const e = q(sel); if (e) e.click(); return !!e; };
+  const click = sel => { const e = q(sel); if (e) { const pn = e.closest && e.closest('.scroll'); if (pn && pn.hidden) showPane(pn.id); e.click(); } return !!e; };
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const near = (a, b, e = 1e-6) => Math.abs(a - b) <= e * Math.max(1, Math.abs(b));
   const cv = s => { try { return constVal(String(s)); } catch { return NaN; } };
@@ -1169,11 +1185,11 @@ const TUT_I18N = {"de":{"Learn":"Lernen","Learn the 3D grapher by doing":"Lerne 
     } finally { ENV.set(keep); }
   }
   // 칸에 글을 넣고 바로 그리기 (보여주기용)
-  function setField(k, v) { const e = q(`#editor input[data-k="${k}"]`); if (!e) return; e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); }
-  function setRange(sel, v) { const e = q(sel); if (!e) return; e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }
+  function setField(k, v) { const e = q(`#editor input[data-k="${k}"]`); if (!e) return; showPane('paneEdit'); e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); }
+  function setRange(sel, v) { const e = q(sel); if (!e) return; const pn = e.closest('.scroll'); if (pn && pn.hidden) showPane(pn.id); e.value = v; e.dispatchEvent(new Event('input')); e.dispatchEvent(new Event('change')); }
   const field = k => `#editor input[data-k="${k}"]`;
   // 휴대폰에서 왼쪽 판이 닫혀 있으면 그 안의 곳 대신 ☰ 를 빛낸다
-  const inSide = sel => () => ($('side').classList.contains('hide') ? '#bPanel' : sel);
+  const inSide = sel => () => { if ($('side').classList.contains('hide')) return '#bPanel'; let t = sel; while (typeof t === 'function') t = t(); const e = q(t), pn = e && e.closest && e.closest('.scroll'); return pn && pn.hidden ? '#paneTabs button[data-p="' + pn.id + '"]' : t; };
   const openSide = async () => { if ($('side').classList.contains('hide')) { click('#bPanel'); await wait(300); } };
   const fieldStep = (say, key, mode, target, value, after) => ({ say, after, target: inSide(field(key)), done: () => ok() && same(curData()[key], mode, target), show: async () => { await openSide(); setField(key, value); await wait(350); } });
 
