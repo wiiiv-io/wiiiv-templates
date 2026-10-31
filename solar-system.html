@@ -3611,7 +3611,22 @@ const MIS = { list: null, data: {}, sel: null, crafts: {}, follow: false, auto: 
       ctx.font = '600 12.5px system-ui, sans-serif'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.fillText(MTXT().m[m.id]?.n || m.id, p.x + 10, p.y - 8); ctx.shadowBlur = 0;
       if (m === MIS.sel && MIS.vectors && c.st.near) vecs(ctx, c, m);
     }
+    if (MIS.sel) flyMarks(ctx, MIS.sel);
   };
+  // 궤적의 꺾인 곳(근접 비행·도착)에 날짜 표시 (11/01 나무님: 꺾인 곳이 무엇인지 화면만 보고 알게)
+  // 자리는 그날 그 행성의 위치 = 궤적이 지나간 곳. 그 행성 가까이 들어가 볼 때는 숨긴다
+  const fmtYM = jd => { const d = new Date((jd - 2440587.5) * 86400000); try { return d.toLocaleDateString(LG, { year: 'numeric', month: 'short', timeZone: 'UTC' }); } catch { return d.toISOString().slice(0, 7); } };
+  function flyMarks(ctx, m) {
+    if (!m._marks) m._marks = m.ev.filter(e => /^(fly|arrive):/.test(e[1])).map(([jd, k]) => { const b = k.split(':')[1], B = BY[b]; if (!B || B.parent !== 'sun') return null; return { b, kind: k.split(':')[0], jd, pos: relPos(B, jd - JD2000) }; }).filter(Boolean);
+    const T = MTXT();
+    for (const k of m._marks) {
+      const P = GRAV.amt ? GRAV.disp(k.pos) : k.pos, rel = sub(P, CAM.pos); if (len(rel) < 0.08 * AU) continue;
+      const p = RN.project(rel); if (!p.on) continue;
+      ctx.strokeStyle = `rgba(${m.col.map(x => x * 255 | 0)}, .95)`; ctx.fillStyle = '#05070d'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(p.x, p.y, 3.6, 0, TAU); ctx.fill(); ctx.stroke();
+      const txt = `${(T.ev[k.kind] || '{b}').replace('{b}', nm(k.b))} · ${fmtYM(k.jd)}`;
+      ctx.font = '500 11.5px system-ui, sans-serif'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4; ctx.fillStyle = `rgba(${m.col.map(x => x * 255 | 0)}, .9)`; ctx.fillText(txt, p.x + 8, p.y + 14); ctx.shadowBlur = 0;
+    }
+  }
   // 스윙바이 벡터: 태양 기준 속도, 행성 속도, 행성 기준 속도
   function vecs(ctx, c, m) {
     const B = c.st.near.b; const d = APP.d; const vb = add(scl(sub(relPos(B, d + 1 / 1440), relPos(B, d)), 1440 / 86400), parentVel(B, d));
