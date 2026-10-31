@@ -2246,7 +2246,8 @@ const CAM = { pan: [0, 0, 0], fovT: 50,
     CAM.focus = b;
   };
   // 화면 빈 곳에 알맞게 들어오는 거리
-  const moonSpan = b => { if (!b.kids || !b.kids.length || b.type === 'star') return 0; let m = 0; for (const k of b.kids) { const a = len(k.rel || [0, 0, 0]); if (k.R > 5 && a < b.R * 22) m = Math.max(m, a); } return m; };
+  // 행성 반지름 22배 안쪽 위성 + 가장 큰 위성(70배 안쪽, 지구의 달은 60배)
+  const moonSpan = b => { if (!b.kids || !b.kids.length || b.type === 'star') return 0; let m = 0, big = null; for (const k of b.kids) { const a = len(k.rel || [0, 0, 0]); if (k.R > 5 && a < b.R * 22) m = Math.max(m, a); if (!big || k.R > big.R) big = k; } if (big && big.R > 5) { const a = len(big.rel || [0, 0, 0]); if (a < b.R * 70) m = Math.max(m, a); } return m; };
   CAM.moonSpan = moonSpan;
   // 부속 천체 전체: 반지름 100 km 넘는 위성 중 행성 반지름 80배 안쪽 (멀리 붙잡힌 작은 위성은 뺌)
   CAM.allMoonSpan = b => { let m = 0; for (const k of (b.kids || [])) { const a = len(k.rel || [0, 0, 0]); if (k.R > 100 && a < b.R * 80) m = Math.max(m, a); } return m; };
