@@ -39,6 +39,8 @@ body.vig #dock, body.vig #brand, body.vig #players, body.vig #hudTop, body.vig #
 #tip b { font-size: 14px; } #tip span { color: var(--dim); }
 .menu .mrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .menu select { font: inherit; color: #fff; background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; color-scheme: dark; } .menu input[type=checkbox] { width: 20px; height: 20px; accent-color: #ffc531; }
+#arrive { position: fixed; left: 50%; top: 30%; transform: translate(-50%, 10px) scale(.9); z-index: 19; display: flex; gap: 16px; align-items: center; padding: 14px 30px 14px 18px; border-radius: 20px; background: rgba(12,16,30,.82); backdrop-filter: blur(10px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s cubic-bezier(.2,.9,.3,1.3); }
+#arrive.show { opacity: 1; transform: translate(-50%, 0) scale(1); } #arrive img { width: 66px; height: 44px; border-radius: 5px; box-shadow: 0 3px 12px rgba(0,0,0,.4); } #arrive small { display: block; color: var(--dim); font-size: 13px; letter-spacing: .1em; } #arrive b { font-size: 34px; font-weight: 900; line-height: 1.1; }
 /* 도시 도감 */
 .atlas { width: min(760px, 100%); } .adesc { margin: -4px 0 12px; color: var(--dim); font-size: 13px; }
 .agrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
@@ -63,6 +65,7 @@ body.vig #dock, body.vig #brand, body.vig #players, body.vig #hudTop, body.vig #
 #dock .dt { font-weight: 700; font-size: 14px; padding: 0 6px; text-align: center; }
 #dock .db { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .btn:disabled { opacity: .45; cursor: default; }
+.btn small.left { display: block; font-size: 11px; font-weight: 700; opacity: .75; margin-top: 1px; } .btn small.left.low { color: #b3261e; opacity: 1; } .btn.ghost small.left.low { color: #ff8a8a; }
 #banner { position: fixed; left: 50%; top: 22%; transform: translate(-50%, -20px); z-index: 9; display: flex; gap: 12px; align-items: center; padding: 12px 26px; border-radius: 99px; background: rgba(12,16,30,.78); backdrop-filter: blur(10px); font-size: 22px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
 #banner.show { opacity: 1; transform: translate(-50%, 0); }
 #toasts { position: fixed; left: 50%; bottom: calc(120px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 8; display: flex; flex-direction: column-reverse; gap: 6px; align-items: center; pointer-events: none; }
@@ -123,6 +126,7 @@ body.vig #dock, body.vig #brand, body.vig #players, body.vig #hudTop, body.vig #
 <button id="skip" class="glass" hidden>건너뛰기 ›</button>
 <div id="vigTitle"></div>
 <div id="flash"></div>
+<div id="arrive"></div>
 <script>
 /*__WIIIV_MARK_BEGIN__*/
 // wiiiv 로고 (원본: wiiiv/brand/originals/wiiiv-logo-master.png 를 128px 로 줄인 사본)
@@ -4226,7 +4230,7 @@ const CITY_TILE = Object.fromEntries(TILES.filter(t => t.k === 'city').map(t => 
 // 건물 단계: 0 땅만 · 1 별장 · 2 빌딩 · 3 호텔 · 4 랜드마크(도시의 상징물이 판 위에 선다)
 const LEVELS = 4;
 // 통행료(땅값 대비 배수), 건설비(줄마다)
-const RENT_K = [0.12, 0.5, 1.4, 3.0, 4.6];
+const RENT_K = [0.1, 0.35, 0.9, 1.8, 2.8];
 const BUILD_COST = side => [50, 100, 150, 200][side];
 const sideOf = i => Math.floor(i / 10);
 const rentOf = (t, lv, full) => Math.round(t.price * RENT_K[lv] * (lv === 0 && full ? 2 : 1) / 2) * 2;
@@ -4365,7 +4369,7 @@ const I18N = {
       busan: '대한민국 제2의 도시이자 가장 큰 항구입니다. 광안대교는 길이 7.4km로 2003년에 개통했습니다.',
       seoul: '600년 넘게 수도였던 도시입니다. 경복궁은 1395년 조선의 법궁으로 지어졌고, 남산서울타워는 1975년에 세워졌습니다.',
     },
-    u: { atlas: '도시 도감', atlasDesc: '도시를 누르면 그 도시로 날아가 봅니다.',
+    u: { left: '남는 돈 {c}', atlas: '도시 도감', atlasDesc: '도시를 누르면 그 도시로 날아가 봅니다.',
       turnOf: '{n}의 차례', you: '나', roll: '주사위 굴리기', pass: '넘기기', buy: '사기 · {c}', build: '{lv} 짓기 · {c}', takeover: '인수하기 · {c}',
       bail: '보석금 내기 · {c}', tryDbl: '더블에 도전', useCard: '구조 헬기 카드', pickExpo: '엑스포를 열 내 도시를 고르세요', pickBuild: '출발 보너스! 지금 지을 내 도시를 고르세요', pickFly: '날아갈 칸을 고르세요', flyHere: '여기로 날아가기', cancel: '그대로 있기',
       round: '{r} / {n} 바퀴', fund: '엑스포 기금', worth: '순자산', props: '도시 {n}', isle: '화산섬 {n}', flying: '공항', card: '헬기 카드',
@@ -4416,7 +4420,7 @@ const I18N = {
       busan: "South Korea's second-largest city and biggest port. The 7.4 km Gwangan Bridge opened in 2003.",
       seoul: 'Capital for more than 600 years. Gyeongbokgung was built in 1395 as the main palace of Joseon, and N Seoul Tower went up in 1975.',
     },
-    u: { atlas: 'City Atlas', atlasDesc: 'Tap a city to fly there and take a look.',
+    u: { left: '{c} left', atlas: 'City Atlas', atlasDesc: 'Tap a city to fly there and take a look.',
       turnOf: "{n}'s turn", you: 'You', roll: 'Roll dice', pass: 'Pass', buy: 'Buy · {c}', build: 'Build {lv} · {c}', takeover: 'Take over · {c}',
       bail: 'Pay bail · {c}', tryDbl: 'Try for doubles', useCard: 'Rescue card', pickExpo: 'Pick one of your cities to host the Expo', pickBuild: 'Start bonus! Pick one of your cities to build on now', pickFly: 'Pick a space to fly to', flyHere: 'Fly here', cancel: 'Stay',
       round: 'Round {r} / {n}', fund: 'Expo fund', worth: 'Net worth', props: '{n} cities', isle: 'Volcano {n}', flying: 'Airport', card: 'Heli card',
@@ -4552,6 +4556,9 @@ function initGfx(canvas) {
   const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: G.Q ? 4 : 0 });
   const cp = G.composer = new THREE.EffectComposer(r, rt);
   G.rp = new THREE.RenderPass(sc, G.camera); cp.addPass(G.rp);
+  // 검은 네모 깜빡임 방지: 작은 삼각형의 면 법선이 0 이 되면 NaN 픽셀이 생기고 블룸이 그걸 네모로 번지게 한다 → 여기서 지움
+  cp.addPass(new THREE.ShaderPass({ uniforms: { tDiffuse: { value: null } }, vertexShader: TiltShader.vertexShader,
+    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c = texture2D(tDiffuse, vUv); if (any(isnan(c)) || any(isinf(c))) c = vec4(0., 0., 0., 1.); gl_FragColor = vec4(min(c.rgb, vec3(48.)), c.a); }' }));
   G.tiltH = new THREE.ShaderPass(TiltShader); G.tiltV = new THREE.ShaderPass(TiltShader); G.tiltV.uniforms.uDir.value.set(0, 1);
   cp.addPass(G.tiltH); cp.addPass(G.tiltV);
   G.bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.5, 0.86); cp.addPass(G.bloom);
@@ -4642,7 +4649,7 @@ function winMat(col, o = {}) {
     s.vertexShader = 'varying vec3 vWP;\n' + s.vertexShader.replace(...WP_VERT);
     s.fragmentShader = 'varying vec3 vWP; uniform float uNight, uTime;\n' + HASH + '\n' + s.fragmentShader
       .replace('#include <color_fragment>', `#include <color_fragment>
-        vec3 nW = normalize(cross(dFdx(vWP), dFdy(vWP)));
+        vec3 cr_ = cross(dFdx(vWP), dFdy(vWP)); vec3 nW = dot(cr_, cr_) > 1e-14 ? normalize(cr_) : vec3(0., 1., 0.);
         float winOn = 0.; vec2 cell = vec2(0.);
         if (abs(nW.y) < .4) {
           vec3 tg = normalize(vec3(-nW.z, 0., nW.x));
@@ -9227,11 +9234,11 @@ function makeToken(id, col) {
   return g;
 }
 // 한 칸에 여럿이 설 때 자리
-const SEAT = [[-0.22, 0.12], [0.22, 0.12], [-0.22, 0.34], [0.22, 0.34]];
+const SEAT = [[-0.24, 0.06], [0.24, 0.06], [-0.24, 0.32], [0.24, 0.32]];
 function pawnSpot(i, seat) { const [u, v] = SEAT[seat]; return tileSpot(i, u, v); }
 function initPawns(scene, n = 4) {
   for (let k = 0; k < n; k++) {
-    const t = TOKENS[k], o = makeToken(t.id, t.col); scene.add(o);
+    const t = TOKENS[k], o = makeToken(t.id, t.col); o.scale.setScalar(1.55); scene.add(o);
     const p = { k, o, at: 0, ry: 0 }; PAWNS.list.push(p); placePawn(p, 0);
   }
 }
@@ -9260,7 +9267,17 @@ async function flyPawn(p, to) {
   await tween(1.6, k => { c.getPoint(k, p.o.position); const d = c.getTangent(Math.min(k, 0.99)); p.o.rotation.y = Math.atan2(-d.z, d.x); p.o.rotation.z = d.y * 0.4; }, ease.inOut);
   p.o.rotation.z = 0; p.at = to; p.o.rotation.y = tileFacing(to);
 }
+// 차례인 말 위에 떠서 까딱이는 화살표 + 바닥 빛 고리
+let ACTIVE_MARK = null;
+function setActivePawn(pw) {
+  if (!ACTIVE_MARK) { const g = new THREE.Group(); K.cone(g, 0.42, 0.75, M('#ffffff', { e: '#ffffff', ei: 0.6 }), 0, 0, 0, 4, { keep: true }).rotation.x = Math.PI;
+    K.mesh(g, new THREE.TorusGeometry(0.95, 0.07, 6, 32), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8, toneMapped: false }), 0, 0, 0, { rx: Math.PI / 2, keep: true, cast: false }).name = 'ring';
+    ACTIVE_MARK = g; G.scene.add(g); }
+  ACTIVE_MARK.userData.pw = pw; const col = TOKENS[pw.k].col; ACTIVE_MARK.children.forEach(c => { if (c.material.emissive) { c.material = M(col, { e: col, ei: 0.8 }); } else c.material.color.set(col); });
+}
 function tickPawns(dt, t) {
+  if (ACTIVE_MARK && ACTIVE_MARK.userData.pw) { const o = ACTIVE_MARK.userData.pw.o, a = ACTIVE_MARK.children[0], r = ACTIVE_MARK.getObjectByName('ring');
+    ACTIVE_MARK.visible = o.visible; ACTIVE_MARK.position.copy(o.position); a.position.y = 3.6 + Math.sin(t * 4) * 0.3; a.rotation.y = t * 2; r.position.y = 0.05; r.scale.setScalar(1 + (t * 0.8 % 1) * 0.6); r.material.opacity = 0.8 * (1 - t * 0.8 % 1); }
   for (const p of PAWNS.list) {
     const b = p.o.userData.body; if (!b) continue;
     const ty = TOKENS[p.k].id;
@@ -9503,10 +9520,12 @@ async function playVignette(tileIdx, info = {}) {
   const t = TILES[tileIdx]; if (t.k !== 'city') return;
   const v = vigBuild(t.id), { root, ctx } = v;
   VIG.active = true; VIG.skip = false; VIG.cur = v; VIG.t = 0; document.body.classList.add('vig');
+  // 먼저 판 위에서 '어디에 도착했는지' 보여 준다 → 그 칸으로 다가가며 하얗게 녹아 들어간다
+  arriveBanner(t);
+  if (!VIG.skip) await sleep(900);
   SND.whoosh?.();
-  // 판 카메라: 칸으로 빨려 들어가기
-  await camDive(tileIdx);
-  flash(0.25);
+  const dive = camDive(tileIdx); await sleep(VIG.skip ? 0 : 750); await fadeTo(1, VIG.skip ? 0.05 : 0.4); await dive;
+  arriveBanner(null);
   root.visible = true;
   for (const [, o] of VIG.cache) if (o !== v) o.root.visible = false;
   G.rp.scene = VIG.scene; G.rp.camera = VIG.cam; G.tiltH.uniforms.uAmt.value = G.tiltV.uniforms.uAmt.value = 1.6;
@@ -9517,6 +9536,8 @@ async function playVignette(tileIdx, info = {}) {
   const pops = (ctx.pops || []).map(o => ({ o, s: o.scale.clone(), d: 0.4 + Math.hypot(o.position.x, o.position.z) / VK.R * 1.4 }));
   for (const r of rise.concat(pops)) r.o.scale.set(r.s.x, 0.001, r.s.z);
   const path = vigCamPath(ctx), DUR = ctx.dur ?? 6.2, dust = vigDust(root, ctx);
+  { const c = path(0); VIG.cam.position.copy(c.pos); VIG.cam.lookAt(c.tgt); }
+  fadeTo(0, 0.7);
   SND.rise?.();
   await new Promise(res => {
     const step = dt => {
@@ -9531,11 +9552,12 @@ async function playVignette(tileIdx, info = {}) {
     ON_FRAME.add(step);
   });
   for (const r of rise.concat(pops)) r.o.scale.copy(r.s);
-  flash(0.3);
+  await fadeTo(1, 0.35);
   vigTitle(null);
   root.visible = false; G.rp.scene = G.scene; G.rp.camera = G.camera;
   G.tiltH.uniforms.uAmt.value = G.tiltV.uniforms.uAmt.value = 1.3; G.tiltH.uniforms.uBand.value = G.tiltV.uniforms.uBand.value = 0.34;
   VIG.active = false; document.body.classList.remove('vig');
+  fadeTo(0, 0.6);
   await camBack();
 }
 // 솟을 때 땅에서 피어오르는 먼지 고리
@@ -9544,6 +9566,13 @@ function vigDust(root, ctx) {
   for (let i = 0; i < n; i++) P.push({ a: rnd() * 6.28, sp: 2 + rnd() * 3, s: 0.5 + rnd() * 0.8 });
   im.castShadow = false; root.add(im); let t = 0; const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3();
   return dt => { t += dt; if (t > 2.2) { im.visible = false; return; } P.forEach((a, i) => { const r = (ctx.dustR ?? 3) + a.sp * t, k = Math.max(0, 1 - t / 2.2); m.compose(p.set(f.x + Math.cos(a.a) * r, f.y + 0.3 + t * 0.6, f.z + Math.sin(a.a) * r), q, s.setScalar(a.s * k * (1 + t))); im.setMatrixAt(i, m); }); im.instanceMatrix.needsUpdate = true; im.material.opacity = 0.7 * Math.max(0, 1 - t / 2.2); };
+}
+// 흰 막: 그림 시간에 맞춰 opacity 를 올리고 내림
+function fadeTo(v, dur) { const f = $('flash'); f.style.transition = 'none'; const a = +getComputedStyle(f).opacity || 0; return tween(dur, k => { f.style.opacity = String(lerp(a, v, k)); }, ease.inOut); }
+// 도착 표시: 국기 + 도시 이름
+function arriveBanner(t) {
+  const b = $('arrive'); if (!t) { b.className = ''; return; }
+  b.innerHTML = `<img src="${flagURL(CITY[t.id].cc)}" alt=""><div><small>${esc(T.country[CITY[t.id].cc])}</small><b>${esc(T.city[t.id])}</b></div>`; b.className = 'show';
 }
 function flash(dur) { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = '1'; requestAnimationFrame(() => { f.style.transition = `opacity ${dur * 2.2}s ease-out`; f.style.opacity = '0'; }); }
 function vigTitle(t, info = {}) {
@@ -9597,7 +9626,7 @@ function dust(at, n = 26, col = '#e8dcc8') {
 function lightning(at) {
   const pts = [new THREE.Vector3(at.x + (Math.random() - .5) * 3, at.y + 14, at.z)]; for (let i = 1; i <= 8; i++) pts.push(new THREE.Vector3(at.x + (Math.random() - .5) * 1.6, at.y + 14 - i * 14 / 8, at.z + (Math.random() - .5) * 1.6)); pts[8].copy(at);
   const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0), 40, 0.09, 4), new THREE.MeshBasicMaterial({ color: '#e8f0ff', toneMapped: false }));
-  FX.root.add(m); SND.rumble?.(); flash(0.08);
+  FX.root.add(m); SND.rumble?.();
   let t = 0; const f = dt => { t += dt; m.visible = Math.sin(t * 60) > -0.3; if (t > 0.45) { ON_FRAME.delete(f); FX.root.remove(m); } }; ON_FRAME.add(f);
   // 먹구름
   const cl = new THREE.Group(); for (let i = 0; i < 5; i++) K.mesh(cl, new THREE.IcosahedronGeometry(1.3 + Math.random(), 1), M('#5a5f6e', { r: 1 }), (i - 2) * 1.3, Math.random() * .5, (Math.random() - .5), { s: [1.2, .7, 1] }); cl.position.set(at.x, at.y + 14, at.z); FX.root.add(cl);
@@ -9839,7 +9868,7 @@ async function landProp(p, t, dice) {
   const S = S_(), o = S.own[t.i];
   if (o < 0) {
     const price = priceOf(t);
-    if (p.money >= price && await ask(p, 'buy', { t, price }) ) { p.money -= price; S.own[t.i] = p.k; logEv({ k: 'buy', p: p.k, t: t.i }); await UI.bought?.(p, t, price); await offerBuild(p, t); }
+    if (p.money >= price && await ask(p, 'buy', { t, price }) ) { p.money -= price; S.own[t.i] = p.k; logEv({ k: 'buy', p: p.k, t: t.i }); await UI.bought?.(p, t, price); await offerBuild(p, t, 2); }
     return;
   }
   if (o === p.k) { await offerBuild(p, t); return; }
@@ -9860,11 +9889,12 @@ async function landProp(p, t, dice) {
 }
 // 자기 도시에 짓기: 한 번에 호텔까지 여러 단계(값은 합). 이미 호텔이면 랜드마크
 const costTo = (t, from, to) => { let c = 0; for (let l = from + 1; l <= to; l++) c += buildCost(t, l); return c; };
-async function offerBuild(p, t) {
+async function offerBuild(p, t, maxLv = 3) {
   if (t.k !== 'city') return;
   const S = S_(), lv = S.lv[t.i];
   if (lv >= 4) return;
-  const opts = lv === 3 ? [4] : [1, 2, 3].filter(l => l > lv);
+  const opts = lv === 3 ? [4] : [1, 2, 3].filter(l => l > lv && l <= maxLv);   // 처음 살 때는 빌딩까지, 다시 오면 호텔까지
+  if (!opts.length) return;
   const can = opts.filter(l => costTo(t, lv, l) <= p.money).map(l => ({ to: l, cost: costTo(t, lv, l) }));
   if (!can.length) return;
   const to = await ask(p, 'build', { t, from: lv, opts: can });
@@ -10018,12 +10048,14 @@ function pickTile(ok, title, allowCancel) {
     $('dock').hidden = false; if (allowCancel) $('pkC').onclick = () => finish(null);
   });
 }
+// 단추 아래 '남는 돈' (적으면 붉게)
+const leftTag = (p, cost) => { const l = p.money - cost; return `<small class="left${l < 300 ? ' low' : ''}">${esc(fmt(T.u.left, { c: money(l) }))}</small>`; };
 UI.ask = async (p, what, d) => {
   hud();
   switch (what) {
     case 'roll': return choose([{ t: '🎲 ' + esc(T.u.roll), v: true }]);
-    case 'buy': showCard(d.t.i, true); { const v = await choose([{ t: esc(fmt(T.u.buy, { c: money(d.price) })), v: true }, { t: esc(T.u.pass), cls: 'ghost', v: false }]); hideCard(); return v; }
-    case 'build': showCard(d.t.i, true); { const v = await choose(d.opts.map((o, i) => ({ t: (o.to === 4 ? '🏛️ ' : '🏗️ ') + esc(fmt(T.u.build, { lv: T.level[o.to], c: money(o.cost) })), cls: i === d.opts.length - 1 ? '' : 'ghost', v: o.to })).reverse().concat([{ t: esc(T.u.pass), cls: 'ghost', v: 0 }])); hideCard(); return v; }
+    case 'buy': showCard(d.t.i, true); { const v = await choose([{ t: esc(fmt(T.u.buy, { c: money(d.price) })) + leftTag(p, d.price), v: true }, { t: esc(T.u.pass), cls: 'ghost', v: false }]); hideCard(); return v; }
+    case 'build': showCard(d.t.i, true); { const v = await choose(d.opts.map((o, i) => ({ t: (o.to === 4 ? '🏛️ ' : '🏗️ ') + esc(fmt(T.u.build, { lv: T.level[o.to], c: money(o.cost) })) + leftTag(p, o.cost), cls: i === 0 ? '' : 'ghost', v: o.to })).concat([{ t: esc(T.u.pass), cls: 'ghost', v: 0 }])); hideCard(); return v; }
     case 'takeover': showCard(d.t.i, true); { const v = await choose([{ t: '🤝 ' + esc(fmt(T.u.takeover, { c: money(d.price) })), v: true }, { t: esc(T.u.pass), cls: 'ghost', v: false }]); hideCard(); return v; }
     case 'isle': return choose([{ t: '🎲 ' + esc(T.u.tryDbl), v: 'roll' }, { t: esc(fmt(T.u.bail, { c: money(d.bail) })), cls: 'ghost', v: 'pay', dis: p.money < d.bail }].concat(p.freeIsle ? [{ t: '🚁 ' + esc(T.u.useCard), cls: 'ghost', v: 'card' }] : []), '🌋 ' + esc(T.tile.island));
     case 'expo': return pickTile(d.tiles, '🏛️ ' + T.u.pickExpo, false);
@@ -10119,10 +10151,7 @@ UI.bankrupt = async p => { for (const t of TILES) if (S_().own[t.i] < 0 && OWN.m
 UI.log = () => {};
 function toast(s) { const t = document.createElement('div'); t.className = 'toast glass'; t.textContent = s; $('toasts').appendChild(t); setTimeout(() => t.classList.add('out'), 2600); setTimeout(() => t.remove(), 3100); }
 // 카메라를 차례인 말 쪽으로 살짝
-function camFollow(p) {
-  if (!CAM.ctl.enabled) return; const to = pawnPos(p).multiplyScalar(0.55); to.y = 0;
-  const t0 = CAM.ctl.target.clone(); tween(0.8, k => CAM.ctl.target.lerpVectors(t0, to, k), ease.inOut);
-}
+function camFollow(p) { CAM.follow = pawnOf(p).o; setActivePawn(pawnOf(p)); }
 
 // ── 도시 카드 (칸 눌렀을 때·살 때) ──
 function showCard(i, inline) {
@@ -10290,7 +10319,7 @@ I18N['de'] = {
     busan: 'Die zweitgrößte Stadt Südkoreas und sein größter Hafen. Die 7,4 km lange Gwangan-Brücke wurde 2003 eröffnet.',
     seoul: 'Seit mehr als 600 Jahren Hauptstadt. Gyeongbokgung wurde 1395 als Hauptpalast von Joseon gebaut, der N Seoul Tower entstand 1975.',
   },
-  u: { atlas: 'Städteatlas', atlasDesc: 'Tippe auf eine Stadt, um hinzufliegen.',
+  u: { left: 'Rest {c}', atlas: 'Städteatlas', atlasDesc: 'Tippe auf eine Stadt, um hinzufliegen.',
     turnOf: '{n} ist dran', you: 'Du', roll: 'Würfeln', pass: 'Passen', buy: 'Kaufen · {c}', build: '{lv} bauen · {c}', takeover: 'Übernehmen · {c}',
     bail: 'Kaution zahlen · {c}', tryDbl: 'Pasch versuchen', useCard: 'Rettungskarte', pickExpo: 'Wähle eine deiner Städte für die Expo', pickBuild: 'Startbonus! Wähle eine deiner Städte zum Bauen', pickFly: 'Wähle ein Feld als Flugziel', flyHere: 'Hierhin fliegen', cancel: 'Bleiben',
     round: 'Runde {r} / {n}', fund: 'Expo-Fonds', worth: 'Vermögen', props: '{n} Städte', isle: 'Vulkan {n}', flying: 'Flughafen', card: 'Heli-Karte',
@@ -10343,7 +10372,7 @@ I18N['es'] = {
     busan: 'La segunda ciudad más grande de Corea del Sur y su mayor puerto. El Puente Gwangan, de 7.4 km, se inauguró en 2003.',
     seoul: 'Capital durante más de 600 años. Gyeongbokgung se construyó en 1395 como palacio principal de Joseon, y la Torre N de Seúl se levantó en 1975.',
   },
-  u: { atlas: 'Atlas de ciudades', atlasDesc: 'Toca una ciudad para volar hasta allí y verla.',
+  u: { left: 'Te quedan {c}', atlas: 'Atlas de ciudades', atlasDesc: 'Toca una ciudad para volar hasta allí y verla.',
     turnOf: 'Turno de {n}', you: 'Tú', roll: 'Tirar dados', pass: 'Pasar', buy: 'Comprar · {c}', build: 'Construir {lv} · {c}', takeover: 'Adquirir · {c}',
     bail: 'Pagar fianza · {c}', tryDbl: 'Intentar dobles', useCard: 'Carta de rescate', pickExpo: 'Elige una de tus ciudades para la Expo', pickBuild: '¡Bono de salida! Elige una de tus ciudades para construir', pickFly: 'Elige una casilla a la que volar', flyHere: 'Volar aquí', cancel: 'Quedarse',
     round: 'Ronda {r} / {n}', fund: 'Fondo Expo', worth: 'Patrimonio', props: '{n} ciudades', isle: 'Volcán {n}', flying: 'Aeropuerto', card: 'Carta heli',
@@ -10396,7 +10425,7 @@ I18N['fr'] = {
     busan: 'La deuxième ville de Corée du Sud et son plus grand port. Le pont Gwangan, long de 7,4 km, a ouvert en 2003.',
     seoul: 'Capitale depuis plus de 600 ans. Le Gyeongbokgung a été construit en 1395 comme palais principal de Joseon, et la N Seoul Tower s’est élevée en 1975.',
   },
-  u: { atlas: 'Atlas des villes', atlasDesc: 'Touchez une ville pour vous y envoler.',
+  u: { left: 'Reste {c}', atlas: 'Atlas des villes', atlasDesc: 'Touchez une ville pour vous y envoler.',
     turnOf: 'Au tour de {n}', you: 'Vous', roll: 'Lancer les dés', pass: 'Passer', buy: 'Acheter · {c}', build: 'Bâtir {lv} · {c}', takeover: 'Racheter · {c}',
     bail: 'Payer la caution · {c}', tryDbl: 'Tenter un double', useCard: 'Carte sauvetage', pickExpo: 'Choisissez une de vos villes pour l’Expo', pickBuild: 'Bonus de départ ! Choisissez une de vos villes où bâtir', pickFly: 'Choisissez une case où voler', flyHere: 'Voler ici', cancel: 'Rester',
     round: 'Tour {r} / {n}', fund: 'Fonds de l’Expo', worth: 'Fortune', props: '{n} villes', isle: 'Volcan {n}', flying: 'Aéroport', card: 'Carte hélico',
@@ -10449,7 +10478,7 @@ I18N['ja'] = {
     busan: '韓国第2の都市で、いちばん大きな港町です。長さ7.4kmの広安大橋は2003年に開通しました。',
     seoul: '600年以上も首都であり続けた都市です。景福宮は1395年に朝鮮王朝の正宮として建てられ、南山ソウルタワーは1975年に建ちました。',
   },
-  u: { atlas: '都市図鑑', atlasDesc: '都市を押すと、その街へ飛んで見に行けます。',
+  u: { left: '残り {c}', atlas: '都市図鑑', atlasDesc: '都市を押すと、その街へ飛んで見に行けます。',
     turnOf: '{n}の番', you: 'あなた', roll: 'サイコロを振る', pass: 'パス', buy: '買う · {c}', build: '{lv}を建てる · {c}', takeover: '買収 · {c}',
     bail: '保釈金 · {c}', tryDbl: 'ゾロ目に挑戦', useCard: '救助ヘリカード', pickExpo: '万博を開く自分の都市を選んでください', pickBuild: 'スタートボーナス!今すぐ建てる自分の都市を選んでください', pickFly: '飛んでいくマスを選んでください', flyHere: 'ここへ飛ぶ', cancel: 'とどまる',
     round: '{r} / {n} 周', fund: '万博基金', worth: '総資産', props: '都市 {n}', isle: '火山島 {n}', flying: '空港', card: 'ヘリカード',
@@ -10502,7 +10531,7 @@ I18N['pt'] = {
     busan: 'A segunda maior cidade da Coreia do Sul e seu maior porto. A Ponte Gwangan, com 7,4 km, foi inaugurada em 2003.',
     seoul: 'Capital há mais de 600 anos. O Gyeongbokgung foi construído em 1395 como palácio principal de Joseon, e a N Seoul Tower foi erguida em 1975.',
   },
-  u: { atlas: 'Atlas de cidades', atlasDesc: 'Toque em uma cidade para voar até lá.',
+  u: { left: 'Sobram {c}', atlas: 'Atlas de cidades', atlasDesc: 'Toque em uma cidade para voar até lá.',
     turnOf: 'Vez de {n}', you: 'Você', roll: 'Rolar dados', pass: 'Passar', buy: 'Comprar · {c}', build: 'Construir {lv} · {c}', takeover: 'Adquirir · {c}',
     bail: 'Pagar fiança · {c}', tryDbl: 'Tentar dupla', useCard: 'Carta de resgate', pickExpo: 'Escolha uma de suas cidades para sediar a Expo', pickBuild: 'Bônus de partida! Escolha uma de suas cidades para construir', pickFly: 'Escolha uma casa para voar', flyHere: 'Voar para cá', cancel: 'Ficar',
     round: 'Rodada {r} / {n}', fund: 'Fundo da Expo', worth: 'Patrimônio', props: '{n} cidades', isle: 'Vulcão {n}', flying: 'Aeroporto', card: 'Carta heli',
@@ -10555,7 +10584,7 @@ I18N['ru'] = {
     busan: 'Второй по величине город Южной Кореи и её крупнейший порт. Мост Кванан длиной 7,4 км открылся в 2003 году.',
     seoul: 'Столица уже более 600 лет. Кёнбоккун построили в 1395 году как главный дворец Чосона, а башня N Сеул появилась в 1975 году.',
   },
-  u: { atlas: 'Атлас городов', atlasDesc: 'Нажмите на город, чтобы полететь туда.',
+  u: { left: 'Останется {c}', atlas: 'Атлас городов', atlasDesc: 'Нажмите на город, чтобы полететь туда.',
     turnOf: 'Ходит {n}', you: 'Вы', roll: 'Бросить', pass: 'Пас', buy: 'Купить · {c}', build: 'Строить: {lv} · {c}', takeover: 'Выкупить · {c}',
     bail: 'Залог · {c}', tryDbl: 'Ждать дубль', useCard: 'Карта спасения', pickExpo: 'Выберите свой город для Экспо', pickBuild: 'Бонус старта! Выберите свой город для стройки', pickFly: 'Выберите клетку для полёта', flyHere: 'Лететь сюда', cancel: 'Остаться',
     round: 'Круг {r} / {n}', fund: 'Фонд Экспо', worth: 'Капитал', props: 'Городов: {n}', isle: 'Вулкан {n}', flying: 'Аэропорт', card: 'Вертолёт',
@@ -10608,7 +10637,7 @@ I18N['vi'] = {
     busan: 'Thành phố lớn thứ hai và cảng lớn nhất Hàn Quốc. Cầu Gwangan dài 7,4 km khánh thành năm 2003.',
     seoul: 'Là thủ đô hơn 600 năm. Cung Gyeongbok được xây năm 1395 làm cung điện chính của triều Joseon, còn Tháp N Seoul dựng lên năm 1975.',
   },
-  u: { atlas: 'Sổ tay thành phố', atlasDesc: 'Chạm vào một thành phố để bay tới xem.',
+  u: { left: 'Còn lại {c}', atlas: 'Sổ tay thành phố', atlasDesc: 'Chạm vào một thành phố để bay tới xem.',
     turnOf: 'Lượt của {n}', you: 'Bạn', roll: 'Gieo xúc xắc', pass: 'Bỏ qua', buy: 'Mua · {c}', build: 'Xây {lv} · {c}', takeover: 'Thâu tóm · {c}',
     bail: 'Nộp tiền · {c}', tryDbl: 'Thử gieo đôi', useCard: 'Thẻ cứu hộ', pickExpo: 'Chọn một thành phố của bạn để tổ chức Expo', pickBuild: 'Thưởng xuất phát! Chọn một thành phố của bạn để xây ngay', pickFly: 'Chọn ô muốn bay đến', flyHere: 'Bay đến đây', cancel: 'Ở lại',
     round: 'Vòng {r} / {n}', fund: 'Quỹ Expo', worth: 'Tài sản ròng', props: '{n} thành phố', isle: 'Núi lửa {n}', flying: 'Sân bay', card: 'Thẻ trực thăng',
@@ -10661,7 +10690,7 @@ I18N['zh-TW'] = {
     busan: '南韓第二大城市,也是最大的港口。全長7.4公里的廣安大橋於2003年通車。',
     seoul: '這裡當了600多年的首都。景福宮建於1395年,是朝鮮王朝的正宮;N首爾塔建於1975年。',
   },
-  u: { atlas: '城市圖鑑', atlasDesc: '點一座城市，就能飛過去看看。',
+  u: { left: '剩餘 {c}', atlas: '城市圖鑑', atlasDesc: '點一座城市，就能飛過去看看。',
     turnOf: '輪到{n}', you: '你', roll: '擲骰子', pass: '跳過', buy: '買下 · {c}', build: '蓋{lv} · {c}', takeover: '收購 · {c}',
     bail: '繳交保釋金 · {c}', tryDbl: '挑戰對子', useCard: '救援直升機卡', pickExpo: '選一座你的城市舉辦博覽會', pickBuild: '起點獎勵!選一座你的城市立刻興建', pickFly: '選擇要飛往的格子', flyHere: '飛到這裡', cancel: '留在原地',
     round: '第 {r} / {n} 圈', fund: '博覽會基金', worth: '淨資產', props: '城市 {n}', isle: '火山島 {n}', flying: '機場', card: '直升機卡',
@@ -10714,7 +10743,7 @@ I18N['zh'] = {
     busan: '韩国第二大城市,也是最大的港口。全长7.4公里的广安大桥于2003年通车。',
     seoul: '这里做了600多年的首都。景福宫建于1395年,是朝鲜王朝的正宫;南山首尔塔建于1975年。',
   },
-  u: { atlas: '城市图鉴', atlasDesc: '点一座城市，就能飞过去看看。',
+  u: { left: '剩余 {c}', atlas: '城市图鉴', atlasDesc: '点一座城市，就能飞过去看看。',
     turnOf: '轮到{n}', you: '你', roll: '掷骰子', pass: '跳过', buy: '买下 · {c}', build: '建{lv} · {c}', takeover: '收购 · {c}',
     bail: '交保释金 · {c}', tryDbl: '挑战对子', useCard: '救援直升机卡', pickExpo: '选一座你的城市举办博览会', pickBuild: '起点奖励!选一座你的城市马上建造', pickFly: '选择要飞往的格子', flyHere: '飞到这里', cancel: '留在原地',
     round: '第 {r} / {n} 圈', fund: '博览会基金', worth: '净资产', props: '城市 {n}', isle: '火山岛 {n}', flying: '机场', card: '直升机卡',
@@ -10739,7 +10768,7 @@ I18N['zh'] = {
 
 // ───────────────────────── 시작 · 그리기 고리 · 카메라 ─────────────────────────
 const Q = new URLSearchParams(location.search);
-const CAM = { ctl: null, saved: null, idle: 0 };
+const CAM = { ctl: null, saved: null, idle: 0, follow: null };
 function initCamera() {
   const c = CAM.ctl = new THREE.OrbitControls(G.camera, G.renderer.domElement);
   c.target.set(0, 0, 4); c.enableDamping = true; c.dampingFactor = 0.08;
@@ -10752,7 +10781,7 @@ async function camDive(i) {
   const c = CAM.ctl; CAM.saved = { p: G.camera.position.clone(), t: c.target.clone() }; c.enabled = false;
   const g = tileGeo(i), tgt = new THREE.Vector3(g.x, 1, g.z), pos = new THREE.Vector3(g.x + g.out[0] * 5, 7, g.z + g.out[1] * 5);
   const p0 = G.camera.position.clone(), t0 = c.target.clone();
-  await tween(VIG.skip ? 0.05 : 0.75, k => { G.camera.position.lerpVectors(p0, pos, k); c.target.lerpVectors(t0, tgt, k); G.camera.lookAt(c.target); }, ease.in);
+  await tween(VIG.skip ? 0.05 : 1.15, k => { G.camera.position.lerpVectors(p0, pos, k); c.target.lerpVectors(t0, tgt, k); G.camera.lookAt(c.target); }, ease.inOut);
 }
 async function camBack() {
   const c = CAM.ctl, s = CAM.saved; if (!s) { c.enabled = true; return; }
@@ -10773,7 +10802,12 @@ function frame(dt, draw = true) {
     tickLife(dt, G.time); tickPawns(dt, G.time);
     if (BOARD.globe) BOARD.globe.rotation.y += dt * 0.25;
     // 오래 가만히 있으면 카메라가 천천히 돈다
-    CAM.idle += dt; if (CAM.ctl.enabled) { CAM.ctl.autoRotate = CAM.idle > 25; CAM.ctl.autoRotateSpeed = 0.35; CAM.ctl.update(); }
+    CAM.idle += dt;
+    if (CAM.ctl.enabled) {
+      // 차례인 말을 따라 화면 가운데로 (카메라 방향·거리는 그대로 두고 함께 옮김)
+      if (CAM.follow) { const p = CAM.follow.position, tg = CAM.ctl.target, k = 1 - Math.exp(-dt * 3.2);
+        const dx = (p.x * 0.85 - tg.x) * k, dz = (p.z * 0.85 + 2 - tg.z) * k; tg.x += dx; tg.z += dz; G.camera.position.x += dx; G.camera.position.z += dz; }
+      CAM.ctl.autoRotate = CAM.idle > 25 && !GAME.busy; CAM.ctl.autoRotateSpeed = 0.35; CAM.ctl.update(); }
   }
   if (draw) G.composer.render(dt);
 }
