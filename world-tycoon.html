@@ -4230,7 +4230,7 @@ const CITY_TILE = Object.fromEntries(TILES.filter(t => t.k === 'city').map(t => 
 // 건물 단계: 0 땅만 · 1 별장 · 2 빌딩 · 3 호텔 · 4 랜드마크(도시의 상징물이 판 위에 선다)
 const LEVELS = 4;
 // 통행료(땅값 대비 배수), 건설비(줄마다)
-const RENT_K = [0.1, 0.35, 0.9, 1.8, 2.8];
+const RENT_K = [0.06, 0.2, 0.45, 0.9, 1.5];   // 땅값 대비 통행료 (바로 지을 수 있는 규칙이라 원판보다 낮게)
 const BUILD_COST = side => [50, 100, 150, 200][side];
 const sideOf = i => Math.floor(i / 10);
 const rentOf = (t, lv, full) => Math.round(t.price * RENT_K[lv] * (lv === 0 && full ? 2 : 1) / 2) * 2;
@@ -4375,7 +4375,7 @@ const I18N = {
       round: '{r} / {n} 바퀴', fund: '엑스포 기금', worth: '순자산', props: '도시 {n}', isle: '화산섬 {n}', flying: '공항', card: '헬기 카드',
       again: '더블! 한 번 더', stuck: '탈출 실패 — {n}번 남음', freed: '화산섬 탈출!', visit: '화산 구경 중', toIsle: '화산섬으로!', airport: '다음 차례에 원하는 곳으로 날아갑니다',
       rent: '통행료 {c}', paid: '{a} → {b} 통행료 {c}', bought: '{n} 매입!', built: '{lv} 완공!', landmark: '랜드마크 완공!', takeoverDone: '{a}이(가) {b}의 {t}을(를) 인수!', expoSet: '{t}에서 세계 엑스포 개최! 통행료 2배', fundGot: '엑스포 기금 {c}',
-      sold: '{t} 매각 +{c}', bankrupt: '{n} 파산!', tax: '{t} {c}',
+      soldBld: '{n}: 돈이 모자라 {t}의 건물 한 층을 팔았습니다 (+{c})', soldLand: '{n}: 돈이 모자라 {t}을(를) 은행에 팔았습니다 (+{c})', bankrupt: '{n} 파산!', tax: '{t} {c}',
       start: '게임 시작', cont: '이어 하기', players: '참가자', human: '사람', ai_tycoon: '컴퓨터 · 투자가', ai_saver: '컴퓨터 · 저축가', ai_gambler: '컴퓨터 · 모험가', off: '빠짐',
       length: '판 길이', short: '짧게 · 10바퀴', normal: '보통 · 20바퀴', long: '길게 · 30바퀴', shows: '도시 연출', showFirst: '처음 갈 때만', showAlways: '갈 때마다', showOff: '끄기',
       speed: '진행 속도', normalSpeed: '보통', fastSpeed: '빠르게', sound: '소리', lang: '언어', settings: '설정', rules: '규칙', close: '닫기', menu: '메뉴', newGame: '새 게임',
@@ -4383,7 +4383,7 @@ const I18N = {
       winner: '{n} 우승!', rank: '순위', again2: '다시 하기', home: '처음으로', chart: '바퀴별 순자산', names: ['나', '투자가 토니', '저축가 수지', '모험가 미오'],
       transInfo: '교통 칸: 가진 수에 따라 25 · 50 · 100 · 200', utilInfo: '발전소: 주사위 합 × 4 (둘 다 가지면 × 10)',
       tagline: '세계 22개 도시를 사고, 짓고, 랜드마크를 세우세요',
-      ruleText: ['주사위를 굴려 판을 돌며 도시를 사고 건물을 올립니다. 다른 사람 땅에 서면 통행료를 냅니다.', '도시를 사거나 내 도시에 서면 별장 · 빌딩 · 호텔을 지을 수 있습니다(한 번에 여러 단계도 됩니다). 호텔이 선 도시에 다시 서면 그 도시의 랜드마크를 세웁니다 — 통행료가 가장 비싸고 남이 인수할 수 없습니다.', '남의 도시(랜드마크 제외)에서 통행료를 낸 뒤 두 배 값을 내고 인수할 수 있습니다.', '세무 조사·사치세·뉴스 벌금은 엑스포 기금에 쌓이고, 세계 엑스포 칸에 선 사람이 모두 가져갑니다. 그리고 내 도시 하나를 골라 통행료를 두 배로 만듭니다.', '출발 칸에 정확히 서면 내 도시 하나를 골라 바로 지을 수 있습니다. 국제공항에 서면 다음 차례에 원하는 칸으로 날아갑니다. 더블을 세 번 연속 굴리면 화산섬에 갇힙니다.', '정한 바퀴가 끝나면 순자산(현금 + 땅 + 건물)이 가장 많은 사람이 이깁니다.'],
+      ruleText: ['주사위를 굴려 판을 돌며 도시를 사고 건물을 올립니다. 다른 사람 땅에 서면 통행료를 냅니다.', '도시를 사거나 내 도시에 서면 별장 · 빌딩 · 호텔을 지을 수 있습니다(한 번에 여러 단계도 됩니다). 호텔이 선 도시에 다시 서면 그 도시의 랜드마크를 세웁니다 — 통행료가 가장 비싸고 남이 인수할 수 없습니다.', '남의 도시(랜드마크 제외)에서 통행료를 낸 뒤 두 배 값을 내고 인수할 수 있습니다.', '세무 조사(순자산의 5%)·사치세·뉴스 벌금은 엑스포 기금에 쌓이고, 세계 엑스포 칸에 선 사람이 모두 가져갑니다. 그리고 내 도시 하나를 골라 통행료를 두 배로 만듭니다.', '출발 칸에 정확히 서면 내 도시 하나를 골라 바로 지을 수 있습니다. 국제공항에 서면 다음 차례에 원하는 칸으로 날아갑니다. 더블을 세 번 연속 굴리면 화산섬에 갇힙니다.', '정한 바퀴가 끝나면 순자산(현금 + 땅 + 건물)이 가장 많은 사람이 이깁니다.'],
     },
     luck: { bonus: '보너스! 150 G를 받습니다', lottery: '복권 당첨! 300 G를 받습니다', refund: '세금 환급 80 G', fine: '과속 벌금 100 G', repair: '건물 수리비: 건물 한 단계마다 25 G', toStart: '출발로 가서 월급을 받습니다', toSeoul: '서울 출장! 서울로 이동합니다', toAirport: '국제공항으로 이동합니다', back3: '길을 잘못 들었다! 세 칸 뒤로', toIsle: '화산 탐사대에 뽑혔다! 화산섬으로', freeIsle: '구조 헬기 카드: 화산섬에서 한 번 탈출 (보관)', freeBuild: '건축 지원금! 내 도시 하나를 무료로 한 단계', birthday: '생일 축하! 모두에게서 50 G씩' },
     news: { asiaBoom: '아시아 관광 붐! 실크로드·열대·메가시티·대한민국 통행료 2배 (4바퀴)', euroBoom: '유럽 여름 휴가철! 남유럽·서유럽 통행료 2배 (4바퀴)', oil: '유가 폭등: 모두 50 G를 엑스포 기금에', rateCut: '금리 인하: 모두 100 G를 받습니다', quake: '지진! 모두 가장 비싼 건물이 한 단계 내려앉습니다 (랜드마크는 안전)', transStrike: '교통 파업: 교통 칸 통행료 없음 (4바퀴)', greenEnergy: '친환경 에너지 열풍: 발전소 통행료 3배 (4바퀴)', olympics: '서울·부산에서 국제 대회! 대한민국 통행료 3배 (4바퀴)', heritage: '세계유산의 날: 랜드마크마다 관광 수입 100 G', tourism: '세계 관광의 해: 도시마다 20 G' },
@@ -4426,7 +4426,7 @@ const I18N = {
       round: 'Round {r} / {n}', fund: 'Expo fund', worth: 'Net worth', props: '{n} cities', isle: 'Volcano {n}', flying: 'Airport', card: 'Heli card',
       again: 'Doubles! Roll again', stuck: 'No escape — {n} left', freed: 'Escaped the volcano!', visit: 'Sightseeing the volcano', toIsle: 'Off to Volcano Island!', airport: 'Next turn you fly anywhere you like',
       rent: 'Rent {c}', paid: '{a} → {b} rent {c}', bought: '{n} bought!', built: '{lv} built!', landmark: 'Landmark complete!', takeoverDone: '{a} took over {t} from {b}!', expoSet: 'World Expo in {t}! Rent doubled', fundGot: 'Expo fund {c}',
-      sold: 'Sold {t} +{c}', bankrupt: '{n} went bankrupt!', tax: '{t} {c}',
+      soldBld: '{n} is short of cash and sold a building level in {t} (+{c})', soldLand: '{n} is short of cash and sold {t} to the bank (+{c})', bankrupt: '{n} went bankrupt!', tax: '{t} {c}',
       start: 'Start game', cont: 'Continue', players: 'Players', human: 'Human', ai_tycoon: 'CPU · Investor', ai_saver: 'CPU · Saver', ai_gambler: 'CPU · Gambler', off: 'Off',
       length: 'Game length', short: 'Short · 10 rounds', normal: 'Normal · 20 rounds', long: 'Long · 30 rounds', shows: 'City shows', showFirst: 'First visit only', showAlways: 'Every visit', showOff: 'Off',
       speed: 'Speed', normalSpeed: 'Normal', fastSpeed: 'Fast', sound: 'Sound', lang: 'Language', settings: 'Settings', rules: 'Rules', close: 'Close', menu: 'Menu', newGame: 'New game',
@@ -8836,7 +8836,7 @@ function tileCanvas(t) {
     c.fillStyle = '#2b2620'; fit(nm, 800, corner ? 40 : 34, W - 24); c.fillText(nm, W / 2, h - (corner ? 40 : 60));
     if (t.k === 'trans') { c.fillStyle = '#3b3326'; c.font = font(800, 26); c.fillText('200 ' + T.money, W / 2, h - 24); }
     if (t.k === 'util') { c.fillStyle = '#3b3326'; c.font = font(800, 26); c.fillText('150 ' + T.money, W / 2, h - 24); }
-    if (t.k === 'tax') { c.fillStyle = '#9a3a2a'; c.font = font(800, 26); c.fillText(t.id === 'audit' ? '−10%' : '−100 ' + T.money, W / 2, h - 24); }
+    if (t.k === 'tax') { c.fillStyle = '#9a3a2a'; c.font = font(800, 26); c.fillText(t.id === 'audit' ? '−5%' : '−' + LUX + ' ' + T.money, W / 2, h - 24); }
     if (t.k === 'start') { c.fillStyle = '#c62828'; c.font = font(800, 24); c.fillText('+' + PASS_GO + ' ' + T.money, W / 2, h - 82); }
   }
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
@@ -9258,9 +9258,9 @@ async function movePawn(p, steps, onPass) {
     const from = p.o.position.clone(), ni = (p.at + dir + 40) % 40, to = pawnSpot(ni, p.k), ry0 = p.o.rotation.y, ry1 = tileFacing(ni) + (dir < 0 ? Math.PI : 0);
     let dr = ry1 - ry0; dr = Math.atan2(Math.sin(dr), Math.cos(dr));
     SND.hop?.(s);
-    await tween(VIG.skip ? 0.05 : UI.fast ? 0.22 : 0.46, k => { p.o.position.lerpVectors(from, to, k); p.o.position.y = to.y + Math.sin(k * Math.PI) * 0.9; p.o.rotation.y = ry0 + dr * k; const b = p.o.userData.body; b.scale.set(1, 1 + Math.sin(k * Math.PI) * 0.12, 1); }, t => t);
+    await tween((VIG.active && VIG.skip) ? 0.05 : UI.fast ? 0.22 : 0.46, k => { p.o.position.lerpVectors(from, to, k); p.o.position.y = to.y + Math.sin(k * Math.PI) * 0.9; p.o.rotation.y = ry0 + dr * k; const b = p.o.userData.body; b.scale.set(1, 1 + Math.sin(k * Math.PI) * 0.12, 1); }, t => t);
     p.at = ni; if (ni === 0 && dir > 0) onPass?.();
-    if (!VIG.skip && !UI.fast) await sleep(110);   // 칸마다 잠깐 멈춤 — 한 칸씩 세며 가는 느낌
+    if (!UI.fast) await sleep(110);   // 칸마다 잠깐 멈춤 — 한 칸씩 세며 가는 느낌
   }
   // 착지 찌그러짐
   const b = p.o.userData.body;
@@ -9322,7 +9322,7 @@ async function rollDice(a, b) {
   const vals = [a, b], Y = 0.73 + 0.55, jobs = DICE.list.map((m, i) => {
     const qf = faceUpQ(vals[i], Math.random() * 6.28), ax = new THREE.Vector3(Math.random() - .5, Math.random() * .3, Math.random() - .5).normalize(), spins = 3 + Math.random() * 2;
     const p0 = new THREE.Vector3(-3.6 + i * 0.9, Y + 3.5, 3.2 + i * 0.4), p1 = new THREE.Vector3(-0.9 + i * 1.8 + (Math.random() - .5) * 0.6, Y, 0.9 + Math.random() * 0.8);
-    return tween(VIG.skip ? 0.1 : 1.35, k => {
+    return tween((VIG.active && VIG.skip) ? 0.1 : 1.35, k => {
       // 세 번 튀는 높이
       const x = lerp(p0.x, p1.x, ease.out(k)), z = lerp(p0.z, p1.z, ease.out(k));
       const hop = k < .45 ? (1 - Math.pow(k / .45 * 2 - 1, 2)) * 3.0 * (1 - k / .45) + (1 - k / .45) * 3.5 : k < .75 ? (1 - Math.pow((k - .45) / .3 * 2 - 1, 2)) * 1.0 : (1 - Math.pow((k - .75) / .25 * 2 - 1, 2)) * 0.25;
@@ -9566,7 +9566,7 @@ async function playVignette(tileIdx, info = {}) {
   vigTitle(null);
   root.visible = false; G.rp.scene = G.scene; G.rp.camera = G.camera; VIG.active = false; applyQuality();
   G.tiltH.uniforms.uAmt.value = G.tiltV.uniforms.uAmt.value = 1.3; G.tiltH.uniforms.uBand.value = G.tiltV.uniforms.uBand.value = 0.34;
-  VIG.active = false; document.body.classList.remove('vig');
+  VIG.active = false; VIG.skip = false; document.body.classList.remove('vig');   // 건너뛰기는 이번 연출에만 (안 지우면 뒤의 말 이동까지 빨라짐)
   fadeTo(0, 0.6);
   await camBack();
 }
@@ -9738,7 +9738,7 @@ Object.assign(SND, {
 // ───────────────────────── 규칙 ─────────────────────────
 // 그림·소리와 떨어진 순수 규칙. 사람에게 물을 것은 UI.ask(), AI 는 AI.decide() 가 답한다.
 // 한 판 15~20분: 정한 바퀴 수가 끝나면 순자산(현금 + 땅값 + 건물값)이 가장 많은 사람이 이긴다. 그 전에 혼자 남아도 이긴다.
-const START_CASH = 2000, PASS_GO = 250, BAIL = 100, LUX = 100, TRANS_PRICE = 200, UTIL_PRICE = 150;
+const START_CASH = 2000, PASS_GO = 300, BAIL = 100, LUX = 75, TRANS_PRICE = 200, UTIL_PRICE = 150;
 const GAME = { S: null, busy: false };
 // 새 판: players = [{ name, tok, ai: null|'tycoon'|'saver'|'gambler' }]
 function newGame(players, o = {}) {
@@ -9860,7 +9860,7 @@ async function land(p, dice) {
       if (mine.length) { const i = await ask(p, 'startBuild', { tiles: mine.map(x => x.i) }); if (i != null) await offerBuild(p, TILES[i]); }
       break; }
     case 'city': case 'trans': case 'util': await landProp(p, t, dice); break;
-    case 'tax': { const n = t.id === 'audit' ? Math.max(30, Math.round(worth(p) * 0.1 / 10) * 10) : LUX; await UI.tax?.(p, t, n); await pay(p, n, null, 'tax'); break; }
+    case 'tax': { const n = t.id === 'audit' ? Math.max(30, Math.round(worth(p) * 0.05 / 10) * 10) : LUX; await UI.tax?.(p, t, n); await pay(p, n, null, 'tax'); break; }
     case 'luck': await drawCard(p, 'luck'); break;
     case 'news': await drawCard(p, 'news'); break;
     case 'expo': {
@@ -9960,7 +9960,8 @@ function nextTurn() {
 }
 async function checkEnd() {
   const S = S_(); if (S.over) return true;
-  if (alive().length <= 1 || S.round > S.rounds) { S.over = true; await UI.gameOver?.(rank()); return true; }
+  const humans = S.players.filter(p => !p.ai);
+  if (alive().length <= 1 || S.round > S.rounds || (humans.length && humans.every(p => p.out))) { S.over = true; await UI.gameOver?.(rank()); return true; }
   return false;
 }
 const rank = () => [...S_().players].sort((a, b) => (a.out - b.out) || worth(b) - worth(a));
@@ -10161,7 +10162,7 @@ UI.stuck = async (p, n) => { toast('🌋 ' + fmt(T.u.stuck, { n })); await sleep
 UI.visit = async p => { toast('🌋 ' + T.u.visit); };
 UI.again = async p => { toast('🎲 ' + T.u.again); await sleep(300); };
 UI.hint = async (p, k) => { if (!p.ai) toast('💡 ' + T.u[k]); };
-UI.sold = async (p, t, kind, v) => { if (kind === 'land') { setOwner(t.i, null); setLevel(t.i, 0); } else setLevel(t.i, S_().lv[t.i], TOKENS[p.tok].col); toast(fmt(T.u.sold, { t: tileName(t), c: money(v) })); await sleep(400); };
+UI.sold = async (p, t, kind, v) => { if (kind === 'land') { setOwner(t.i, null); setLevel(t.i, 0); } else setLevel(t.i, S_().lv[t.i], TOKENS[p.tok].col); toast('💸 ' + fmt(kind === 'land' ? T.u.soldLand : T.u.soldBld, { n: p.name, t: tileName(t), c: money(v) })); await sleep(UI.fast ? 400 : 1400); };
 UI.bankrupt = async p => { for (const t of TILES) if (S_().own[t.i] < 0 && OWN.marks[t.i]) { setOwner(t.i, null); setLevel(t.i, 0); } pawnOf(p).o.visible = false; toast('💸 ' + fmt(T.u.bankrupt, { n: p.name })); SND.bad?.(); hud(); await sleep(900); };
 UI.log = () => {};
 function toast(s) { const t = document.createElement('div'); t.className = 'toast glass'; t.textContent = s; $('toasts').appendChild(t); setTimeout(() => t.classList.add('out'), 2600); setTimeout(() => t.remove(), 3100); }
@@ -10342,7 +10343,7 @@ I18N['de'] = {
     round: 'Runde {r} / {n}', fund: 'Expo-Fonds', worth: 'Vermögen', props: '{n} Städte', isle: 'Vulkan {n}', flying: 'Flughafen', card: 'Heli-Karte',
     again: 'Pasch! Nochmal würfeln', stuck: 'Kein Entkommen – noch {n}', freed: 'Dem Vulkan entkommen!', visit: 'Vulkan-Besichtigung', toIsle: 'Ab zur Vulkaninsel!', airport: 'Nächste Runde fliegst du, wohin du willst',
     rent: 'Miete {c}', paid: '{a} → {b} Miete {c}', bought: '{n} gekauft!', built: '{lv} fertig!', landmark: 'Wahrzeichen fertig!', takeoverDone: '{a} übernimmt {t} von {b}!', expoSet: 'Weltausstellung in {t}! Miete verdoppelt', fundGot: 'Expo-Fonds {c}',
-    sold: '{t} verkauft +{c}', bankrupt: '{n} ist pleite!', tax: '{t} {c}',
+    soldBld: '{n} ist knapp bei Kasse und verkauft eine Gebäudestufe in {t} (+{c})', soldLand: '{n} ist knapp bei Kasse und verkauft {t} an die Bank (+{c})', bankrupt: '{n} ist pleite!', tax: '{t} {c}',
     start: 'Spiel starten', cont: 'Weiterspielen', players: 'Spieler', human: 'Mensch', ai_tycoon: 'CPU · Investor', ai_saver: 'CPU · Sparer', ai_gambler: 'CPU · Zocker', off: 'Aus',
     length: 'Spieldauer', short: 'Kurz · 10 Runden', normal: 'Normal · 20 Runden', long: 'Lang · 30 Runden', shows: 'Stadt-Szenen', showFirst: 'Nur beim ersten Mal', showAlways: 'Jedes Mal', showOff: 'Aus',
     speed: 'Tempo', normalSpeed: 'Normal', fastSpeed: 'Schnell', sound: 'Ton', lang: 'Sprache', settings: 'Einstellungen', rules: 'Regeln', close: 'Schließen', menu: 'Menü', newGame: 'Neues Spiel',
@@ -10395,7 +10396,7 @@ I18N['es'] = {
     round: 'Ronda {r} / {n}', fund: 'Fondo Expo', worth: 'Patrimonio', props: '{n} ciudades', isle: 'Volcán {n}', flying: 'Aeropuerto', card: 'Carta heli',
     again: '¡Dobles! Tira otra vez', stuck: 'Sin escapar — quedan {n}', freed: '¡Escapaste del volcán!', visit: 'De visita en el volcán', toIsle: '¡A la Isla Volcán!', airport: 'En tu próximo turno vuelas adonde quieras',
     rent: 'Peaje {c}', paid: '{a} → {b} peaje {c}', bought: '¡{n} comprada!', built: '¡{lv} construido!', landmark: '¡Monumento terminado!', takeoverDone: '¡{a} adquirió {t} de {b}!', expoSet: '¡Expo Mundial en {t}! Peaje doble', fundGot: 'Fondo Expo {c}',
-    sold: 'Vendida {t} +{c}', bankrupt: '¡{n} está en bancarrota!', tax: '{t} {c}',
+    soldBld: '{n} no tiene dinero y vende un nivel de edificio en {t} (+{c})', soldLand: '{n} no tiene dinero y vende {t} al banco (+{c})', bankrupt: '¡{n} está en bancarrota!', tax: '{t} {c}',
     start: 'Empezar', cont: 'Continuar', players: 'Jugadores', human: 'Humano', ai_tycoon: 'CPU · Inversor', ai_saver: 'CPU · Ahorrador', ai_gambler: 'CPU · Aventurero', off: 'Fuera',
     length: 'Duración', short: 'Corta · 10 rondas', normal: 'Normal · 20 rondas', long: 'Larga · 30 rondas', shows: 'Escenas de ciudad', showFirst: 'Solo la 1.ª visita', showAlways: 'Cada visita', showOff: 'No',
     speed: 'Velocidad', normalSpeed: 'Normal', fastSpeed: 'Rápida', sound: 'Sonido', lang: 'Idioma', settings: 'Ajustes', rules: 'Reglas', close: 'Cerrar', menu: 'Menú', newGame: 'Nueva partida',
@@ -10448,7 +10449,7 @@ I18N['fr'] = {
     round: 'Tour {r} / {n}', fund: 'Fonds de l’Expo', worth: 'Fortune', props: '{n} villes', isle: 'Volcan {n}', flying: 'Aéroport', card: 'Carte hélico',
     again: 'Double ! Rejouez', stuck: 'Raté — encore {n}', freed: 'Évadé du volcan !', visit: 'En visite au volcan', toIsle: 'Direction l’île du Volcan !', airport: 'Au prochain tour, vous volez où vous voulez',
     rent: 'Loyer {c}', paid: '{a} → {b} loyer {c}', bought: '{n} achetée !', built: '{lv} construit !', landmark: 'Monument achevé !', takeoverDone: '{a} a racheté {t} à {b} !', expoSet: 'Exposition universelle à {t} ! Loyer doublé', fundGot: 'Fonds de l’Expo {c}',
-    sold: '{t} vendue +{c}', bankrupt: '{n} a fait faillite !', tax: '{t} {c}',
+    soldBld: '{n} manque d\'argent et vend un niveau à {t} (+{c})', soldLand: '{n} manque d\'argent et vend {t} à la banque (+{c})', bankrupt: '{n} a fait faillite !', tax: '{t} {c}',
     start: 'Jouer', cont: 'Continuer', players: 'Joueurs', human: 'Humain', ai_tycoon: 'Ordi · Investisseur', ai_saver: 'Ordi · Économe', ai_gambler: 'Ordi · Aventurier', off: 'Absent',
     length: 'Durée', short: 'Courte · 10 tours', normal: 'Normale · 20 tours', long: 'Longue · 30 tours', shows: 'Scènes de ville', showFirst: '1re visite seulement', showAlways: 'À chaque visite', showOff: 'Non',
     speed: 'Vitesse', normalSpeed: 'Normale', fastSpeed: 'Rapide', sound: 'Son', lang: 'Langue', settings: 'Réglages', rules: 'Règles', close: 'Fermer', menu: 'Menu', newGame: 'Nouvelle partie',
@@ -10501,7 +10502,7 @@ I18N['ja'] = {
     round: '{r} / {n} 周', fund: '万博基金', worth: '総資産', props: '都市 {n}', isle: '火山島 {n}', flying: '空港', card: 'ヘリカード',
     again: 'ゾロ目!もう一回', stuck: '脱出失敗 — あと{n}回', freed: '火山島から脱出!', visit: '火山を見学中', toIsle: '火山島へ!', airport: '次の番に好きな場所へ飛べます',
     rent: '通行料 {c}', paid: '{a} → {b} 通行料 {c}', bought: '{n}を購入!', built: '{lv}が完成!', landmark: 'ランドマーク完成!', takeoverDone: '{a}が{b}から{t}を買収!', expoSet: '{t}で万国博覧会を開催!通行料2倍', fundGot: '万博基金 {c}',
-    sold: '{t}を売却 +{c}', bankrupt: '{n}が破産!', tax: '{t} {c}',
+    soldBld: '{n}: 資金不足で{t}の建物を1段売却 (+{c})', soldLand: '{n}: 資金不足で{t}を銀行に売却 (+{c})', bankrupt: '{n}が破産!', tax: '{t} {c}',
     start: 'ゲーム開始', cont: '続きから', players: 'プレイヤー', human: '人', ai_tycoon: 'CPU · 投資家', ai_saver: 'CPU · 倹約家', ai_gambler: 'CPU · 冒険家', off: 'なし',
     length: 'ゲームの長さ', short: '短い · 10周', normal: 'ふつう · 20周', long: '長い · 30周', shows: '都市の演出', showFirst: '初めてのときだけ', showAlways: '毎回', showOff: 'オフ',
     speed: '進行スピード', normalSpeed: 'ふつう', fastSpeed: '速い', sound: 'サウンド', lang: '言語', settings: '設定', rules: 'ルール', close: '閉じる', menu: 'メニュー', newGame: '新しいゲーム',
@@ -10554,7 +10555,7 @@ I18N['pt'] = {
     round: 'Rodada {r} / {n}', fund: 'Fundo da Expo', worth: 'Patrimônio', props: '{n} cidades', isle: 'Vulcão {n}', flying: 'Aeroporto', card: 'Carta heli',
     again: 'Dupla! Jogue de novo', stuck: 'Não escapou — faltam {n}', freed: 'Escapou do vulcão!', visit: 'Visitando o vulcão', toIsle: 'Rumo à Ilha do Vulcão!', airport: 'Na próxima vez você voa para onde quiser',
     rent: 'Aluguel {c}', paid: '{a} → {b} aluguel {c}', bought: '{n} comprada!', built: '{lv} construído!', landmark: 'Monumento concluído!', takeoverDone: '{a} adquiriu {t} de {b}!', expoSet: 'Expo Mundial em {t}! Aluguel em dobro', fundGot: 'Fundo da Expo {c}',
-    sold: '{t} vendida +{c}', bankrupt: '{n} faliu!', tax: '{t} {c}',
+    soldBld: '{n} está sem dinheiro e vendeu um nível de prédio em {t} (+{c})', soldLand: '{n} está sem dinheiro e vendeu {t} ao banco (+{c})', bankrupt: '{n} faliu!', tax: '{t} {c}',
     start: 'Começar', cont: 'Continuar', players: 'Jogadores', human: 'Humano', ai_tycoon: 'CPU · Investidor', ai_saver: 'CPU · Poupador', ai_gambler: 'CPU · Aventureiro', off: 'Fora',
     length: 'Duração', short: 'Curta · 10 rodadas', normal: 'Normal · 20 rodadas', long: 'Longa · 30 rodadas', shows: 'Cenas da cidade', showFirst: 'Só na 1ª visita', showAlways: 'Toda visita', showOff: 'Desligado',
     speed: 'Velocidade', normalSpeed: 'Normal', fastSpeed: 'Rápida', sound: 'Som', lang: 'Idioma', settings: 'Configurações', rules: 'Regras', close: 'Fechar', menu: 'Menu', newGame: 'Novo jogo',
@@ -10607,7 +10608,7 @@ I18N['ru'] = {
     round: 'Круг {r} / {n}', fund: 'Фонд Экспо', worth: 'Капитал', props: 'Городов: {n}', isle: 'Вулкан {n}', flying: 'Аэропорт', card: 'Вертолёт',
     again: 'Дубль! Бросайте ещё', stuck: 'Не вышло — осталось {n}', freed: 'Побег с вулкана!', visit: 'Экскурсия на вулкан', toIsle: 'На Остров вулкана!', airport: 'В следующий ход летите куда угодно',
     rent: 'Аренда {c}', paid: '{a} → {b} аренда {c}', bought: '{n} куплен!', built: '{lv}: готово!', landmark: 'Достопримечательность готова!', takeoverDone: '{a} выкупает {t} у {b}!', expoSet: 'Всемирная выставка в {t}! Аренда ×2', fundGot: 'Фонд Экспо {c}',
-    sold: 'Продано: {t} +{c}', bankrupt: '{n} — банкрот!', tax: '{t} {c}',
+    soldBld: '{n}: не хватает денег, продан уровень здания в {t} (+{c})', soldLand: '{n}: не хватает денег, {t} продан банку (+{c})', bankrupt: '{n} — банкрот!', tax: '{t} {c}',
     start: 'Начать игру', cont: 'Продолжить', players: 'Игроки', human: 'Человек', ai_tycoon: 'ИИ · Инвестор', ai_saver: 'ИИ · Скопидом', ai_gambler: 'ИИ · Авантюрист', off: 'Нет',
     length: 'Длина игры', short: 'Коротко · 10 кругов', normal: 'Обычно · 20 кругов', long: 'Долго · 30 кругов', shows: 'Сцены городов', showFirst: 'Только в первый раз', showAlways: 'Каждый раз', showOff: 'Выкл.',
     speed: 'Скорость', normalSpeed: 'Обычная', fastSpeed: 'Быстрая', sound: 'Звук', lang: 'Язык', settings: 'Настройки', rules: 'Правила', close: 'Закрыть', menu: 'Меню', newGame: 'Новая игра',
@@ -10660,7 +10661,7 @@ I18N['vi'] = {
     round: 'Vòng {r} / {n}', fund: 'Quỹ Expo', worth: 'Tài sản ròng', props: '{n} thành phố', isle: 'Núi lửa {n}', flying: 'Sân bay', card: 'Thẻ trực thăng',
     again: 'Đôi! Gieo tiếp', stuck: 'Chưa thoát — còn {n} lần', freed: 'Thoát khỏi núi lửa!', visit: 'Đang ngắm núi lửa', toIsle: 'Đến Đảo Núi Lửa!', airport: 'Lượt sau bạn được bay đến bất cứ đâu',
     rent: 'Phí qua đường {c}', paid: '{a} → {b} phí {c}', bought: 'Đã mua {n}!', built: 'Xây xong {lv}!', landmark: 'Hoàn thành công trình biểu tượng!', takeoverDone: '{a} đã thâu tóm {t} của {b}!', expoSet: 'Triển lãm Thế giới tại {t}! Phí gấp đôi', fundGot: 'Quỹ Expo {c}',
-    sold: 'Bán {t} +{c}', bankrupt: '{n} phá sản!', tax: '{t} {c}',
+    soldBld: '{n} thiếu tiền nên bán một tầng nhà ở {t} (+{c})', soldLand: '{n} thiếu tiền nên bán {t} cho ngân hàng (+{c})', bankrupt: '{n} phá sản!', tax: '{t} {c}',
     start: 'Bắt đầu', cont: 'Chơi tiếp', players: 'Người chơi', human: 'Người', ai_tycoon: 'Máy · Nhà đầu tư', ai_saver: 'Máy · Tiết kiệm', ai_gambler: 'Máy · Liều lĩnh', off: 'Tắt',
     length: 'Độ dài ván', short: 'Ngắn · 10 vòng', normal: 'Vừa · 20 vòng', long: 'Dài · 30 vòng', shows: 'Cảnh thành phố', showFirst: 'Chỉ lần đầu', showAlways: 'Mỗi lần đến', showOff: 'Tắt',
     speed: 'Tốc độ', normalSpeed: 'Bình thường', fastSpeed: 'Nhanh', sound: 'Âm thanh', lang: 'Ngôn ngữ', settings: 'Cài đặt', rules: 'Luật chơi', close: 'Đóng', menu: 'Menu', newGame: 'Ván mới',
@@ -10713,7 +10714,7 @@ I18N['zh-TW'] = {
     round: '第 {r} / {n} 圈', fund: '博覽會基金', worth: '淨資產', props: '城市 {n}', isle: '火山島 {n}', flying: '機場', card: '直升機卡',
     again: '對子!再擲一次', stuck: '逃脫失敗 — 還剩{n}次', freed: '逃出火山島!', visit: '正在參觀火山', toIsle: '前往火山島!', airport: '下一回合可以飛到任何地方',
     rent: '過路費 {c}', paid: '{a} → {b} 過路費 {c}', bought: '買下{n}!', built: '{lv}完工!', landmark: '地標完工!', takeoverDone: '{a}從{b}手中收購了{t}!', expoSet: '世界博覽會在{t}舉辦!過路費加倍', fundGot: '博覽會基金 {c}',
-    sold: '賣出{t} +{c}', bankrupt: '{n}破產了!', tax: '{t} {c}',
+    soldBld: '{n}：資金不足，賣掉了{t}的一層建築（+{c}）', soldLand: '{n}：資金不足，把{t}賣給了銀行（+{c}）', bankrupt: '{n}破產了!', tax: '{t} {c}',
     start: '開始遊戲', cont: '繼續遊戲', players: '玩家', human: '真人', ai_tycoon: '電腦 · 投資家', ai_saver: '電腦 · 儲蓄家', ai_gambler: '電腦 · 冒險家', off: '不參加',
     length: '遊戲長度', short: '短 · 10圈', normal: '普通 · 20圈', long: '長 · 30圈', shows: '城市動畫', showFirst: '僅首次到訪', showAlways: '每次到訪', showOff: '關閉',
     speed: '遊戲速度', normalSpeed: '普通', fastSpeed: '快速', sound: '聲音', lang: '語言', settings: '設定', rules: '規則', close: '關閉', menu: '選單', newGame: '新遊戲',
@@ -10766,7 +10767,7 @@ I18N['zh'] = {
     round: '第 {r} / {n} 圈', fund: '博览会基金', worth: '净资产', props: '城市 {n}', isle: '火山岛 {n}', flying: '机场', card: '直升机卡',
     again: '对子!再掷一次', stuck: '逃脱失败 — 还剩{n}次', freed: '逃出火山岛!', visit: '正在参观火山', toIsle: '前往火山岛!', airport: '下一回合可以飞到任何地方',
     rent: '过路费 {c}', paid: '{a} → {b} 过路费 {c}', bought: '买下{n}!', built: '{lv}建成!', landmark: '地标建成!', takeoverDone: '{a}从{b}手中收购了{t}!', expoSet: '世界博览会在{t}举办!过路费翻倍', fundGot: '博览会基金 {c}',
-    sold: '卖出{t} +{c}', bankrupt: '{n}破产了!', tax: '{t} {c}',
+    soldBld: '{n}：资金不足，卖掉了{t}的一层建筑（+{c}）', soldLand: '{n}：资金不足，把{t}卖给了银行（+{c}）', bankrupt: '{n}破产了!', tax: '{t} {c}',
     start: '开始游戏', cont: '继续游戏', players: '玩家', human: '真人', ai_tycoon: '电脑 · 投资家', ai_saver: '电脑 · 储蓄家', ai_gambler: '电脑 · 冒险家', off: '不参加',
     length: '游戏长度', short: '短 · 10圈', normal: '普通 · 20圈', long: '长 · 30圈', shows: '城市动画', showFirst: '仅首次到访', showAlways: '每次到访', showOff: '关闭',
     speed: '游戏速度', normalSpeed: '普通', fastSpeed: '快速', sound: '声音', lang: '语言', settings: '设置', rules: '规则', close: '关闭', menu: '菜单', newGame: '新游戏',
