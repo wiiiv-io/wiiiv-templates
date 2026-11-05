@@ -8805,13 +8805,16 @@ function tileSpot(i, u = 0, v = 0) {
 }
 
 // 칸 윗면 그림 (도시 이름·나라·값·묶음 색)
+const TILE_OWNER = [];   // 칸마다 주인 색 (없으면 undefined)
 function tileCanvas(t) {
+  const own = TILE_OWNER[t.i];
   const W = 256, Hh = Math.round(256 * BD.CD / BD.CW), cv = document.createElement('canvas'); cv.width = W; cv.height = Hh;
   const c = cv.getContext('2d');
   const corner = t.i % 10 === 0;
   if (corner) { cv.height = W; }
   const h = cv.height;
   c.fillStyle = '#f6f1e4'; c.fillRect(0, 0, W, h);
+  if (own) { c.fillStyle = own; c.globalAlpha = 0.62; c.fillRect(0, 0, W, h); c.globalAlpha = 1; c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(10, h - 150, W - 20, 132); }   // 주인 색 바탕 + 글자 자리는 밝게
   // 테두리
   c.strokeStyle = 'rgba(60,50,30,.25)'; c.lineWidth = 4; c.strokeRect(2, 2, W - 4, h - 4);
   const font = (wt, px) => `${wt} ${px}px "Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Segoe UI",system-ui,sans-serif`;
@@ -8952,6 +8955,7 @@ function globeTexture() {
   const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 // 칸 이름 다시 그리기 (언어 바꿈)
+function retileOne(i) { const m = BOARD.tops[i]; m.material.map.dispose(); m.material.map = tileCanvas(TILES[i]); m.material.needsUpdate = true; }
 function relabelBoard() { for (const t of TILES) { const m = BOARD.tops[t.i]; m.material.map.dispose(); m.material.map = tileCanvas(t); m.material.needsUpdate = true; } }
 
 // ───────────────────────── 칸 위의 것들: 특수 칸 소품 · 도시 건물 단계 · 소유 표시 ─────────────────────────
@@ -9142,6 +9146,7 @@ function fitInto(obj, w, d, h) {
 }
 // 칸 소유자 표시: 칸 테두리 색 + 깃대
 function setOwner(i, col) {
+  if (TILE_OWNER[i] !== (col || undefined)) { TILE_OWNER[i] = col || undefined; retileOne(i); }
   const grp = BOARD.tiles[i]; if (OWN.marks[i]) { grp.remove(OWN.marks[i]); OWN.marks[i] = null; }
   if (!col) return;
   const g = tileGeo(i), m = new THREE.Group(); grp.add(m); OWN.marks[i] = m;
@@ -9239,7 +9244,7 @@ const SEAT = [[-0.24, 0.06], [0.24, 0.06], [-0.24, 0.32], [0.24, 0.32]];
 function pawnSpot(i, seat) { const [u, v] = SEAT[seat]; return tileSpot(i, u, v); }
 function initPawns(scene, n = 4) {
   for (let k = 0; k < n; k++) {
-    const t = TOKENS[k], o = makeToken(t.id, t.col); o.scale.setScalar(1.55); scene.add(o);
+    const t = TOKENS[k], o = makeToken(t.id, t.col); o.scale.setScalar(1.9); scene.add(o);
     const p = { k, o, at: 0, ry: 0 }; PAWNS.list.push(p); placePawn(p, 0);
   }
 }
@@ -9253,8 +9258,9 @@ async function movePawn(p, steps, onPass) {
     const from = p.o.position.clone(), ni = (p.at + dir + 40) % 40, to = pawnSpot(ni, p.k), ry0 = p.o.rotation.y, ry1 = tileFacing(ni) + (dir < 0 ? Math.PI : 0);
     let dr = ry1 - ry0; dr = Math.atan2(Math.sin(dr), Math.cos(dr));
     SND.hop?.(s);
-    await tween(VIG.skip ? 0.05 : UI.fast ? 0.18 : 0.34, k => { p.o.position.lerpVectors(from, to, k); p.o.position.y = to.y + Math.sin(k * Math.PI) * 0.9; p.o.rotation.y = ry0 + dr * k; const b = p.o.userData.body; b.scale.set(1, 1 + Math.sin(k * Math.PI) * 0.12, 1); }, t => t);
+    await tween(VIG.skip ? 0.05 : UI.fast ? 0.22 : 0.46, k => { p.o.position.lerpVectors(from, to, k); p.o.position.y = to.y + Math.sin(k * Math.PI) * 0.9; p.o.rotation.y = ry0 + dr * k; const b = p.o.userData.body; b.scale.set(1, 1 + Math.sin(k * Math.PI) * 0.12, 1); }, t => t);
     p.at = ni; if (ni === 0 && dir > 0) onPass?.();
+    if (!VIG.skip && !UI.fast) await sleep(110);   // 칸마다 잠깐 멈춤 — 한 칸씩 세며 가는 느낌
   }
   // 착지 찌그러짐
   const b = p.o.userData.body;
@@ -9279,7 +9285,9 @@ function setActivePawn(pw) {
 }
 function tickPawns(dt, t) {
   if (ACTIVE_MARK && ACTIVE_MARK.userData.pw) { const o = ACTIVE_MARK.userData.pw.o, a = ACTIVE_MARK.children[0], r = ACTIVE_MARK.getObjectByName('ring');
-    ACTIVE_MARK.visible = o.visible; ACTIVE_MARK.position.copy(o.position); a.position.y = 4.4 + Math.sin(t * 4) * 0.35; const bm = ACTIVE_MARK.getObjectByName('beam'); bm.material.opacity = 0.16 + Math.sin(t * 3) * 0.06; a.rotation.y = t * 2; r.position.y = 0.05; r.scale.setScalar(1 + (t * 0.8 % 1) * 0.6); r.material.opacity = 0.8 * (1 - t * 0.8 % 1); }
+    ACTIVE_MARK.visible = o.visible; ACTIVE_MARK.position.copy(o.position);
+    // 차례인 말이 선 칸: 내 색 빛판이 맥박처럼
+    const pw = ACTIVE_MARK.userData.pw; if (pw.at !== ACTIVE_MARK.userData.at) { if (ACTIVE_MARK.userData.at != null) tileGlow(ACTIVE_MARK.userData.at, null, false); ACTIVE_MARK.userData.at = pw.at; tileGlow(pw.at, TOKENS[pw.k].col); } a.position.y = 4.4 + Math.sin(t * 4) * 0.35; const bm = ACTIVE_MARK.getObjectByName('beam'); bm.material.opacity = 0.16 + Math.sin(t * 3) * 0.06; a.rotation.y = t * 2; r.position.y = 0.05; r.scale.setScalar(1 + (t * 0.8 % 1) * 0.6); r.material.opacity = 0.8 * (1 - t * 0.8 % 1); }
   for (const p of PAWNS.list) {
     const b = p.o.userData.body; if (!b) continue;
     const ty = TOKENS[p.k].id;
@@ -9653,11 +9661,11 @@ const GLOW = new Map();
 function tileGlow(i, col, on = true, o = {}) {
   if (GLOW.has(i)) { BOARD.tiles[i].remove(GLOW.get(i)); GLOW.delete(i); }
   if (!on) return;
-  const g = tileGeo(i), m = new THREE.Mesh(new THREE.BoxGeometry(g.w - 0.05, 0.08, g.d - 0.05), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, toneMapped: false, depthWrite: false }));
+  const g = tileGeo(i), m = new THREE.Mesh(new THREE.BoxGeometry(g.w + 0.1, 0.12, g.d + 0.1), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, toneMapped: false, depthWrite: false }));
   m.position.y = BD.TH + 0.05; BOARD.tiles[i].add(m); GLOW.set(i, m); m.userData.pulse = o.pulse !== false;
   return m;
 }
-PROP_ANIM.push((dt, t) => { for (const m of GLOW.values()) if (m.userData.pulse) m.material.opacity = 0.25 + Math.abs(Math.sin(t * 3)) * 0.4; });
+PROP_ANIM.push((dt, t) => { for (const m of GLOW.values()) if (m.userData.pulse) m.material.opacity = 0.35 + Math.abs(Math.sin(t * 3)) * 0.45; });
 // 엑스포 표시: 칸 위 빙글 도는 별
 let EXPO_MARK = null;
 function setExpoMark(i) {
@@ -10078,7 +10086,7 @@ UI.move = async (p, n, onPass) => {
   const dest = (p.at + n + 40) % 40, col = TOKENS[p.tok].col; tileGlow(dest, col);   // 갈 칸을 먼저 내 색으로
   camFollow(p);
   if (n < 0) await movePawn(pawnOf(p), n); else await movePawn(pawnOf(p), n, async () => { floatText(pawnPos(p), '+' + money(PASS_GO), '#7dff9a'); await onPass?.(); });
-  await sleep(UI.fast ? 150 : 450); tileGlow(dest, null, false);
+  await sleep(UI.fast ? 150 : 450);   // 도착 칸 빛은 차례 표시가 이어 받는다
 };
 UI.warp = async (p, to) => { await flyPawn(pawnOf(p), to); };
 UI.fly = async (p, to) => { SND.plane?.(); await flyPawn(pawnOf(p), to); camFollow(p); };
@@ -10251,6 +10259,8 @@ function syncBoard() {
 }
 async function startGame(S, resumed) {
   syncBoard(); hud(); $('hudTop').hidden = false; $('players').hidden = false;
+  { const p = cur(), pw = pawnOf(p), g = tileGeo(pw.at % 10 === 0 ? (pw.at + 1) % 40 : pw.at), tg = pw.o.position.clone().add(new THREE.Vector3(-g.out[0] * 6, 0, -g.out[1] * 6)); tg.y = 0;
+    CAM.ctl.target.copy(tg); G.camera.position.set(tg.x + g.out[0] * 33, 31, tg.z + g.out[1] * 33); CAM.ctl.update(); camFollow(p); }
   await runGame();
 }
 UI.gameOver = async rk => {
@@ -10812,8 +10822,8 @@ function frame(dt, draw = true) {
     CAM.idle += dt;
     if (CAM.ctl.enabled) {
       // 차례인 말을 따라 화면 가운데로 (카메라 방향·거리는 그대로 두고 함께 옮김)
-      if (CAM.follow) { const p = CAM.follow.position, tg = CAM.ctl.target, k = 1 - Math.exp(-dt * 3.2);
-        const dx = (p.x * 0.85 - tg.x) * k, dz = (p.z * 0.85 - tg.z) * k; tg.x += dx; tg.z += dz; G.camera.position.x += dx; G.camera.position.z += dz;
+      if (CAM.follow) { const p = CAM.follow.position, tg = CAM.ctl.target, k = 1 - Math.exp(-dt * 3.2), fp = CAM.followPawn, fo = fp ? tileGeo(fp.at % 10 === 0 ? (fp.at + 1) % 40 : fp.at).out : [0, 0];
+        const dx = (p.x - fo[0] * 6 - tg.x) * k, dz = (p.z - fo[1] * 6 - tg.z) * k; tg.x += dx; tg.z += dz; G.camera.position.x += dx; G.camera.position.z += dz;
         // 말이 선 줄의 바깥쪽에서 보도록 방향을 천천히 돌림 (글자가 바로 읽히게)
         const pw = CAM.followPawn; if (pw && !(G.time - (CAM.userAt ?? -99) < 5)) {
           const out = tileGeo(pw.at % 10 === 0 ? (pw.at + 1) % 40 : pw.at).out, want = Math.atan2(out[0], out[1]);
