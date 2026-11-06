@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>wiiiv Moon</title>
+<title>Moon</title>
 <style>
 :root { --bg: #000; --panel: rgba(14, 16, 24, 0.86); --line: rgba(160, 175, 210, 0.18); --fg: #e8ecf6; --dim: #9aa4bd; --acc: #ffd479; --acc2: #8fb7ff; --r: 12px; }
 * { box-sizing: border-box; }
@@ -1130,8 +1130,8 @@ function loop(t) {
 }
 async function start() {
   document.documentElement.lang = LANG;
-  // 앱 안의 이름은 Google Earth 처럼 번역하지 않는 브랜드 'wiiiv Moon' (10/25 나무님), 목록·검색에서는 그 언어의 '달 탐험'(T.title·index.json)
-  $('tTitle').innerHTML = '<img id="wlogo">Moon'; wiiivMark($('wlogo'), 'moon-explorer'); document.title = 'wiiiv Moon'; $('tSub').textContent = T.sub; $('search').placeholder = T.search; $('loading').textContent = T.loading;
+  // 앱 안의 이름은 Google Earth 처럼 번역하지 않는 브랜드 'Moon' (10/25 나무님, 11/06 앞의 wiiiv 는 뺌), 목록·검색에서는 그 언어의 '달 탐험'(T.title·index.json)
+  $('tTitle').innerHTML = '<img id="wlogo">Moon'; wiiivMark($('wlogo'), 'moon-explorer'); document.title = 'Moon'; $('tSub').textContent = T.sub; $('search').placeholder = T.search; $('loading').textContent = T.loading;
   $('bSites').querySelector('span').textContent = T.sites; $('bMeasure').querySelector('span').textContent = T.measure; $('bSettings').querySelector('span').textContent = T.settings;
   $('credit').textContent = T.credit; $('help').textContent = T.help; $('compass').title = T.north; $('bTilt').title = T.tilt;
   setTimeout(() => $('help').style.opacity = 0, 9000);
