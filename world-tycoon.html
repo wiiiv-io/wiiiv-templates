@@ -10006,17 +10006,30 @@ async function checkEnd() {
 }
 const rank = () => [...S_().players].sort((a, b) => (a.out - b.out) || worth(b) - worth(a));
 // 묻기: 사람은 UI, AI 는 AI.decide
-function ask(p, what, d) { return p.ai ? AI.decide(p, what, d) : UI.ask(p, what, d); }
+function ask(p, what, d) {
+  if (p.ai || GAME.halt) return AI.decide(p, what, d);
+  // 사람에게 묻는 중에 판을 멈추면(처음으로) 그 물음은 컴퓨터가 대신 답한다
+  return new Promise(res => { GAME.abortAsk = () => { UI.abort?.(); res(AI.decide(p, what, d)); }; UI.ask(p, what, d).then(v => { GAME.abortAsk = null; res(v); }); });
+}
 // 게임 진행 고리
 async function runGame() {
   GAME.busy = true;
-  while (!S_().over) {
+  while (!S_().over && !GAME.halt) {
     await playTurn();
+    if (GAME.halt) break;
     if (await checkEnd()) break;
     nextTurn(); if (S_().round > S_().rounds) { await checkEnd(); break; }
     saveGame();
   }
-  GAME.busy = false;
+  GAME.busy = false; GAME.onIdle?.(); GAME.onIdle = null;
+}
+// 판 멈추기 (처음으로 · 다시 하기): 진행 중인 차례는 컴퓨터가 대신 빨리 끝내고 고리를 빠져나온다.
+// 예전엔 location.reload() 였는데 wiiiv 앱 창(iframe) 안에서는 다시 불러오면 빈 화면이 된다
+async function haltGame() {
+  if (!GAME.busy) return;
+  const idle = new Promise(r => GAME.onIdle = r), f = UI.fast;
+  GAME.halt = true; UI.fast = true; if (VIG.active) VIG.skip = true; GAME.abortAsk?.(); GAME.abortAsk = null; GAME.abortCard?.();   // 카드 '확인'도 대신 누른다
+  await idle; GAME.halt = false; UI.fast = f;
 }
 function saveGame() { try { lsSet('save', S_()); } catch { /* 저장 안 됨 */ } }
 
@@ -10083,7 +10096,9 @@ function choose(btns, title) {
   return new Promise(res => {
     const d = $('dock'); d.innerHTML = (title ? `<div class="dt">${title}</div>` : '') + `<div class="db">${btns.map((b, i) => `<button class="btn ${b.cls || ''}" data-i="${i}" ${b.dis ? 'disabled' : ''}>${b.t}</button>`).join('')}</div>`;
     d.hidden = false;
-    const done = v => { d.hidden = true; d.innerHTML = ''; removeEventListener('keydown', key); SND.click?.(); res(v); };
+    const off = () => { d.hidden = true; d.innerHTML = ''; removeEventListener('keydown', key); };
+    const done = v => { off(); SND.click?.(); res(v); };
+    UI.abort = () => { off(); hideCard(); };
     d.querySelectorAll('button').forEach(b => b.onclick = () => done(btns[+b.dataset.i].v));
     const key = e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); const b = btns.find(x => !x.dis); if (b) done(b.v); } };
     addEventListener('keydown', key);
@@ -10094,7 +10109,9 @@ function pickTile(ok, title, allowCancel) {
   return new Promise(res => {
     for (const i of ok) tileGlow(i, '#ffd54f');
     UI.pick = i => { if (!ok.includes(i)) return; finish(i); };
-    const finish = v => { UI.pick = null; for (const i of ok) tileGlow(i, null, false); $('dock').hidden = true; res(v); };
+    const off = () => { UI.pick = null; for (const i of ok) tileGlow(i, null, false); $('dock').hidden = true; };
+    const finish = v => { off(); res(v); };
+    UI.abort = off;
     $('dock').innerHTML = `<div class="dt">${esc(title)}</div>` + (allowCancel ? `<div class="db"><button class="btn ghost" id="pkC">${esc(T.u.cancel)}</button></div>` : '');
     $('dock').hidden = false; if (allowCancel) $('pkC').onclick = () => finish(null);
   });
@@ -10188,7 +10205,7 @@ UI.card = async (p, deck, c) => {
   SND.card?.();
   const el = $('cardBig'); el.className = 'glass ' + deck; el.innerHTML = `<div class="ck">${deck === 'luck' ? '🎁 ' + esc(T.tile.luck) : '📰 ' + esc(T.tile.news)}</div><div class="cx">${esc((deck === 'luck' ? T.luck : T.news)[c.id])}</div><button class="btn" id="cardOk">OK</button>`;
   el.hidden = false; requestAnimationFrame(() => el.classList.add('in'));
-  await new Promise(res => { let done = false; const ok = () => { if (!done) { done = true; res(); } }; $('cardOk').onclick = ok; if (p.ai) sleep(UI.fast ? 900 : 2600).then(ok); });
+  await new Promise(res => { let done = false; const ok = () => { if (!done) { done = true; res(); } }; $('cardOk').onclick = ok; GAME.abortCard = ok; if (p.ai || GAME.halt) sleep(UI.fast ? 900 : 2600).then(ok); }); GAME.abortCard = null;
   el.classList.remove('in'); await sleep(250); el.hidden = true;
   if (c.id === 'quake') shake(0.8, 1.2);
 };
@@ -10282,9 +10299,15 @@ function showStart() {
     if (ps.length < 2) return;
     SETUP.kinds = k2; SETUP.names = [0, 1, 2, 3].map(k => $('nm' + k).value.trim()); SETUP.rounds = +$('stR').value; lsSet('setup', SETUP);
     UI.shows = $('stS').value; lsSet('shows', UI.shows);
-    el.hidden = true; startGame(newGame(ps, { rounds: SETUP.rounds }));
+    el.hidden = true; (HOME.wait || Promise.resolve()).then(() => startGame(newGame(ps, { rounds: SETUP.rounds })));
   };
-  if (canCont) $('stC').onclick = () => { el.hidden = true; GAME.S = save; UI.shows = $('stS').value; startGame(save, true); };
+  if (canCont) $('stC').onclick = () => { el.hidden = true; UI.shows = $('stS').value; (HOME.wait || Promise.resolve()).then(() => { GAME.S = save; startGame(save, true); }); };
+}
+// 처음 화면으로 (다시 불러오지 않고). 진행 중인 판은 저장해 두었다가 '이어 하기'로
+const HOME = { wait: null };
+async function goHome() {
+  $('hudTop').hidden = true; $('players').hidden = true; $('dock').hidden = true; hideCard();
+  showStart(); HOME.wait = haltGame(); await HOME.wait; HOME.wait = null;
 }
 function showRules() {
   const el = $('modal'); el.innerHTML = `<div class="glass md"><h2>${esc(T.u.rules)}</h2><ol>${T.u.ruleText.map(s => `<li>${esc(s)}</li>`).join('')}</ol><button class="btn" id="mdX">${esc(T.u.close)}</button></div>`;
@@ -10312,7 +10335,7 @@ UI.gameOver = async rk => {
     <h3>${esc(T.u.chart)}</h3><canvas id="chart" width="520" height="200"></canvas>
     <div class="st-go"><button class="btn" id="ovA">${esc(T.u.again2)}</button></div></div>`;
   el.hidden = false; drawChart($('chart'));
-  $('ovA').onclick = () => { el.hidden = true; location.reload(); };
+  $('ovA').onclick = () => { el.hidden = true; goHome(); };
 };
 function drawChart(cv) {
   const c = cv.getContext('2d'), S = S_(), W = cv.width, H = cv.height, n = Math.max(...S.players.map(p => p.hist.length)), mx = Math.max(1, ...S.players.flatMap(p => p.hist));
@@ -10340,7 +10363,7 @@ function showMenu() {
   $('mSnd').onchange = e => { SND.on = e.target.checked; lsSet('sound', SND.on); };
   $('mSpd').onchange = e => { UI.fast = e.target.value === '1'; lsSet('fast', UI.fast); };
   $('mShow').onchange = e => { UI.shows = e.target.value; lsSet('shows', UI.shows); };
-  $('mRules').onclick = showRules; $('mAtlas').onclick = showAtlas; $('mNew').onclick = () => { if (GAME.S && !GAME.S.over) saveGame(); location.reload(); };
+  $('mRules').onclick = showRules; $('mAtlas').onclick = showAtlas; $('mNew').onclick = () => { if (GAME.S && !GAME.S.over) saveGame(); el.hidden = true; goHome(); };
   $('mX').onclick = () => el.hidden = true;
 }
 // 언어가 바뀌면 고정 글자도
