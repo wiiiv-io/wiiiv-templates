@@ -10297,7 +10297,7 @@ UI.bankrupt = async p => { for (const t of TILES) if (S_().own[t.i] < 0 && OWN.m
 UI.log = () => {};
 function toast(s) { const t = document.createElement('div'); t.className = 'toast glass'; t.textContent = s; $('toasts').appendChild(t); setTimeout(() => t.classList.add('out'), 2600); setTimeout(() => t.remove(), 3100); }
 // 카메라를 차례인 말 쪽으로 살짝
-function camFollow(p) { CAM.follow = pawnOf(p).o; CAM.followPawn = pawnOf(p); setActivePawn(pawnOf(p)); }
+function camFollow(p) { CAM.panAt = -1; CAM.follow = pawnOf(p).o; CAM.followPawn = pawnOf(p); setActivePawn(pawnOf(p)); }
 
 // ── 도시 카드 (칸 눌렀을 때·살 때) ──
 function showCard(i, inline) {
@@ -10922,12 +10922,14 @@ I18N['zh'] = {
 
 // ───────────────────────── 시작 · 그리기 고리 · 카메라 ─────────────────────────
 const Q = new URLSearchParams(location.search);
-const CAM = { ctl: null, saved: null, idle: 0, follow: null };
+const CAM = { ctl: null, saved: null, idle: 0, follow: null, pan: new THREE.Vector3(), panAt: -1, user: false, drag: false, endAt: -99 };
+const PAN_R = 25;   // 화면 중심(target)이 갈 수 있는 범위: 판 가장자리 조금 바깥까지
 function initCamera() {
   const c = CAM.ctl = new THREE.OrbitControls(G.camera, G.renderer.domElement);
   c.target.set(0, 0, 4); c.enableDamping = true; c.dampingFactor = 0.08;
   c.minDistance = 18; c.maxDistance = 130; c.maxPolarAngle = 1.32; c.minPolarAngle = 0.25; c.screenSpacePanning = false;
-  c.addEventListener('start', () => { CAM.idle = 0; CAM.userAt = G.time; });
+  c.addEventListener('start', () => { CAM.idle = 0; CAM.userAt = G.time; CAM.drag = true; CAM.user = true; });
+  c.addEventListener('end', () => { CAM.drag = false; CAM.endAt = G.time; });
   G.camera.position.set(0, 31, 37); c.update();
 }
 // 칸으로 빨려 들어가기 / 돌아오기
@@ -10959,13 +10961,20 @@ function frame(dt, draw = true) {
     CAM.idle += dt;
     if (CAM.ctl.enabled) {
       // 차례인 말을 따라 화면 가운데로 (카메라 방향·거리는 그대로 두고 함께 옮김)
-      if (CAM.follow) { const p = CAM.follow.position, tg = CAM.ctl.target, k = 1 - Math.exp(-dt * 3.2), fp = CAM.followPawn, fo = fp ? tileGeo(fp.at % 10 === 0 ? (fp.at + 1) % 40 : fp.at).out : [0, 0];
-        const dx = (p.x - fo[0] * 6 - tg.x) * k, dz = (p.z - fo[1] * 6 - tg.z) * k; tg.x += dx; tg.z += dz; G.camera.position.x += dx; G.camera.position.z += dz;
-        // 말이 선 줄의 바깥쪽에서 보도록 방향을 천천히 돌림 (글자가 바로 읽히게)
-        const pw = CAM.followPawn; if (pw && !(G.time - (CAM.userAt ?? -99) < 5)) {
+      // 사람이 옮기거나 돌린 화면은 말이 다시 움직일 때까지 그대로 둔다 (오른쪽 단추·두 손가락으로 옮기기)
+      const tg = CAM.ctl.target;
+      if (CAM.follow) { const p = CAM.follow.position, k = 1 - Math.exp(-dt * 3.2), fp = CAM.followPawn, fo = fp ? tileGeo(fp.at % 10 === 0 ? (fp.at + 1) % 40 : fp.at).out : [0, 0];
+        if (fp && fp.at !== CAM.panAt) { CAM.panAt = fp.at; CAM.pan.set(0, 0, 0); CAM.user = false; }   // 말이 움직이면 다시 따라감
+        const bx = p.x - fo[0] * 6, bz = p.z - fo[1] * 6;
+        if (CAM.drag || G.time - CAM.endAt < 0.8) CAM.pan.set(tg.x - bx, 0, tg.z - bz);   // 옮기는 중(관성 포함): 그 자리를 기억
+        else { const dx = (bx + CAM.pan.x - tg.x) * k, dz = (bz + CAM.pan.z - tg.z) * k; tg.x += dx; tg.z += dz; G.camera.position.x += dx; G.camera.position.z += dz; }
+        // 말이 선 줄의 바깥쪽에서 보도록 방향을 천천히 돌림 (글자가 바로 읽히게) — 사람이 돌려 놓았으면 그대로
+        const pw = CAM.followPawn; if (pw && !CAM.user) {
           const out = tileGeo(pw.at % 10 === 0 ? (pw.at + 1) % 40 : pw.at).out, want = Math.atan2(out[0], out[1]);
           const off = G.camera.position.clone().sub(tg), cur = Math.atan2(off.x, off.z); let d = want - cur; d = Math.atan2(Math.sin(d), Math.cos(d));
           off.applyAxisAngle(new THREE.Vector3(0, 1, 0), d * (1 - Math.exp(-dt * 1.6))); G.camera.position.copy(tg).add(off); } }
+      // 너무 멀리 옮기지 않게: 중심을 판 범위 안으로
+      { const cx = clamp(tg.x, -PAN_R, PAN_R) - tg.x, cz = clamp(tg.z, -PAN_R, PAN_R) - tg.z; if (cx || cz) { tg.x += cx; tg.z += cz; G.camera.position.x += cx; G.camera.position.z += cz; } }
       CAM.ctl.autoRotate = CAM.idle > 25 && !GAME.busy; CAM.ctl.autoRotateSpeed = 0.35; CAM.ctl.update(); }
   }
   if (draw) G.composer.render(dt);
