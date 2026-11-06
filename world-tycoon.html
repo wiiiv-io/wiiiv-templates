@@ -9608,6 +9608,9 @@ async function playVignetteInner(tileIdx, info = {}) {
   const off = G.camera.position.clone().sub(c.target), az0 = Math.atan2(off.x, off.z), D = 40, PITCH = 0.72;
   const tg = new THREE.Vector3(0, 2.5, 0), camAt = az => new THREE.Vector3(Math.sin(az) * D * Math.cos(PITCH), tg.y + D * Math.sin(PITCH), Math.cos(az) * D * Math.cos(PITCH));
   const S = (BD.RI - BD.RW - 1.4) / VK.R, Y0 = -10, Y1 = 0.7, plaza = BOARD.plaza;
+  // 도시 정면(전체 화면 연출이 처음 바라보는 쪽)이 지금 카메라 쪽을 향하게 돌려 놓는다 — 도착한 도시 쪽에서 그대로 정면이 보인다
+  const fp = vigCamPath(ctx)(0).pos, ff = ctx.focus, frontAz = Math.atan2(fp.x - ff.x, fp.z - ff.z), ry0 = root.rotation.y;
+  root.rotation.y = ry0 + (az0 + 0.2) - frontAz;
   root.scale.setScalar(S); root.position.set(0, Y0, 0); root.visible = true; G.scene.add(root);
   const rise = ctx.rise.map((o, i) => ({ o, s: o.scale.clone(), d: 0.7 + i * 0.18 }));
   const pops = (ctx.pops || []).map(o => ({ o, s: o.scale.clone(), d: 1.0 + Math.hypot(o.position.x, o.position.z) / VK.R * 1.4 }));
@@ -9623,7 +9626,7 @@ async function playVignetteInner(tileIdx, info = {}) {
       for (const r of rise) { const u = clamp((T_ - r.d) / 1.3, 0, 1); r.o.scale.set(r.s.x, r.s.y * Math.max(0.001, ease.back(u)), r.s.z); }
       for (const r of pops) { const u = clamp((T_ - r.d) / 0.6, 0, 1); r.o.scale.set(r.s.x, r.s.y * Math.max(0.001, ease.back(u)), r.s.z); }
       // 카메라: 1초 동안 가운데로 다가간 뒤 천천히 돈다
-      const az = az0 + 0.55 * ease.inOut(k), m = ease.inOut(clamp(T_ / 1.1, 0, 1));
+      const az = az0 + 0.4 * ease.inOut(k), m = ease.inOut(clamp(T_ / 1.1, 0, 1));
       G.camera.position.lerpVectors(p0, camAt(az), m); c.target.lerpVectors(t0, tg, m); G.camera.lookAt(c.target);
       for (const u of ctx.upd) u(dt, G.time);
       dust(dt);
@@ -9637,7 +9640,7 @@ async function playVignetteInner(tileIdx, info = {}) {
   const ry = root.position.y, py = plaza.position.y;
   await tween(VIG.skip ? 0.45 : 0.8, k => { root.position.y = lerp(ry, Y0, ease.inOut(k)); plaza.position.y = lerp(py, 0, ease.out(k)); }, t => t);
   plaza.position.y = 0; for (const d of DICE.list) d.visible = true;
-  root.visible = false; root.scale.setScalar(1); root.position.set(0, 0, 0); VIG.scene.add(root);
+  root.visible = false; root.scale.setScalar(1); root.position.set(0, 0, 0); root.rotation.y = ry0; VIG.scene.add(root);
   VIG.active = false; VIG.inner = false; VIG.skip = false;
   await camBack();
 }
